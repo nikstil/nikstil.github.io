@@ -18,17 +18,33 @@
       max-height: 100%;
       overflow: hidden;
       background-color: #000;
+      cursor: pointer;
+      user-select: none;
     }
 
     .fullscreen-gif {
       width: 100vw;
       height: 100vh;
-      object-fit: fill; /* Forces the image to stretch to the exact screen boundaries */
+      object-fit: fill;
       display: block;
     }
   </style>
 </head>
 <body>
-  <img src="animation.gif" alt="Fullscreen GIF" class="fullscreen-gif">
+  <img id="bg-gif" src="animation.gif" alt="Fullscreen GIF" class="fullscreen-gif">
+
+  <script>
+    // Preload true.gif in memory so there's zero delay on click
+    const preload = new Image();
+    preload.src = 'true.gif';
+
+    const gifElement = document.getElementById('bg-gif');
+    let isToggled = false;
+
+    document.addEventListener('click', () => {
+      isToggled = !isToggled;
+      gifElement.src = isToggled ? 'true.gif' : 'animation.gif';
+    });
+  </script>
 </body>
 </html>
