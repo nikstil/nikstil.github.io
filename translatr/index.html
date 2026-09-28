@@ -1,19 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="aero">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a73c4" />
     <title>TRANSLATR™ Ultra+ Pro Max</title>
+    <!-- Apply the saved theme before the first paint (no flash of the wrong theme). -->
+    <script>
+      try {
+        var t = localStorage.getItem('translatr-theme')
+        if (t) document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Segoe UI / Consolas are used when available (Windows); these are fallbacks elsewhere. -->
+    <!-- Segoe UI / Consolas are used when available (Windows); these are fallbacks elsewhere.
+         Theme fonts only download when a theme actually uses them. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Comic+Neue:wght@700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Comic+Neue:wght@700&family=Orbitron:wght@500;700;900&family=UnifrakturMaguntia&family=Inter:wght@300;400;500;600&family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&family=VT323&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/translatr/assets/index-BJIguY87.js"></script>
-    <link rel="stylesheet" crossorigin href="/translatr/assets/index-C7BTbyNs.css">
+    <script type="module" crossorigin src="/translatr/assets/index-64m65GLL.js"></script>
+    <link rel="stylesheet" crossorigin href="/translatr/assets/index-C-shFKdH.css">
   </head>
   <body>
     <div id="root"></div>
