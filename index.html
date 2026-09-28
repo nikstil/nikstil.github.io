@@ -1,50 +1,227 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>nikstil</title>
+  <meta name="description" content="nikstil — pick one: the GIF, or TRANSLATR™.">
+  <meta name="theme-color" content="#000000">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 40px 16px 56px;
+      background:
+        radial-gradient(900px 500px at 50% -10%, #17203a 0%, transparent 60%),
+        #000;
+      color: #f2f3f7;
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
-    html, body {
-      width: 100vw;
-      height: 100vh;
-      max-width: 100%;
-      max-height: 100%;
+    main { width: min(900px, 100%); text-align: center; }
+
+    h1 {
+      font-size: clamp(44px, 9vw, 88px);
+      font-weight: 200;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .sub { margin-top: 12px; color: #8d93a8; font-size: 15px; }
+
+    .choices {
+      margin-top: 44px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+    }
+    @media (max-width: 640px) { .choices { grid-template-columns: 1fr; } }
+
+    .card {
+      --glow: #7aa7ff;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      aspect-ratio: 4 / 5;
       overflow: hidden;
-      background-color: #000;
-      cursor: pointer;
-      user-select: none;
+      border-radius: 18px;
+      border: 1px solid rgb(255 255 255 / 0.1);
+      background: #0b0b0f;
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .card:hover, .card:focus-visible {
+      transform: translateY(-6px);
+      border-color: var(--glow);
+      box-shadow: 0 26px 60px -22px var(--glow);
+      outline: none;
+    }
+    @media (max-width: 640px) { .card { aspect-ratio: 5 / 4; } }
+
+    .art { position: relative; flex: 1; overflow: hidden; }
+    .art > img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease; }
+    .card:hover .art > img { transform: scale(1.05); }
+
+    .caption { position: relative; padding: 16px 52px 18px 18px; text-align: left; border-top: 1px solid rgb(255 255 255 / 0.08); }
+    .caption h2 { font-size: 19px; font-weight: 600; }
+    .caption p { margin-top: 4px; font-size: 13.5px; color: #9ba1b5; line-height: 1.4; }
+    .arrow {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      translate: 0 -50%;
+      font-size: 22px;
+      opacity: 0.55;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .card:hover .arrow, .card:focus-visible .arrow { transform: translateX(4px); opacity: 1; }
+
+    /* ---- TRANSLATR™ tile: a tiny Windows Aero desktop ---- */
+    .translatr { --glow: #4aa8ff; }
+    .desktop {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(ellipse 60% 18% at 35% 55%, rgb(255 255 255 / 0.3), transparent 70%),
+        radial-gradient(600px 400px at 10% 0%, rgb(150 215 255 / 0.7), transparent 60%),
+        radial-gradient(700px 400px at 50% 120%, rgb(125 225 110 / 0.55), transparent 62%),
+        linear-gradient(180deg, #2a86d6 0%, #1464b4 45%, #0b4a8f 100%);
+    }
+    .bubble {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.06) 55%, transparent 58%);
+      animation: drift 9s ease-in-out infinite alternate;
+    }
+    @keyframes drift { to { transform: translateY(-14px); } }
+
+    .window {
+      position: relative;
+      width: 78%;
+      border-radius: 8px;
+      padding: 0 6px 6px;
+      background:
+        linear-gradient(180deg, rgb(255 255 255 / 0.65), rgb(255 255 255 / 0.2) 28px, rgb(255 255 255 / 0.12)),
+        rgb(120 180 235 / 0.45);
+      border: 1px solid rgb(0 20 50 / 0.55);
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.6), 0 14px 30px -8px rgb(0 25 70 / 0.6);
+      transition: transform 0.35s ease;
+    }
+    .card:hover .window { transform: translateY(-4px) rotate(-1deg); }
+    .titlebar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding-left: 4px;
+      font-size: 12px;
+      color: #06121f;
+      text-shadow: 0 0 8px #fff, 0 0 8px #fff, 0 0 3px #fff;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .caps { margin-left: auto; align-self: flex-start; display: flex; border: 1px solid rgb(0 20 50 / 0.55); border-top: 0; border-radius: 0 0 4px 4px; overflow: hidden; }
+    .caps i { width: 18px; height: 14px; background: linear-gradient(180deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.15)); border-left: 1px solid rgb(0 20 50 / 0.35); }
+    .caps i:first-child { border-left: 0; }
+    .caps i:last-child { width: 30px; background: linear-gradient(180deg, #ecb0a4, #d86f58 50%, #c3431f 51%, #d9714f); }
+    .client {
+      background: #fff;
+      border: 1px solid rgb(0 20 50 / 0.45);
+      border-radius: 3px;
+      padding: 12px;
+      color: #1b2a3a;
+      text-align: left;
+      font-size: 12px;
+    }
+    .fake-input { height: 44px; border: 1px solid #abadb3; border-radius: 2px; padding: 6px 8px; color: #6b7785; background: #fff; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; gap: 8px; }
+    .tax { color: #c42e86; font-size: 11px; }
+    .gel {
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-weight: 600;
+      font-size: 11px;
+      color: #3d2700;
+      border: 1px solid #a86f00;
+      background: linear-gradient(180deg, #fff1bd 0%, #ffd35c 48%, #f2a900 52%, #ffcb3d 100%);
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
+    }
+    .orb {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 1px 2px rgb(0 30 70 / 0.9);
+      background: radial-gradient(circle at 50% 30%, #bfe9ff 0%, #3ea7e8 40%, #0d5aa7 72%, #06305f 100%);
+      border: 1px solid rgb(0 20 50 / 0.8);
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.45), 0 0 12px rgb(80 190 255 / 0.6);
     }
 
-    .fullscreen-gif {
-      width: 100vw;
-      height: 100vh;
-      object-fit: fill;
-      display: block;
+    footer { margin-top: 36px; font-size: 12px; color: #5d6377; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card, .art > img, .window, .arrow, .bubble { transition: none; animation: none; }
     }
   </style>
 </head>
 <body>
-  <img id="bg-gif" src="animation.gif" alt="Fullscreen GIF" class="fullscreen-gif">
+  <main>
+    <h1>nikstil</h1>
+    <p class="sub">Pick one.</p>
 
-  <script>
-    // Preload true.gif in memory so there's zero delay on click
-    const preload = new Image();
-    preload.src = 'true.gif';
+    <div class="choices">
+      <a class="card" href="/gif/">
+        <div class="art">
+          <img src="/animation.gif" alt="Preview of the animated GIF">
+        </div>
+        <div class="caption">
+          <h2>The GIF</h2>
+          <p>Full-screen. Click anywhere to toggle.</p>
+          <span class="arrow" aria-hidden="true">→</span>
+        </div>
+      </a>
 
-    const gifElement = document.getElementById('bg-gif');
-    let isToggled = false;
+      <a class="card translatr" href="/translatr/">
+        <div class="art desktop" aria-hidden="true">
+          <span class="bubble" style="width:54px;height:54px;left:8%;top:12%"></span>
+          <span class="bubble" style="width:30px;height:30px;right:12%;top:20%;animation-delay:-3s"></span>
+          <span class="bubble" style="width:80px;height:80px;right:6%;bottom:14%;animation-delay:-6s"></span>
+          <div class="window">
+            <div class="titlebar">🌐 TRANSLATR™ Ultra+ Pro Max <span class="caps"><i></i><i></i><i></i></span></div>
+            <div class="client">
+              <div class="fake-input">Type something to have it ignored…</div>
+              <div class="row">
+                <span class="tax">2 vowel-taxed words</span>
+                <span class="gel">Translate · $6</span>
+              </div>
+            </div>
+          </div>
+          <span class="orb">T</span>
+        </div>
+        <div class="caption">
+          <h2>TRANSLATR™</h2>
+          <p>A hyper-monetized translator that hates you. Loot boxes, a needy cat, and hold music.</p>
+          <span class="arrow" aria-hidden="true">→</span>
+        </div>
+      </a>
+    </div>
 
-    document.addEventListener('click', () => {
-      isToggled = !isToggled;
-      gifElement.src = isToggled ? 'true.gif' : 'animation.gif';
-    });
-  </script>
+    <footer>© nikstil</footer>
+  </main>
 </body>
 </html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>nikstil</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      max-width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .fullscreen-gif {
+      width: 100vw;
+      height: 100vh;
+      object-fit: fill;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- The GIFs stay in the repo root, so they're referenced with absolute paths from this subfolder. -->
+  <img id="bg-gif" src="/animation.gif" alt="Fullscreen GIF" class="fullscreen-gif">
+
+  <script>
+    // Preload true.gif in memory so there's zero delay on click
+    const preload = new Image();
+    preload.src = '/true.gif';
+
+    const gifElement = document.getElementById('bg-gif');
+    let isToggled = false;
+
+    document.addEventListener('click', () => {
+      isToggled = !isToggled;
+      gifElement.src = isToggled ? '/true.gif' : '/animation.gif';
+    });
+
+    // Escape goes back to the nikstil.com picker (clicking still just toggles the GIF).
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') window.location.href = '/';
+    });
+  </script>
+</body>
+</html>
