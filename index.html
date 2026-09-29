@@ -41,12 +41,12 @@
   <main class="desktop" id="desktop" aria-label="Desktop">
     <h1 class="sr-only">nikstilOS: the nikstil.com desktop</h1>
     <ul class="desk-icons">
-      <li><button class="desk-icon" data-app="pc"><span class="di-img" aria-hidden="true">💻</span><span class="di-label">This PC</span></button></li>
-      <li><button class="desk-icon" data-app="translatr"><span class="di-img" aria-hidden="true">🌐</span><span class="di-label">TRANSLATR™</span></button></li>
-      <li><button class="desk-icon" data-app="gif"><span class="di-img" aria-hidden="true">🎞️</span><span class="di-label">The GIF</span></button></li>
-      <li><button class="desk-icon" data-app="readme"><span class="di-img" aria-hidden="true">📄</span><span class="di-label">readme.txt</span></button></li>
-      <li><button class="desk-icon" data-app="themes"><span class="di-img" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
-      <li><button class="desk-icon" data-app="bin"><span class="di-img" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
+      <li><button class="desk-icon" data-app="pc"><span class="di-img" data-icon="pc" aria-hidden="true">💻</span><span class="di-label">This PC</span></button></li>
+      <li><button class="desk-icon" data-app="translatr"><span class="di-img" data-icon="translatr" aria-hidden="true">🌐</span><span class="di-label">TRANSLATR™</span></button></li>
+      <li><button class="desk-icon" data-app="gif"><span class="di-img" data-icon="gif" aria-hidden="true">🎞️</span><span class="di-label">The GIF</span></button></li>
+      <li><button class="desk-icon" data-app="readme"><span class="di-img" data-icon="readme" aria-hidden="true">📄</span><span class="di-label">readme.txt</span></button></li>
+      <li><button class="desk-icon" data-app="themes"><span class="di-img" data-icon="themes" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
+      <li><button class="desk-icon" data-app="bin"><span class="di-img" data-icon="bin" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
     </ul>
   </main>
 
@@ -67,14 +67,14 @@
   <div class="start-menu" id="start-menu" role="menu" hidden>
     <div class="sm-banner" aria-hidden="true">nikstil<b>OS</b></div>
     <div class="sm-main">
-      <div class="sm-head"><span class="sm-avatar" aria-hidden="true">🙂</span><span>Guest</span></div>
+      <div class="sm-head"><span class="sm-avatar" data-icon="avatar" aria-hidden="true">🙂</span><span>Guest</span></div>
       <div class="sm-cols">
         <ul class="sm-list">
-          <li><button class="sm-item" role="menuitem" data-app="translatr"><span aria-hidden="true">🌐</span> TRANSLATR™</button></li>
-          <li><button class="sm-item" role="menuitem" data-app="gif"><span aria-hidden="true">🎞️</span> The GIF</button></li>
-          <li><button class="sm-item" role="menuitem" data-app="readme"><span aria-hidden="true">📄</span> readme.txt</button></li>
-          <li><button class="sm-item" role="menuitem" data-app="pc"><span aria-hidden="true">💻</span> This PC</button></li>
-          <li><button class="sm-item" role="menuitem" data-app="bin"><span aria-hidden="true">🗑️</span> Recycle Bin</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="translatr"><span data-icon="translatr" aria-hidden="true">🌐</span> TRANSLATR™</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> The GIF</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="readme"><span data-icon="readme" aria-hidden="true">📄</span> readme.txt</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> This PC</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> Recycle Bin</button></li>
         </ul>
         <div class="sm-side">
           <div class="sm-heading">Themes</div>
@@ -98,7 +98,7 @@
   <div class="boot" id="boot" aria-hidden="true">
     <div class="boot-logo">nikstil<b>OS</b></div>
     <div class="boot-bar"><i></i><i></i><i></i></div>
-    <div class="boot-copy">Starting up. Please do not turn off your vibes.</div>
+    <div class="boot-copy">Starting up. Please do not turn off your computer.</div>
   </div>
 
   <div class="shutdown" id="shutdown" role="dialog" aria-label="Shut down" hidden>
@@ -115,7 +115,6 @@
       <dl class="pc-specs">
         <dt>Edition</dt><dd>nikstilOS Ultimate</dd>
         <dt>Version</dt><dd>2026, build 1</dd>
-        <dt>Processor</dt><dd>1× Vibe Core @ 3.0 GHz</dd>
         <dt>Memory</dt><dd>640 KB (ought to be enough for anybody)</dd>
         <dt>System type</dt><dd>8-bit operating system on a 64-bit browser</dd>
         <dt>Themes installed</dt><dd class="pc-themes">8</dd>

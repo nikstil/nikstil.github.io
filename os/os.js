@@ -12,22 +12,35 @@
     { id: 'skeuo', name: 'Skeuomorphism', blurb: 'Leather, brushed metal, real fake stitching', swatch: ['#6b4327', '#d6d6d6', '#d4a93f'], chrome: '#5a3a22', start: 'Start' },
     { id: 'minimal', name: 'Minimalist', blurb: 'Nothing. Beautifully.', swatch: ['#ffffff', '#000000', '#ffffff'], chrome: '#ffffff', start: 'Start', fonts: 'Inter:wght@300;400;500;600' },
     { id: 'retro', name: 'Retro 95', blurb: 'Beige boxes, pixels, a 56k modem', swatch: ['#008080', '#cfc8b6', '#000080'], chrome: '#008080', start: 'Start', fonts: 'Pixelify+Sans:wght@400;600;700&family=Press+Start+2P' },
-    { id: 'luna', name: 'Luna', blurb: 'A green start button and a very green hill (2001)', swatch: ['#245edb', '#3c9a3c', '#8cc2f5'], chrome: '#245edb', start: 'start', isNew: true },
-    { id: 'aqua', name: 'Aqua', blurb: 'Pinstripes, gel and traffic lights (2002)', swatch: ['#1d63d3', '#ececec', '#ff5f57'], chrome: '#1d63d3', start: '', isNew: true },
-    { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', start: 'スタート', fonts: 'VT323', isNew: true },
+    { id: 'luna', name: 'Luna', blurb: 'A green start button and a very green hill (2001)', swatch: ['#245edb', '#3c9a3c', '#8cc2f5'], chrome: '#245edb', start: 'start' },
+    { id: 'aqua', name: 'Aqua', blurb: 'Pinstripes, gel and traffic lights (2002)', swatch: ['#1d63d3', '#ececec', '#ff5f57'], chrome: '#1d63d3', start: '' },
+    { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', start: 'スタート', fonts: 'VT323' },
   ]
+  // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
+  // Start menu's user picture.
+  const ICONS = {
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', readme: '📄', themes: '🎨', bin: '🗑️', avatar: '🙂' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', readme: '📜', themes: '🔮', bin: '⚰️', avatar: '💀' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', readme: '📒', themes: '🧵', bin: '🪣', avatar: '😊' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', readme: '≡', themes: '◧', bin: '⌫', avatar: '☺' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', readme: '📝', themes: '🖼️', bin: '🚮', avatar: '👾' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', readme: '📝', themes: '🖌️', bin: '♻️', avatar: '🦋' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', readme: '📃', themes: '🖍️', bin: '🧺', avatar: '🌸' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', readme: '💾', themes: '🌴', bin: '🥤', avatar: '😎' },
+  }
+  const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
   const GAME_THEME_KEY = 'translatr-theme' // the game's pick, used until you choose one here
   const GAME_SAVE_KEY = 'translatr-save' // same site, so the homepage can read the game's save
   const BOOTED_KEY = 'nikstilos-booted'
 
   const APPS = {
-    pc: { title: 'System Properties', icon: '💻', width: 420 },
-    translatr: { title: 'TRANSLATR™ Ultra+ Pro Max', icon: '🌐', width: 460, init: initTranslatr },
-    gif: { title: 'animation.gif - Image Viewer', icon: '🎞️', width: 540, init: initGif },
-    readme: { title: 'readme.txt - Notepad', icon: '📄', width: 480 },
-    themes: { title: 'Themes', icon: '🎨', width: 600, init: initThemes },
-    bin: { title: 'Recycle Bin', icon: '🗑️', width: 460, init: initBin },
+    pc: { title: 'System Properties', icon: 'pc', width: 420 },
+    translatr: { title: 'TRANSLATR™ Ultra+ Pro Max', icon: 'translatr', width: 460, init: initTranslatr },
+    gif: { title: 'animation.gif - Image Viewer', icon: 'gif', width: 540, init: initGif },
+    readme: { title: 'readme.txt - Notepad', icon: 'readme', width: 480 },
+    themes: { title: 'Themes', icon: 'themes', width: 600, init: initThemes },
+    bin: { title: 'Recycle Bin', icon: 'bin', width: 460, init: initBin },
   }
 
   const $ = (sel, root = document) => root.querySelector(sel)
@@ -75,6 +88,8 @@
     $('meta[name="theme-color"]').content = theme.chrome
     $('.start-label').textContent = theme.start
     loadFonts(theme)
+    $$('[data-icon]').forEach((el) => (el.textContent = iconFor(el.dataset.icon)))
+    document.documentElement.classList.add('icons-ready')
     if (save) storage.set(THEME_KEY, theme.id)
     $$('[data-theme-pick]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themePick === theme.id)))
   }
@@ -110,12 +125,6 @@
       sw.append(i)
     })
     $('.theme-name', b).textContent = theme.name
-    if (theme.isNew) {
-      const tag = document.createElement('span')
-      tag.className = 'new-tag'
-      tag.textContent = 'NEW'
-      b.append(tag)
-    }
     b.addEventListener('click', (e) => {
       closeMenus()
       switchTheme(theme.id, originOf(e))
@@ -134,6 +143,12 @@
   const taskbarHeight = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 44
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi))
 
+  /** An icon key from ICONS follows the theme; anything else (a message box's emoji) stays put. */
+  function setIcon(el, icon) {
+    if (ICONS.aero[icon]) el.dataset.icon = icon
+    el.textContent = iconFor(icon)
+  }
+
   function makeWindow({ id, title, icon, width, content, onClose }) {
     const el = document.createElement('section')
     el.className = 'win'
@@ -151,7 +166,7 @@
         </div>
       </header>
       <div class="win-client"></div>`
-    $('.win-icon', el).textContent = icon
+    setIcon($('.win-icon', el), icon)
     $('.win-title', el).textContent = title
     $('.win-client', el).append(content)
 
@@ -173,7 +188,7 @@
     const task = document.createElement('button')
     task.className = 'task'
     task.innerHTML = `<span class="task-icon" aria-hidden="true"></span><span class="task-label"></span>`
-    $('.task-icon', task).textContent = icon
+    setIcon($('.task-icon', task), icon)
     $('.task-label', task).textContent = title
     task.title = title
 

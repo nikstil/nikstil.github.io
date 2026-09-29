@@ -92,6 +92,8 @@ img { display: block; max-width: 100%; }
   border-radius: 3px;
 }
 .di-img { font-size: 38px; line-height: 1; filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.45)); transition: transform 0.15s; }
+/* Icons follow the theme (os.js swaps them): hidden until the right set is in, so they never flash. */
+html:not(.icons-ready) [data-icon] { visibility: hidden; }
 .desk-icon:hover .di-img { transform: translateY(-2px); }
 .di-label {
   max-width: 100%;
@@ -334,7 +336,6 @@ img { display: block; max-width: 100%; }
 .sm-power:hover { filter: brightness(1.1); box-shadow: 0 0 10px rgb(255 100 70 / 0.7); }
 .swatch { display: inline-flex; flex-shrink: 0; width: 30px; height: 16px; overflow: hidden; border-radius: 3px; border: 1px solid rgb(0 0 0 / 0.45); }
 .swatch i { flex: 1; }
-.new-tag { margin-left: auto; padding: 0 6px; border-radius: 999px; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; line-height: 16px; color: #fff; text-shadow: none; background: #d6336c; }
 
 /* ================= Context menu ================= */
 .ctx-menu { position: fixed; z-index: 210; min-width: 190px; padding: 3px; color: #000; background: #f0f0f0; border: 1px solid #979797; box-shadow: 2px 2px 6px rgb(0 0 0 / 0.35); }
@@ -387,7 +388,6 @@ img { display: block; max-width: 100%; }
 .theme-card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 6px; text-align: left; background: rgb(255 255 255 / 0.75); border: 1px solid rgb(0 30 70 / 0.2); transition: box-shadow 0.15s, border-color 0.15s; }
 .theme-card .swatch { width: 100%; height: 46px; border-radius: 4px; }
 .theme-card .theme-name { font-size: 13.5px; font-weight: 600; }
-.theme-card .new-tag { position: absolute; top: 15px; right: 15px; }
 .theme-blurb { font-size: 12px; line-height: 1.35; color: var(--muted); }
 .theme-card:hover { border-color: #3c7fb1; box-shadow: 0 0 0 1px #3c7fb1, 0 4px 12px rgb(0 60 140 / 0.2); }
 .theme-card[aria-pressed="true"] { border-color: #2c7be5; box-shadow: 0 0 0 2px #2c7be5; }
@@ -505,7 +505,6 @@ html[data-theme="y2k"] .sm-list { border-radius: 12px; border-color: #000; backg
 html[data-theme="y2k"] .sm-item:hover, html[data-theme="y2k"] .sm-item:focus-visible { color: #b6ff1a; background: #0b0c10; box-shadow: none; border-radius: 999px; }
 html[data-theme="y2k"] .sm-theme:hover, html[data-theme="y2k"] .sm-theme[aria-pressed="true"] { background: rgb(182 255 26 / 0.12); box-shadow: inset 0 0 0 1px rgb(182 255 26 / 0.45); border-radius: 999px; }
 html[data-theme="y2k"] .sm-power { border-radius: 999px; border-color: #3d0030; background: linear-gradient(180deg, #ffd1f4, #ff4fdc 40%, #a1007f 52%, #ff2bd6 85%, #ffc2ef); }
-html[data-theme="y2k"] .new-tag { background: #b6ff1a; color: #0b0c10; }
 html[data-theme="y2k"] .ctx-menu { border-radius: 12px; color: #d9ff8a; background: #0b0c10; border-color: #9aa1ad; box-shadow: 0 0 20px rgb(255 43 214 / 0.35); }
 html[data-theme="y2k"] .ctx-item:hover, html[data-theme="y2k"] .ctx-item:focus-visible { border-radius: 999px; border-color: #b6ff1a; background: rgb(182 255 26 / 0.12); }
 html[data-theme="y2k"] .ctx-menu hr { border-color: #3a3e48; }
@@ -566,7 +565,6 @@ html[data-theme="skeuo"] .sm-head, html[data-theme="skeuo"] .sm-side { text-shad
 html[data-theme="skeuo"] .sm-list { background: #f7f1e3; border-color: #3a2313; border-radius: 6px; color: #2b2118; }
 html[data-theme="skeuo"] .sm-item:hover, html[data-theme="skeuo"] .sm-item:focus-visible { background: var(--skeuo-brass); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6); }
 html[data-theme="skeuo"] .sm-power { color: #fff; border-color: #4a0a06; background: radial-gradient(circle at 50% 20%, #ffb3a8, #d7261e 60%, #7c0f0a); border-radius: 6px; }
-html[data-theme="skeuo"] .new-tag { color: #3d2a00; background: var(--skeuo-brass); }
 html[data-theme="skeuo"] .ctx-menu { border-radius: 6px; background: #f7f1e3; border-color: #8c8c8c; }
 html[data-theme="skeuo"] .ctx-item:hover, html[data-theme="skeuo"] .ctx-item:focus-visible { background: var(--skeuo-brass); border-color: #7a5a12; }
 html[data-theme="skeuo"] .pc-logo { color: #5b4630; text-shadow: 0 1px 0 #fff; }
@@ -581,7 +579,7 @@ html[data-theme="minimal"] body { background: #fff; }
 html[data-theme="minimal"] .wp-sky { background: #fff; }
 html[data-theme="minimal"] :is(.wp-rays, .wp-hills, .wp-bubble, .wp-noise) { display: none; }
 html[data-theme="minimal"] .desk-icons { gap: 10px; padding: 24px; }
-html[data-theme="minimal"] .di-img { filter: none; }
+html[data-theme="minimal"] .di-img { filter: none; font-size: 34px; font-weight: 300; }
 html[data-theme="minimal"] .di-label { color: #000; text-shadow: none; font-size: 11px; letter-spacing: 0.04em; }
 html[data-theme="minimal"] .desk-icon { border-radius: 0; }
 html[data-theme="minimal"] .desk-icon:hover { background: #f2f2f2; border-color: transparent; }
@@ -625,7 +623,6 @@ html[data-theme="minimal"] .sm-heading { font-size: 10px; font-weight: 500; lett
 html[data-theme="minimal"] .sm-foot { padding: 8px; border-top: 1px solid #000; }
 html[data-theme="minimal"] .sm-power { border-radius: 0; border: 1px solid #000; text-shadow: none; background: #000; }
 html[data-theme="minimal"] .swatch { border-radius: 0; border-color: #000; }
-html[data-theme="minimal"] .new-tag { border-radius: 0; color: #fff; background: #000; }
 html[data-theme="minimal"] .ctx-menu { background: #fff; border-color: #000; box-shadow: 4px 4px 0 #000; }
 html[data-theme="minimal"] .ctx-item { border-radius: 0; }
 html[data-theme="minimal"] .ctx-item:hover, html[data-theme="minimal"] .ctx-item:focus-visible { color: #fff; background: #000; border-color: #000; }
@@ -702,8 +699,6 @@ html[data-theme="retro"] .sm-heading { font-weight: 700; color: #000080; opacity
 html[data-theme="retro"] .sm-foot { margin-top: 4px; padding-top: 5px; border-top: 1px solid #7d7766; box-shadow: inset 0 1px #fffdf5; }
 html[data-theme="retro"] .sm-power { border-radius: 0; border: 0; color: #000; text-shadow: none; background: var(--retro-face); box-shadow: var(--retro-raised); }
 html[data-theme="retro"] .sm-power:active { box-shadow: var(--retro-sunken); }
-html[data-theme="retro"] .swatch, html[data-theme="retro"] .new-tag { border-radius: 0; }
-html[data-theme="retro"] .new-tag { color: #fff; background: #d40000; }
 html[data-theme="retro"] .ctx-menu { background: var(--retro-face); border: 0; box-shadow: var(--retro-raised), 3px 3px 0 rgb(0 0 0 / 0.35); }
 html[data-theme="retro"] .ctx-item { border-radius: 0; border: 0; }
 html[data-theme="retro"] .ctx-item:hover, html[data-theme="retro"] .ctx-item:focus-visible { color: #fff; background: #000080; }
@@ -719,7 +714,7 @@ html[data-theme="retro"] .bin-file.is-selected { color: #fff; background: #00008
 html[data-theme="retro"] .bin-file.is-selected small { color: #c0c0ff; }
 
 /* ================================================================================
- * NEW · Luna: rolling green hills, a blue title bar, a very green start button (2001).
+ * Luna: rolling green hills, a blue title bar, a very green start button (2001).
  * ================================================================================ */
 html[data-theme="luna"] { --taskbar-h: 38px; --font-ui: Tahoma, "Segoe UI", Verdana, sans-serif; --font-title: "Trebuchet MS", Tahoma, sans-serif; --ink: #000; --muted: #5b5b5b; }
 html[data-theme="luna"] body { background: #3a78d8; font-size: 13px; }
@@ -810,7 +805,7 @@ html[data-theme="luna"] .bin-file:hover, html[data-theme="luna"] .bin-file.is-se
 html[data-theme="luna"] .bin-file:is(:hover, .is-selected) small { color: #dfe8f7; }
 
 /* ================================================================================
- * NEW · Aqua: pinstripes, lickable gel buttons, traffic lights, and a dock (2002).
+ * Aqua: pinstripes, lickable gel buttons, traffic lights, and a dock (2002).
  * ================================================================================ */
 html[data-theme="aqua"] { --taskbar-h: 76px; --font-ui: "Lucida Grande", "Helvetica Neue", Helvetica, Arial, sans-serif; --font-title: var(--font-ui); --ink: #1d1d1f; --muted: #6e6e73; }
 html[data-theme="aqua"] body { background: #1d63d3; font-size: 13px; }
@@ -901,7 +896,7 @@ html[data-theme="aqua"] .bin-file.is-selected { color: #fff; background: #3875d7
 html[data-theme="aqua"] .bin-file.is-selected small { color: #dce8fb; }
 
 /* ================================================================================
- * NEW · Vaporwave: a striped sunset over a neon grid, pastel bevels, ｓｔａｒｔ.
+ * Vaporwave: a striped sunset over a neon grid, pastel bevels, ｓｔａｒｔ.
  * ================================================================================ */
 html[data-theme="vapor"] {
   --font-ui: Tahoma, "Trebuchet MS", sans-serif;
@@ -983,7 +978,6 @@ html[data-theme="vapor"] .sm-heading { font: 19px/1 var(--font-title); letter-sp
 html[data-theme="vapor"] .sm-foot { margin-top: 4px; padding-top: 5px; border-top: 1px solid #9a72cf; box-shadow: inset 0 1px #fff6ff; }
 html[data-theme="vapor"] .sm-power { border-radius: 0; border: 0; color: #fff; text-shadow: 1px 1px 0 #6b1f8c; background: #ff71ce; box-shadow: var(--vp-raised); }
 html[data-theme="vapor"] .swatch { border-radius: 0; border-color: #2b0f4f; }
-html[data-theme="vapor"] .new-tag { border-radius: 0; color: #2b0f4f; background: #01cdfe; }
 html[data-theme="vapor"] .ctx-menu { background: var(--vp-face); border: 0; box-shadow: var(--vp-raised), 3px 3px 0 rgb(255 113 206 / 0.55); }
 html[data-theme="vapor"] .ctx-item { border: 0; border-radius: 0; }
 html[data-theme="vapor"] .ctx-item:hover, html[data-theme="vapor"] .ctx-item:focus-visible { color: #fff; background: linear-gradient(90deg, #ff71ce, #b967ff); }
