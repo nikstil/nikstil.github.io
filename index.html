@@ -1,227 +1,212 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="aero">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>nikstil</title>
-  <meta name="description" content="nikstil — pick one: the GIF, or TRANSLATR™.">
-  <meta name="theme-color" content="#000000">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    html, body { min-height: 100%; }
-
-    body {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 40px 16px 56px;
-      background:
-        radial-gradient(900px 500px at 50% -10%, #17203a 0%, transparent 60%),
-        #000;
-      color: #f2f3f7;
-      font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    main { width: min(900px, 100%); text-align: center; }
-
-    h1 {
-      font-size: clamp(44px, 9vw, 88px);
-      font-weight: 200;
-      letter-spacing: -0.03em;
-      line-height: 1;
-    }
-
-    .sub { margin-top: 12px; color: #8d93a8; font-size: 15px; }
-
-    .choices {
-      margin-top: 44px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 24px;
-    }
-    @media (max-width: 640px) { .choices { grid-template-columns: 1fr; } }
-
-    .card {
-      --glow: #7aa7ff;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      aspect-ratio: 4 / 5;
-      overflow: hidden;
-      border-radius: 18px;
-      border: 1px solid rgb(255 255 255 / 0.1);
-      background: #0b0b0f;
-      color: inherit;
-      text-decoration: none;
-      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-    }
-    .card:hover, .card:focus-visible {
-      transform: translateY(-6px);
-      border-color: var(--glow);
-      box-shadow: 0 26px 60px -22px var(--glow);
-      outline: none;
-    }
-    @media (max-width: 640px) { .card { aspect-ratio: 5 / 4; } }
-
-    .art { position: relative; flex: 1; overflow: hidden; }
-    .art > img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease; }
-    .card:hover .art > img { transform: scale(1.05); }
-
-    .caption { position: relative; padding: 16px 52px 18px 18px; text-align: left; border-top: 1px solid rgb(255 255 255 / 0.08); }
-    .caption h2 { font-size: 19px; font-weight: 600; }
-    .caption p { margin-top: 4px; font-size: 13.5px; color: #9ba1b5; line-height: 1.4; }
-    .arrow {
-      position: absolute;
-      right: 18px;
-      top: 50%;
-      translate: 0 -50%;
-      font-size: 22px;
-      opacity: 0.55;
-      transition: transform 0.25s ease, opacity 0.25s ease;
-    }
-    .card:hover .arrow, .card:focus-visible .arrow { transform: translateX(4px); opacity: 1; }
-
-    /* ---- TRANSLATR™ tile: a tiny Windows Aero desktop ---- */
-    .translatr { --glow: #4aa8ff; }
-    .desktop {
-      height: 100%;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(ellipse 60% 18% at 35% 55%, rgb(255 255 255 / 0.3), transparent 70%),
-        radial-gradient(600px 400px at 10% 0%, rgb(150 215 255 / 0.7), transparent 60%),
-        radial-gradient(700px 400px at 50% 120%, rgb(125 225 110 / 0.55), transparent 62%),
-        linear-gradient(180deg, #2a86d6 0%, #1464b4 45%, #0b4a8f 100%);
-    }
-    .bubble {
-      position: absolute;
-      border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.06) 55%, transparent 58%);
-      animation: drift 9s ease-in-out infinite alternate;
-    }
-    @keyframes drift { to { transform: translateY(-14px); } }
-
-    .window {
-      position: relative;
-      width: 78%;
-      border-radius: 8px;
-      padding: 0 6px 6px;
-      background:
-        linear-gradient(180deg, rgb(255 255 255 / 0.65), rgb(255 255 255 / 0.2) 28px, rgb(255 255 255 / 0.12)),
-        rgb(120 180 235 / 0.45);
-      border: 1px solid rgb(0 20 50 / 0.55);
-      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.6), 0 14px 30px -8px rgb(0 25 70 / 0.6);
-      transition: transform 0.35s ease;
-    }
-    .card:hover .window { transform: translateY(-4px) rotate(-1deg); }
-    .titlebar {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      height: 28px;
-      padding-left: 4px;
-      font-size: 12px;
-      color: #06121f;
-      text-shadow: 0 0 8px #fff, 0 0 8px #fff, 0 0 3px #fff;
-      text-align: left;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-    .caps { margin-left: auto; align-self: flex-start; display: flex; border: 1px solid rgb(0 20 50 / 0.55); border-top: 0; border-radius: 0 0 4px 4px; overflow: hidden; }
-    .caps i { width: 18px; height: 14px; background: linear-gradient(180deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.15)); border-left: 1px solid rgb(0 20 50 / 0.35); }
-    .caps i:first-child { border-left: 0; }
-    .caps i:last-child { width: 30px; background: linear-gradient(180deg, #ecb0a4, #d86f58 50%, #c3431f 51%, #d9714f); }
-    .client {
-      background: #fff;
-      border: 1px solid rgb(0 20 50 / 0.45);
-      border-radius: 3px;
-      padding: 12px;
-      color: #1b2a3a;
-      text-align: left;
-      font-size: 12px;
-    }
-    .fake-input { height: 44px; border: 1px solid #abadb3; border-radius: 2px; padding: 6px 8px; color: #6b7785; background: #fff; }
-    .row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; gap: 8px; }
-    .tax { color: #c42e86; font-size: 11px; }
-    .gel {
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-weight: 600;
-      font-size: 11px;
-      color: #3d2700;
-      border: 1px solid #a86f00;
-      background: linear-gradient(180deg, #fff1bd 0%, #ffd35c 48%, #f2a900 52%, #ffcb3d 100%);
-      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
-    }
-    .orb {
-      position: absolute;
-      left: 12px;
-      bottom: 12px;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      color: #fff;
-      text-shadow: 0 1px 2px rgb(0 30 70 / 0.9);
-      background: radial-gradient(circle at 50% 30%, #bfe9ff 0%, #3ea7e8 40%, #0d5aa7 72%, #06305f 100%);
-      border: 1px solid rgb(0 20 50 / 0.8);
-      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.45), 0 0 12px rgb(80 190 255 / 0.6);
-    }
-
-    footer { margin-top: 36px; font-size: 12px; color: #5d6377; }
-
-    @media (prefers-reduced-motion: reduce) {
-      .card, .art > img, .window, .arrow, .bubble { transition: none; animation: none; }
-    }
-  </style>
+  <title>nikstilOS</title>
+  <meta name="description" content="nikstil.com: a tiny retro desktop. Double-click TRANSLATR™, the world’s most monetized translator, or the GIF. Eight themes, one Recycle Bin.">
+  <meta name="theme-color" content="#1a73c4">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nikstil.com/">
+  <meta property="og:title" content="nikstilOS">
+  <meta property="og:description" content="A tiny retro desktop. Double-click things. It’s 2009 somewhere.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <!-- Theme and boot screen before the first paint (no flash). Keep the theme list in step with os.js. -->
+  <script>
+    try {
+      var ids = ['aero', 'y2k', 'skeuo', 'minimal', 'retro', 'luna', 'aqua', 'vapor']
+      var t = localStorage.getItem('nikstilos-theme') || localStorage.getItem('translatr-theme')
+      if (ids.indexOf(t) >= 0) document.documentElement.setAttribute('data-theme', t)
+      if (sessionStorage.getItem('nikstilos-booted') || matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('booted')
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="/os/os.css">
+  <link rel="stylesheet" href="/os/cursors.css">
+  <!-- Filled in by scripts/build-site.mjs from the game's own data. -->
+  <script type="application/json" id="game-facts">{"endings":6,"items":27,"achievements":90,"themes":5}</script>
 </head>
 <body>
-  <main>
-    <h1>by and run by nikstil</h1>
-    <p class="sub">Pick one.</p>
+  <div class="wallpaper" aria-hidden="true">
+    <div class="wp-sky"></div>
+    <div class="wp-rays"></div>
+    <div class="wp-hills"></div>
+    <span class="wp-bubble" style="left:6%;top:58%;width:92px;height:92px"></span>
+    <span class="wp-bubble" style="left:31%;top:8%;width:62px;height:62px"></span>
+    <span class="wp-bubble" style="left:58%;top:66%;width:120px;height:120px"></span>
+    <span class="wp-bubble" style="left:78%;top:16%;width:54px;height:54px"></span>
+    <span class="wp-bubble" style="left:90%;top:52%;width:84px;height:84px"></span>
+    <div class="wp-noise"></div>
+  </div>
 
-    <div class="choices">
-      <a class="card" href="/gif/">
-        <div class="art">
-          <img src="/animation.gif" alt="Preview of the animated GIF">
-        </div>
-        <div class="caption">
-          <h2>The GIF</h2>
-          <p>type shit.</p>
-          <span class="arrow" aria-hidden="true">→</span>
-        </div>
-      </a>
-
-      <a class="card translatr" href="/translatr/">
-        <div class="art desktop" aria-hidden="true">
-          <span class="bubble" style="width:54px;height:54px;left:8%;top:12%"></span>
-          <span class="bubble" style="width:30px;height:30px;right:12%;top:20%;animation-delay:-3s"></span>
-          <span class="bubble" style="width:80px;height:80px;right:6%;bottom:14%;animation-delay:-6s"></span>
-          <div class="window">
-            <div class="titlebar">🌐 TRANSLATR™ Ultra+ Pro Max <span class="caps"><i></i><i></i><i></i></span></div>
-            <div class="client">
-              <div class="fake-input">Type something to have it ignored…</div>
-              <div class="row">
-                <span class="tax">Truly a functional tool</span>
-                <span class="gel">Translate · $12</span>
-              </div>
-            </div>
-          </div>
-          <span class="orb">T</span>
-        </div>
-        <div class="caption">
-          <h2>TRANSLATR™</h2>
-          <p>Truly a functional tool.</p>
-          <span class="arrow" aria-hidden="true">→</span>
-        </div>
-      </a>
-    </div>
-
-    <footer>©nikstil</footer>
+  <main class="desktop" id="desktop" aria-label="Desktop">
+    <h1 class="sr-only">nikstilOS: the nikstil.com desktop</h1>
+    <ul class="desk-icons">
+      <li><button class="desk-icon" data-app="pc"><span class="di-img" aria-hidden="true">💻</span><span class="di-label">This PC</span></button></li>
+      <li><button class="desk-icon" data-app="translatr"><span class="di-img" aria-hidden="true">🌐</span><span class="di-label">TRANSLATR™</span></button></li>
+      <li><button class="desk-icon" data-app="gif"><span class="di-img" aria-hidden="true">🎞️</span><span class="di-label">The GIF</span></button></li>
+      <li><button class="desk-icon" data-app="readme"><span class="di-img" aria-hidden="true">📄</span><span class="di-label">readme.txt</span></button></li>
+      <li><button class="desk-icon" data-app="themes"><span class="di-img" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
+      <li><button class="desk-icon" data-app="bin"><span class="di-img" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
+    </ul>
   </main>
+
+  <div id="windows"></div>
+
+  <nav class="taskbar" aria-label="Taskbar">
+    <button class="start-btn" id="start-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="start-menu">
+      <span class="start-orb" aria-hidden="true"><span class="start-glyph">n</span></span>
+      <span class="start-label">Start</span>
+    </button>
+    <div class="tasks" id="tasks"></div>
+    <div class="tray">
+      <time class="clock" id="clock"></time>
+      <button class="show-desktop" id="show-desktop" aria-label="Show desktop" title="Show desktop"></button>
+    </div>
+  </nav>
+
+  <div class="start-menu" id="start-menu" role="menu" hidden>
+    <div class="sm-banner" aria-hidden="true">nikstil<b>OS</b></div>
+    <div class="sm-main">
+      <div class="sm-head"><span class="sm-avatar" aria-hidden="true">🙂</span><span>Guest</span></div>
+      <div class="sm-cols">
+        <ul class="sm-list">
+          <li><button class="sm-item" role="menuitem" data-app="translatr"><span aria-hidden="true">🌐</span> TRANSLATR™</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="gif"><span aria-hidden="true">🎞️</span> The GIF</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="readme"><span aria-hidden="true">📄</span> readme.txt</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="pc"><span aria-hidden="true">💻</span> This PC</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="bin"><span aria-hidden="true">🗑️</span> Recycle Bin</button></li>
+        </ul>
+        <div class="sm-side">
+          <div class="sm-heading">Themes</div>
+          <ul class="sm-themes" id="sm-themes"></ul>
+        </div>
+      </div>
+      <div class="sm-foot">
+        <button class="sm-power" id="shutdown-btn" role="menuitem"><span aria-hidden="true">⏻</span> Shut down</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ctx-menu" id="ctx-menu" role="menu" hidden>
+    <button class="ctx-item" role="menuitem" data-app="themes">Personalize…</button>
+    <button class="ctx-item" role="menuitem" data-action="refresh">Refresh</button>
+    <button class="ctx-item" role="menuitem" data-action="folder">New folder</button>
+    <hr>
+    <button class="ctx-item" role="menuitem" data-app="pc">About nikstilOS</button>
+  </div>
+
+  <div class="boot" id="boot" aria-hidden="true">
+    <div class="boot-logo">nikstil<b>OS</b></div>
+    <div class="boot-bar"><i></i><i></i><i></i></div>
+    <div class="boot-copy">Starting up. Please do not turn off your vibes.</div>
+  </div>
+
+  <div class="shutdown" id="shutdown" role="dialog" aria-label="Shut down" hidden>
+    <p class="shutdown-wait">nikstilOS is shutting down…</p>
+    <p class="shutdown-safe">It’s now safe to turn off your computer.</p>
+    <p class="shutdown-hint">(or click anywhere to turn it back on)</p>
+  </div>
+
+  <!-- ===== Window contents: edit freely, os.js only wires up the parts it names ===== -->
+
+  <template id="app-pc">
+    <div class="win-body pc">
+      <div class="pc-logo" aria-hidden="true">nikstil<b>OS</b></div>
+      <dl class="pc-specs">
+        <dt>Edition</dt><dd>nikstilOS Ultimate</dd>
+        <dt>Version</dt><dd>2026, build 1</dd>
+        <dt>Processor</dt><dd>1× Vibe Core @ 3.0 GHz</dd>
+        <dt>Memory</dt><dd>640 KB (ought to be enough for anybody)</dd>
+        <dt>System type</dt><dd>8-bit operating system on a 64-bit browser</dd>
+        <dt>Themes installed</dt><dd class="pc-themes">8</dd>
+        <dt>Registered to</dt><dd>you, probably</dd>
+      </dl>
+      <p class="muted">Genuine. Activated. Unlicensed for commercial use, emotional support or taxes.</p>
+    </div>
+  </template>
+
+  <template id="app-translatr">
+    <div class="win-body translatr">
+      <div class="tr-preview" aria-hidden="true">
+        <div class="tr-mini">
+          <div class="tr-mini-bar">🌐 TRANSLATR™ <i></i><i></i><i></i></div>
+          <div class="tr-mini-client">
+            <div class="tr-mini-input">Type something to have it ignored…</div>
+            <div class="tr-mini-row"><span>2 vowel-taxed words</span><b>Translate · $60</b></div>
+          </div>
+        </div>
+      </div>
+      <h3 class="tr-name">TRANSLATR™ Ultra+ Pro Max</h3>
+      <p>The world’s most monetized translator. $10 a word, vowels extra, every second request refused (and billed).</p>
+      <ul class="tr-facts">
+        <li><b class="f-endings">6</b> endings</li>
+        <li><b class="f-items">27</b> items in 3 Mystery Boxes</li>
+        <li><b class="f-achievements">90</b> achievements</li>
+        <li>a <b>Daily Challenge</b></li>
+      </ul>
+      <p class="tr-save muted">Checking for a save on this device…</p>
+    </div>
+    <div class="win-foot">
+      <a class="btn btn-primary tr-launch" href="/translatr/">▶ Launch</a>
+    </div>
+  </template>
+
+  <template id="app-gif">
+    <div class="win-body gif">
+      <button class="gif-frame" title="Click to toggle">
+        <img class="gif-img" src="/animation.gif" alt="The GIF (click to toggle)" width="480" height="270">
+      </button>
+      <p class="gif-missing muted" hidden>The GIF lives on nikstil.com, so it only shows up there.</p>
+    </div>
+    <div class="win-foot">
+      <span class="status muted">animation.gif · click it</span>
+      <a class="btn" href="/gif/">⛶ Full screen</a>
+    </div>
+  </template>
+
+  <template id="app-readme">
+    <pre class="notepad" tabindex="0">nikstil.com
+===========
+
+Welcome to nikstilOS, the operating system nobody asked for.
+
+On this desktop:
+  TRANSLATR™   a translator that charges per word and hates you
+  The GIF      it’s a GIF. Click it.
+
+Tips:
+  • Double-click things. It’s 2009 somewhere.
+  • Start → Themes has eight looks. Three of them
+    are so new the game doesn’t have them yet.
+  • Right-click the desktop.
+  • Don’t open the Recycle Bin.
+
+More soon. Probably.</pre>
+  </template>
+
+  <template id="app-themes">
+    <div class="win-body themes">
+      <p class="muted">Pick a look. The first five are TRANSLATR™’s, the last three are new.</p>
+      <div class="theme-grid" id="theme-grid"></div>
+    </div>
+  </template>
+
+  <template id="app-bin">
+    <div class="win-body bin">
+      <ul class="bin-list">
+        <li><button class="bin-file" data-joke="old"><span aria-hidden="true">📄</span> old_homepage.html <small>“Pick one.”</small></button></li>
+        <li><button class="bin-file" data-joke="motivation"><span aria-hidden="true">⚙️</span> motivation.exe <small>0 KB</small></button></li>
+        <li><button class="bin-file" data-joke="sleep"><span aria-hidden="true">📕</span> sleep_schedule.pdf <small>corrupted</small></button></li>
+        <li><button class="bin-file" data-joke="refund"><span aria-hidden="true">🧾</span> TRANSLATR_refund_policy.txt <small>0 bytes</small></button></li>
+        <li><button class="bin-file" data-joke="ideas"><span aria-hidden="true">💡</span> ending_ideas_v7_FINAL(2).docx</button></li>
+      </ul>
+    </div>
+    <div class="win-foot">
+      <span class="status muted">5 items</span>
+      <button class="btn bin-empty">Empty Recycle Bin</button>
+    </div>
+  </template>
+
+  <script src="/os/os.js" defer></script>
 </body>
 </html>
