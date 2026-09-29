@@ -19,14 +19,14 @@
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', readme: '📄', themes: '🎨', bin: '🗑️', avatar: '🙂' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', readme: '📜', themes: '🔮', bin: '⚰️', avatar: '💀' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', readme: '📒', themes: '🧵', bin: '🪣', avatar: '😊' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', readme: '≡', themes: '◧', bin: '⌫', avatar: '☺' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', readme: '📝', themes: '🖼️', bin: '🚮', avatar: '👾' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', readme: '📝', themes: '🖌️', bin: '♻️', avatar: '🦋' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', readme: '📃', themes: '🖍️', bin: '🧺', avatar: '🌸' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', readme: '💾', themes: '🌴', bin: '🥤', avatar: '😎' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎' },
   }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
@@ -38,7 +38,6 @@
     pc: { title: 'System Properties', icon: 'pc', width: 420 },
     translatr: { title: 'TRANSLATR™ Ultra+ Pro Max', icon: 'translatr', width: 460, init: initTranslatr },
     gif: { title: 'animation.gif - Image Viewer', icon: 'gif', width: 540, init: initGif },
-    readme: { title: 'readme.txt - Notepad', icon: 'readme', width: 480 },
     themes: { title: 'Themes', icon: 'themes', width: 600, init: initThemes },
     bin: { title: 'Recycle Bin', icon: 'bin', width: 460, init: initBin },
   }
@@ -516,11 +515,17 @@
   }
 
   const shutdown = $('#shutdown')
+  // Shut down closes the tab. Browsers only allow that when the tab has nothing else in its history
+  // (nikstil.com typed into a new tab, or opened in one); otherwise the close is refused and you get
+  // the classic "safe to turn off" screen instead (click it to boot back up).
   $('#shutdown-btn').addEventListener('click', () => {
     closeMenus()
     shutdown.hidden = false
     shutdown.classList.remove('is-safe')
-    setTimeout(() => shutdown.classList.add('is-safe'), reducedMotion() ? 0 : 1400)
+    setTimeout(() => {
+      window.close()
+      setTimeout(() => shutdown.classList.add('is-safe'), 250)
+    }, reducedMotion() ? 0 : 1400)
   })
   shutdown.addEventListener('click', () => {
     if (!shutdown.classList.contains('is-safe')) return

@@ -381,7 +381,6 @@ html:not(.icons-ready) [data-icon] { visibility: hidden; }
 .gif-img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: #000; }
 .gif-missing { padding: 30px 10px; text-align: center; color: #bbb; }
 
-.notepad { flex: 1; min-height: 300px; overflow: auto; padding: 10px 12px; font: 14px/1.5 var(--font-mono); white-space: pre-wrap; color: #000; background: #fff; outline: none; }
 
 .themes .muted { font-size: 13px; }
 .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
@@ -887,7 +886,6 @@ html[data-theme="aqua"] .sm-power:hover { box-shadow: none; filter: brightness(0
 html[data-theme="aqua"] .ctx-menu { padding: 4px; border-radius: 6px; background: rgb(255 255 255 / 0.95); border-color: rgb(0 0 0 / 0.2); box-shadow: 0 8px 24px rgb(0 0 0 / 0.3); }
 html[data-theme="aqua"] .ctx-item { border: 0; border-radius: 4px; }
 html[data-theme="aqua"] .ctx-item:hover, html[data-theme="aqua"] .ctx-item:focus-visible { color: #fff; background: #3875d7; }
-html[data-theme="aqua"] .notepad { border-top: 1px solid #c8c8c8; }
 html[data-theme="aqua"] .pc-logo { color: #1a62d6; }
 html[data-theme="aqua"] .theme-card { border-radius: 8px; background: rgb(255 255 255 / 0.85); border-color: #c8c8c8; }
 html[data-theme="aqua"] .theme-card:hover, html[data-theme="aqua"] .theme-card[aria-pressed="true"] { border-color: #3875d7; box-shadow: 0 0 0 3px rgb(56 117 215 / 0.35); }
@@ -982,7 +980,6 @@ html[data-theme="vapor"] .ctx-menu { background: var(--vp-face); border: 0; box-
 html[data-theme="vapor"] .ctx-item { border: 0; border-radius: 0; }
 html[data-theme="vapor"] .ctx-item:hover, html[data-theme="vapor"] .ctx-item:focus-visible { color: #fff; background: linear-gradient(90deg, #ff71ce, #b967ff); }
 html[data-theme="vapor"] .ctx-menu hr { border-color: #9a72cf; }
-html[data-theme="vapor"] .notepad { font-size: 20px; line-height: 1.25; color: #2b0f4f; background: #fff6ff; }
 html[data-theme="vapor"] .pc-logo { font: 44px/1 var(--font-title); letter-spacing: 0.1em; color: #ff71ce; text-shadow: 3px 3px 0 #01cdfe; }
 html[data-theme="vapor"] .tr-facts li { border-radius: 0; background: #fff; border-color: #d9b8f5; }
 html[data-theme="vapor"] .theme-card { border-radius: 0; border: 0; background: var(--vp-face); box-shadow: var(--vp-raised); }
