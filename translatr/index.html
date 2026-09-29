@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a73c4" />
     <title>TRANSLATR™ Ultra+ Pro Max</title>
-    <meta name="description" content="A satirical, hyper-monetized translator game. It charges per word, refuses every second request, and has five endings. One of them costs a quintillion dollars." />
+    <meta name="description" content="A satirical, hyper-monetized translator game. It charges per word, refuses every second request, and has six endings. One of them costs a quintillion dollars." />
     <link rel="icon" type="image/svg+xml" href="/translatr/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/translatr/favicon-32.png" />
     <link rel="apple-touch-icon" href="/translatr/apple-touch-icon.png" />
@@ -13,7 +13,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="nikstil.com" />
     <meta property="og:title" content="TRANSLATR™ Ultra+ Pro Max" />
-    <meta property="og:description" content="The world’s most monetized translator. $10 a word, vowels extra, five endings, zero refunds." />
+    <meta property="og:description" content="The world’s most monetized translator. $10 a word, vowels extra, six endings, zero refunds." />
     <meta property="og:url" content="https://nikstil.com/translatr/" />
     <meta property="og:image" content="https://nikstil.com/translatr/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -21,9 +21,9 @@
     <meta property="og:image:alt" content="TRANSLATR™ Ultra+ Pro Max: a satirical translator game" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="TRANSLATR™ Ultra+ Pro Max" />
-    <meta name="twitter:description" content="The world’s most monetized translator. $10 a word, vowels extra, five endings, zero refunds." />
+    <meta name="twitter:description" content="The world’s most monetized translator. $10 a word, vowels extra, six endings, zero refunds." />
     <meta name="twitter:image" content="https://nikstil.com/translatr/og-image.png" />
-    <!-- Apply the saved theme, text size and motion setting before the first paint (no flash). -->
+    <!-- Apply the saved theme, text size, motion and graphics settings before the first paint (no flash). -->
     <script>
       try {
         var t = localStorage.getItem('translatr-theme')
@@ -36,6 +36,11 @@
         }
         var mode = p && p.colorMode && p.colorMode !== 'auto' ? p.colorMode : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
         document.documentElement.setAttribute('data-mode', mode)
+        // Graphics: same rule as graphicsMode() in src/lib/settings.js.
+        var g = p && p.graphics
+        var weak = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 2
+        var lite = g === 'lite' || (g !== 'full' && (weak || (p && p.slowDevice)))
+        document.documentElement.setAttribute('data-perf', lite ? 'lite' : 'full')
       } catch (e) {}
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -46,9 +51,9 @@
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Comic+Neue:wght@700&family=Orbitron:wght@500;700;900&family=UnifrakturMaguntia&family=Inter:wght@300;400;500;600&family=Pixelify+Sans:wght@400;600;700&family=Press+Start+2P&family=VT323&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/translatr/assets/index-CPUnjuIn.js"></script>
+    <script type="module" crossorigin src="/translatr/assets/index-DXJ_e2_R.js"></script>
     <link rel="modulepreload" crossorigin href="/translatr/assets/vendor-C6OhNUgE.js">
-    <link rel="stylesheet" crossorigin href="/translatr/assets/index-B6YphMTP.css">
+    <link rel="stylesheet" crossorigin href="/translatr/assets/index-BdH6iP9T.css">
   </head>
   <body>
     <div id="root"></div>
