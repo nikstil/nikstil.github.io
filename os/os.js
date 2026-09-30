@@ -4,17 +4,18 @@
 ;(() => {
   'use strict'
 
-  // The five TRANSLATR™ themes (same ids, so the game's choice carries over) plus three new ones.
-  // `fonts` is a Google Fonts family query, loaded the first time the theme is used.
+  // The same eight themes as TRANSLATR™ (same ids, so the game's choice carries over), in the same
+  // order: the era each one comes from. `fonts` is a Google Fonts family query, loaded the first
+  // time the theme is used.
   const THEMES = [
-    { id: 'aero', name: 'Aero', blurb: 'Glass, gloss and optimism (2009)', swatch: ['#1360b9', '#9fd6f5', '#7fcf55'], chrome: '#1a73c4', start: '' },
-    { id: 'y2k', name: 'Y2K Cyber-Goth', blurb: 'Chrome, barbed wire, dial-up angst', swatch: ['#07070b', '#c9ced8', '#b6ff1a'], chrome: '#07070b', start: 'nikstil', fonts: 'Orbitron:wght@500;700;900&family=UnifrakturMaguntia' },
-    { id: 'skeuo', name: 'Skeuomorphism', blurb: 'Leather, brushed metal, real fake stitching', swatch: ['#6b4327', '#d6d6d6', '#d4a93f'], chrome: '#5a3a22', start: 'Start' },
-    { id: 'minimal', name: 'Minimalist', blurb: 'Nothing. Beautifully.', swatch: ['#ffffff', '#000000', '#ffffff'], chrome: '#ffffff', start: 'Start', fonts: 'Inter:wght@300;400;500;600' },
-    { id: 'retro', name: 'Retro 95', blurb: 'Beige boxes, pixels, a 56k modem', swatch: ['#008080', '#cfc8b6', '#000080'], chrome: '#008080', start: 'Start', fonts: 'Pixelify+Sans:wght@400;600;700&family=Press+Start+2P' },
+    { id: 'retro', name: 'Retro 95', blurb: 'Beige boxes, pixels, a 56k modem (1995)', swatch: ['#008080', '#cfc8b6', '#000080'], chrome: '#008080', start: 'Start', fonts: 'Pixelify+Sans:wght@400;600;700&family=Press+Start+2P' },
+    { id: 'y2k', name: 'Y2K Cyber-Goth', blurb: 'Chrome, barbed wire, dial-up angst (1999)', swatch: ['#07070b', '#c9ced8', '#b6ff1a'], chrome: '#07070b', start: 'nikstil', fonts: 'Orbitron:wght@500;700;900&family=UnifrakturMaguntia' },
     { id: 'luna', name: 'Luna', blurb: 'A green start button and a very green hill (2001)', swatch: ['#245edb', '#3c9a3c', '#8cc2f5'], chrome: '#245edb', start: 'start' },
     { id: 'aqua', name: 'Aqua', blurb: 'Pinstripes, gel and traffic lights (2002)', swatch: ['#1d63d3', '#ececec', '#ff5f57'], chrome: '#1d63d3', start: '' },
-    { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', start: 'スタート', fonts: 'VT323' },
+    { id: 'aero', name: 'Aero', blurb: 'Glass, gloss and optimism (2009)', swatch: ['#1360b9', '#9fd6f5', '#7fcf55'], chrome: '#1a73c4', start: '' },
+    { id: 'skeuo', name: 'Skeuomorphism', blurb: 'Leather, brushed metal, real fake stitching (2010)', swatch: ['#6b4327', '#d6d6d6', '#d4a93f'], chrome: '#5a3a22', start: 'Start' },
+    { id: 'minimal', name: 'Minimalist', blurb: 'Nothing. Beautifully. (2013)', swatch: ['#ffffff', '#000000', '#ffffff'], chrome: '#ffffff', start: 'Start', fonts: 'Inter:wght@300;400;500;600' },
+    { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid (199X, forever)', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', start: 'スタート', fonts: 'VT323' },
   ]
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
@@ -82,7 +83,7 @@
   }
 
   function applyTheme(id, save = true) {
-    const theme = THEMES.find((t) => t.id === id) ?? THEMES[0]
+    const theme = THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === 'aero')
     document.documentElement.dataset.theme = theme.id
     $('meta[name="theme-color"]').content = theme.chrome
     $('.start-label').textContent = theme.start
