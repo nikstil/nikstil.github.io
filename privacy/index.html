@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy · nikstil.com</title>
+  <meta name="description" content="What nikstil.com keeps about you when you make an account, and how to delete it.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    :root { --bg: #eef3f8; --card: #fff; --ink: #16222f; --muted: #5a6776; --line: #d5dee8; --link: #1a5fb4; color-scheme: light; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0f1620; --card: #17212d; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3848; --link: #8ec5ff; color-scheme: dark; }
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body { padding: 32px 16px 48px; font: 16px/1.6 "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+    main { max-width: 680px; margin: 0 auto; padding: 28px clamp(18px, 5vw, 40px); border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+    h1 { font-size: 28px; line-height: 1.2; margin-bottom: 6px; }
+    h2 { font-size: 18px; margin: 26px 0 6px; }
+    p, ul { margin-top: 8px; }
+    ul { padding-left: 22px; }
+    li + li { margin-top: 4px; }
+    .muted { color: var(--muted); }
+    a { color: var(--link); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Privacy</h1>
+    <p class="muted">For nikstil.com, nikstilOS and TRANSLATR™. Short version: only what the online features need, nothing sold, no ads, no tracking.</p>
+
+    <h2>Without an account</h2>
+    <p>Nothing about you is sent anywhere. Your theme, your TRANSLATR™ save and similar settings are kept in your own browser (local storage) and never leave it.</p>
+
+    <h2>With an account</h2>
+    <p>Making an account (Start → Account) turns on the leaderboards and nikstil Messenger. The site then keeps:</p>
+    <ul>
+      <li><b>Your username and password.</b> No email address, no real name. The password is stored scrambled (hashed) by the database provider, so nobody can read it, including the site owner.</li>
+      <li><b>Your speedrun and Daily Challenge times</b>, with when they happened and which ending you got. Your username and best times are public on the leaderboards.</li>
+      <li><b>Your messages</b>, who they were between, when they were sent and whether they’ve been read. Only you and the person you’re talking to can see them in the app. They aren’t end-to-end encrypted, though: they’re stored on the server, so the site owner could technically read them. If you report a message, the owner is shown a copy so they can deal with it.</li>
+      <li><b>Who you’ve blocked</b> (only you can see this) and <b>reports</b> you send.</li>
+      <li><b>A sign-in token</b> in your browser, so you stay signed in.</li>
+    </ul>
+    <p>This is stored with <a href="https://supabase.com/privacy" rel="noopener">Supabase</a>, which runs the database. It isn’t shared with anyone else or used for anything but the site.</p>
+
+    <h2>Age</h2>
+    <p>You need to be 13 or older to make an account.</p>
+
+    <h2>Deleting everything</h2>
+    <p>Open <b>Start → Account → Delete account</b>. Your account, times, messages (on both sides), blocks and reports are deleted straight away, for good. If you just want messages to stop, you can turn off “Let other players message me” or block someone instead.</p>
+
+    <h2>Questions</h2>
+    <p>Message <b>nikstil</b> on nikstil Messenger.</p>
+
+    <p class="muted" style="margin-top: 28px"><a href="/">← Back to nikstil.com</a></p>
+  </main>
+</body>
+</html>

@@ -55,6 +55,8 @@
       <li><button class="desk-icon" data-app="gif"><span class="di-img" data-icon="gif" aria-hidden="true">🎞️</span><span class="di-label">The GIF</span></button></li>
       <li><button class="desk-icon" data-app="themes"><span class="di-img" data-icon="themes" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
       <li><button class="desk-icon" data-app="bin"><span class="di-img" data-icon="bin" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
+      <li data-online="leaderboard" hidden><button class="desk-icon" data-app="leaderboard"><span class="di-img" data-icon="leaderboard" aria-hidden="true">🏆</span><span class="di-label">Leaderboards</span></button></li>
+      <li data-online="messenger" hidden><button class="desk-icon" data-app="messenger"><span class="di-img" data-icon="messenger" aria-hidden="true">💬</span><span class="di-label">Messenger</span></button></li>
     </ul>
   </main>
 
@@ -67,6 +69,7 @@
     </button>
     <div class="tasks" id="tasks"></div>
     <div class="tray">
+      <button class="tray-btn msgr-tray" id="msgr-tray" aria-label="nikstil Messenger" title="nikstil Messenger" hidden><span data-icon="messenger" aria-hidden="true">💬</span><b class="tray-badge" hidden></b></button>
       <button class="tray-btn" id="fullscreen-btn" aria-label="Full screen" title="Full screen" hidden><svg class="fs-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path class="fs-enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/><path class="fs-exit" d="M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4"/></svg></button>
       <time class="clock" id="clock"></time>
       <button class="show-desktop" id="show-desktop" aria-label="Show desktop" title="Show desktop"></button>
@@ -83,6 +86,9 @@
           <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> <span class="sm-label">The GIF</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">This PC</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
+          <li data-online="leaderboard" hidden><button class="sm-item" role="menuitem" data-app="leaderboard"><span data-icon="leaderboard" aria-hidden="true">🏆</span> <span class="sm-label">Leaderboards</span></button></li>
+          <li data-online="messenger" hidden><button class="sm-item" role="menuitem" data-app="messenger"><span data-icon="messenger" aria-hidden="true">💬</span> <span class="sm-label">Messenger</span></button></li>
+          <li data-online="account" hidden><button class="sm-item" role="menuitem" data-app="account"><span data-icon="account" aria-hidden="true">👤</span> <span class="sm-label">Account</span></button></li>
           <li><button class="sm-item" role="menuitem" data-action="fullscreen" hidden><span aria-hidden="true"><svg class="fs-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path class="fs-enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/><path class="fs-exit" d="M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4"/></svg></span><span class="fs-label">Full screen</span></button></li>
         </ul>
         <div class="sm-side">
@@ -104,6 +110,9 @@
     <hr>
     <button class="ctx-item" role="menuitem" data-app="pc">About nikstilOS</button>
   </div>
+
+  <!-- New-message notification (os/online-apps.js) -->
+  <button class="balloon" id="balloon" hidden><span class="balloon-title"></span><span class="balloon-text"></span></button>
 
   <div class="boot" id="boot" aria-hidden="true">
     <div class="boot-logo">nikstil<b>OS</b></div>
@@ -197,6 +206,95 @@
     </div>
   </template>
 
+  <template id="app-leaderboard">
+    <div class="win-body lb">
+      <div class="lb-bar">
+        <label class="lb-pick"><span class="sr-only">Leaderboard</span><select class="lb-board"></select></label>
+        <button class="btn lb-refresh" title="Refresh" aria-label="Refresh">⟳</button>
+      </div>
+      <div class="lb-wrap">
+        <table class="lb-table">
+          <thead><tr><th class="lb-rank">#</th><th>Player</th><th class="lb-time">Time</th><th class="lb-ending">Ending</th><th class="lb-when">When</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="lb-empty muted" hidden></p>
+      </div>
+      <p class="lb-me"></p>
+      <p class="lb-how muted">Speedrun and Daily Challenge times post here by themselves when you play TRANSLATR™ signed in. The server times every run too.</p>
+    </div>
+    <div class="win-foot">
+      <span class="status muted lb-status"></span>
+      <a class="btn btn-primary" href="/translatr/">▶ Play TRANSLATR™</a>
+    </div>
+  </template>
+
+  <template id="app-messenger">
+    <div class="win-body msgr">
+      <div class="msgr-out">
+        <p class="msgr-out-text">Sign in to chat with other players.</p>
+        <button class="btn btn-primary msgr-signin">Sign in or create an account</button>
+      </div>
+      <aside class="msgr-side" aria-label="Chats">
+        <form class="msgr-find" autocomplete="off">
+          <label class="sr-only" for="msgr-find-input">Find a player</label>
+          <input type="search" id="msgr-find-input" class="msgr-find-input" placeholder="Find a player…" maxlength="20" spellcheck="false" autocapitalize="none">
+          <ul class="msgr-suggest" hidden></ul>
+        </form>
+        <ul class="msgr-list"></ul>
+        <p class="msgr-none muted" hidden>No chats yet. Find a player above to say hi.</p>
+      </aside>
+      <section class="msgr-chat" aria-label="Chat">
+        <header class="msgr-head">
+          <button class="msgr-back btn" aria-label="Back to chats">‹</button>
+          <b class="msgr-with"></b>
+          <span class="msgr-tools">
+            <button class="btn msgr-block"></button>
+            <button class="btn msgr-report">Report</button>
+          </span>
+        </header>
+        <ol class="msgr-log" aria-live="polite"></ol>
+        <form class="msgr-compose">
+          <label class="sr-only" for="msgr-text">Message</label>
+          <textarea id="msgr-text" class="msgr-text" rows="1" maxlength="1000" placeholder="Type a message…"></textarea>
+          <button class="btn btn-primary msgr-send">Send</button>
+        </form>
+        <p class="msgr-pick muted">Pick a chat, or find a player to start one.</p>
+      </section>
+    </div>
+  </template>
+
+  <template id="app-account">
+    <div class="win-body acct">
+      <p class="acct-off muted" hidden>Online features aren’t switched on yet.</p>
+      <form class="acct-form" hidden>
+        <div class="acct-tabs" role="tablist">
+          <button type="button" role="tab" class="acct-tab" data-mode="in" aria-selected="true">Sign in</button>
+          <button type="button" role="tab" class="acct-tab" data-mode="up" aria-selected="false">Create account</button>
+        </div>
+        <label class="acct-field"><span>Username</span><input name="username" class="acct-user" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" required></label>
+        <label class="acct-field"><span>Password</span><input name="password" type="password" class="acct-pass" autocomplete="current-password" minlength="6" required></label>
+        <label class="acct-age" hidden><input type="checkbox" class="acct-agree"> <span>I’m 13 or older and I’ve read the <a href="/privacy/" target="_blank" rel="noopener">privacy notice</a>.</span></label>
+        <p class="acct-error" role="alert" hidden></p>
+        <button class="btn btn-primary acct-go">Sign in</button>
+        <p class="acct-hint muted">No email needed. There’s no password reset either, so keep it somewhere safe.</p>
+      </form>
+      <div class="acct-in" hidden>
+        <div class="acct-card">
+          <span class="acct-avatar" data-icon="account" aria-hidden="true">👤</span>
+          <div><b class="acct-name"></b><small class="muted acct-since"></small></div>
+        </div>
+        <label class="acct-check"><input type="checkbox" class="acct-dms"> Let other players message me</label>
+        <div class="acct-buttons">
+          <button class="btn acct-signout">Sign out</button>
+          <button class="btn acct-delete">Delete account…</button>
+        </div>
+        <p class="muted acct-links"><a href="/privacy/" target="_blank" rel="noopener">Privacy</a></p>
+      </div>
+    </div>
+  </template>
+
+  <script src="/online/online.js" defer></script>
+  <script src="/os/online-apps.js" defer></script>
   <script src="/os/os.js" defer></script>
 </body>
 </html>

@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <!-- Scripts only from this site, network only to this site and GitHub's API: the token never goes anywhere else. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com; form-action 'none'; base-uri 'none'">
+  <!-- Scripts only from this site; network only to this site, GitHub's API and Supabase: the GitHub token never goes anywhere else. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://*.supabase.co wss://*.supabase.co; form-action 'none'; base-uri 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#0b3f86">
   <title>Control Panel · nikstilOS</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/nikstil/admin.css">
+  <script src="/online/online.js" defer></script>
   <script src="/nikstil/admin.js" defer></script>
 </head>
 <body>
