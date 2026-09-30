@@ -1,14 +1,16 @@
 // DOOMSCROLL.EXE engine: a tiny raycaster, shared by TRANSLATR™'s arcade (translatr/assets/Shooter-*.js)
 // and the stand-alone game at nikstil.com/doomscroll/.
 //
+// Co-op: createEngine(..., { coop: true }) splits the screen for two players on one keyboard.
+//
 // Weapons: the shotgun (1), the AUTO-RIFLE 3000 (2, picked up on Episode 1's third level) and the Ban
 // Hammer (P, V, left Alt or right-click): a melee swing with twice the shotgun's damage that knocks
 // enemy shots back wherever you're looking. A knocked-back shot stuns whoever it hits for 3 seconds.
 //
 // The textures, map format and parser below come from the game's original build, unchanged (hence
 // the short names). Maps are rows of characters: '#' wall (the level's texture), other capitals and
-// '$' wall textures, 'X' exit switch, '@' start, i/c/n/m enemies, b the level's boss, h health,
-// a ammo, r the rifle.
+// '$' wall textures, 'X' exit switch, '@' start, i/c/n/m (and e/o/u/t, added below) enemies, b the
+// level's boss, h health, a ammo, r the rifle.
 const R = 320,
   de = 200,
   b = 168,
@@ -587,8 +589,22 @@ function Ze({ sky: e, floor: t }) {
 }
 
 // ================= Extra enemies and sprites =================
-// Episode 2 and 3 bosses (the nikstil.com app), recoloured from the Episode 1 ones.
+// Episode 2 and 3 enemies and bosses, and the final boss (the nikstil.com app).
 Object.assign(Z, {
+  // Episode 2
+  spam: { hp: 26, speed: 2.6, cool: 1.6, dmg: 6, scale: 0.6, ranged: !0, fly: !0 },
+  bot: { hp: 120, speed: 1.5, cool: 1.2, dmg: 14, scale: 0.85, melee: !0 },
+  upsell: {
+    hp: 560,
+    speed: 1.4,
+    cool: 1.2,
+    dmg: 11,
+    scale: 1.4,
+    ranged: !0,
+    spread: 5,
+    summon: { type: "spam", every: 6, max: 4 },
+    name: "UPSELL UNICORN · CHIEF REVENUE OFFICER",
+  },
   cfo: {
     hp: 650,
     speed: 1.2,
@@ -599,6 +615,20 @@ Object.assign(Z, {
     spread: 4,
     summon: { type: "cookie", every: 7, max: 3 },
     name: "PENNY PINCHER · CFO",
+  },
+  // Episode 3
+  influencer: { hp: 70, speed: 1.6, cool: 1.6, dmg: 9, scale: 0.85, ranged: !0, spread: 2 },
+  troll: { hp: 140, speed: 2.3, cool: 1, dmg: 15, scale: 0.9, melee: !0 },
+  mega: {
+    hp: 900,
+    speed: 1.3,
+    cool: 1,
+    dmg: 12,
+    scale: 1.5,
+    ranged: !0,
+    spread: 6,
+    summon: { type: "influencer", every: 7, max: 3 },
+    name: "MEGA-INFLUENCER · 40M FOLLOWERS",
   },
   algorithm: {
     hp: 1400,
@@ -611,8 +641,26 @@ Object.assign(Z, {
     summon: { type: "mimic", every: 8, max: 3 },
     name: "THE ALGORITHM · IT KNOWS WHAT YOU WANT",
   },
+  // The final boss: bullets bounce off, only the Ban Hammer hurts it. hp counts hammer hits: 20 to
+  // reach phase 2, then 30 more (on every difficulty).
+  final: {
+    hp: 20,
+    phase2: 30,
+    hits: !0,
+    speed: 1.1,
+    cool: 1.3,
+    dmg: 12,
+    scale: 1.75,
+    ranged: !0,
+    spread: 5,
+    summon: { type: "troll", every: 9, max: 2 },
+    name: "THE SHAREHOLDERS · INFINITE GROWTH",
+    final: !0,
+  },
 });
-/** A copy of a sprite with its colour channels swapped around (a quick new look for a boss). */
+Object.assign(Le, { e: "spam", o: "bot", u: "influencer", t: "troll" });
+
+/** A copy of a sprite with its colour channels swapped around (a quick new look). */
 function recolour(tex, order) {
   const out = new Uint32Array(tex.length);
   for (let i = 0; i < tex.length; i++) {
@@ -622,34 +670,231 @@ function recolour(tex, order) {
   }
   return out;
 }
+const eyes = (e, x, y, gap, colour = "#ff1f1f") => {
+  e.fillStyle = "#111";
+  e.fillRect(x, y, 7, 5);
+  e.fillRect(x + gap, y, 7, 5);
+  e.fillStyle = colour;
+  e.fillRect(x + 2, y + 1, 3, 3);
+  e.fillRect(x + gap + 2, y + 1, 3, 3);
+};
 Object.assign(he, {
   cfo: recolour(he.boss, [1, 2, 0]),
   algorithm: recolour(he.ceo, [2, 0, 1]),
-  // An enemy shot knocked back by the Ban Hammer.
+  // Spam email: an angry envelope that won't stop arriving.
+  spam: M((e) => {
+    e.fillStyle = "#f2f2f2";
+    e.fillRect(10, 20, 44, 30);
+    e.strokeStyle = "#999";
+    e.lineWidth = 2;
+    e.beginPath();
+    e.moveTo(10, 20);
+    e.lineTo(32, 38);
+    e.lineTo(54, 20);
+    e.stroke();
+    eyes(e, 20, 36, 17);
+    e.fillStyle = "#e02020";
+    e.beginPath();
+    e.arc(50, 18, 8, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "#fff";
+    e.font = "bold 9px Arial";
+    e.textAlign = "center";
+    e.fillText("99+", 50, 21);
+  }),
+  // Chatbot: "How can I help you today?" (it can't).
+  bot: M((e) => {
+    e.fillStyle = "#2b9fd9";
+    e.beginPath();
+    e.roundRect?.(8, 10, 48, 38, 8) ?? e.rect(8, 10, 48, 38);
+    e.fill();
+    e.beginPath();
+    e.moveTo(18, 46);
+    e.lineTo(14, 58);
+    e.lineTo(28, 47);
+    e.fill();
+    e.fillStyle = "#dff4ff";
+    e.fillRect(16, 18, 32, 18);
+    e.fillStyle = "#111";
+    e.fillRect(22, 23, 6, 6);
+    e.fillRect(36, 23, 6, 6);
+    e.fillRect(26, 31, 12, 2);
+    e.fillStyle = "#ffd24a";
+    e.fillRect(31, 4, 2, 7);
+    e.fillRect(29, 2, 6, 3);
+    e.fillStyle = "#fff";
+    e.font = "bold 5px Arial";
+    e.textAlign = "center";
+    e.fillText("HOW CAN I HELP?", 32, 44);
+  }),
+  // Influencer: a phone on a ring light.
+  influencer: M((e) => {
+    e.strokeStyle = "#fff5c4";
+    e.lineWidth = 5;
+    e.beginPath();
+    e.arc(32, 26, 20, 0, Math.PI * 2);
+    e.stroke();
+    e.fillStyle = "#555";
+    e.fillRect(30, 44, 4, 18);
+    e.fillStyle = "#111";
+    e.fillRect(22, 10, 20, 34);
+    e.fillStyle = "#f7c6a3";
+    e.fillRect(25, 14, 14, 18);
+    e.fillStyle = "#5a3212";
+    e.fillRect(25, 13, 14, 4);
+    e.fillStyle = "#111";
+    e.fillRect(27, 20, 3, 2);
+    e.fillRect(34, 20, 3, 2);
+    e.fillStyle = "#ff2d6f";
+    e.fillRect(29, 26, 6, 3);
+    e.fillStyle = "#ff2d6f";
+    e.fillRect(24, 35, 16, 5);
+    e.fillStyle = "#fff";
+    e.font = "bold 4px Arial";
+    e.textAlign = "center";
+    e.fillText("LIVE", 32, 39);
+  }),
+  // Comment troll: green, grinning, typing "ratio".
+  troll: M((e) => {
+    e.fillStyle = "#5fa33a";
+    e.beginPath();
+    e.ellipse(32, 34, 22, 24, 0, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "#3f7a22";
+    e.fillRect(12, 20, 8, 6);
+    e.fillRect(44, 20, 8, 6);
+    eyes(e, 20, 24, 17, "#ffe14d");
+    e.fillStyle = "#1a1a1a";
+    e.fillRect(18, 40, 28, 8);
+    e.fillStyle = "#fff";
+    for (let x = 19; x < 45; x += 5) e.fillRect(x, 40, 3, 4);
+    e.fillStyle = "#e02020";
+    e.font = "bold 9px Impact, Arial";
+    e.textAlign = "center";
+    e.fillText("RATIO", 32, 62);
+  }),
+  // The Upsell Unicorn (Episode 2 boss): pink, horned, always offering an upgrade.
+  upsell: M((e) => {
+    e.fillStyle = "#ff8fd0";
+    e.beginPath();
+    e.ellipse(32, 38, 20, 22, 0, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "#ffd24a";
+    e.beginPath();
+    e.moveTo(28, 18);
+    e.lineTo(32, 0);
+    e.lineTo(36, 18);
+    e.fill();
+    e.fillStyle = "#8a2be2";
+    e.fillRect(12, 20, 8, 20);
+    eyes(e, 21, 30, 15);
+    e.fillStyle = "#fff";
+    e.fillRect(22, 44, 20, 6);
+    e.fillStyle = "#b3001b";
+    e.font = "bold 7px Arial";
+    e.textAlign = "center";
+    e.fillText("UPGRADE?", 32, 49);
+  }),
+  // The Mega-Influencer (Episode 3 boss): sunglasses, ring light, 40M followers.
+  mega: M((e) => {
+    e.strokeStyle = "#fff5c4";
+    e.lineWidth = 6;
+    e.beginPath();
+    e.arc(32, 28, 26, 0, Math.PI * 2);
+    e.stroke();
+    e.fillStyle = "#f7c6a3";
+    e.beginPath();
+    e.ellipse(32, 30, 16, 19, 0, 0, Math.PI * 2);
+    e.fill();
+    e.fillStyle = "#f5d142";
+    e.fillRect(15, 10, 34, 9);
+    e.fillStyle = "#111";
+    e.fillRect(18, 24, 12, 6);
+    e.fillRect(34, 24, 12, 6);
+    e.fillRect(30, 25, 4, 2);
+    e.fillStyle = "#ff2d6f";
+    e.fillRect(26, 38, 12, 4);
+    e.fillStyle = "#111";
+    e.fillRect(18, 52, 28, 9);
+    e.fillStyle = "#fff";
+    e.font = "bold 7px Arial";
+    e.textAlign = "center";
+    e.fillText("40M ♥", 32, 59);
+  }),
+  // The Shareholders: a suit with a stock chart for a head.
+  final: M((e) => {
+    e.fillStyle = "#1c1c24";
+    e.fillRect(14, 30, 36, 34);
+    e.fillRect(8, 32, 8, 26);
+    e.fillRect(48, 32, 8, 26);
+    e.fillStyle = "#fff";
+    e.beginPath();
+    e.moveTo(26, 30);
+    e.lineTo(32, 42);
+    e.lineTo(38, 30);
+    e.fill();
+    e.fillStyle = "#c0141c";
+    e.fillRect(30, 32, 4, 18);
+    e.fillStyle = "#0e3b1c";
+    e.fillRect(12, 2, 40, 28);
+    e.strokeStyle = "#39ff14";
+    e.lineWidth = 3;
+    e.beginPath();
+    e.moveTo(15, 26);
+    e.lineTo(24, 18);
+    e.lineTo(30, 22);
+    e.lineTo(38, 12);
+    e.lineTo(48, 5);
+    e.stroke();
+    e.fillStyle = "#39ff14";
+    e.beginPath();
+    e.moveTo(49, 2);
+    e.lineTo(50, 10);
+    e.lineTo(43, 6);
+    e.fill();
+    eyes(e, 17, 8, 13);
+  }),
+  // The other player, in co-op.
+  marine: M((e) => {
+    e.fillStyle = "#3f6f2a";
+    e.fillRect(20, 22, 24, 30);
+    e.fillStyle = "#2d4f1e";
+    e.fillRect(22, 52, 8, 12);
+    e.fillRect(34, 52, 8, 12);
+    e.fillStyle = "#4f8a34";
+    e.fillRect(22, 6, 20, 18);
+    e.fillStyle = "#9fe0ff";
+    e.fillRect(25, 12, 14, 6);
+    e.fillStyle = "#333";
+    e.fillRect(40, 30, 14, 5);
+  }),
+  // A knocked-back enemy shot.
   shotBack: M((e) => {
-    ((e.fillStyle = "#28e0ff"),
-      e.fillRect(24, 24, 16, 14),
-      (e.fillStyle = "#fff"),
-      e.fillRect(24, 24, 16, 3),
-      e.fillRect(28, 30, 8, 2));
+    e.fillStyle = "#28e0ff";
+    e.fillRect(24, 24, 16, 14);
+    e.fillStyle = "#fff";
+    e.fillRect(24, 24, 16, 3);
+    e.fillRect(28, 30, 8, 2);
   }),
   // The AUTO-RIFLE 3000, lying on the floor.
   rifle: M((e) => {
-    ((e.fillStyle = "#1c1c1c"),
-      e.fillRect(8, 44, 44, 6),
-      e.fillRect(4, 45, 6, 3),
-      (e.fillStyle = "#3b3b3b"),
-      e.fillRect(22, 42, 18, 10),
-      (e.fillStyle = "#6b4226"),
-      e.fillRect(40, 46, 16, 8),
-      (e.fillStyle = "#111"),
-      e.fillRect(28, 52, 6, 9),
-      (e.fillStyle = "#39ff14"),
-      e.fillRect(24, 44, 3, 2),
-      (e.fillStyle = "#888"),
-      e.fillRect(8, 44, 14, 1));
+    e.fillStyle = "#1c1c1c";
+    e.fillRect(8, 44, 44, 6);
+    e.fillRect(4, 45, 6, 3);
+    e.fillStyle = "#3b3b3b";
+    e.fillRect(22, 42, 18, 10);
+    e.fillStyle = "#6b4226";
+    e.fillRect(40, 46, 16, 8);
+    e.fillStyle = "#111";
+    e.fillRect(28, 52, 6, 9);
+    e.fillStyle = "#39ff14";
+    e.fillRect(24, 44, 3, 2);
+    e.fillStyle = "#888";
+    e.fillRect(8, 44, 14, 1);
   }),
 });
+he.final2 = recolour(he.final, [0, 2, 1]);
+he.marine2 = recolour(he.marine, [2, 1, 0]);
 
 // ================= The engine =================
 const W = R, // screen width (320)
@@ -669,13 +914,48 @@ const SHOTGUN_COOL = 0.8, // one shot, then the break-open reload
   DEFLECT_RANGE = 2,
   REFLECT_SPEED = 7.5,
   STUN = 3;
-const FIRE_KEYS = ["Space", "ControlLeft", "KeyF", "mouse", "touch-fire"],
-  MELEE_KEYS = ["KeyP", "KeyV", "AltLeft", "mouse2", "touch-melee"],
-  GAME_KEYS = new Set([
-    "KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyF", "KeyP", "KeyV", "AltLeft",
-    "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "ControlLeft", "ShiftLeft", "ShiftRight",
-    "Digit1", "Digit2",
-  ]);
+
+// Controls. Alone, player 1 also has the arrow keys and P. In co-op (split screen), player 2 gets them.
+const SOLO = {
+    fwd: ["KeyW", "ArrowUp", "touch-up"],
+    back: ["KeyS", "ArrowDown", "touch-down"],
+    left: ["KeyA"],
+    right: ["KeyD"],
+    turnL: ["KeyQ", "ArrowLeft", "touch-left"],
+    turnR: ["KeyE", "ArrowRight", "touch-right"],
+    fire: ["Space", "ControlLeft", "KeyF", "mouse", "touch-fire"],
+    melee: ["KeyP", "KeyV", "AltLeft", "mouse2", "touch-melee"],
+    run: ["ShiftLeft", "ShiftRight"],
+  },
+  P1 = {
+    fwd: ["KeyW"],
+    back: ["KeyS"],
+    left: ["KeyA"],
+    right: ["KeyD"],
+    turnL: ["KeyQ"],
+    turnR: ["KeyE"],
+    fire: ["Space", "ControlLeft", "KeyF", "mouse"],
+    melee: ["KeyV", "AltLeft", "mouse2"],
+    run: ["ShiftLeft"],
+  },
+  P2 = {
+    fwd: ["ArrowUp"],
+    back: ["ArrowDown"],
+    left: ["Comma"],
+    right: ["Period"],
+    turnL: ["ArrowLeft"],
+    turnR: ["ArrowRight"],
+    fire: ["ControlRight", "Enter", "NumpadEnter", "Numpad0"],
+    melee: ["KeyP", "ShiftRight", "Slash", "Numpad1"],
+    run: [],
+  };
+const GAME_KEYS = new Set([
+  ...Object.values(SOLO).flat(),
+  ...Object.values(P2).flat(),
+  "Digit1",
+  "Digit2",
+  "KeyO",
+].filter((k) => !k.startsWith("touch-") && !k.startsWith("mouse")));
 
 const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 const shotgunDamage = (depth) => (16 + Math.random() * 12) * (depth < 3 ? 1.5 : 1);
@@ -692,17 +972,21 @@ function frozen(c) {
 /**
  * Runs DOOMSCROLL in `canvas`. `levels` is the list of maps to play (one episode).
  * Callbacks: onHit() (the engine pauses: call resume()), onDeath(), onWin(stats), onSound(name), onKill().
+ * Sounds: shotgun, rifle, swing, whack, deflect, stun, phase, plus the game's own names.
+ * difficulty: { count, hp, dmg, speed } (see difficulty.js). coop: two players, split screen.
  */
 export function createEngine(
   canvas,
   levels,
-  { onHit, onDeath, onWin, onSound = () => {}, onKill = () => {}, difficulty = null } = {},
+  { onHit, onDeath, onWin, onSound = () => {}, onKill = () => {}, difficulty = null, coop = !1 } = {},
 ) {
-  // Difficulty (see difficulty.js): count doubles normal enemies; hp, dmg and speed scale them.
   let diff = { count: 1, hp: 1, dmg: 1, speed: 1, ...difficulty };
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
+  // Each player's view is drawn at 320×200 off screen, then copied into place (side by side in co-op).
+  const view = document.createElement("canvas");
+  view.width = W;
+  view.height = H;
+  const ctx = view.getContext("2d"),
+    out = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = !1;
   const frame = ctx.createImageData(W, VIEW),
     px = new Uint32Array(frame.data.buffer),
@@ -710,43 +994,50 @@ export function createEngine(
     parsed = [],
     skies = [],
     rifleLevel = levels.findIndex((l) => l.map.some((row) => row.includes("r")));
-  let level, sky, grid, walls, pl, enemies, pickups, shots, run, casings;
+  let level, sky, grid, walls, players, pl, enemies, pickups, shots, run;
   const keys = new Set();
   let raf = 0,
     last = 0,
     paused = !0,
     turnBy = 0,
-    switchedAt = 0;
+    switchedAt = 0,
+    lastHurt = null;
   const held = (list) => list.some((k) => keys.has(k));
+  const alive = () => players.filter((p) => !p.down);
+  function size() {
+    canvas.width = coop ? W * 2 : W;
+    canvas.height = H;
+    out.imageSmoothingEnabled = !1;
+  }
 
-  const makeEnemy = (type, x, y, from = null) => ({
-    type,
-    x,
-    y,
-    from,
-    hp: Z[type].hp * diff.hp,
-    maxHp: Z[type].hp * diff.hp,
-    cool: 1 + Math.random(),
-    flash: 0,
-    stun: 0,
-    awake: !!from,
-    dead: !1,
-    dieT: 0,
-    phase: Math.random() * 6,
-    summonT: Z[type].summon?.every ?? 0,
-  });
-
-  function load(i = 0, carry = null) {
-    level = levels[i];
-    const d = parsed[i] ?? (parsed[i] = Ve(level));
-    sky = skies[i] ?? (skies[i] = Ze(level));
-    grid = d.grid;
-    walls = d.tex;
-    const [fx, fy] = Ce[level.face] ?? Ce.N,
-      hasRifle = carry?.rifle ?? (rifleLevel >= 0 && i > rifleLevel);
-    pl = {
-      x: d.start.x,
-      y: d.start.y,
+  const makeEnemy = (type, x, y, from = null) => {
+    const kind = Z[type],
+      hpMult = kind.hits ? 1 : diff.hp; // the final boss counts hits, not health
+    return {
+      type,
+      x,
+      y,
+      from,
+      hp: kind.hp * hpMult,
+      maxHp: kind.hp * hpMult,
+      phase: 1,
+      cool: 1 + Math.random(),
+      flash: 0,
+      stun: 0,
+      shield: 0,
+      awake: !!from,
+      dead: !1,
+      dieT: 0,
+      wobble: Math.random() * 6,
+      summonT: kind.summon?.every ?? 0,
+    };
+  };
+  function makePlayer(n, start, fx, fy, carry, levelIndex) {
+    const hasRifle = carry?.rifle ?? (rifleLevel >= 0 && levelIndex > rifleLevel);
+    return {
+      n,
+      x: start.x + (n ? 0.3 : 0),
+      y: start.y + (n ? 0.3 : 0),
       dx: fx,
       dy: fy,
       px: -fy * 0.66,
@@ -755,6 +1046,7 @@ export function createEngine(
       ammo: carry?.ammo ?? 30,
       hasRifle,
       weapon: hasRifle && carry?.weapon !== "shotgun" ? "rifle" : "shotgun",
+      down: !1,
       cool: 0,
       flash: 0,
       hurt: 0,
@@ -769,7 +1061,21 @@ export function createEngine(
       deflect: 0,
       struck: !1, // this swing has landed (or missed) already
       whack: 0, // impact flash
+      casings: [],
+      keys: coop ? (n ? P2 : P1) : SOLO,
     };
+  }
+
+  function load(i = 0, carry = null) {
+    level = levels[i];
+    const d = parsed[i] ?? (parsed[i] = Ve(level));
+    sky = skies[i] ?? (skies[i] = Ze(level));
+    grid = d.grid;
+    walls = d.tex;
+    const [fx, fy] = Ce[level.face] ?? Ce.N,
+      carries = Array.isArray(carry) ? carry : [carry, carry];
+    players = Array.from({ length: coop ? 2 : 1 }, (_, n) => makePlayer(n, d.start, fx, fy, carries[n], i));
+    pl = players[0];
     enemies = d.spawns.map(([t, x, y]) => makeEnemy(t, x, y));
     // More enemies: each normal one brings company, on a free tile next to it (bosses stay single).
     for (let n = 1; n < diff.count; n++)
@@ -782,7 +1088,6 @@ export function createEngine(
       }
     pickups = d.pickups.map(([type, x, y]) => ({ type, x, y, taken: !1 }));
     shots = [];
-    casings = [];
     run = { level: i, kills: 0, total: enemies.length, ads: 0, seconds: 0, over: !1, boss: null, banner: 3.5, message: "", messageT: 0 };
   }
 
@@ -795,31 +1100,39 @@ export function createEngine(
     }
     return !0;
   }
-  function turn(a) {
+  function turn(p, a) {
     const c = Math.cos(a),
       s = Math.sin(a);
-    [pl.dx, pl.dy] = [pl.dx * c - pl.dy * s, pl.dx * s + pl.dy * c];
-    [pl.px, pl.py] = [pl.px * c - pl.py * s, pl.px * s + pl.py * c];
+    [p.dx, p.dy] = [p.dx * c - p.dy * s, p.dx * s + p.dy * c];
+    [p.px, p.py] = [p.px * c - p.py * s, p.px * s + p.py * c];
   }
-  function move(mx, my) {
-    const nx = pl.x + mx + Math.sign(mx) * 0.22,
-      ny = pl.y + my + Math.sign(my) * 0.22;
-    if (grid[pl.y | 0][nx | 0] === EXIT || grid[ny | 0][pl.x | 0] === EXIT) return win();
-    solid(nx, pl.y) || (pl.x += mx);
-    solid(pl.x, ny) || (pl.y += my);
+  function move(p, mx, my) {
+    const nx = p.x + mx + Math.sign(mx) * 0.22,
+      ny = p.y + my + Math.sign(my) * 0.22;
+    if (grid[p.y | 0][nx | 0] === EXIT || grid[ny | 0][p.x | 0] === EXIT) return win();
+    solid(nx, p.y) || (p.x += mx);
+    solid(p.x, ny) || (p.y += my);
   }
   function say(text, time = 2.8) {
     run.message = text;
     run.messageT = time;
   }
-  function hurt(amount) {
-    if (pl.invuln > 0 || run.over) return;
-    pl.hp -= amount;
-    pl.hurt = 0.3;
+  function hurt(p, amount) {
+    if (p.invuln > 0 || p.down || run.over) return;
+    p.hp -= amount;
+    p.hurt = 0.3;
     run.ads += 1;
+    lastHurt = p;
     onSound("error");
-    if (pl.hp <= 0) {
-      pl.hp = 0;
+    if (p.hp <= 0) {
+      p.hp = 0;
+      if (alive().length > 1) {
+        // Co-op: one player down, the other fights on (both back next level).
+        p.down = !0;
+        say(`PLAYER ${p.n + 1} IS DOWN`, 3);
+        return;
+      }
+      p.down = !0;
       run.over = !0;
       paused = !0;
       render();
@@ -836,20 +1149,23 @@ export function createEngine(
     paused = !0;
     onSound("levelup");
     render();
+    const p1 = players[0];
     onWin?.({
       level: run.level,
       last: run.level === levels.length - 1,
+      final: !!level.final,
       kills: run.kills,
       total: run.total,
       ads: run.ads,
       seconds: Math.round(run.seconds),
-      hp: Math.ceil(pl.hp),
-      ammo: pl.ammo,
-      rifle: pl.hasRifle,
-      weapon: pl.weapon,
+      hp: Math.ceil(p1.hp),
+      ammo: p1.ammo,
+      rifle: p1.hasRifle,
+      weapon: p1.weapon,
+      players: players.map((p) => ({ hp: Math.max(50, Math.ceil(p.hp)), ammo: p.ammo, rifle: p.hasRifle, weapon: p.weapon })),
     });
   }
-  /** Where a map point lands on screen: its column and depth, or null if it's behind you. */
+  /** Where a map point lands on the current player's screen: column and depth, or null behind. */
   function project(x, y) {
     const rx = x - pl.x,
       ry = y - pl.y,
@@ -858,192 +1174,232 @@ export function createEngine(
       ty = inv * (-pl.py * rx + pl.px * ry);
     return ty <= 0.1 ? null : { col: (W / 2) * (1 + tx / ty), depth: ty };
   }
-  function damage(e, amount, sound = "crit") {
-    e.hp -= amount;
+  function damage(e, amount, sound = "crit", melee = !1) {
+    if (e.shield > 0) return; // the final boss, changing phase
+    const kind = Z[e.type];
+    if (kind.hits && !melee) {
+      // Bullets (and knocked-back shots) bounce off: it takes the Ban Hammer.
+      e.awake = !0;
+      run.messageT < 0.5 && say("BULLETS BOUNCE OFF · USE THE BAN HAMMER", 1.6);
+      return onSound("denied");
+    }
+    e.hp -= kind.hits ? 1 : amount;
     e.flash = 0.12;
     e.awake = !0;
-    if (e.hp <= 0) {
-      e.dead = !0;
+    if (e.hp > 0) return onSound(sound);
+    if (kind.phase2 && e.phase === 1) {
+      // Phase 2: tougher, faster, angrier.
+      e.phase = 2;
+      e.hp = e.maxHp = kind.phase2;
+      e.shield = 2;
       e.stun = 0;
-      run.kills += 1;
-      onSound("kaching");
-      onKill();
-    } else onSound(sound);
+      say("PHASE 2: THE EARNINGS CALL", 3.5);
+      onSound("phase");
+      return;
+    }
+    e.dead = !0;
+    e.stun = 0;
+    run.kills += 1;
+    onSound("kaching");
+    onKill();
+    if (kind.final) {
+      say("THE SHAREHOLDERS HAVE BEEN DIVESTED", 4);
+      setTimeout(win, 1800);
+    }
   }
 
-  // ----- weapons
-  function setWeapon(w) {
-    if (w === pl.weapon || (w === "rifle" && !pl.hasRifle)) return;
-    pl.weapon = w;
-    pl.cool = Math.max(pl.cool, 0.2);
-    pl.reload = 0;
+  // ----- weapons (for player p)
+  function setWeapon(p, w) {
+    if (w === p.weapon || (w === "rifle" && !p.hasRifle)) return;
+    p.weapon = w;
+    p.cool = Math.max(p.cool, 0.2);
+    p.reload = 0;
   }
-  function nextWeapon() {
-    if (pl.hasRifle) setWeapon(pl.weapon === "rifle" ? "shotgun" : "rifle");
-  }
-  /** The nearest enemy under the crosshair (nudged sideways by `spread` pixels). */
-  function aim(spread = 0) {
+  const nextWeapon = (p = players[0]) => p.hasRifle && setWeapon(p, p.weapon === "rifle" ? "shotgun" : "rifle");
+  /** The nearest enemy under player p's crosshair (nudged sideways by `spread` pixels). */
+  function aim(p, spread = 0) {
+    const was = pl;
+    pl = p;
+    castWalls(!0);
     let best = null;
     for (const e of enemies) {
       if (e.dead) continue;
-      const p = project(e.x, e.y);
-      if (!p || p.depth > zbuf[W / 2] + 0.3) continue;
-      const half = (VIEW / p.depth) * Z[e.type].scale * 0.32;
-      Math.abs(p.col - (W / 2 + spread)) < half + 2 && (!best || p.depth < best.depth) && (best = { e, depth: p.depth });
+      const hit = project(e.x, e.y);
+      if (!hit || hit.depth > zbuf[W / 2] + 0.3) continue;
+      const half = (VIEW / hit.depth) * Z[e.type].scale * 0.32;
+      Math.abs(hit.col - (W / 2 + spread)) < half + 2 && (!best || hit.depth < best.depth) && (best = { e, depth: hit.depth });
     }
+    pl = was;
     return best;
   }
-  function fire() {
-    if (paused || run.over || pl.cool > 0 || pl.swing > 0) return;
-    if (pl.ammo <= 0) {
-      pl.cool = 0.4;
+  function fire(p) {
+    if (paused || run.over || p.down || p.cool > 0 || p.swing > 0) return;
+    if (p.ammo <= 0) {
+      p.cool = 0.4;
       onSound("denied");
       return;
     }
-    const rifle = pl.weapon === "rifle";
-    pl.ammo -= 1;
-    pl.shots += 1;
-    pl.sinceShot = 0;
+    const rifle = p.weapon === "rifle";
+    p.ammo -= 1;
+    p.shots += 1;
+    p.sinceShot = 0;
     if (rifle) {
-      pl.cool = RIFLE_COOL;
-      pl.flash = 0.07;
-      pl.recoil = 0.4;
-      casings.push({ x: 0, y: 0, vx: 70 + Math.random() * 40, vy: -80 - Math.random() * 40, t: 0 });
+      p.cool = RIFLE_COOL;
+      p.flash = 0.07;
+      p.recoil = 0.4;
+      p.casings.push({ x: 0, y: 0, vx: 70 + Math.random() * 40, vy: -80 - Math.random() * 40, t: 0 });
     } else {
-      pl.cool = SHOTGUN_COOL;
-      pl.reload = SHOTGUN_COOL;
-      pl.flash = 0.08;
-      pl.recoil = 1;
+      p.cool = SHOTGUN_COOL;
+      p.reload = SHOTGUN_COOL;
+      p.flash = 0.08;
+      p.recoil = 1;
     }
-    onSound("thud");
-    const hit = aim(rifle ? (Math.random() - 0.5) * 8 : 0);
+    onSound(rifle ? "rifle" : "shotgun");
+    const hit = aim(p, rifle ? (Math.random() - 0.5) * 8 : 0);
     hit && damage(hit.e, (rifle ? rifleDamage : shotgunDamage)(hit.depth));
   }
-  function melee() {
-    if (paused || run.over || pl.meleeCool > 0) return;
-    pl.swing = SWING;
-    pl.meleeCool = MELEE_COOL;
-    pl.deflect = DEFLECT_WINDOW;
-    pl.struck = !1;
+  function melee(p) {
+    if (paused || run.over || p.down || p.meleeCool > 0) return;
+    p.swing = SWING;
+    p.meleeCool = MELEE_COOL;
+    p.deflect = DEFLECT_WINDOW;
+    p.struck = !1;
+    onSound("swing");
   }
-  /** The hammer lands: the nearest enemy in front of you, in reach, takes double shotgun damage. */
-  function strike() {
-    pl.struck = !0;
+  /** The hammer lands: the nearest enemy in front of p, in reach, takes double shotgun damage. */
+  function strike(p) {
+    p.struck = !0;
     let best = null;
     for (const e of enemies) {
       if (e.dead) continue;
-      const dx = e.x - pl.x,
-        dy = e.y - pl.y,
+      const dx = e.x - p.x,
+        dy = e.y - p.y,
         dist = Math.hypot(dx, dy);
       if (dist > MELEE_RANGE + Z[e.type].scale * 0.3) continue;
-      if (dist > 0.3 && (dx * pl.dx + dy * pl.dy) / dist < Math.cos(0.75)) continue;
-      if (!clearLine(pl.x, pl.y, e.x, e.y)) continue;
+      if (dist > 0.3 && (dx * p.dx + dy * p.dy) / dist < Math.cos(0.75)) continue;
+      if (!clearLine(p.x, p.y, e.x, e.y)) continue;
       (!best || dist < best.dist) && (best = { e, dist });
     }
     if (best) {
-      damage(best.e, shotgunDamage(best.dist) * 2);
-      pl.whack = 0.15;
-      onSound("thud");
+      damage(best.e, shotgunDamage(best.dist) * 2, "whack", !0);
+      p.whack = 0.15;
     }
   }
-  /** Knocks back any enemy shot in front of you, toward wherever you're looking. */
-  function deflect() {
+  /** Knocks back any enemy shot in front of p, toward wherever p is looking. */
+  function deflect(p) {
     for (const s of shots) {
       if (s.back) continue;
-      const dx = s.x - pl.x,
-        dy = s.y - pl.y,
+      const dx = s.x - p.x,
+        dy = s.y - p.y,
         dist = Math.hypot(dx, dy);
       if (dist > DEFLECT_RANGE) continue;
-      if (dist > 0.3 && (dx * pl.dx + dy * pl.dy) / dist < Math.cos(1.2)) continue;
+      if (dist > 0.3 && (dx * p.dx + dy * p.dy) / dist < Math.cos(1.2)) continue;
       s.back = !0;
-      s.vx = pl.dx * REFLECT_SPEED;
-      s.vy = pl.dy * REFLECT_SPEED;
-      s.x = pl.x + pl.dx * 0.45;
-      s.y = pl.y + pl.dy * 0.45;
-      pl.whack = 0.15;
-      onSound("coin");
+      s.vx = p.dx * REFLECT_SPEED;
+      s.vy = p.dy * REFLECT_SPEED;
+      s.x = p.x + p.dx * 0.45;
+      s.y = p.y + p.dy * 0.45;
+      p.whack = 0.15;
+      onSound("deflect");
     }
   }
 
   // ----- one step of the game
-  function tick(dt) {
-    run.seconds += dt;
-    for (const k of ["cool", "flash", "hurt", "invuln", "reload", "swing", "meleeCool", "deflect", "whack", "messageT", "banner"]) {
-      const obj = k === "messageT" || k === "banner" ? run : pl;
-      obj[k] = Math.max(0, obj[k] - dt);
-    }
-    pl.recoil = Math.max(0, pl.recoil - dt * 4);
-    pl.sinceShot += dt;
-    for (const c of casings) {
+  function tickPlayer(p, dt) {
+    for (const k of ["cool", "flash", "hurt", "invuln", "reload", "swing", "meleeCool", "deflect", "whack"]) p[k] = Math.max(0, p[k] - dt);
+    p.recoil = Math.max(0, p.recoil - dt * 4);
+    p.sinceShot += dt;
+    for (const c of p.casings) {
       c.t += dt;
       c.x += c.vx * dt;
       c.y += c.vy * dt;
       c.vy += 420 * dt;
     }
-    casings = casings.filter((c) => c.t < 0.6);
-
-    const speed = 3 * (keys.has("ShiftLeft") || keys.has("ShiftRight") ? 1.5 : 1) * dt;
+    p.casings = p.casings.filter((c) => c.t < 0.6);
+    if (p.down) return;
+    const k = p.keys,
+      speed = 3 * (held(k.run) ? 1.5 : 1) * dt;
     let fwd = 0,
       side = 0,
       rot = 0;
-    (keys.has("KeyW") || keys.has("ArrowUp") || keys.has("touch-up")) && (fwd += 1);
-    (keys.has("KeyS") || keys.has("ArrowDown") || keys.has("touch-down")) && (fwd -= 1);
-    keys.has("KeyD") && (side += 1);
-    keys.has("KeyA") && (side -= 1);
-    (keys.has("ArrowRight") || keys.has("KeyE") || keys.has("touch-right")) && (rot += 1);
-    (keys.has("ArrowLeft") || keys.has("KeyQ") || keys.has("touch-left")) && (rot -= 1);
-    rot && turn(rot * 2.6 * dt);
-    turnBy && (turn(turnBy), (turnBy = 0));
+    held(k.fwd) && (fwd += 1);
+    held(k.back) && (fwd -= 1);
+    held(k.right) && (side += 1);
+    held(k.left) && (side -= 1);
+    held(k.turnR) && (rot += 1);
+    held(k.turnL) && (rot -= 1);
+    rot && turn(p, rot * 2.6 * dt);
+    if (p.n === 0 && turnBy) {
+      turn(p, turnBy);
+      turnBy = 0;
+    }
     if (fwd || side) {
-      move((pl.dx * fwd + (pl.px / 0.66) * side) * speed, (pl.dy * fwd + (pl.py / 0.66) * side) * speed);
-      pl.bob += dt * 9;
+      move(p, (p.dx * fwd + (p.px / 0.66) * side) * speed, (p.dy * fwd + (p.py / 0.66) * side) * speed);
+      p.bob += dt * 9;
     }
     if (run.over) return;
-
-    held(MELEE_KEYS) && melee();
-    held(FIRE_KEYS) && fire();
-    if (pl.swing > 0 && !pl.struck && pl.swing <= SWING * 0.6) strike();
-    pl.deflect > 0 && deflect();
-
-    for (const p of pickups) {
-      if (p.taken || Math.hypot(p.x - pl.x, p.y - pl.y) > 0.6 || (p.type === "health" && pl.hp >= 100)) continue;
-      p.taken = !0;
-      if (p.type === "health") pl.hp = Math.min(100, pl.hp + 25);
-      else if (p.type === "ammo") pl.ammo += 12;
-      else if (p.type === "rifle") {
-        pl.hasRifle = !0;
-        pl.ammo += 20;
-        setWeapon("rifle");
-        say("YOU GOT THE AUTO-RIFLE 3000!  (2 / scroll to switch)", 3.5);
+    held(k.melee) && melee(p);
+    held(k.fire) && fire(p);
+    if (p.swing > 0 && !p.struck && p.swing <= SWING * 0.6) strike(p);
+    p.deflect > 0 && deflect(p);
+    for (const it of pickups) {
+      if (it.taken || Math.hypot(it.x - p.x, it.y - p.y) > 0.6 || (it.type === "health" && p.hp >= 100)) continue;
+      it.taken = !0;
+      if (it.type === "health") p.hp = Math.min(100, p.hp + 25);
+      else if (it.type === "ammo") p.ammo += 12;
+      else if (it.type === "rifle") {
+        for (const q of players) (q.hasRifle = !0), setWeapon(q, "rifle");
+        p.ammo += 20;
+        say("YOU GOT THE AUTO-RIFLE 3000!  (switch guns: 2 / scroll" + (coop ? " · player 2: O" : "") + ")", 3.5);
         onSound("levelup");
         continue;
       }
       onSound("coin");
     }
-
+  }
+  function tick(dt) {
+    run.seconds += dt;
+    run.messageT = Math.max(0, run.messageT - dt);
+    run.banner = Math.max(0, run.banner - dt);
+    for (const p of players) {
+      tickPlayer(p, dt);
+      if (paused) return;
+    }
+    if (run.over) return;
+    const targets = alive();
     for (const e of enemies) {
       if (e.dead) {
         e.dieT += dt;
         continue;
       }
-      const kind = Z[e.type];
+      const kind = Z[e.type],
+        fast = e.phase === 2 ? 1.5 : 1;
       e.flash = Math.max(0, e.flash - dt);
+      e.shield = Math.max(0, e.shield - dt);
       if (e.stun > 0) {
         e.stun = Math.max(0, e.stun - dt); // seeing stars: no moving, shooting or summoning
         continue;
       }
       e.cool -= dt;
-      const tx = pl.x - e.x,
-        ty = pl.y - e.y,
-        dist = Math.hypot(tx, ty),
-        sees = dist < 11 && clearLine(e.x, e.y, pl.x, pl.y);
+      // Chase the nearest player it can see (or just the nearest).
+      let target = null,
+        dist = 1 / 0,
+        sees = !1;
+      for (const p of targets) {
+        const dd = Math.hypot(p.x - e.x, p.y - e.y),
+          s = dd < 11 && clearLine(e.x, e.y, p.x, p.y);
+        if ((s && !sees) || (s === sees && dd < dist)) (target = p), (dist = dd), (sees = s);
+      }
+      if (!target) continue;
+      const tx = target.x - e.x,
+        ty = target.y - e.y;
       !e.awake && sees && dist < (kind.ambush ?? 9) && (e.awake = !0);
       if (!e.awake) continue;
       kind.name && sees && !run.boss && ((run.boss = e), onSound("horn"));
-      if (kind.summon && (e.summonT -= dt) <= 0) {
+      if (kind.summon && (e.summonT -= dt * fast) <= 0) {
         e.summonT = kind.summon.every;
         const room =
-          enemies.filter((m) => m.from === e && !m.dead).length < kind.summon.max &&
+          enemies.filter((m) => m.from === e && !m.dead).length < kind.summon.max * (e.phase === 2 ? 2 : 1) &&
           [
             [1, 0],
             [-1, 0],
@@ -1053,7 +1409,7 @@ export function createEngine(
         room && (enemies.push(makeEnemy(kind.summon.type, e.x + room[0], e.y + room[1], e)), (run.total += 1), onSound("popup"));
       }
       if (dist > (kind.melee ? 0.85 : 3.5)) {
-        const step = kind.speed * diff.speed * dt,
+        const step = kind.speed * diff.speed * fast * dt,
           mx = (tx / dist) * step,
           my = (ty / dist) * step;
         solid(e.x + mx + Math.sign(mx) * 0.3, e.y) || (e.x += mx);
@@ -1062,11 +1418,12 @@ export function createEngine(
       if (e.cool > 0) continue;
       if (kind.melee && dist < 1.05) {
         e.cool = kind.cool;
-        hurt(kind.dmg * diff.dmg);
+        hurt(target, kind.dmg * diff.dmg);
       } else if (kind.ranged && sees && dist < 10) {
-        e.cool = kind.cool + Math.random() * 0.6;
-        const ang = Math.atan2(ty, tx),
-          fan = kind.spread ? Array.from({ length: kind.spread }, (_, n) => (n - (kind.spread - 1) / 2) * 0.18) : [(Math.random() - 0.5) * 0.12];
+        e.cool = (kind.cool + Math.random() * 0.6) / fast;
+        const spread = (kind.spread ?? 0) + (e.phase === 2 ? 4 : 0),
+          ang = Math.atan2(ty, tx),
+          fan = spread ? Array.from({ length: spread }, (_, n) => (n - (spread - 1) / 2) * 0.18) : [(Math.random() - 0.5) * 0.12];
         for (const f of fan) shots.push({ x: e.x, y: e.y, vx: Math.cos(ang + f) * 4.5, vy: Math.sin(ang + f) * 4.5, dmg: kind.dmg * diff.dmg, back: !1 });
         onSound("popup");
       }
@@ -1085,13 +1442,19 @@ export function createEngine(
         const e = enemies.find((m) => !m.dead && Math.hypot(m.x - s.x, m.y - s.y) < 0.35 + Z[m.type].scale * 0.25);
         if (e) {
           s.dead = !0;
-          e.stun = STUN;
+          if (e.shield <= 0) {
+            e.stun = STUN;
+            onSound("stun");
+          }
           damage(e, s.dmg);
         }
-      } else if (Math.hypot(s.x - pl.x, s.y - pl.y) < 0.35) {
-        s.dead = !0;
-        hurt(s.dmg);
-        if (paused) break;
+      } else {
+        const p = targets.find((q) => Math.hypot(s.x - q.x, s.y - q.y) < 0.35);
+        if (p) {
+          s.dead = !0;
+          hurt(p, s.dmg);
+          if (paused) break;
+        }
       }
     }
     shots = shots.filter((s) => !s.dead);
@@ -1130,8 +1493,9 @@ export function createEngine(
     return { col, top, size, depth };
   }
 
-  function render() {
-    px.set(sky);
+  /** Casts the walls for the current player: fills zbuf (and the frame, unless onlyDepth). */
+  function castWalls(onlyDepth = !1) {
+    onlyDepth || px.set(sky);
     for (let x = 0; x < W; x++) {
       const cam = (2 * x) / W - 1,
         rx = pl.dx + pl.px * cam,
@@ -1150,6 +1514,7 @@ export function createEngine(
       }
       const dist = Math.max(0.05, side === 0 ? distX - ddx : distY - ddy);
       zbuf[x] = dist;
+      if (onlyDepth) continue;
       const tall = VIEW / dist,
         y0 = Math.max(0, (VIEW / 2 - tall / 2) | 0),
         y1 = Math.min(VIEW - 1, (VIEW / 2 + tall / 2) | 0),
@@ -1166,23 +1531,36 @@ export function createEngine(
         v += step;
       }
     }
+  }
+
+  function render() {
+    for (const p of players) {
+      pl = p;
+      renderView();
+      out.drawImage(view, p.n * W, 0);
+    }
+    pl = players[0];
+    coop && ((out.fillStyle = "#000"), out.fillRect(W - 1, 0, 2, H));
+  }
+  function renderView() {
+    castWalls();
     const things = [
-      ...pickups.filter((p) => !p.taken).map((p) => ({ tex: he[p.type], x: p.x, y: p.y, scale: 0.5, opts: {} })),
+      ...pickups.filter((it) => !it.taken).map((it) => ({ tex: he[it.type], x: it.x, y: it.y, scale: 0.5, opts: {} })),
       ...enemies
         .filter((e) => !e.dead || e.dieT < 0.6)
         .map((e) => ({
-          tex: he[e.type === "mimic" && !e.awake ? "mimicIdle" : e.type],
+          tex: he[e.type === "mimic" && !e.awake ? "mimicIdle" : e.type === "final" && e.phase === 2 ? "final2" : e.type],
           x: e.x,
           y: e.y,
           scale: Z[e.type].scale,
-          enemy: e,
           opts: {
-            flash: e.flash > 0,
+            flash: e.flash > 0 || e.shield > 0,
             dying: e.dead ? e.dieT : 0,
             stun: e.stun > 0,
-            lift: Z[e.type].fly ? -30 - Math.sin(run.seconds * 5 + e.phase) * 8 : 0,
+            lift: Z[e.type].fly ? -30 - Math.sin(run.seconds * 5 + e.wobble) * 8 : 0,
           },
         })),
+      ...players.filter((q) => q !== pl && !q.down).map((q) => ({ tex: q.n ? he.marine2 : he.marine, x: q.x, y: q.y, scale: 0.8, opts: {} })),
       ...shots.map((s) => ({ tex: s.back ? he.shotBack : he.shot, x: s.x, y: s.y, scale: 0.6, opts: { lift: -20 } })),
     ].sort((a, c) => Math.hypot(c.x - pl.x, c.y - pl.y) - Math.hypot(a.x - pl.x, a.y - pl.y));
     const dazed = [];
@@ -1193,7 +1571,14 @@ export function createEngine(
     ctx.putImageData(frame, 0, 0);
     pl.hurt > 0 && ((ctx.fillStyle = `rgba(200,0,0,${pl.hurt})`), ctx.fillRect(0, 0, W, VIEW));
     for (const d of dazed) stars(d);
-    drawWeapons();
+    if (pl.down) {
+      ctx.fillStyle = "rgba(90,0,0,0.55)";
+      ctx.fillRect(0, 0, W, VIEW);
+      ctx.fillStyle = "#fff";
+      ctx.font = 'bold 12px "Courier New", monospace';
+      ctx.textAlign = "center";
+      ctx.fillText("YOU'RE DOWN · BACK NEXT LEVEL", W / 2, VIEW / 2);
+    } else drawWeapons();
     drawHud();
     drawStatusBar();
   }
@@ -1212,7 +1597,7 @@ export function createEngine(
     }
   }
 
-  // ----- the weapons on screen
+  // ----- the weapons on screen, seen from behind: barrels run away from you toward the middle
   function drawWeapons() {
     const bobX = Math.sin(pl.bob) * 4,
       bobY = Math.abs(Math.cos(pl.bob)) * 3,
@@ -1222,7 +1607,7 @@ export function createEngine(
     ctx.beginPath();
     ctx.rect(0, 0, W, VIEW);
     ctx.clip();
-    pl.weapon === "rifle" ? drawRifle(W / 2 + 14 + bobX, VIEW - 50 + bobY + duck) : drawShotgun(W / 2 + bobX, VIEW - 46 + bobY + duck);
+    pl.weapon === "rifle" ? drawRifle(W / 2 + 24 + bobX, VIEW + 8 + bobY + duck) : drawShotgun(W / 2 + bobX, VIEW + bobY + duck);
     pl.swing > 0 && drawHammer(swingT);
     ctx.restore();
     ctx.fillStyle = "rgba(255,255,255,0.7)";
@@ -1238,6 +1623,26 @@ export function createEngine(
     g.addColorStop(1, "rgba(255,120,0,0)");
     ctx.fillStyle = g;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  /** A quadrilateral: near edge (x0±w0/2, y0), far edge (x1±w1/2, y1). */
+  function taper(x0, y0, w0, x1, y1, w1, fill) {
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(x0 - w0 / 2, y0);
+    ctx.lineTo(x1 - w1 / 2, y1);
+    ctx.lineTo(x1 + w1 / 2, y1);
+    ctx.lineTo(x0 + w0 / 2, y0);
+    ctx.closePath();
+    ctx.fill();
+  }
+  /** A gun barrel seen from behind: a dark tube narrowing away, a highlight, and its open end. */
+  function barrel(x0, y0, w0, x1, y1, w1, light = "#6a6a6a") {
+    taper(x0, y0, w0, x1, y1, w1, "#232323");
+    taper(x0 - w0 * 0.22, y0, w0 * 0.18, x1 - w1 * 0.22, y1, w1 * 0.18, light);
+    ctx.fillStyle = "#0a0a0a";
+    ctx.beginPath();
+    ctx.ellipse(x1, y1, w1 / 2, w1 / 4, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
   function hand(x, y, w, h) {
     ctx.fillStyle = "#e0ac69";
@@ -1255,112 +1660,107 @@ export function createEngine(
     ctx.fillRect(x, y + 8, 5, 3);
   }
   /**
-   * The double-barrelled shotgun. After each shot it plays the classic reload: the gun kicks,
-   * drops and breaks open, a hand thumbs in two shells, it snaps shut and comes back up.
+   * The double-barrelled shotgun, from behind. After each shot it plays the classic reload: kick,
+   * drop and break open, a hand thumbs in two shells, snap shut, back up.
    */
   function drawShotgun(cx, by) {
     const t = pl.reload > 0 ? 1 - pl.reload / SHOTGUN_COOL : 1,
       kick = t < 0.12 ? -8 * (1 - t / 0.12) : 0,
       lower = t < 0.12 ? 0 : t < 0.28 ? ease((t - 0.12) / 0.16) : t < 0.8 ? 1 : t < 0.96 ? 1 - ease((t - 0.8) / 0.16) : 0,
-      open = t < 0.24 ? 0 : t < 0.34 ? ease((t - 0.24) / 0.1) : t < 0.68 ? 1 : t < 0.74 ? 1 - ease((t - 0.68) / 0.06) : 0,
-      len = 34 * (1 - open * 0.5); // tipped forward, the barrels look shorter
+      open = t < 0.24 ? 0 : t < 0.34 ? ease((t - 0.24) / 0.1) : t < 0.68 ? 1 : t < 0.74 ? 1 - ease((t - 0.68) / 0.06) : 0;
     ctx.save();
-    ctx.translate(cx - lower * 22, by + 12 + lower * 20 + kick + pl.recoil * 6);
-    ctx.scale(1.5, 1.5);
-    ctx.rotate(-lower * 0.55);
-    if (pl.flash > 0 && t < 0.12) muzzleFlash(0, -len - 4, 22);
-    // barrels
-    const barrelTop = -len + open * 8;
-    ctx.fillStyle = "#262626";
-    ctx.fillRect(-10, barrelTop, 9, len + 4);
-    ctx.fillRect(1, barrelTop, 9, len + 4);
-    ctx.fillStyle = "#5c5c5c";
-    ctx.fillRect(-8, barrelTop, 2, len + 4);
-    ctx.fillRect(3, barrelTop, 2, len + 4);
-    ctx.fillStyle = "#111";
-    ctx.fillRect(-10, barrelTop, 20, 2);
-    // the open breech: two chambers, empty until the shells go in
+    ctx.translate(cx - lower * 30, by + lower * 30 + kick + pl.recoil * 6);
+    ctx.scale(1.4, 1.4);
+    ctx.rotate(-lower * 0.5);
+    // Barrels: they run from the bottom of the screen up toward the middle, getting narrower.
+    // Broken open, they tip down and the breech faces you.
+    const far = -62 + open * 34;
+    if (pl.flash > 0 && t < 0.12) muzzleFlash(0, far - 4, 26);
+    barrel(-11, -8, 20, -3.5, far, 7.5);
+    barrel(11, -8, 20, 3.5, far, 7.5);
     if (open > 0.4) {
       const loaded = t > 0.56;
       ctx.fillStyle = "#8a6d1c";
-      ctx.fillRect(-10, 0, 9, 8);
-      ctx.fillRect(1, 0, 9, 8);
+      ctx.fillRect(-21, -18, 20, 14);
+      ctx.fillRect(1, -18, 20, 14);
       ctx.fillStyle = loaded ? "#c0392b" : "#050505";
-      ctx.fillRect(-8, 2, 5, 4);
-      ctx.fillRect(3, 2, 5, 4);
-      loaded && ((ctx.fillStyle = "#d4a017"), ctx.fillRect(-8, 2, 5, 1), ctx.fillRect(3, 2, 5, 1));
+      ctx.beginPath();
+      ctx.arc(-11, -11, 5.5, 0, Math.PI * 2);
+      ctx.arc(11, -11, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+      loaded && ((ctx.fillStyle = "#d4a017"), ctx.fillRect(-14, -13, 6, 2), ctx.fillRect(8, -13, 6, 2));
     }
-    // wooden fore-end and receiver
-    ctx.fillStyle = "#6b4226";
-    ctx.fillRect(-13, 8, 26, 34);
-    ctx.fillStyle = "#8a5a36";
-    ctx.fillRect(-13, 8, 26, 3);
-    ctx.fillStyle = "#4a2c18";
-    ctx.fillRect(-13, 38, 26, 4);
-    hand(11, 30, 13, 18);
-    // the other hand: holds the fore-end, or brings in two fresh shells
+    // wooden fore-end under the barrels, and the grip
+    taper(0, 0, 50, 0, -30, 24, "#6b4226");
+    taper(0, -2, 50, 0, -6, 44, "#4a2c18");
+    taper(-8, -1, 8, -4, -28, 5, "#8a5a36");
+    hand(14, -18, 22, 26);
     if (t > 0.3 && t < 0.72) {
+      // the other hand, bringing in two fresh shells
       const h = (t - 0.3) / 0.42,
         reach = h < 0.5 ? ease(h / 0.5) : h < 0.65 ? 1 : 1 - ease((h - 0.65) / 0.35),
-        hx = -62 + reach * 52,
-        hy = 62 - reach * 58;
+        hx = -90 + reach * 72,
+        hy = 40 - reach * 52;
       if (h < 0.62) {
-        shell(hx + 3, hy - 9);
-        shell(hx + 10, hy - 8);
+        shell(hx + 4, hy - 10);
+        shell(hx + 12, hy - 9);
       }
-      hand(hx, hy, 18, 20);
-    } else hand(-24, 24, 13, 20);
+      hand(hx, hy, 24, 26);
+    } else hand(-36, -16, 22, 26);
     ctx.restore();
   }
-  /** The AUTO-RIFLE 3000: muzzle flash, kick, cycling bolt and flying brass while it fires. */
+  /** The AUTO-RIFLE 3000, from behind: muzzle flash, kick, a cycling bolt and flying brass. */
   function drawRifle(cx, by) {
     const firing = pl.sinceShot < 0.09,
       odd = pl.shots % 2,
-      kick = firing ? 3 + odd : 0,
+      kick = firing ? 4 + odd * 2 : 0,
       jit = firing ? (odd ? 1 : -1) : 0;
     ctx.save();
-    ctx.translate(cx + jit, by + 34 + kick + pl.recoil * 4);
-    ctx.scale(1.4, 1.4);
+    ctx.translate(cx + jit, by + kick + pl.recoil * 5);
+    ctx.scale(1.25, 1.25);
     if (firing) {
-      muzzleFlash(0, -62, odd ? 20 : 15);
+      const fx = -16,
+        fy = -82;
+      muzzleFlash(fx, fy, odd ? 20 : 15);
       ctx.fillStyle = "#fff6c0";
       ctx.beginPath();
       const spikes = odd ? 5 : 4;
       for (let n = 0; n < spikes * 2; n++) {
         const a = (n * Math.PI) / spikes + (odd ? 0.3 : 0),
-          r = n % 2 ? 4 : 12;
-        ctx.lineTo(Math.cos(a) * r, -62 + Math.sin(a) * r);
+          r = n % 2 ? 3 : 10;
+        ctx.lineTo(fx + Math.cos(a) * r, fy + Math.sin(a) * r);
       }
       ctx.fill();
     }
-    // barrel and muzzle brake
-    ctx.fillStyle = "#1c1c1c";
-    ctx.fillRect(-3, -60, 6, 34);
-    ctx.fillStyle = "#333";
-    ctx.fillRect(-5, -60, 10, 5);
-    ctx.fillStyle = "#555";
-    ctx.fillRect(-2, -58, 1, 30);
-    // handguard with vents
-    ctx.fillStyle = "#3a3a3a";
-    ctx.fillRect(-8, -30, 16, 24);
-    ctx.fillStyle = "#1a1a1a";
-    for (let y = -26; y < -8; y += 5) ctx.fillRect(-5, y, 10, 2);
-    // receiver, bolt, magazine
-    ctx.fillStyle = "#2b2b2b";
-    ctx.fillRect(-10, -6, 20, 26);
+    // curved magazine, sticking out under the left side
+    taper(-18, -2, 12, -14, -26, 10, "#151515");
+    // stock and receiver near you, the handguard with its vents, then the barrel toward the middle
+    taper(0, 2, 46, -6, -36, 30, "#2b2b2b");
+    taper(0, 2, 10, -5, -36, 7, "#444");
+    taper(-6, -34, 28, -12, -62, 17, "#3a3a3a");
+    for (let n = 0; n < 4; n++) {
+      const t = n / 4,
+        y = -38 - t * 22,
+        x = -6.5 - t * 6,
+        w = 22 - t * 9;
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(x - w / 2 + 2, y, w - 4, 2);
+    }
+    barrel(-12, -60, 9, -16, -80, 5, "#555");
+    // rear sight with its glowing dot, and the front sight post
+    ctx.fillStyle = "#111";
+    ctx.fillRect(-10, -42, 8, 5);
+    ctx.fillRect(-17, -86, 2, 6);
     ctx.fillStyle = "#39ff14";
-    ctx.fillRect(-2, -4, 4, 2);
+    ctx.fillRect(-7, -41, 2, 2);
+    // the bolt handle cycles back with each shot
     ctx.fillStyle = "#777";
-    ctx.fillRect(firing ? 7 : 4, 0, 5, 6);
-    ctx.fillStyle = "#151515";
-    ctx.fillRect(-6, 20, 11, 22);
-    ctx.fillStyle = "#6b4226";
-    ctx.fillRect(4, 18, 12, 30);
-    hand(-18, -24, 11, 16);
-    hand(6, 24, 14, 18);
+    ctx.fillRect(14 + (firing ? 5 : 0), -22, 9, 5);
+    hand(-40, -60, 20, 20);
+    hand(8, -10, 24, 26);
     ctx.restore();
     ctx.fillStyle = "#d4a017";
-    for (const c of casings) ctx.fillRect(cx + 16 + c.x, by + 36 + c.y, 4, 2);
+    for (const c of pl.casings) ctx.fillRect(cx + 30 + c.x, by - 30 + c.y, 4, 2);
   }
   /**
    * The Ban Hammer, only on screen while it swings: wind-up from the right, a hard sweep across the
@@ -1420,7 +1820,7 @@ export function createEngine(
     ctx.textAlign = "left";
     ctx.fillStyle = "rgba(255,255,255,0.55)";
     ctx.font = 'bold 7px "Courier New", monospace';
-    ctx.fillText(level.id, 4, 10);
+    ctx.fillText(coop ? `${level.id} · PLAYER ${pl.n + 1}` : level.id, 4, 10);
     // weapon slots
     ctx.textAlign = "right";
     const slot = (text, y, on, have) => {
@@ -1428,8 +1828,8 @@ export function createEngine(
       ctx.fillStyle = on ? "#e8331f" : "rgba(255,255,255,0.5)";
       ctx.fillText(text, W - 4, y);
     };
-    slot("1 SHOTGUN", 10, pl.weapon === "shotgun", !0);
-    slot("2 AUTO-RIFLE", 18, pl.weapon === "rifle", pl.hasRifle);
+    slot(coop && pl.n ? "O SHOTGUN" : "1 SHOTGUN", 10, pl.weapon === "shotgun", !0);
+    slot(coop && pl.n ? "O AUTO-RIFLE" : "2 AUTO-RIFLE", 18, pl.weapon === "rifle", pl.hasRifle);
     const boss = run.boss;
     if (boss && !boss.dead) {
       const kind = Z[boss.type];
@@ -1437,12 +1837,12 @@ export function createEngine(
       ctx.fillRect(60, 4, 200, 16);
       ctx.fillStyle = "#4a0808";
       ctx.fillRect(62, 13, 196, 5);
-      ctx.fillStyle = "#e02020";
+      ctx.fillStyle = boss.shield > 0 ? "#ffe14d" : boss.phase === 2 ? "#ff7a00" : "#e02020";
       ctx.fillRect(62, 13, (196 * Math.max(0, boss.hp)) / boss.maxHp, 5);
       ctx.fillStyle = "#fff";
       ctx.font = "bold 7px Arial, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(kind.name, W / 2, 11);
+      ctx.fillText(kind.hits ? `${kind.name} · PHASE ${boss.phase}/2 · ${boss.hp} HITS LEFT` : kind.name, W / 2, 11);
     }
     if (run.banner > 0) {
       ctx.globalAlpha = Math.min(1, run.banner);
@@ -1451,7 +1851,7 @@ export function createEngine(
       ctx.textAlign = "center";
       ctx.fillStyle = "#b8b8b8";
       ctx.font = "7px Arial, sans-serif";
-      ctx.fillText(`LEVEL ${run.level + 1} OF ${levels.length}`, W / 2, 40);
+      ctx.fillText(level.final ? "THE FINAL BOSS" : `LEVEL ${run.level + 1} OF ${levels.length}`, W / 2, 40);
       ctx.fillStyle = "#e8331f";
       ctx.font = 'bold 13px "Courier New", monospace';
       ctx.fillText(`${level.id}: ${level.name.toUpperCase()}`, W / 2, 54);
@@ -1497,7 +1897,7 @@ export function createEngine(
     box(132, 56);
     ctx.font = '20px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
     ctx.textAlign = "center";
-    ctx.fillText(run.over && pl.hp <= 0 ? "😵" : pl.hurt > 0 ? "🙀" : pl.hp < 35 ? "😾" : "😼", 160, VIEW + 24);
+    ctx.fillText(pl.down ? "😵" : pl.hurt > 0 ? "🙀" : pl.hp < 35 ? "😾" : "😼", 160, VIEW + 24);
     readout(192, 60, `${run.kills}/${run.total}`, "POP-UPS CLOSED");
     readout(256, 60, String(run.ads), "ADS WATCHED");
   }
@@ -1517,8 +1917,11 @@ export function createEngine(
       if (!GAME_KEYS.has(e.code)) return;
       e.preventDefault();
       keys.add(e.code);
-      e.code === "Digit1" && setWeapon("shotgun");
-      e.code === "Digit2" && setWeapon("rifle");
+      const p1 = players[0],
+        p2 = players[1];
+      e.code === "Digit1" && setWeapon(p1, "shotgun");
+      e.code === "Digit2" && setWeapon(p1, "rifle");
+      e.code === "KeyO" && p2 && nextWeapon(p2);
     },
     onKeyUp = (e) => {
       e.code === "AltLeft" && e.preventDefault(); // (Alt on its own would open the browser's menu bar)
@@ -1539,7 +1942,7 @@ export function createEngine(
       if (paused) return;
       e.preventDefault();
       const now = performance.now();
-      now - switchedAt > 180 && ((switchedAt = now), nextWeapon());
+      now - switchedAt > 180 && ((switchedAt = now), nextWeapon(players[0]));
     },
     onBlur = () => keys.clear();
   window.addEventListener("keydown", onKeyDown);
@@ -1550,11 +1953,13 @@ export function createEngine(
   canvas.addEventListener("wheel", onWheel, { passive: !1 });
   window.addEventListener("mouseup", onMouseUp);
   window.addEventListener("blur", onBlur);
+  size();
   load();
   render();
   raf = requestAnimationFrame(loop);
 
   return {
+    /** Starts level i. carry: what player 1 (or, as an array, each player) starts with. */
     start(i = 0, carry = null) {
       load(Math.max(0, Math.min(levels.length - 1, i)), carry);
       paused = !1;
@@ -1562,7 +1967,7 @@ export function createEngine(
     },
     resume() {
       if (run.over) return;
-      pl.invuln = 1.5;
+      (lastHurt ?? pl).invuln = 1.5;
       paused = !1;
       last = performance.now();
     },
@@ -1574,18 +1979,27 @@ export function createEngine(
     press(name, down) {
       down ? keys.add(`touch-${name}`) : keys.delete(`touch-${name}`);
     },
-    nextWeapon,
-    setWeapon,
+    nextWeapon: () => nextWeapon(players[0]),
+    setWeapon: (w) => setWeapon(players[0], w),
     /** Takes effect from the next level started. */
     setDifficulty(d) {
       diff = { count: 1, hp: 1, dmg: 1, speed: 1, ...d };
     },
+    /** Two players, split screen (takes effect from the next level started). */
+    setCoop(on) {
+      coop = !!on;
+      size();
+    },
+    get coop() {
+      return coop;
+    },
     get stats() {
-      return { ...run, hp: pl.hp, ammo: pl.ammo, rifle: pl.hasRifle, weapon: pl.weapon };
+      return { ...run, hp: players[0].hp, ammo: players[0].ammo, rifle: players[0].hasRifle, weapon: players[0].weapon };
     },
     get debug() {
       return {
-        player: pl,
+        player: players[0],
+        players,
         enemies,
         shots,
         state: run,

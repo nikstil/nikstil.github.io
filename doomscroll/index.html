@@ -28,7 +28,8 @@
         <h1 class="logo">DOOMSCROLL</h1>
         <p class="tag">Hell has pop-ups. Close them, walk into the EXIT switch, repeat.</p>
         <div class="episodes" id="episodes"></div>
-        <p class="diff-now">Difficulty: <b id="diff-name"></b> <button class="btn small" data-do="difficulty">Change</button></p>
+        <p class="diff-now">Difficulty: <b id="diff-name"></b> <button class="btn small" data-do="difficulty">Change</button>
+          <label class="coop-toggle"><input type="checkbox" id="coop"> 2 players (split screen, one keyboard)</label></p>
       </section>
 
       <section class="overlay diff" id="difficulty" hidden>
@@ -79,11 +80,17 @@
       </div>
     </div>
 
-    <p class="help" id="help">
+    <p class="help" id="help-solo">
       <b>WASD</b> / arrows move · <b>← →</b> or the mouse turn (click the screen to grab the mouse) ·
       <b>Space</b> or click fires · <b>P</b>, <b>V</b>, <b>left Alt</b> or <b>right-click</b> swings the Ban Hammer
       (twice the damage, and it knocks enemy shots back: they stun whoever they hit) · <b>1</b> / <b>2</b> or scroll
       switches guns · <b>Shift</b> runs · <b>Esc</b> pauses
+    </p>
+    <p class="help" id="help-coop" hidden>
+      <b>Player 1 (left):</b> <b>WASD</b> move · <b>Q E</b> or the mouse turn · <b>Space</b> / <b>F</b> / click fire ·
+      <b>V</b> / <b>left Alt</b> / right-click Ban Hammer · <b>1 2</b> guns · <b>left Shift</b> runs<br>
+      <b>Player 2 (right):</b> <b>↑ ↓</b> move · <b>← →</b> turn · <b>, .</b> strafe · <b>right Ctrl</b> / <b>Enter</b> / <b>Num 0</b> fire ·
+      <b>P</b> / <b>right Shift</b> / <b>Num 1</b> Ban Hammer · <b>O</b> switches guns · <b>Esc</b> pauses
     </p>
   </main>
 </body>
