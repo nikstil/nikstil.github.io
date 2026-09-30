@@ -1,0 +1,38 @@
+{
+  "defaultTheme": "aero",
+  "user": "Guest",
+  "boot": "Starting up. Please do not turn off your computer.",
+  "welcome": {
+    "title": "",
+    "text": ""
+  },
+  "apps": {
+    "pc": { "label": "This PC", "title": "System Properties", "hidden": false },
+    "translatr": { "label": "TRANSLATR™", "title": "TRANSLATR™ Ultra+ Pro Max", "hidden": false },
+    "gif": { "label": "The GIF", "title": "animation.gif - Image Viewer", "hidden": false },
+    "themes": { "label": "Themes", "title": "Themes", "hidden": false },
+    "bin": { "label": "Recycle Bin", "title": "Recycle Bin", "hidden": false }
+  },
+  "links": [],
+  "pc": {
+    "rows": [
+      ["Edition", "nikstilOS Ultimate"],
+      ["Version", "2026, build 1"],
+      ["Memory", "640 KB (ought to be enough for anybody)"],
+      ["System type", "8-bit operating system on a 64-bit browser"],
+      ["Themes installed", "8"],
+      ["Registered to", "you, probably"]
+    ],
+    "note": "Genuine. Activated. Unlicensed for commercial use, emotional support or taxes."
+  },
+  "bin": {
+    "files": [
+      { "icon": "📄", "name": "old_homepage.html", "note": "“Pick one.”", "alert": "📄", "text": "Restore “Pick one.”? No. It’s in a better place now." },
+      { "icon": "⚙️", "name": "motivation.exe", "note": "0 KB", "alert": "⚠️", "text": "motivation.exe has stopped working. It never really started." },
+      { "icon": "📕", "name": "sleep_schedule.pdf", "note": "corrupted", "alert": "⚠️", "text": "This file is corrupted beyond repair. Have you tried going to bed?" },
+      { "icon": "🧾", "name": "TRANSLATR_refund_policy.txt", "note": "0 bytes", "alert": "🧾", "text": "The file is empty. It was always empty." },
+      { "icon": "💡", "name": "ending_ideas_v7_FINAL(2).docx", "note": "", "alert": "💡", "text": "Already used. There are eight endings now. Go find them." }
+    ],
+    "empty": "Access denied: these files have unionised."
+  }
+}

@@ -19,6 +19,15 @@
       if (ids.indexOf(t) >= 0) document.documentElement.setAttribute('data-theme', t)
       if (sessionStorage.getItem('nikstilos-booted') || matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('booted')
     } catch (e) {}
+    // Site settings (edited on the admin page, /nikstil/), fetched now so they're in by the time
+    // os.js runs. /?preview shows the admin page's unpublished draft instead (only on that device).
+    try {
+      var draft = /[?&]preview\b/.test(location.search) && localStorage.getItem('nikstil-preview')
+      window.nikstilPreview = !!draft
+      window.nikstilSite = draft
+        ? Promise.resolve(JSON.parse(draft))
+        : fetch('/site.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null }).catch(function () { return null })
+    } catch (e) {}
   </script>
   <link rel="stylesheet" href="/os/os.css">
   <link rel="stylesheet" href="/os/cursors.css">
@@ -67,13 +76,13 @@
   <div class="start-menu" id="start-menu" role="menu" hidden>
     <div class="sm-banner" aria-hidden="true">nikstil<b>OS</b></div>
     <div class="sm-main">
-      <div class="sm-head"><span class="sm-avatar" data-icon="avatar" aria-hidden="true">🙂</span><span>Guest</span></div>
+      <div class="sm-head"><span class="sm-avatar" data-icon="avatar" aria-hidden="true">🙂</span><span class="sm-user">Guest</span></div>
       <div class="sm-cols">
         <ul class="sm-list">
-          <li><button class="sm-item" role="menuitem" data-app="translatr"><span data-icon="translatr" aria-hidden="true">🌐</span> TRANSLATR™</button></li>
-          <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> The GIF</button></li>
-          <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> This PC</button></li>
-          <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> Recycle Bin</button></li>
+          <li><button class="sm-item" role="menuitem" data-app="translatr"><span data-icon="translatr" aria-hidden="true">🌐</span> <span class="sm-label">TRANSLATR™</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> <span class="sm-label">The GIF</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">This PC</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
           <li><button class="sm-item" role="menuitem" data-action="fullscreen" hidden><span aria-hidden="true"><svg class="fs-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path class="fs-enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/><path class="fs-exit" d="M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4"/></svg></span><span class="fs-label">Full screen</span></button></li>
         </ul>
         <div class="sm-side">
@@ -108,7 +117,8 @@
     <p class="shutdown-hint">(or click anywhere to turn it back on)</p>
   </div>
 
-  <!-- ===== Window contents: edit freely, os.js only wires up the parts it names ===== -->
+  <!-- ===== Window contents: edit freely, os.js only wires up the parts it names.
+       These are the defaults: anything set in /site.json (from the admin page, /nikstil/) wins. ===== -->
 
   <template id="app-pc">
     <div class="win-body pc">
@@ -121,7 +131,7 @@
         <dt>Themes installed</dt><dd class="pc-themes">8</dd>
         <dt>Registered to</dt><dd>you, probably</dd>
       </dl>
-      <p class="muted">Genuine. Activated. Unlicensed for commercial use, emotional support or taxes.</p>
+      <p class="pc-note muted">Genuine. Activated. Unlicensed for commercial use, emotional support or taxes.</p>
     </div>
   </template>
 
@@ -139,9 +149,9 @@
       <h3 class="tr-name">TRANSLATR™ Ultra+ Pro Max</h3>
       <p>The world’s most monetized translator. $10 a word, vowels extra, every second request refused (and billed).</p>
       <ul class="tr-facts">
-        <li><b class="f-endings">6</b> endings</li>
+        <li><b class="f-endings">8</b> endings</li>
         <li><b class="f-items">27</b> items in 3 Mystery Boxes</li>
-        <li><b class="f-achievements">90</b> achievements</li>
+        <li><b class="f-achievements">102</b> achievements</li>
         <li>a <b>Daily Challenge</b></li>
       </ul>
       <p class="tr-save muted">Checking for a save on this device…</p>
@@ -166,7 +176,7 @@
 
   <template id="app-themes">
     <div class="win-body themes">
-      <p class="muted">Pick a look. The first five are TRANSLATR™’s, the last three are new.</p>
+      <p class="muted">Pick a look. They’re the same eight as TRANSLATR™’s, so a pick in one shows up in the other.</p>
       <div class="theme-grid" id="theme-grid"></div>
     </div>
   </template>
@@ -174,16 +184,16 @@
   <template id="app-bin">
     <div class="win-body bin">
       <ul class="bin-list">
-        <li><button class="bin-file" data-joke="old"><span aria-hidden="true">📄</span> old_homepage.html <small>“Pick one.”</small></button></li>
-        <li><button class="bin-file" data-joke="motivation"><span aria-hidden="true">⚙️</span> motivation.exe <small>0 KB</small></button></li>
-        <li><button class="bin-file" data-joke="sleep"><span aria-hidden="true">📕</span> sleep_schedule.pdf <small>corrupted</small></button></li>
-        <li><button class="bin-file" data-joke="refund"><span aria-hidden="true">🧾</span> TRANSLATR_refund_policy.txt <small>0 bytes</small></button></li>
-        <li><button class="bin-file" data-joke="ideas"><span aria-hidden="true">💡</span> ending_ideas_v7_FINAL(2).docx</button></li>
+        <li><button class="bin-file" data-alert="📄" data-text="Restore “Pick one.”? No. It’s in a better place now."><span aria-hidden="true">📄</span> <span class="bin-name">old_homepage.html</span> <small>“Pick one.”</small></button></li>
+        <li><button class="bin-file" data-alert="⚠️" data-text="motivation.exe has stopped working. It never really started."><span aria-hidden="true">⚙️</span> <span class="bin-name">motivation.exe</span> <small>0 KB</small></button></li>
+        <li><button class="bin-file" data-alert="⚠️" data-text="This file is corrupted beyond repair. Have you tried going to bed?"><span aria-hidden="true">📕</span> <span class="bin-name">sleep_schedule.pdf</span> <small>corrupted</small></button></li>
+        <li><button class="bin-file" data-alert="🧾" data-text="The file is empty. It was always empty."><span aria-hidden="true">🧾</span> <span class="bin-name">TRANSLATR_refund_policy.txt</span> <small>0 bytes</small></button></li>
+        <li><button class="bin-file" data-alert="💡" data-text="Already used. There are eight endings now. Go find them."><span aria-hidden="true">💡</span> <span class="bin-name">ending_ideas_v7_FINAL(2).docx</span></button></li>
       </ul>
     </div>
     <div class="win-foot">
       <span class="status muted">5 items</span>
-      <button class="btn bin-empty">Empty Recycle Bin</button>
+      <button class="btn bin-empty" data-text="Access denied: these files have unionised.">Empty Recycle Bin</button>
     </div>
   </template>
 
