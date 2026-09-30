@@ -23,7 +23,7 @@ export const DIFFICULTIES = [
   { name: "Easy (Ask Your Doctor If Easy Is Right For You)", count: 1, hp: 0.8, dmg: 0.75, speed: 0.95 },
   { name: "Easy, Said Nobody", count: 1, hp: 0.85, dmg: 0.8, speed: 0.95 },
   { name: "Easy Mode (Now With More Ads)", count: 1, hp: 0.9, dmg: 0.85, speed: 1 },
-  { name: "Easy (Batteries Not Included)", count: 1, hp: 0.9, dmg: 0.9, speed: 1 },
+  { name: "Easy (Results May Vary)", count: 1, hp: 0.9, dmg: 0.9, speed: 1 },
   { name: "Easy (As Advertised)", count: 1, hp: 1, dmg: 1, speed: 1 },
   { name: "Easy If You’re Built Different", count: 1, hp: 1, dmg: 1.05, speed: 1 },
   { name: "Easy According To The Tutorial", count: 1, hp: 1.05, dmg: 1.05, speed: 1.05 },
@@ -31,7 +31,7 @@ export const DIFFICULTIES = [
   { name: "Technically Easy", count: 1, hp: 1.1, dmg: 1.1, speed: 1.05 },
   { name: "Easy (Source: Trust Me Bro)", count: 1, hp: 1.1, dmg: 1.15, speed: 1.1 },
   { name: "Deceptively Easy", count: 1, hp: 1.15, dmg: 1.15, speed: 1.1 },
-  { name: "Easy If The Lag Is On Your Side", count: 1, hp: 1.15, dmg: 1.2, speed: 1.1 },
+  { name: "Easy, Just Don’t Get Hit", count: 1, hp: 1.15, dmg: 1.2, speed: 1.1 },
   { name: "Easy For Someone Who’s Never Played", count: 1, hp: 1.2, dmg: 1.2, speed: 1.15 },
   { name: BRAINROT, count: 1, hp: 1.2, dmg: 1.25, speed: 1.15 },
 ];
