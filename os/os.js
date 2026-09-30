@@ -21,14 +21,14 @@
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩' },
   }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
@@ -42,6 +42,10 @@
     gif: { title: 'animation.gif - Image Viewer', icon: 'gif', width: 540, init: initGif },
     themes: { title: 'Themes', icon: 'themes', width: 600, init: initThemes },
     bin: { title: 'Recycle Bin', icon: 'bin', width: 460, init: initBin },
+    // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
+    leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
+    messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
+    account: { title: 'Account', icon: 'account', width: 400, init: (el, win) => online?.init('account', el, win) },
   }
 
   const $ = (sel, root = document) => root.querySelector(sel)
@@ -350,7 +354,8 @@
     if (existing) return restore(existing)
     const content = document.getElementById(`app-${id}`).content.cloneNode(true)
     const win = makeWindow({ id, title: app.title, icon: app.icon, width: app.width, content })
-    app.init?.(win.el, win)
+    const cleanup = app.init?.(win.el, win) // an app can hand back what to do when it closes
+    if (typeof cleanup === 'function') win.onClose = cleanup
   }
 
   /** A message box: one line of text and an OK button. */
@@ -370,6 +375,47 @@
     const ok = $('.btn', win.el)
     ok.addEventListener('click', () => closeWin(win))
     ok.focus()
+  }
+
+  /**
+   * A message box with OK and Cancel, and optionally a text box. Resolves to true (or the text)
+   * for OK, and null for Cancel or closing it.
+   */
+  function askbox({ title, text, icon = '❓', ok = 'OK', cancel = 'Cancel', input = null }) {
+    return new Promise((resolve) => {
+      let result = null
+      const content = document.createDocumentFragment()
+      const body = document.createElement('div')
+      body.className = 'win-body msg'
+      body.innerHTML = `<span class="msg-icon" aria-hidden="true"></span><div class="msg-main"><p></p></div>`
+      $('.msg-icon', body).textContent = icon
+      $('p', body).textContent = text
+      let field = null
+      if (input) {
+        field = document.createElement(input.multiline ? 'textarea' : 'input')
+        field.className = 'msg-input'
+        if (input.multiline) field.rows = 3
+        field.maxLength = input.maxLength ?? 500
+        field.placeholder = input.placeholder ?? ''
+        field.setAttribute('aria-label', text)
+        $('.msg-main', body).append(field)
+      }
+      const foot = document.createElement('div')
+      foot.className = 'win-foot'
+      foot.innerHTML = `<button class="btn btn-cancel"></button><button class="btn btn-primary btn-ok"></button>`
+      $('.btn-cancel', foot).textContent = cancel
+      $('.btn-ok', foot).textContent = ok
+      content.append(body, foot)
+      const win = makeWindow({ id: `msg-${++msgCount}`, title, icon, width: 380, content, onClose: () => resolve(result) })
+      win.el.classList.add('is-msg')
+      $('.btn-cancel', win.el).addEventListener('click', () => closeWin(win))
+      $('.btn-ok', win.el).addEventListener('click', () => {
+        if (field && !field.value.trim()) return field.focus()
+        result = field ? field.value.trim() : true
+        closeWin(win)
+      })
+      ;(field ?? $('.btn-ok', win.el)).focus()
+    })
   }
 
   // ================= Apps =================
@@ -685,6 +731,26 @@
   shutdown.addEventListener('click', powerOn)
   shutdown.addEventListener('keydown', powerOn)
 
+  // ================= Online =================
+  // Accounts, Leaderboards and Messenger live in os/online-apps.js (loaded just before this file).
+  const online =
+    window.nikstilOnlineApps?.({
+      $,
+      $$,
+      open,
+      openApp,
+      closeWin,
+      focusWin,
+      restore,
+      msgbox,
+      askbox,
+      closeMenus,
+      iconFor,
+      coarsePointer,
+      siteHidden: (id) => site.apps?.[id]?.hidden === true,
+      userName: () => text(site.user) || 'Guest',
+    }) ?? null
+
   // ================= Site settings =================
   // /site.json (edited on the admin page, /nikstil/) overrides the defaults written in index.html.
   // Anything missing or malformed keeps its default, so a broken file can't break the desktop.
@@ -764,6 +830,7 @@
       const saved = storage.get(THEME_KEY) || storage.get(GAME_THEME_KEY)
       const fallback = THEMES.some((t) => t.id === site.defaultTheme) ? site.defaultTheme : 'aero'
       applyTheme(THEMES.some((t) => t.id === saved) ? saved : fallback, false)
+      online?.start()
       runBoot(() => {
         // nikstil.com/#translatr opens that window straight away (handy for links).
         const deep = location.hash.slice(1)

@@ -35,6 +35,9 @@
     ['gif', '🎞️'],
     ['themes', '🎨'],
     ['bin', '🗑️'],
+    ['leaderboard', '🏆'],
+    ['messenger', '💬'],
+    ['account', '👤'],
   ]
   const GIFS = [
     ['animation.gif', 'Shown first'],
@@ -52,6 +55,9 @@
       gif: { label: 'The GIF', title: 'animation.gif - Image Viewer', hidden: false },
       themes: { label: 'Themes', title: 'Themes', hidden: false },
       bin: { label: 'Recycle Bin', title: 'Recycle Bin', hidden: false },
+      leaderboard: { label: 'Leaderboards', title: 'Leaderboards', hidden: false },
+      messenger: { label: 'Messenger', title: 'nikstil Messenger', hidden: false },
+      account: { label: 'Account', title: 'Account', hidden: false },
     },
     links: [],
     pc: {
@@ -75,6 +81,7 @@
       ],
       empty: 'Access denied: these files have unionised.',
     },
+    online: { url: 'https://flxamobqsrrvmqmzautp.supabase.co', key: '' },
   }
 
   const $ = (sel, root = document) => root.querySelector(sel)
@@ -177,6 +184,7 @@
     if (typeof out.apps !== 'object' || !out.apps) out.apps = {}
     for (const [id] of APPS) out.apps[id] = { ...DEFAULTS.apps[id], ...(out.apps[id] || {}) }
     if (!Array.isArray(out.links)) out.links = []
+    if (typeof out.online !== 'object' || !out.online) out.online = clone(DEFAULTS.online)
     if (typeof out.pc !== 'object' || !out.pc) out.pc = clone(DEFAULTS.pc)
     if (!Array.isArray(out.pc.rows)) out.pc.rows = clone(DEFAULTS.pc.rows)
     if (typeof out.bin !== 'object' || !out.bin) out.bin = clone(DEFAULTS.bin)
@@ -344,6 +352,10 @@
   }
 
   async function publish() {
+    if (isSecretKey(draft.online?.key)) {
+      show('online')
+      return toast('Not published: the Online key is a secret key. Use the publishable key.', true)
+    }
     if (!token()) {
       show('publishing')
       return toast('Connect to GitHub first: that’s what lets this page change the site.', true)
@@ -512,6 +524,7 @@
     pc: { name: 'System Properties', icon: '💻', render: renderPc },
     bin: { name: 'Recycle Bin', icon: '🗑️', render: renderBin },
     gif: { name: 'The GIF', icon: '🎞️', render: renderGif },
+    online: { name: 'Online', icon: '🌐', render: renderOnline },
     publishing: { name: 'Publishing', icon: '☁️', render: renderPublishing },
     advanced: { name: 'Advanced', icon: '🧰', render: renderAdvanced },
   }
@@ -548,7 +561,7 @@
   function renderDesktop() {
     return [
       h('h2', {}, 'Desktop icons'),
-      h('p', { class: 'intro' }, 'Rename the icons, change their window titles, or hide them. Hidden apps also leave the Start menu (links like nikstil.com/#gif still open them).'),
+      h('p', { class: 'intro' }, 'Rename the icons, change their window titles, or hide them. Hidden apps also leave the Start menu (links like nikstil.com/#gif still open them). Leaderboards, Messenger and Account only show once Online is set up.'),
       h('div', { class: 'app-head', 'aria-hidden': 'true' }, h('span'), h('span', {}, 'Icon label'), h('span', { class: 'app-title' }, 'Window title'), h('span', {}, 'Show')),
       h(
         'div',
@@ -906,6 +919,315 @@
     ]
   }
 
+  // ================= Online =================
+  /** A Supabase secret key must never go in site.json (it's public, and it bypasses every rule). */
+  function isSecretKey(key) {
+    key = (key ?? '').trim()
+    if (key.startsWith('sb_secret_')) return true
+    try {
+      return JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'service_role'
+    } catch {
+      return false
+    }
+  }
+  const BRIDGE_TAG = '<script src="/online/translatr-bridge.js" defer></script>'
+
+  async function copy(text, what) {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast(`${what} copied.`)
+    } catch {
+      toast('Couldn’t copy. Select it and copy it by hand.', true)
+    }
+  }
+
+  function renderOnline() {
+    const o = draft.online
+    const keyInput = text(o, 'key', {
+      placeholder: 'sb_publishable_… (or the legacy “anon” key, eyJ…)',
+      spellcheck: false,
+      onchanged: (el) => {
+        el.classList.toggle('is-invalid', isSecretKey(el.value))
+        warn.hidden = !isSecretKey(el.value)
+        showState()
+      },
+    })
+    const warn = h('p', { class: 'note note-bad', hidden: !isSecretKey(o.key) }, 'That’s a secret key. It must never go on the website: anyone could use it to do anything to your database. Use the publishable (or “anon”) key instead.')
+    keyInput.classList.toggle('is-invalid', isSecretKey(o.key))
+    const state = h('div', { class: 'conn' }, h('span', { class: 'conn-dot', 'aria-hidden': 'true' }), h('span'))
+    function showState() {
+      const on = !!(o.url?.trim() && o.key?.trim()) && !isSecretKey(o.key)
+      state.classList.toggle('is-ok', on)
+      state.lastChild.textContent = on ? 'Switched on (once published): Leaderboards and Messenger show on the desktop.' : 'Switched off: the online apps stay hidden until there’s a key.'
+    }
+    showState()
+    const adminSql = "update public.profiles set is_admin = true where username = 'nikstil';"
+    const code = (t) => h('code', {}, t)
+    return [
+      h('h2', {}, 'Online'),
+      h('p', { class: 'intro' }, 'Accounts, the TRANSLATR™ leaderboards and nikstil Messenger. They run on your Supabase project; this site only holds its address and public key.'),
+      state,
+      h(
+        'div',
+        { class: 'form' },
+        row('Supabase project URL', text(o, 'url', { placeholder: 'https://….supabase.co', spellcheck: false, onchanged: showState })),
+        row('Publishable key', keyInput, 'Supabase → Project Settings → API Keys. This one is meant to be public.'),
+        warn,
+      ),
+      h('h3', {}, 'Set up (once)'),
+      h(
+        'ol',
+        { class: 'steps' },
+        h('li', {}, 'In Supabase, open ', h('b', {}, 'SQL Editor → New query'), ', paste the setup SQL and press ', h('b', {}, 'Run'), '. ', h('button', { class: 'btn btn-small', type: 'button', onclick: async () => copy(await (await fetch('/supabase/schema.sql', { cache: 'no-cache' })).text(), 'Setup SQL') }, 'Copy setup SQL'), ' (It’s safe to run again after an update.)'),
+        h('li', {}, 'In ', h('b', {}, 'Authentication → Sign In / Providers → Email'), ', turn ', h('b', {}, 'Confirm email'), ' off. Accounts are a username and password, so there’s no inbox to confirm.'),
+        h('li', {}, 'In ', h('b', {}, 'Authentication → URL Configuration'), ', set the Site URL to ', code('https://nikstil.com'), '.'),
+        h('li', {}, 'Paste the publishable key above and ', h('b', {}, 'Publish'), '.'),
+        h('li', {}, 'On nikstil.com, open ', h('b', {}, 'Start → Account'), ' and create your account (do it straight away, so nobody else takes your name). Then make it an admin by running this in the SQL Editor: ', code(adminSql), ' ', h('button', { class: 'btn btn-small', type: 'button', onclick: () => copy(adminSql, 'SQL') }, 'Copy'), ' (change the name if yours is different).'),
+      ),
+      h('h3', {}, 'TRANSLATR™ connection'),
+      renderBridge(),
+      h('h3', {}, 'Moderation'),
+      renderModeration(),
+    ]
+  }
+
+  /** Checks that the game page still loads the leaderboard script (a new game upload replaces it). */
+  function renderBridge() {
+    const box = h('div', { class: 'conn' }, h('span', { class: 'conn-dot', 'aria-hidden': 'true' }), h('span', {}, 'Checking…'))
+    const fix = h('button', { class: 'btn btn-primary', type: 'button', hidden: true }, 'Reconnect')
+    const say = (state, msg) => {
+      box.className = `conn${state ? ` is-${state}` : ''}`
+      box.lastChild.textContent = msg
+    }
+    async function currentPage() {
+      if (!token()) return { html: await (await fetch('/translatr/index.html', { cache: 'no-cache' })).text(), sha: null }
+      const { branch } = connection || (await connect())
+      const file = await gh(`${contentsPath('translatr/index.html')}?ref=${encodeURIComponent(branch)}`)
+      return { html: decodeBase64Text(file.content), sha: file.sha }
+    }
+    async function check() {
+      try {
+        const { html } = await currentPage()
+        const ok = html.includes('/online/translatr-bridge.js')
+        say(ok ? 'ok' : 'bad', ok ? 'Connected: TRANSLATR™ posts speedruns and Daily Challenges to the leaderboards.' : 'Disconnected: the game page no longer loads the leaderboard script (a new game upload replaces translatr/index.html). Runs won’t be posted until it’s reconnected.')
+        fix.hidden = ok
+      } catch (err) {
+        say('bad', `Couldn’t check: ${explain(err)}`)
+      }
+    }
+    fix.addEventListener('click', async () => {
+      if (!token()) {
+        show('publishing')
+        return toast('Connect to GitHub first.', true)
+      }
+      fix.disabled = true
+      try {
+        const { html, sha } = await currentPage()
+        if (html.includes('/online/translatr-bridge.js')) return check()
+        const tag = `    <!-- nikstil.com online: posts speedruns and Daily Challenges to the leaderboards. Keep this line when uploading a new build. -->\n    ${BRIDGE_TAG}\n`
+        const next = html.includes('</head>') ? html.replace('</head>', `${tag}  </head>`) : tag + html
+        await commitFile('translatr/index.html', base64Text(next), 'Reconnect TRANSLATR to the online leaderboards', sha)
+        say('ok', 'Reconnected. It’s live in a minute or so.')
+        fix.hidden = true
+      } catch (err) {
+        toast(explain(err), true)
+      } finally {
+        fix.disabled = false
+      }
+    })
+    queueMicrotask(check)
+    return h('div', { class: 'form' }, box, h('div', { class: 'button-row' }, fix))
+  }
+
+  /** Reports, runs and bans. Needs a site account that's an admin (checked by the server). */
+  function renderModeration() {
+    const wrap = h('div', { class: 'mod' }, h('p', { class: 'muted' }, 'Loading…'))
+    const online = window.nikstilOnline
+    const fail = (err) => wrap.replaceChildren(h('p', { class: 'note note-bad' }, online ? online.errorText(err) : String(err)))
+
+    async function start() {
+      if (!online || !(await online.configured)) {
+        return wrap.replaceChildren(h('p', { class: 'muted' }, 'Moderation works once online features are switched on and published.'))
+      }
+      const me = await online.me().catch(() => null)
+      if (!me) return signInForm()
+      if (!me.is_admin) {
+        return wrap.replaceChildren(
+          h('p', { class: 'note' }, `You’re signed in as ${me.username}, which isn’t an admin. Run the admin SQL from step 5 for this account, then reload.`),
+          h('div', { class: 'button-row' }, h('button', { class: 'btn', type: 'button', onclick: async () => (await online.signOut(), start()) }, 'Sign out')),
+        )
+      }
+      panel(me)
+    }
+
+    function signInForm() {
+      const user = h('input', { type: 'text', autocomplete: 'username', placeholder: 'Your nikstil.com username', spellcheck: false })
+      const pass = h('input', { type: 'password', autocomplete: 'current-password', placeholder: 'Password' })
+      const err = h('p', { class: 'note note-bad', hidden: true })
+      const go = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Sign in')
+      const form = h(
+        'form',
+        {
+          class: 'form',
+          onsubmit: async (e) => {
+            e.preventDefault()
+            go.disabled = true
+            err.hidden = true
+            try {
+              await online.signIn(user.value, pass.value)
+              start()
+            } catch (x) {
+              err.textContent = online.errorText(x)
+              err.hidden = false
+            } finally {
+              go.disabled = false
+            }
+          },
+        },
+        h('p', { class: 'hint' }, 'Sign in with your nikstil.com account (the one you made admin in step 5). The server checks it, so this part can’t be got around.'),
+        row('Username', user),
+        row('Password', pass),
+        err,
+        h('div', { class: 'button-row' }, go),
+      )
+      wrap.replaceChildren(form)
+    }
+
+    const fmt = (ms) => {
+      if (ms == null) return '—'
+      const s = Math.floor(ms / 1000)
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}.${String(Math.floor(ms / 10) % 100).padStart(2, '0')}`
+    }
+    const date = (iso) => (iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '')
+
+    async function panel(me) {
+      const reports = h('div', { class: 'list' }, h('p', { class: 'muted' }, 'Loading…'))
+      const runs = h('div', { class: 'list' }, h('p', { class: 'muted' }, 'Loading…'))
+      const who = h('input', { type: 'text', placeholder: 'Username', spellcheck: false })
+      async function setBan(id, name, banned) {
+        if (banned && !confirm(`Ban ${name}? They can’t post runs or send messages, and they drop off the leaderboards.`)) return
+        try {
+          await online.admin.setBanned(id, banned)
+          toast(`${name} ${banned ? 'banned' : 'unbanned'}.`)
+          loadReports()
+          loadRuns()
+        } catch (err) {
+          toast(online.errorText(err), true)
+        }
+      }
+      async function loadReports() {
+        try {
+          const list = await online.admin.reports(true)
+          reports.replaceChildren(
+            ...(list.length ? [] : [h('div', { class: 'empty' }, 'No open reports. 🎉')]),
+            ...list.map((r) =>
+              h(
+                'div',
+                { class: 'item' },
+                h('div', { class: 'item-line' }, h('b', { class: 'grow' }, `${r.reporter ?? 'Someone'} reported ${r.reported_name}${r.reported_banned ? ' (banned)' : ''}`), h('small', { class: 'muted' }, date(r.created_at))),
+                h('p', {}, `“${r.reason}”`),
+                r.message_body && h('p', { class: 'quote' }, r.message_body),
+                h(
+                  'div',
+                  { class: 'button-row' },
+                  h('button', { class: 'btn', type: 'button', onclick: async () => (await online.admin.resolve(r.id).catch((e) => toast(online.errorText(e), true)), loadReports()) }, 'Mark resolved'),
+                  h('button', { class: `btn ${r.reported_banned ? '' : 'btn-danger'}`, type: 'button', onclick: () => setBan(r.reported, r.reported_name, !r.reported_banned) }, r.reported_banned ? 'Unban' : `Ban ${r.reported_name}`),
+                ),
+              ),
+            ),
+          )
+        } catch (err) {
+          reports.replaceChildren(h('p', { class: 'note note-bad' }, online.errorText(err)))
+        }
+      }
+      async function loadRuns() {
+        try {
+          const list = await online.admin.recentRuns(100)
+          runs.replaceChildren(
+            ...(list.length ? [] : [h('div', { class: 'empty' }, 'No runs yet.')]),
+            h(
+              'div',
+              { class: 'table-wrap' },
+              h(
+                'table',
+                { class: 'runs' },
+                h('thead', {}, h('tr', {}, ['Player', 'Board', 'Time', 'Server', 'Status', 'When', ''].map((t) => h('th', {}, t)))),
+                h(
+                  'tbody',
+                  {},
+                  list.map((r) =>
+                    h(
+                      'tr',
+                      { class: `is-${r.status}` },
+                      h('td', {}, r.username),
+                      h('td', {}, r.mode === 'daily' ? `Daily ${r.day}` : r.ending ?? ''),
+                      h('td', {}, fmt(r.time_ms)),
+                      h('td', { title: r.note ?? '' }, fmt(r.server_ms)),
+                      h('td', { title: r.note ?? '' }, r.status),
+                      h('td', {}, date(r.finished_at)),
+                      h(
+                        'td',
+                        {},
+                        (r.status === 'finished' || r.status === 'removed') &&
+                          h(
+                            'button',
+                            {
+                              class: 'btn btn-small',
+                              type: 'button',
+                              onclick: async () => {
+                                try {
+                                  await online.admin.setRunRemoved(r.id, r.status === 'finished', r.status === 'finished' ? `Removed by ${me.username}` : null)
+                                  loadRuns()
+                                } catch (err) {
+                                  toast(online.errorText(err), true)
+                                }
+                              },
+                            },
+                            r.status === 'finished' ? 'Remove' : 'Restore',
+                          ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          )
+        } catch (err) {
+          runs.replaceChildren(h('p', { class: 'note note-bad' }, online.errorText(err)))
+        }
+      }
+      const banBy = async (banned) => {
+        const name = who.value.trim()
+        if (!name) return
+        const p = await online.findPlayer(name, { includeBanned: true }).catch(() => null)
+        if (!p) return toast(`Nobody called “${name}”.`, true)
+        if (p.banned === banned) return toast(`${p.username} is ${banned ? 'already' : 'not'} banned.`)
+        setBan(p.id, p.username, banned)
+      }
+      wrap.replaceChildren(
+        h('div', { class: 'item-line' }, h('span', { class: 'grow' }, `Signed in as ${me.username} (admin).`), h('button', { class: 'btn btn-small', type: 'button', onclick: async () => (await online.signOut(), start()) }, 'Sign out')),
+        h('h3', {}, 'Open reports'),
+        reports,
+        h('h3', {}, 'Recent runs'),
+        h('p', { class: 'hint' }, '“Server” is how long the server saw the run take. Removing a run takes it off the leaderboards (you can restore it).'),
+        runs,
+        h('h3', {}, 'Ban or unban a player'),
+        h(
+          'div',
+          { class: 'item-line' },
+          h('label', { class: 'grow' }, h('span', { class: 'sr-only' }, 'Username'), who),
+          h('button', { class: 'btn btn-danger', type: 'button', onclick: () => banBy(true) }, 'Ban'),
+          h('button', { class: 'btn', type: 'button', onclick: () => banBy(false) }, 'Unban'),
+        ),
+      )
+      loadReports()
+      loadRuns()
+    }
+
+    queueMicrotask(start)
+    return wrap
+  }
+
   // ================= Rendering =================
   /** Which sections have unpublished edits (a dot in the sidebar). */
   function dirtySections() {
@@ -919,6 +1241,7 @@
     if (differs('links')) out.add('links')
     if (differs('pc')) out.add('pc')
     if (differs('bin')) out.add('bin')
+    if (differs('online')) out.add('online')
     return out
   }
   function renderNav() {

@@ -283,6 +283,19 @@ a { color: var(--accent); }
 details { max-width: 620px; }
 details summary { cursor: pointer; color: #1e3287; margin: 14px 0 8px; }
 
+/* Online */
+.content > .conn { margin-bottom: 16px; max-width: 620px; }
+.note-bad { border-left-color: var(--danger); background: #fdf3f2; }
+.mod { display: grid; gap: 10px; max-width: 760px; }
+.mod h3 { margin: 14px 0 0; }
+.quote { padding: 6px 10px; border-left: 3px solid var(--line); background: #fff; white-space: pre-wrap; overflow-wrap: anywhere; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; }
+.runs { width: 100%; border-collapse: collapse; font-size: 13px; }
+.runs th, .runs td { padding: 5px 8px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.runs th { font-size: 12px; color: var(--muted); background: #f3f7fb; }
+.runs tr.is-rejected td, .runs tr.is-removed td { color: var(--muted); text-decoration: line-through; }
+.runs tr.is-rejected td:last-child, .runs tr.is-removed td:last-child { text-decoration: none; }
+
 /* Advanced */
 .json { width: 100%; min-height: 380px !important; font: 12.5px/1.5 Consolas, "Lucida Console", monospace !important; white-space: pre; }
 .button-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
