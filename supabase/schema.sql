@@ -145,6 +145,23 @@ begin
 end;
 $$;
 
+/**
+ * Tells every open leaderboard (the desktop's, and the game's ending screen) that something
+ * changed, over Supabase Realtime's public 'leaderboard' channel. They then fetch the new standings.
+ */
+create or replace function public.notify_leaderboard(p_mode text default null, p_ending text default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform realtime.send(jsonb_build_object('mode', p_mode, 'ending', p_ending), 'changed', 'leaderboard', false);
+exception when others then
+  null; -- live updates are a nice-to-have: they must never stop a run from being saved
+end;
+$$;
+
 -- Where a time would place on its board: 1 + the players with a better personal best.
 create or replace function public.board_rank(p_mode text, p_ending text, p_day date, p_time integer, p_user uuid)
 returns bigint
@@ -220,6 +237,7 @@ begin
   update public.runs
     set status = 'finished', finished_at = now(), time_ms = p_time_ms, server_ms = elapsed, ending = p_ending, splits = p_splits
     where id = r.id;
+  perform public.notify_leaderboard(r.mode, p_ending);
   return jsonb_build_object(
     'status', 'finished',
     'time_ms', p_time_ms,
@@ -495,6 +513,7 @@ begin
     raise exception 'You can''t ban yourself.';
   end if;
   update public.profiles set banned = p_banned where id = p_user;
+  perform public.notify_leaderboard(); -- their times leave (or rejoin) every board
 end;
 $$;
 
@@ -534,6 +553,7 @@ begin
     set status = case when p_removed then 'removed' else 'finished' end,
         note = coalesce(p_note, note)
     where id = p_run and status in ('finished', 'removed');
+  perform public.notify_leaderboard();
 end;
 $$;
 
@@ -553,6 +573,7 @@ begin
     raise exception 'Sign in first.' using errcode = '28000';
   end if;
   delete from auth.users where id = me;
+  perform public.notify_leaderboard();
 end;
 $$;
 
@@ -599,6 +620,7 @@ revoke execute on function
   public.require_player(),
   public.start_run(text, bigint, date),
   public.board_rank(text, text, date, integer, uuid),
+  public.notify_leaderboard(text, text),
   public.finish_run(uuid, integer, text, jsonb),
   public.leaderboard(text, date, integer),
   public.my_rank(text, date),

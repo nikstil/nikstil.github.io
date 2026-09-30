@@ -32,8 +32,15 @@ The admin page walks through the same steps, with copy buttons: **nikstil.com/ni
 | `online/online.js` | The browser client (`window.nikstilOnline`), shared by the desktop, the game page and the admin page. Reads the project URL and key from `/site.json`. |
 | `online/vendor/supabase-2.117.2.js` | The official Supabase JS client (MIT), pinned and served from this site. |
 | `os/online-apps.js` | The Leaderboards, nikstil Messenger and Account windows on the desktop. |
-| `online/translatr-bridge.js` | Loaded by `translatr/index.html`. Watches the game's save, tells the server when a speedrun or Daily Challenge starts and posts the time when it ends. |
+| `online/translatr-bridge.js` | Loaded by `translatr/index.html`. Watches the game's save, tells the server when a speedrun or Daily Challenge starts and posts the time when it ends. On the results page after a speedrun, it shows live boards for that ending (left) and Any% (right). |
 | `privacy/` | The privacy notice linked from sign-up. |
+
+### Live leaderboards
+
+Whenever a run finishes (or an admin removes a run or bans someone), the database announces it on
+Supabase Realtime's public `leaderboard` channel (`notify_leaderboard` in `schema.sql`). Open
+leaderboards (the desktop window and the game's results page) then fetch the new standings. If they
+don't update live, check Supabase → **Realtime → Settings** still allows public channels.
 
 ### Keeping TRANSLATR™ connected
 

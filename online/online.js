@@ -202,6 +202,40 @@
     if (error) throw error
     return data?.[0] ?? null
   }
+  // Live standings: the database announces every change on the public 'leaderboard' channel
+  // (see notify_leaderboard in schema.sql), and whoever's watching fetches the new top times.
+  let boardChannel = null
+  const boardWatchers = new Set()
+  /**
+   * Calls onChange({ mode, ending }) whenever any leaderboard changes, and onStatus(live) when the
+   * live connection comes and goes (after a drop, refetch: something may have been missed).
+   * Returns a function that stops watching.
+   */
+  function watchLeaderboard({ onChange, onStatus } = {}) {
+    const w = { onChange, onStatus }
+    boardWatchers.add(w)
+    connect()
+      .then((c) => {
+        if (!boardWatchers.has(w)) return
+        if (!boardChannel) {
+          boardChannel = c
+            .channel('leaderboard')
+            .on('broadcast', { event: 'changed' }, ({ payload }) => boardWatchers.forEach((x) => x.onChange?.(payload ?? {})))
+            .subscribe((status) => boardWatchers.forEach((x) => x.onStatus?.(status === 'SUBSCRIBED')))
+        } else if (boardChannel.state === 'joined') {
+          onStatus?.(true)
+        }
+      })
+      .catch(() => onStatus?.(false))
+    return () => {
+      boardWatchers.delete(w)
+      if (!boardWatchers.size && boardChannel) {
+        client.removeChannel(boardChannel)
+        boardChannel = null
+      }
+    }
+  }
+
   async function startRun(mode, gameStartedAt, day = null) {
     const c = await connect()
     const { data, error } = await c.rpc('start_run', { p_mode: mode, p_game_started_at: gameStartedAt ?? null, p_day: day })
@@ -360,6 +394,7 @@
     deleteAccount,
     leaderboard,
     myRank,
+    watchLeaderboard,
     startRun,
     finishRun,
     findPlayers,

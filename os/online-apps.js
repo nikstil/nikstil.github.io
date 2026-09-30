@@ -205,19 +205,34 @@
           } else if (!me) {
             mine.replaceChildren(h('button', { class: 'lb-link', onclick: () => os.openApp('account') }, 'Sign in'), ' to get your runs on the board.')
           }
-          status.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+          status.textContent = live ? '● Live' : `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
         } catch (err) {
           if (run === seq) status.textContent = net().errorText(err)
         }
       }
       select.addEventListener('change', load)
       $('.lb-refresh', el).addEventListener('click', load)
+      // Live: the board refreshes the moment anyone's run finishes (the minute timer is a backstop).
+      let live = false
+      let soon = 0
+      const stopWatching = net().watchLeaderboard({
+        onChange: () => {
+          clearTimeout(soon)
+          soon = setTimeout(load, 300)
+        },
+        onStatus: (on) => {
+          live = on
+          if (on) load()
+        },
+      })
       const timer = setInterval(load, 60_000)
       const view = { onAuth: load }
       views.add(view)
       load()
       return () => {
         clearInterval(timer)
+        clearTimeout(soon)
+        stopWatching()
         views.delete(view)
       }
     }
