@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOOMSCROLL.EXE · nikstil.com</title>
+  <meta name="description" content="DOOMSCROLL.EXE: three episodes of pop-up-closing, ad-blocking, management-downsizing carnage. From TRANSLATR™.">
+  <meta property="og:title" content="DOOMSCROLL.EXE">
+  <meta property="og:description" content="Three episodes. Fifteen levels. One Ban Hammer.">
+  <meta name="theme-color" content="#120404">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23120404'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E👹%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/doomscroll/style.css">
+  <script type="module" src="/doomscroll/app.js"></script>
+</head>
+<body>
+  <main class="frame" id="frame">
+    <header class="bar">
+      <span class="bar-name">DOOMSCROLL.EXE</span>
+      <span class="bar-sub" id="bar-sub">Shareware · 3 episodes</span>
+      <button class="bar-btn" id="mute" title="Sound on/off (M)" aria-label="Sound on/off">🔊</button>
+      <a class="bar-btn home-link" href="/" title="Back to nikstil.com">nikstil.com</a>
+    </header>
+
+    <div class="view" id="view">
+      <canvas id="screen" class="screen" aria-label="DOOMSCROLL game screen"></canvas>
+
+      <section class="overlay" id="title">
+        <h1 class="logo">DOOMSCROLL</h1>
+        <p class="tag">Hell has pop-ups. Close them, walk into the EXIT switch, repeat.</p>
+        <div class="episodes" id="episodes"></div>
+      </section>
+
+      <section class="overlay" id="paused" hidden>
+        <h2 class="big">PAUSED</h2>
+        <div class="row">
+          <button class="btn blood" data-do="resume">▶ Resume</button>
+          <button class="btn" data-do="menu">Quit to menu</button>
+        </div>
+      </section>
+
+      <section class="overlay dead" id="dead" hidden>
+        <h2 class="big">YOU DIED</h2>
+        <p class="copy">Customer Support has closed your ticket.</p>
+        <div class="row">
+          <button class="btn blood" data-do="retry">↻ Try this level again</button>
+          <button class="btn" data-do="menu">Quit to menu</button>
+        </div>
+      </section>
+
+      <section class="overlay" id="won" hidden>
+        <p class="kicker" id="won-level"></p>
+        <h2 class="big" id="won-title">LEVEL COMPLETE</h2>
+        <p class="stats" id="won-stats"></p>
+        <p class="copy warn" id="won-extra"></p>
+        <p class="copy" id="won-next"></p>
+        <div class="row" id="won-buttons"></div>
+      </section>
+    </div>
+
+    <div class="pad" id="pad" hidden>
+      <div class="dpad">
+        <button class="key" data-press="up" style="grid-area: up" aria-label="Forward">▲</button>
+        <button class="key" data-press="left" style="grid-area: left" aria-label="Turn left">◀</button>
+        <button class="key" data-press="right" style="grid-area: right" aria-label="Turn right">▶</button>
+        <button class="key" data-press="down" style="grid-area: down" aria-label="Back">▼</button>
+      </div>
+      <div class="pad-right">
+        <button class="key" data-do="pause" aria-label="Pause">❚❚</button>
+        <button class="key" data-do="switch" aria-label="Switch gun">⇄</button>
+        <button class="key big-key ban" data-press="melee" aria-label="Ban Hammer">BAN</button>
+        <button class="key big-key fire" data-press="fire">FIRE</button>
+      </div>
+    </div>
+
+    <p class="help" id="help">
+      <b>WASD</b> / arrows move · <b>← →</b> or the mouse turn (click the screen to grab the mouse) ·
+      <b>Space</b> or click fires · <b>P</b>, <b>V</b>, <b>left Alt</b> or <b>right-click</b> swings the Ban Hammer
+      (twice the damage, and it knocks enemy shots back: they stun whoever they hit) · <b>1</b> / <b>2</b> or scroll
+      switches guns · <b>Shift</b> runs · <b>Esc</b> pauses
+    </p>
+  </main>
+</body>
+</html>

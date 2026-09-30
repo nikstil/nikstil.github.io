@@ -32,6 +32,11 @@
       "title": "Recycle Bin",
       "hidden": false
     },
+    "doom": {
+      "label": "DOOMSCROLL.EXE",
+      "title": "DOOMSCROLL.EXE",
+      "hidden": false
+    },
     "leaderboard": {
       "label": "Leaderboards",
       "title": "Leaderboards",
