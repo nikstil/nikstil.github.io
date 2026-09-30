@@ -54,6 +54,7 @@
       <li><button class="desk-icon" data-app="translatr"><span class="di-img" data-icon="translatr" aria-hidden="true">🌐</span><span class="di-label">TRANSLATR™</span></button></li>
       <li><button class="desk-icon" data-app="gif"><span class="di-img" data-icon="gif" aria-hidden="true">🎞️</span><span class="di-label">The GIF</span></button></li>
       <li><button class="desk-icon" data-app="themes"><span class="di-img" data-icon="themes" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
+      <li><button class="desk-icon" data-app="doom"><span class="di-img" data-icon="doom" aria-hidden="true">👹</span><span class="di-label">DOOMSCROLL.EXE</span></button></li>
       <li><button class="desk-icon" data-app="bin"><span class="di-img" data-icon="bin" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
       <li data-online="leaderboard" hidden><button class="desk-icon" data-app="leaderboard"><span class="di-img" data-icon="leaderboard" aria-hidden="true">🏆</span><span class="di-label">Leaderboards</span></button></li>
       <li data-online="messenger" hidden><button class="desk-icon" data-app="messenger"><span class="di-img" data-icon="messenger" aria-hidden="true">💬</span><span class="di-label">Messenger</span></button></li>
@@ -84,6 +85,7 @@
         <ul class="sm-list">
           <li><button class="sm-item" role="menuitem" data-app="translatr"><span data-icon="translatr" aria-hidden="true">🌐</span> <span class="sm-label">TRANSLATR™</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> <span class="sm-label">The GIF</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="doom"><span data-icon="doom" aria-hidden="true">👹</span> <span class="sm-label">DOOMSCROLL.EXE</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">This PC</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
           <li data-online="leaderboard" hidden><button class="sm-item" role="menuitem" data-app="leaderboard"><span data-icon="leaderboard" aria-hidden="true">🏆</span> <span class="sm-label">Leaderboards</span></button></li>
@@ -180,6 +182,14 @@
     <div class="win-foot">
       <span class="status muted">animation.gif · click it</span>
       <a class="btn" href="/gif/">⛶ Full screen</a>
+    </div>
+  </template>
+
+  <template id="app-doom">
+    <div class="win-body doom-win"><iframe class="doom-frame" title="DOOMSCROLL.EXE" allow="fullscreen; autoplay"></iframe></div>
+    <div class="win-foot">
+      <span class="status muted">Click the game to play · Esc pauses</span>
+      <a class="btn" href="/doomscroll/" target="_blank" rel="noopener">⛶ Full page</a>
     </div>
   </template>
 

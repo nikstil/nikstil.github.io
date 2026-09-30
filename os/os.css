@@ -1002,6 +1002,10 @@ html[data-theme="vapor"] .bin-file:hover { background: rgb(1 205 254 / 0.15); bo
 html[data-theme="vapor"] .bin-file.is-selected { color: #fff; background: linear-gradient(90deg, #ff71ce, #b967ff); }
 html[data-theme="vapor"] .bin-file.is-selected small { color: #fbe3ff; }
 
+/* ================= DOOMSCROLL.EXE (the game page, in a window) ================= */
+.win-body.doom-win { flex: none; padding: 0; overflow: hidden; aspect-ratio: 16 / 10; background: #000; }
+.doom-frame { display: block; width: 100%; height: 100%; border: 0; }
+
 /* ================= Online apps: Leaderboards, Messenger, Account (os/online-apps.js) ================= */
 /* Form fields: plain and light, like the window bodies in every theme; themes adjust the edges. */
 .win-body :is(input[type="text"], input[type="search"], input[type="password"], select, textarea),
