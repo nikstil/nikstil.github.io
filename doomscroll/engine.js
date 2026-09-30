@@ -693,7 +693,13 @@ function frozen(c) {
  * Runs DOOMSCROLL in `canvas`. `levels` is the list of maps to play (one episode).
  * Callbacks: onHit() (the engine pauses: call resume()), onDeath(), onWin(stats), onSound(name), onKill().
  */
-export function createEngine(canvas, levels, { onHit, onDeath, onWin, onSound = () => {}, onKill = () => {} } = {}) {
+export function createEngine(
+  canvas,
+  levels,
+  { onHit, onDeath, onWin, onSound = () => {}, onKill = () => {}, difficulty = null } = {},
+) {
+  // Difficulty (see difficulty.js): count doubles normal enemies; hp, dmg and speed scale them.
+  let diff = { count: 1, hp: 1, dmg: 1, speed: 1, ...difficulty };
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
@@ -718,7 +724,8 @@ export function createEngine(canvas, levels, { onHit, onDeath, onWin, onSound = 
     x,
     y,
     from,
-    hp: Z[type].hp,
+    hp: Z[type].hp * diff.hp,
+    maxHp: Z[type].hp * diff.hp,
     cool: 1 + Math.random(),
     flash: 0,
     stun: 0,
@@ -764,6 +771,15 @@ export function createEngine(canvas, levels, { onHit, onDeath, onWin, onSound = 
       whack: 0, // impact flash
     };
     enemies = d.spawns.map(([t, x, y]) => makeEnemy(t, x, y));
+    // More enemies: each normal one brings company, on a free tile next to it (bosses stay single).
+    for (let n = 1; n < diff.count; n++)
+      for (const [t, x, y] of d.spawns) {
+        if (Z[t].name) continue;
+        const spot = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].find(
+          ([ox, oy]) => grid[(y + oy) | 0]?.[(x + ox) | 0] === 0 && !(((x + ox) | 0) === (d.start.x | 0) && ((y + oy) | 0) === (d.start.y | 0)),
+        );
+        enemies.push(makeEnemy(t, spot ? x + spot[0] : x + 0.3, spot ? y + spot[1] : y + 0.3));
+      }
     pickups = d.pickups.map(([type, x, y]) => ({ type, x, y, taken: !1 }));
     shots = [];
     casings = [];
@@ -1037,7 +1053,7 @@ export function createEngine(canvas, levels, { onHit, onDeath, onWin, onSound = 
         room && (enemies.push(makeEnemy(kind.summon.type, e.x + room[0], e.y + room[1], e)), (run.total += 1), onSound("popup"));
       }
       if (dist > (kind.melee ? 0.85 : 3.5)) {
-        const step = kind.speed * dt,
+        const step = kind.speed * diff.speed * dt,
           mx = (tx / dist) * step,
           my = (ty / dist) * step;
         solid(e.x + mx + Math.sign(mx) * 0.3, e.y) || (e.x += mx);
@@ -1046,12 +1062,12 @@ export function createEngine(canvas, levels, { onHit, onDeath, onWin, onSound = 
       if (e.cool > 0) continue;
       if (kind.melee && dist < 1.05) {
         e.cool = kind.cool;
-        hurt(kind.dmg);
+        hurt(kind.dmg * diff.dmg);
       } else if (kind.ranged && sees && dist < 10) {
         e.cool = kind.cool + Math.random() * 0.6;
         const ang = Math.atan2(ty, tx),
           fan = kind.spread ? Array.from({ length: kind.spread }, (_, n) => (n - (kind.spread - 1) / 2) * 0.18) : [(Math.random() - 0.5) * 0.12];
-        for (const f of fan) shots.push({ x: e.x, y: e.y, vx: Math.cos(ang + f) * 4.5, vy: Math.sin(ang + f) * 4.5, dmg: kind.dmg, back: !1 });
+        for (const f of fan) shots.push({ x: e.x, y: e.y, vx: Math.cos(ang + f) * 4.5, vy: Math.sin(ang + f) * 4.5, dmg: kind.dmg * diff.dmg, back: !1 });
         onSound("popup");
       }
       if (paused) return;
@@ -1422,7 +1438,7 @@ export function createEngine(canvas, levels, { onHit, onDeath, onWin, onSound = 
       ctx.fillStyle = "#4a0808";
       ctx.fillRect(62, 13, 196, 5);
       ctx.fillStyle = "#e02020";
-      ctx.fillRect(62, 13, (196 * Math.max(0, boss.hp)) / kind.hp, 5);
+      ctx.fillRect(62, 13, (196 * Math.max(0, boss.hp)) / boss.maxHp, 5);
       ctx.fillStyle = "#fff";
       ctx.font = "bold 7px Arial, sans-serif";
       ctx.textAlign = "center";
@@ -1560,6 +1576,10 @@ export function createEngine(canvas, levels, { onHit, onDeath, onWin, onSound = 
     },
     nextWeapon,
     setWeapon,
+    /** Takes effect from the next level started. */
+    setDifficulty(d) {
+      diff = { count: 1, hp: 1, dmg: 1, speed: 1, ...d };
+    },
     get stats() {
       return { ...run, hp: pl.hp, ammo: pl.ammo, rifle: pl.hasRifle, weapon: pl.weapon };
     },
