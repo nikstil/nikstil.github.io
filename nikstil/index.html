@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <!-- Scripts only from this site, network only to this site and GitHub's API: the token never goes anywhere else. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com; form-action 'none'; base-uri 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0b3f86">
+  <title>Control Panel · nikstilOS</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/nikstil/admin.css">
+  <script src="/nikstil/admin.js" defer></script>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
+
+  <!-- ===== Log on ===== -->
+  <main class="logon" id="logon">
+    <form class="logon-box" id="logon-form">
+      <div class="tile" aria-hidden="true"><span>n</span></div>
+      <h1 class="logon-name">nikstil</h1>
+      <label class="field">
+        <span class="sr-only">User name</span>
+        <input id="user" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="User name" required>
+      </label>
+      <div class="pw-row">
+        <label class="field">
+          <span class="sr-only">Password</span>
+          <input id="pass" type="password" name="password" autocomplete="current-password" placeholder="Password" required>
+        </label>
+        <button class="go" id="go" aria-label="Log on" title="Log on">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 8h10M8 3.5 12.5 8 8 12.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="logon-error" id="logon-error" role="alert" hidden>
+        <p>The user name or password is incorrect.</p>
+        <button type="button" class="btn" id="logon-ok">OK</button>
+      </div>
+    </form>
+    <a class="back" href="/">← Back to nikstil.com</a>
+    <p class="brand" aria-hidden="true">nikstil<b>OS</b> Ultimate</p>
+  </main>
+
+  <!-- ===== Control Panel (filled in by admin.js) ===== -->
+  <div class="cp" id="cp" hidden>
+    <section class="win" aria-labelledby="cp-title">
+      <header class="win-bar">
+        <span class="win-icon" aria-hidden="true">🛠️</span>
+        <h1 class="win-title" id="cp-title">Control Panel</h1>
+        <a class="bar-link" href="/" target="_blank" rel="noopener">View site ↗</a>
+        <button class="bar-link" id="logoff" type="button">Log off</button>
+      </header>
+      <div class="win-client">
+        <nav class="side" id="side" aria-label="Settings"></nav>
+        <div class="content" id="content"></div>
+      </div>
+      <footer class="actionbar">
+        <p class="status" id="status" role="status"></p>
+        <div class="actions">
+          <button class="btn" id="discard" type="button">Discard changes</button>
+          <button class="btn" id="preview" type="button">Preview</button>
+          <button class="btn btn-primary" id="publish" type="button">Publish</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="alert" hidden></div>
+</body>
+</html>

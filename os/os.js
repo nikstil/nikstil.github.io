@@ -1,6 +1,7 @@
 // nikstilOS: the nikstil.com homepage. A tiny desktop: double-click icons to open windows, drag
 // them by the title bar, minimize them to the taskbar, switch between eight themes. No framework
-// and no build step; window contents live in <template>s in index.html.
+// and no build step; window contents live in <template>s in index.html, and /site.json (edited on
+// the admin page, /nikstil/) overrides the text in them.
 ;(() => {
   'use strict'
 
@@ -36,7 +37,7 @@
   const BOOTED_KEY = 'nikstilos-booted'
 
   const APPS = {
-    pc: { title: 'System Properties', icon: 'pc', width: 420 },
+    pc: { title: 'System Properties', icon: 'pc', width: 420, init: initPc },
     translatr: { title: 'TRANSLATR™ Ultra+ Pro Max', icon: 'translatr', width: 460, init: initTranslatr },
     gif: { title: 'animation.gif - Image Viewer', icon: 'gif', width: 540, init: initGif },
     themes: { title: 'Themes', icon: 'themes', width: 600, init: initThemes },
@@ -67,7 +68,7 @@
     try {
       return JSON.parse($('#game-facts').textContent)
     } catch {
-      return { endings: 6, items: 27, achievements: 90, themes: 5 }
+      return { endings: 8, items: 27, achievements: 102, themes: 8 }
     }
   })()
 
@@ -285,6 +286,7 @@
     const wasHidden = win.el.hidden || !!flying
     win.el.hidden = false
     win.task.classList.remove('is-min')
+    keepOnScreen(win)
     focusWin(win)
     if (!wasHidden || !animates()) return
     win.el.animate(
@@ -292,6 +294,18 @@
       { duration: RESTORE_MS, easing: 'cubic-bezier(.2,.8,.2,1)' },
     )
   }
+  /** Pulls a window back into view if the screen got smaller under it (a phone rotating, say). */
+  function keepOnScreen(win) {
+    const el = win.el
+    if (el.hidden || win.minimizing || el.classList.contains('is-max')) return
+    const r = el.getBoundingClientRect()
+    const maxLeft = innerWidth - r.width - 6
+    const maxTop = innerHeight - taskbarHeight() - r.height - 6
+    if (r.left > maxLeft) el.style.left = `${Math.max(6, maxLeft)}px`
+    if (r.top > maxTop) el.style.top = `${Math.max(0, maxTop)}px`
+  }
+  addEventListener('resize', () => open.forEach(keepOnScreen))
+
   function toggleMax(win) {
     const max = win.el.classList.toggle('is-max')
     $('.cap-max', win.el).textContent = max ? '❐' : '□'
@@ -395,6 +409,23 @@
     $('.tr-launch', el).textContent = '▶ Continue'
   }
 
+  function initPc(el) {
+    const rows = site.pc?.rows
+    if (Array.isArray(rows)) {
+      const dl = $('.pc-specs', el)
+      dl.replaceChildren()
+      for (const row of rows) {
+        if (!Array.isArray(row)) continue
+        const dt = document.createElement('dt')
+        const dd = document.createElement('dd')
+        dt.textContent = row[0] ?? ''
+        dd.textContent = row[1] ?? ''
+        dl.append(dt, dd)
+      }
+    }
+    if (text(site.pc?.note) !== null) $('.pc-note', el).textContent = site.pc.note
+  }
+
   function initGif(el) {
     const img = $('.gif-img', el)
     const frames = ['/animation.gif', '/true.gif']
@@ -424,35 +455,55 @@
     applyTheme(document.documentElement.dataset.theme, false) // mark the current one
   }
 
-  const BIN_JOKES = {
-    old: ['old_homepage.html', 'Restore “Pick one.”? No. It’s in a better place now.', '📄'],
-    motivation: ['motivation.exe', 'motivation.exe has stopped working. It never really started.', '⚠️'],
-    sleep: ['sleep_schedule.pdf', 'This file is corrupted beyond repair. Have you tried going to bed?', '⚠️'],
-    refund: ['TRANSLATR_refund_policy.txt', 'The file is empty. It was always empty.', '🧾'],
-    ideas: ['ending_ideas_v7_FINAL(2).docx', 'Already used. There are six endings now. Go find them.', '💡'],
-  }
   function initBin(el) {
-    for (const file of $$('.bin-file', el)) {
-      const [title, text, icon] = BIN_JOKES[file.dataset.joke]
-      file.addEventListener('dblclick', () => msgbox(title, text, icon))
+    const list = $('.bin-list', el)
+    const files = site.bin?.files
+    if (Array.isArray(files)) {
+      list.replaceChildren()
+      for (const f of files) {
+        if (!f || !text(f.name)) continue
+        const li = document.createElement('li')
+        li.innerHTML = `<button class="bin-file"><span aria-hidden="true"></span> <span class="bin-name"></span></button>`
+        const b = $('.bin-file', li)
+        b.dataset.alert = text(f.alert) || text(f.icon) || '📄'
+        b.dataset.text = text(f.text) ?? ''
+        $('span', b).textContent = text(f.icon) || '📄'
+        $('.bin-name', b).textContent = f.name
+        if (text(f.note)) {
+          const small = document.createElement('small')
+          small.textContent = f.note
+          b.append(small)
+        }
+        list.append(li)
+      }
+    }
+    const all = $$('.bin-file', el)
+    $('.status', el).textContent = `${all.length} item${all.length === 1 ? '' : 's'}`
+    for (const file of all) {
+      const show = () => msgbox($('.bin-name', file).textContent, file.dataset.text || 'This file is empty.', file.dataset.alert)
+      // On touch screens a tap opens it, so a double tap mustn't open it twice more.
+      file.addEventListener('dblclick', () => !coarsePointer && show())
       file.addEventListener('click', (e) => {
-        $$('.bin-file', el).forEach((f) => f.classList.toggle('is-selected', f === file))
-        if (coarsePointer || e.detail === 0) msgbox(title, text, icon) // tap, or Enter
+        all.forEach((f) => f.classList.toggle('is-selected', f === file))
+        if (coarsePointer || e.detail === 0) show() // tap, or Enter
       })
     }
-    $('.bin-empty', el).addEventListener('click', () => msgbox('Recycle Bin', 'Access denied: these files have unionised.', '⛔'))
+    const empty = $('.bin-empty', el)
+    const emptyText = text(site.bin?.empty) || empty.dataset.text
+    empty.addEventListener('click', () => msgbox('Recycle Bin', emptyText, '⛔'))
   }
 
   // ================= Desktop =================
   const desktop = $('#desktop')
-  for (const icon of $$('.desk-icon')) {
+  function wireDeskIcon(icon, launch) {
     icon.addEventListener('click', (e) => {
       $$('.desk-icon').forEach((i) => i.classList.toggle('is-selected', i === icon))
       // Double-click on a mouse; a tap on touch screens; Enter/Space from the keyboard.
-      if (coarsePointer || e.detail === 0) openApp(icon.dataset.app)
+      if (coarsePointer || e.detail === 0) launch()
     })
-    icon.addEventListener('dblclick', () => openApp(icon.dataset.app))
+    icon.addEventListener('dblclick', () => !coarsePointer && launch())
   }
+  for (const icon of $$('.desk-icon')) wireDeskIcon(icon, () => openApp(icon.dataset.app))
   desktop.addEventListener('pointerdown', (e) => {
     if (!e.target.closest('.desk-icon')) $$('.desk-icon').forEach((i) => i.classList.remove('is-selected'))
   })
@@ -523,8 +574,12 @@
     clock.dateTime = now.toISOString()
     clock.title = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   }
-  tick()
-  setInterval(tick, 15_000)
+  // Ticks just after each minute turns over, so it's never a minute behind.
+  const tickEachMinute = () => {
+    tick()
+    setTimeout(tickEachMinute, 60_000 - (Date.now() % 60_000) + 50)
+  }
+  tickEachMinute()
 
   // Show desktop: minimizes everything; a second click brings the same windows back.
   let peeked = []
@@ -608,29 +663,113 @@
   // Shut down closes the tab. Browsers only allow that when the tab has nothing else in its history
   // (nikstil.com typed into a new tab, or opened in one); otherwise the close is refused and you get
   // the classic "safe to turn off" screen instead (click it to boot back up).
+  shutdown.tabIndex = -1
   $('#shutdown-btn').addEventListener('click', () => {
     closeMenus()
     shutdown.hidden = false
     shutdown.classList.remove('is-safe')
+    shutdown.focus()
     setTimeout(() => {
       window.close()
       setTimeout(() => shutdown.classList.add('is-safe'), 250)
     }, reducedMotion() ? 0 : 1400)
   })
-  shutdown.addEventListener('click', () => {
+  // A click (or any key) on the "safe to turn off" screen boots it back up.
+  function powerOn() {
     if (!shutdown.classList.contains('is-safe')) return
     for (const w of [...open.values()]) closeWin(w)
     shutdown.hidden = true
     document.documentElement.classList.remove('booted')
     runBoot(() => {})
-  })
+  }
+  shutdown.addEventListener('click', powerOn)
+  shutdown.addEventListener('keydown', powerOn)
+
+  // ================= Site settings =================
+  // /site.json (edited on the admin page, /nikstil/) overrides the defaults written in index.html.
+  // Anything missing or malformed keeps its default, so a broken file can't break the desktop.
+  let site = {}
+  const text = (v) => (typeof v === 'string' ? v : null)
+  /** Only web and mail links: never javascript: or data: URLs. */
+  function safeUrl(u) {
+    try {
+      const url = new URL(u, location.href)
+      return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url : null
+    } catch {
+      return null
+    }
+  }
+  function openLink(url) {
+    if (url.origin === location.origin || url.protocol === 'mailto:') location.href = url.href
+    else window.open(url.href, '_blank', 'noopener')
+  }
+
+  function applySite(data) {
+    site = data && typeof data === 'object' && !Array.isArray(data) ? data : {}
+    if (text(site.user)) $('.sm-user').textContent = site.user
+    if (text(site.boot)) $('.boot-copy').textContent = site.boot
+    for (const [id, app] of Object.entries(APPS)) {
+      const s = site.apps?.[id]
+      if (!s || typeof s !== 'object') continue
+      if (text(s.title)) app.title = s.title
+      if (text(s.label)) {
+        $(`.desk-icon[data-app="${id}"] .di-label`).textContent = s.label
+        $(`.sm-item[data-app="${id}"] .sm-label`)?.replaceChildren(s.label)
+      }
+      if (s.hidden === true) $$(`.desk-icon[data-app="${id}"], .sm-item[data-app="${id}"]`).forEach((el) => (el.closest('li').hidden = true))
+    }
+    // Shortcuts: extra desktop icons (and Start menu entries) that open a link.
+    const fsItem = $('.sm-list [data-action="fullscreen"]').closest('li')
+    for (const link of Array.isArray(site.links) ? site.links : []) {
+      const url = safeUrl(link?.url)
+      const label = text(link?.label)
+      if (!url || !label) continue
+      const icon = text(link.icon) || '🔗'
+      const li = document.createElement('li')
+      li.innerHTML = `<button class="desk-icon"><span class="di-img" aria-hidden="true"></span><span class="di-label"></span></button>`
+      $('.di-img', li).textContent = icon
+      $('.di-label', li).textContent = label
+      $('.desk-icons').append(li)
+      wireDeskIcon($('.desk-icon', li), () => openLink(url))
+      const item = document.createElement('li')
+      item.innerHTML = `<button class="sm-item" role="menuitem"><span aria-hidden="true"></span> <span class="sm-label"></span></button>`
+      $('span', item).textContent = icon
+      $('.sm-label', item).textContent = label
+      $('.sm-item', item).addEventListener('click', () => {
+        closeMenus()
+        openLink(url)
+      })
+      fsItem.before(item)
+    }
+  }
+
+  /** The welcome message (if one is set): once per visit, and again whenever it changes. */
+  function welcome() {
+    if (window.nikstilPreview) {
+      msgbox('Preview', 'This is your unpublished draft from the admin page. Only this browser can see it.', '👁️')
+    }
+    const message = text(site.welcome?.text)
+    if (!message || storage.get('nikstilos-welcomed', sessionStorage) === message) return
+    storage.set('nikstilos-welcomed', message, sessionStorage)
+    msgbox(text(site.welcome.title) || 'Welcome', message, text(site.welcome.icon) || '👋')
+  }
 
   // ================= Start =================
-  const saved = storage.get(THEME_KEY) || storage.get(GAME_THEME_KEY)
-  applyTheme(THEMES.some((t) => t.id === saved) ? saved : 'aero', false)
-  runBoot(() => {
-    // nikstil.com/#translatr opens that window straight away (handy for links).
-    const deep = location.hash.slice(1)
-    if (APPS[deep]) openApp(deep)
-  })
+  // Waits for the settings (up to 1.5 s: a slow or missing site.json just means the defaults).
+  const settings = Promise.race([window.nikstilSite ?? null, new Promise((r) => setTimeout(r, 1500, null))])
+  settings
+    .then(applySite)
+    .catch(() => {})
+    .finally(() => {
+      const saved = storage.get(THEME_KEY) || storage.get(GAME_THEME_KEY)
+      const fallback = THEMES.some((t) => t.id === site.defaultTheme) ? site.defaultTheme : 'aero'
+      applyTheme(THEMES.some((t) => t.id === saved) ? saved : fallback, false)
+      runBoot(() => {
+        // nikstil.com/#translatr opens that window straight away (handy for links).
+        const deep = location.hash.slice(1)
+        if (APPS[deep]) openApp(deep)
+        welcome()
+      })
+    })
+  addEventListener('hashchange', () => APPS[location.hash.slice(1)] && openApp(location.hash.slice(1)))
 })()

@@ -1,7 +1,7 @@
 /*
  * nikstilOS: the nikstil.com homepage.
- * Themes: the five from TRANSLATR™ (same looks, same cursors: see os/cursors.css, generated from
- * the game by scripts/build-site.mjs) plus three new ones: Luna, Aqua and Vaporwave.
+ * Themes: the same eight as TRANSLATR™ (same ids and looks; the cursors in os/cursors.css are
+ * generated from the game by scripts/build-site.mjs).
  * The base styles below are the Aero theme; every other theme overrides them further down.
  */
 
@@ -94,6 +94,8 @@ img { display: block; max-width: 100%; }
 .di-img { font-size: 38px; line-height: 1; filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.45)); transition: transform 0.15s; }
 /* Icons follow the theme (os.js swaps them): hidden until the right set is in, so they never flash. */
 html:not(.icons-ready) [data-icon] { visibility: hidden; }
+/* Same for the labels, which /site.json can rename: they show once the settings are in. */
+html:not(.icons-ready) .desk-icons, html:not(.icons-ready) .sm-head { visibility: hidden; }
 .desk-icon:hover .di-img { transform: translateY(-2px); }
 .di-label {
   max-width: 100%;
@@ -122,6 +124,7 @@ html:not(.icons-ready) [data-icon] { visibility: hidden; }
   min-width: 240px;
   max-width: calc(100vw - 12px);
   max-height: calc(100vh - var(--taskbar-h) - 12px);
+  max-height: calc(100dvh - var(--taskbar-h) - 12px); /* phones: the visible height, not behind the address bar */
   padding: 0 7px 7px;
   border-radius: 9px;
   outline: none;
