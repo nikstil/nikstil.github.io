@@ -6,6 +6,7 @@ import { u as ye, s as qe } from "./index-Bp0o3VTX.js";
 import { D as O } from "./doomLevels-TAD7AXCp.js";
 import { u as Ge, A as _e } from "./AdBreak-UT1NLF3y.js";
 import { createEngine } from "/doomscroll/engine.js";
+import { DIFFICULTIES as Df, savedDifficulty as Ds, saveDifficulty as Dw } from "/doomscroll/difficulty.js";
 const Je = (canvas, callbacks) => createEngine(canvas, O, callbacks);
 const ze = 4500,
   De = { hp: 60, ammo: 30 },
@@ -16,7 +17,8 @@ function nl() {
 function el() {
   const e = U.useRef(null),
     t = U.useRef(null),
-    [a, r] = U.useState("title"),
+    [a, r] = U.useState(() => (Ds() === null ? "difficulty" : "title")), // first time: pick a difficulty
+    [dI, dS] = U.useState(() => Ds() ?? 10),
     [h, v] = U.useState(0),
     [o, L] = U.useState(null),
     [A] = U.useState(() => matchMedia("(pointer: coarse)").matches),
@@ -25,7 +27,8 @@ function el() {
     { closeShooter: W, noteShooter: P, noteBest: se, triggerEnding: F } = ye.getState(),
     [X, l] = Ge(() => P({ shooterAds: 1 }));
   (U.useEffect(() => {
-    const T = Je(e.current, {
+    const T = createEngine(e.current, O, {
+      difficulty: Df[Ds() ?? 10],
       onHit: () => l(() => T.resume()),
       onDeath: () => {
         (P({ shooterDeaths: 1 }), r("dead"));
@@ -83,7 +86,9 @@ function el() {
   return (
     U.useEffect(() => {
       const T = (S) => {
-        S.key !== "Escape" || X || (a === "play" ? p() : a === "paused" ? z() : (a === "title" || a === "dead") && W());
+        S.key !== "Escape" ||
+          X ||
+          (a === "play" ? p() : a === "paused" ? z() : a === "difficulty" ? r("title") : (a === "title" || a === "dead") && W());
       };
       return (window.addEventListener("keydown", T), () => window.removeEventListener("keydown", T));
     }),
@@ -146,6 +151,51 @@ function el() {
                         }),
                         f.jsx("button", { className: "btn", onClick: W, children: "Quit to TRANSLATR™" }),
                       ],
+                    }),
+                    f.jsxs("p", {
+                      className: "shooter-copy",
+                      style: { fontSize: "0.75rem", opacity: 0.8, overflowWrap: "anywhere" },
+                      children: [
+                        "Difficulty: ",
+                        f.jsx("b", { children: Df[dI].name }),
+                        " ",
+                        f.jsx("button", { className: "btn", onClick: () => r("difficulty"), children: "Change" }),
+                      ],
+                    }),
+                  ],
+                }),
+              a === "difficulty" &&
+                f.jsxs("div", {
+                  className: "shooter-overlay",
+                  children: [
+                    f.jsx("div", { className: "shooter-title", children: "CHOOSE YOUR DIFFICULTY" }),
+                    f.jsx("p", {
+                      className: "shooter-copy",
+                      children: "They’re all easy. Some are easier than others. Pick carefully.",
+                    }),
+                    f.jsx("div", {
+                      style: {
+                        display: "grid",
+                        gap: "6px",
+                        width: "min(100%, 40rem)",
+                        maxHeight: "min(55vh, 26rem)",
+                        overflowY: "auto",
+                        padding: "2px 6px 2px 2px",
+                      },
+                      children: Df.map((D, K) =>
+                        f.jsxs(
+                          "button",
+                          {
+                            className: `btn ${K === dI ? "btn-blood" : ""}`,
+                            style: { justifyContent: "flex-start", textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", height: "auto" },
+                            onClick: () => {
+                              (Dw(K), dS(K), t.current.setDifficulty(Df[K]), r("title"));
+                            },
+                            children: [`${K + 1}. `, D.name],
+                          },
+                          K,
+                        ),
+                      ),
                     }),
                   ],
                 }),

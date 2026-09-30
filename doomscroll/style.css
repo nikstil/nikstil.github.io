@@ -111,6 +111,28 @@ button { font: inherit; cursor: pointer; }
 .ep .row { justify-content: flex-start; margin-top: 4px; }
 .ep .btn { padding: 6px 10px; font-size: 13px; }
 
+.diff-now { max-width: 70ch; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.diff-now b { color: var(--ink); }
+.btn.small { padding: 3px 9px; font-size: 12px; }
+.overlay.diff { justify-content: flex-start; overflow-y: auto; }
+.diff-list { display: grid; gap: 6px; width: min(100%, 640px); padding: 0; list-style: none; counter-reset: diff; }
+.diff-list button {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #4a1a14;
+  border-radius: 5px;
+  color: var(--ink);
+  background: rgba(30, 10, 8, .9);
+  text-align: left;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.diff-list button::before { counter-increment: diff; content: counter(diff) "."; min-width: 2.2ch; color: var(--muted); font-family: "Courier New", monospace; }
+.diff-list button:hover, .diff-list button:focus-visible { border-color: #ff5a4a; outline: none; }
+.diff-list button[aria-pressed="true"] { border-color: var(--blood); background: #4a120d; }
+.diff-list li:last-child button { font-weight: 400; font-size: 12.5px; line-height: 1.5; }
 .help { color: var(--muted); font-size: 12.5px; text-align: center; }
 .help b { color: var(--ink); font-weight: 600; }
 

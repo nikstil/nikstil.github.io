@@ -2,6 +2,7 @@
 // last. The game itself is /doomscroll/engine.js (the same engine as TRANSLATR™'s arcade).
 import { createEngine } from "/doomscroll/engine.js";
 import { EPISODES } from "/doomscroll/levels.js";
+import { DIFFICULTIES, savedDifficulty, saveDifficulty } from "/doomscroll/difficulty.js";
 
 const $ = (sel) => document.querySelector(sel);
 const embed = new URLSearchParams(location.search).has("embed");
@@ -84,13 +85,13 @@ $("#mute").addEventListener("click", () => {
 showMute();
 
 // ================= Screens =================
-const screens = ["title", "paused", "dead", "won"];
+const screens = ["title", "difficulty", "paused", "dead", "won"];
 let screen = "title";
 function show(name) {
   screen = name;
   for (const s of screens) $(`#${s}`).hidden = s !== name;
   $("#pad").hidden = !(coarse && name === "play");
-  $("#bar-sub").textContent = name === "title" ? "Shareware · 3 episodes" : `Episode ${episode.id}: ${episode.name} · ${episode.levels[levelIndex].id}`;
+  $("#bar-sub").textContent = name === "title" || name === "difficulty" ? "Shareware · 3 episodes" : `Episode ${episode.id}: ${episode.name} · ${episode.levels[levelIndex].id}`;
 }
 
 let episode = EPISODES[0];
@@ -106,7 +107,31 @@ const ENDINGS = {
   3: "The Algorithm has been unplugged. You are free. (Until the next update.)",
 };
 
+// ================= Difficulty =================
+let difficulty = savedDifficulty(); // null until the player picks one (the first time they play)
+const diffOf = () => DIFFICULTIES[difficulty ?? 10];
+function renderDifficulty() {
+  $("#diff-list").replaceChildren(
+    ...DIFFICULTIES.map((d, i) => {
+      const li = document.createElement("li"),
+        b = document.createElement("button");
+      b.textContent = d.name;
+      b.setAttribute("aria-pressed", String(i === difficulty));
+      b.addEventListener("click", () => {
+        difficulty = i;
+        saveDifficulty(i);
+        engine?.setDifficulty(DIFFICULTIES[i]);
+        renderTitle();
+        show("title");
+      });
+      li.append(b);
+      return li;
+    }),
+  );
+}
+
 function renderTitle() {
+  $("#diff-name").textContent = diffOf().name;
   const saved = loadSave();
   const list = $("#episodes");
   list.replaceChildren(
@@ -147,6 +172,7 @@ function begin(ep, level, carry) {
     engine?.destroy();
     episode = ep;
     engine = createEngine($("#screen"), ep.levels, {
+      difficulty: diffOf(),
       onHit: () => engine.resume(), // no ads here: just a moment of invulnerability
       onDeath: () => show("dead"),
       onWin: (stats) => levelDone(stats),
@@ -207,6 +233,7 @@ document.addEventListener("click", (e) => {
   if (act === "retry") begin(episode, levelIndex, { ...(levelCarry ?? {}), hp: 100, ammo: Math.max(30, levelCarry?.ammo ?? 0) });
   if (act === "pause") (engine.pause(), show("paused"));
   if (act === "switch") engine.nextWeapon();
+  if (act === "difficulty") (renderDifficulty(), show("difficulty"));
 });
 for (const b of document.querySelectorAll("[data-press]")) {
   const name = b.dataset.press;
@@ -234,6 +261,7 @@ document.addEventListener("visibilitychange", () => {
 
 // A live demo behind the title screen: Episode 1's first map, idle.
 engine = createEngine($("#screen"), EPISODES[0].levels, {
+  difficulty: diffOf(),
   onHit: () => engine.resume(),
   onDeath: () => show("dead"),
   onWin: (stats) => levelDone(stats),
@@ -241,4 +269,6 @@ engine = createEngine($("#screen"), EPISODES[0].levels, {
 });
 new URLSearchParams(location.search).has("debug") && (window.doom = engine);
 renderTitle();
-show("title");
+// First time here: pick a difficulty before anything else.
+if (difficulty === null) (renderDifficulty(), show("difficulty"));
+else show("title");
