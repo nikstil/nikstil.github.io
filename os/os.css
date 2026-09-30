@@ -148,6 +148,7 @@ html:not(.icons-ready) [data-icon] { visibility: hidden; }
 .win.win-in { animation: win-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes win-in { from { opacity: 0; transform: scale(0.94) translateY(8px); } }
 .win.is-dragging { user-select: none; }
+.win.is-minimizing { pointer-events: none; }
 
 .win-bar { position: relative; display: flex; align-items: center; gap: 7px; min-height: 34px; padding-left: 3px; user-select: none; touch-action: none; }
 .win-icon { font-size: 15px; line-height: 1; }
@@ -293,6 +294,14 @@ html:not(.icons-ready) [data-icon] { visibility: hidden; }
 .clock { font-size: 12.5px; white-space: nowrap; }
 .show-desktop { width: 14px; height: 100%; border-left: 1px solid rgb(255 255 255 / 0.35); background: rgb(255 255 255 / 0.08); transition: background 0.2s; }
 .show-desktop:hover { background: rgb(255 255 255 / 0.35); }
+/* Full screen, in the tray. Tinted from the text colour, so it suits every theme's taskbar. */
+.tray-btn { display: grid; flex-shrink: 0; place-items: center; width: 28px; height: 28px; padding: 0; border-radius: 4px; border: 1px solid transparent; color: inherit; background: transparent; transition: background 0.15s, border-color 0.15s; }
+.tray-btn:hover, .tray-btn:focus-visible { outline: none; border-color: color-mix(in oklab, currentColor 40%, transparent); background: color-mix(in oklab, currentColor 16%, transparent); }
+.fs-icon { display: block; }
+.fs-icon path { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: square; }
+.fs-exit, .is-fullscreen .fs-enter { display: none; }
+.is-fullscreen .fs-exit { display: inline; }
+.sm-item > .fs-label { font-size: inherit; line-height: inherit; }
 
 /* ================= Start menu ================= */
 .start-menu {

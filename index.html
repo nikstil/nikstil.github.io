@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/os/os.css">
   <link rel="stylesheet" href="/os/cursors.css">
   <!-- Filled in by scripts/build-site.mjs from the game's own data. -->
-  <script type="application/json" id="game-facts">{"endings":8,"items":27,"achievements":102,"themes":5}</script>
+  <script type="application/json" id="game-facts">{"endings":8,"items":27,"achievements":102,"themes":8}</script>
 </head>
 <body>
   <div class="wallpaper" aria-hidden="true">
@@ -58,6 +58,7 @@
     </button>
     <div class="tasks" id="tasks"></div>
     <div class="tray">
+      <button class="tray-btn" id="fullscreen-btn" aria-label="Full screen" title="Full screen" hidden><svg class="fs-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path class="fs-enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/><path class="fs-exit" d="M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4"/></svg></button>
       <time class="clock" id="clock"></time>
       <button class="show-desktop" id="show-desktop" aria-label="Show desktop" title="Show desktop"></button>
     </div>
@@ -73,6 +74,7 @@
           <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> The GIF</button></li>
           <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> This PC</button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> Recycle Bin</button></li>
+          <li><button class="sm-item" role="menuitem" data-action="fullscreen" hidden><span aria-hidden="true"><svg class="fs-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path class="fs-enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/><path class="fs-exit" d="M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4"/></svg></span><span class="fs-label">Full screen</span></button></li>
         </ul>
         <div class="sm-side">
           <div class="sm-heading">Themes</div>
@@ -88,6 +90,7 @@
   <div class="ctx-menu" id="ctx-menu" role="menu" hidden>
     <button class="ctx-item" role="menuitem" data-app="themes">Personalize…</button>
     <button class="ctx-item" role="menuitem" data-action="refresh">Refresh</button>
+    <button class="ctx-item" role="menuitem" data-action="fullscreen" hidden><span class="fs-label">Full screen</span></button>
     <button class="ctx-item" role="menuitem" data-action="folder">New folder</button>
     <hr>
     <button class="ctx-item" role="menuitem" data-app="pc">About nikstilOS</button>

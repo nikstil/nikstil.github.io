@@ -205,10 +205,8 @@
     $('.cap-max', el).addEventListener('click', () => toggleMax(win))
     $('.cap-close', el).addEventListener('click', () => closeWin(win))
     task.addEventListener('click', () => {
-      if (el.hidden) {
-        el.hidden = false
-        focusWin(win)
-      } else if (el.classList.contains('is-active')) minimize(win)
+      if (el.hidden || win.minimizing) restore(win)
+      else if (el.classList.contains('is-active')) minimize(win)
       else focusWin(win)
     })
 
@@ -217,7 +215,7 @@
   }
 
   function focusWin(win) {
-    if (win.el.hidden) return
+    if (win.el.hidden || win.minimizing) return
     z += 1
     win.el.style.zIndex = z
     for (const w of open.values()) {
@@ -227,18 +225,71 @@
     }
     if (!win.el.contains(document.activeElement)) win.el.focus({ preventScroll: true })
   }
+  const onDesktop = (w) => !w.el.hidden && !w.minimizing
   /** Activates the top-most visible window (after one closes or minimizes). */
   function focusTop() {
-    const visible = [...open.values()].filter((w) => !w.el.hidden).sort((a, b) => b.el.style.zIndex - a.el.style.zIndex)
+    const visible = [...open.values()].filter(onDesktop).sort((a, b) => b.el.style.zIndex - a.el.style.zIndex)
     if (visible[0]) focusWin(visible[0])
     else for (const w of open.values()) w.task.classList.remove('is-active')
   }
+
+  // Minimizing, Windows 7 style: the window shrinks into its taskbar button; restoring grows it
+  // back out. (Reduced motion: it just disappears and reappears.)
+  const MINIMIZE_MS = 260
+  const RESTORE_MS = 280
+  /** The transform that squeezes the window's box onto its taskbar button. */
+  function towardTask(win) {
+    const w = win.el.getBoundingClientRect()
+    const t = win.task.getBoundingClientRect()
+    const dx = t.left + t.width / 2 - (w.left + w.width / 2)
+    const dy = t.top + t.height / 2 - (w.top + w.height / 2)
+    const s = Math.max(0.05, Math.min(0.3, t.width / Math.max(w.width, 1)))
+    return `translate(${dx}px, ${dy}px) scale(${s})`
+  }
+  const animates = () => !reducedMotion() && typeof Element.prototype.animate === 'function'
+
   function minimize(win) {
-    win.el.hidden = true
+    if (win.el.hidden || win.minimizing) return
     win.el.classList.remove('is-active')
     win.task.classList.remove('is-active')
     win.task.classList.add('is-min')
+    if (!animates()) {
+      win.el.hidden = true
+      return focusTop()
+    }
+    win.el.classList.remove('win-in')
+    const anim = win.el.animate(
+      [{ transform: 'none', opacity: 1 }, { opacity: 1, offset: 0.45 }, { transform: towardTask(win), opacity: 0 }],
+      { duration: MINIMIZE_MS, easing: 'cubic-bezier(.5,0,.75,.2)', fill: 'forwards' },
+    )
+    win.minimizing = anim
+    win.el.classList.add('is-minimizing')
+    anim.onfinish = () => {
+      if (win.minimizing !== anim) return
+      win.minimizing = null
+      win.el.classList.remove('is-minimizing')
+      win.el.hidden = true
+      anim.cancel() // drop the end frame, so the window is normal when it comes back
+    }
     focusTop()
+  }
+  /** Back from the taskbar (or on its way there): grows out of its button. */
+  function restore(win) {
+    const flying = win.minimizing
+    if (flying) {
+      win.minimizing = null
+      win.el.classList.remove('is-minimizing')
+      flying.cancel()
+    }
+    const wasHidden = win.el.hidden || !!flying
+    win.el.hidden = false
+    win.task.classList.remove('is-min')
+    focusWin(win)
+    if (!wasHidden || !animates()) return
+    win.el.animate(
+      [{ transform: towardTask(win), opacity: 0 }, { opacity: 1, offset: 0.5 }, { transform: 'none', opacity: 1 }],
+      { duration: RESTORE_MS, easing: 'cubic-bezier(.2,.8,.2,1)' },
+    )
   }
   function toggleMax(win) {
     const max = win.el.classList.toggle('is-max')
@@ -281,12 +332,7 @@
     const app = APPS[id]
     if (!app) return
     const existing = open.get(id)
-    if (existing) {
-      existing.el.hidden = false
-      existing.task.classList.remove('is-min')
-      focusWin(existing)
-      return
-    }
+    if (existing) return restore(existing)
     const content = document.getElementById(`app-${id}`).content.cloneNode(true)
     const win = makeWindow({ id, title: app.title, icon: app.icon, width: app.width, content })
     app.init?.(win.el, win)
@@ -482,19 +528,62 @@
   // Show desktop: minimizes everything; a second click brings the same windows back.
   let peeked = []
   $('#show-desktop').addEventListener('click', () => {
-    const visible = [...open.values()].filter((w) => !w.el.hidden)
+    const visible = [...open.values()].filter(onDesktop)
     if (visible.length) {
       peeked = visible
       visible.forEach(minimize)
     } else {
-      peeked.filter((w) => open.has(w.id)).forEach((w) => {
-        w.el.hidden = false
-        w.task.classList.remove('is-min')
-        focusWin(w)
-      })
+      peeked.filter((w) => open.has(w.id)).forEach(restore)
       peeked = []
     }
   })
+
+  // ================= Full screen =================
+  // The tray button, the Start menu and the desktop menu put the whole desktop in real full
+  // screen, where the browser allows it (iPhones don't, so the buttons stay hidden there).
+  // Esc (or the button again) leaves it.
+  const root = document.documentElement
+  const fsButton = $('#fullscreen-btn')
+  const fullscreenElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null
+  const canFullscreen =
+    !!(root.requestFullscreen || root.webkitRequestFullscreen) && !!(document.fullscreenEnabled ?? document.webkitFullscreenEnabled)
+  function toggleFullscreen() {
+    if (fullscreenElement()) return void (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document)
+    const refused = () => !fullscreenElement() && msgbox('Full screen', 'Your browser said no. Try F11, or full screen from the browser’s own menu.', '⛔')
+    let answered = false
+    try {
+      Promise.resolve((root.requestFullscreen ?? root.webkitRequestFullscreen).call(root, { navigationUI: 'hide' })).then(
+        () => (answered = true),
+        () => {
+          answered = true
+          refused()
+        },
+      )
+    } catch {
+      return refused()
+    }
+    // Some embedded browsers (in-app views) never answer at all: say so rather than do nothing.
+    setTimeout(() => !answered && refused(), 2500)
+  }
+  function syncFullscreen() {
+    const on = !!fullscreenElement()
+    root.classList.toggle('is-fullscreen', on)
+    const label = on ? 'Exit full screen' : 'Full screen'
+    fsButton.setAttribute('aria-label', label)
+    fsButton.title = label
+    $$('[data-action="fullscreen"] .fs-label').forEach((el) => (el.textContent = label))
+  }
+  if (canFullscreen) {
+    $$('#fullscreen-btn, [data-action="fullscreen"]').forEach((el) => (el.hidden = false))
+    fsButton.addEventListener('click', toggleFullscreen)
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.start-menu [data-action="fullscreen"], .ctx-menu [data-action="fullscreen"]')) return
+      closeMenus()
+      toggleFullscreen()
+    })
+    document.addEventListener('fullscreenchange', syncFullscreen)
+    document.addEventListener('webkitfullscreenchange', syncFullscreen)
+  }
 
   // ================= Boot & shut down =================
   const boot = $('#boot')
