@@ -1413,6 +1413,20 @@ html[data-theme="vapor"] .br-fx-layer { background: linear-gradient(180deg, rgb(
 .acct-pic:hover, .acct-pic:focus-visible { outline: none; border-color: color-mix(in oklab, var(--accent, #5ea9dd) 60%, transparent); }
 .acct-pic[aria-pressed="true"] { border-color: var(--accent, #5ea9dd); }
 .acct-pic-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.acct-editor { display: grid; gap: 10px; }
+.acct-editor-top { display: flex; align-items: center; gap: 12px; }
+.acct-editor-preview.avatar { width: 96px; height: 96px; }
+.acct-editor-actions { display: grid; gap: 6px; justify-items: start; }
+.acct-editor-parts { display: grid; gap: 6px; max-height: 260px; overflow: auto; padding-right: 4px; }
+.acct-part { display: grid; grid-template-columns: 82px 1fr; align-items: center; gap: 8px; font-size: 12.5px; }
+.acct-part-label { font-weight: 600; }
+.acct-swatches { display: flex; flex-wrap: wrap; gap: 4px; }
+.acct-swatch { width: 20px; height: 20px; padding: 0; border-radius: 4px; background: var(--c); border: 1px solid rgb(0 0 0 / 0.3); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35); }
+.acct-swatch:hover { transform: scale(1.12); }
+.acct-swatch[aria-checked="true"] { outline: 2px solid var(--accent, #5ea9dd); outline-offset: 1px; }
+.acct-stepper { display: flex; align-items: center; gap: 6px; }
+.acct-step { min-width: 0; width: 26px; padding: 0; font-size: 15px; line-height: 1; }
+.acct-step-name { min-width: 84px; text-align: center; }
 .msgr-find { display: flex; gap: 6px; }
 .msgr-find .msgr-find-input { flex: 1; min-width: 0; }
 .msgr-full { flex: none; min-height: 0; padding: 0 8px; }

@@ -713,3 +713,8 @@ create policy "Players list their own GIFs" on storage.objects for select to aut
 drop policy if exists "Players delete their own GIFs" on storage.objects;
 create policy "Players delete their own GIFs" on storage.objects for delete to authenticated
   using (bucket_id = 'gifs' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- ================= Done =================
+-- Tell the API about any new columns and functions right away, instead of whenever it next
+-- notices (until then, saving a profile picture fails with "Could not find the 'avatar' column").
+notify pgrst, 'reload schema';

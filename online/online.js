@@ -318,7 +318,8 @@
     if (seed !== null && !/^[A-Za-z0-9_-]{1,32}$/.test(seed)) throw new OnlineError('That isn’t a valid picture.')
     const c = await connect()
     const { error } = await c.from('profiles').update({ avatar: seed }).eq('id', profile.id)
-    if (error?.code === '42703') throw new OnlineError('Profile pictures aren’t set up on the server yet. (Site owner: run supabase/schema.sql.)')
+    // 42703: no avatar column. PGRST204: the column exists but the API hasn't reloaded its schema yet.
+    if (error?.code === '42703' || error?.code === 'PGRST204') throw new OnlineError('Profile pictures aren’t set up on the server yet. (Site owner: run supabase/schema.sql.)')
     if (error) throw error
     profile = { ...profile, avatar: seed }
     emit('auth', profile)
