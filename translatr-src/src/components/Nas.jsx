@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
-import { useGameStore, getMiningRate } from '../store/useGameStore'
-import { NAS, NAS_TIERS, ownsExpansion } from '../data/expansions'
+import { useGameStore, getNasRate, getNasUpgradeCost } from '../store/useGameStore'
+import { NAS_TIERS, ownsExpansion } from '../data/expansions'
 import { TASKBAR_H } from '../lib/dock'
 import { money } from '../lib/format'
 import { sfx } from '../lib/audio/engine'
@@ -76,20 +76,19 @@ export default function Nas() {
   const owned = useGameStore((s) => ownsExpansion(s, 'nas'))
   const tier = useGameStore((s) => s.nas?.tier ?? 0)
   const ui = useGameStore((s) => s.nasUi ?? { open: false })
-  const swing = useGameStore((s) => Math.max(1, getMiningRate(s)))
+  const rate = useGameStore((s) => getNasRate(s))
+  const cost = useGameStore((s) => getNasUpgradeCost(s))
   const earned = useGameStore((s) => s.stats.nasEarned ?? 0)
   const wallet = useGameStore((s) => s.money)
   const box = useRef(null)
   if (!owned) return null
   const t = NAS_TIERS[tier]
-  const rate = t.bays * NAS.swingsPerSecondPerBay * swing
   const maxed = tier >= NAS_TIERS.length - 1
-  const cost = NAS.upgradeSwings(tier) * swing
   const { setNasUi } = useGameStore.getState()
 
   if (!ui.open) {
     return (
-      <button className="nas-peek" style={{ top: '38%' }} onClick={() => setNasUi({ open: true })} aria-label={`${t.name}: open`} title={`${t.name} · +${perSecond(rate)}/s · click to open`}>
+      <button className="nas-peek" onClick={() => setNasUi({ open: true })} aria-label={`${t.name}: open`} title={`${t.name} · +${perSecond(rate)}/s · click to open`}>
         <span className="nas-peek-vents" />
         <Leds count={Math.min(14, 3 + tier * 2)} seed={tier + 7} className="nas-peek-leds" />
       </button>
@@ -120,7 +119,7 @@ export default function Nas() {
     e.currentTarget.addEventListener('pointermove', move)
     e.currentTarget.addEventListener('pointerup', up)
   }
-  const pos = ui.x != null ? { left: Math.min(ui.x, window.innerWidth - 300), top: Math.min(ui.y, window.innerHeight - TASKBAR_H - 120) } : { right: 16, top: 90 }
+  const pos = ui.x != null ? { left: Math.min(ui.x, window.innerWidth - 300), top: Math.min(ui.y, window.innerHeight - TASKBAR_H - 120) } : { right: 28, top: 'calc(var(--header-h, 80px) + 12px)' }
 
   return (
     <section ref={box} className="nas-window" style={pos} aria-label="HomeLab NAS">

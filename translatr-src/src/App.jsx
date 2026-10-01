@@ -12,14 +12,13 @@ import { BigModal, DebugPanel, ResetScreen, Taskbar, Toasts } from './components
 import Wallpaper from './components/Wallpaper'
 import DoomFeed, { DOOM_WIDTH } from './components/DoomFeed'
 import WindowGrid from './components/WindowGrid'
-import { Paperclip, Snail } from './components/Toys'
+import { Snail } from './components/Toys'
 import Nas from './components/Nas'
 import { Fly, RogueBriefing, RogueLooks } from './components/Rogue'
 import DataHarvester from './components/DataHarvester'
 import DailyRewards from './components/DailyRewards'
 import AfkBanner from './components/AfkBanner'
 import EventBanner from './components/EventBanner'
-import SpeedrunHud from './components/SpeedrunHud'
 import { EndingsModal, ShutdownDialog } from './components/Endings'
 import { DailyResult } from './components/Daily'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -30,7 +29,8 @@ import { startAudio } from './lib/audio/director'
 import { applyTheme } from './lib/theme'
 import { applySettings, graphicsMode } from './lib/settings'
 import { watchFrameRate } from './lib/perf'
-import { arcadeInset } from './lib/dock'
+import { arcadeInset, NAS_PEEK_W } from './lib/dock'
+import { ownsExpansion } from './data/expansions'
 import { startTextLayer } from './lib/emojiTheme'
 
 // Loaded on demand: most sessions never need them (or need them once).
@@ -45,6 +45,7 @@ const Shooter = lazy(() => import('./components/Shooter'))
 const Arcade = lazy(() => import('./components/Arcade'))
 
 const MIN_CONTENT_WIDTH = 800 // only reserve room for a side-docked DoomFeed™ if the game still fits beside it
+const CAT_ROOM = 304 // the cat's card (288px) and its 8px gap, and a little air
 
 /**
  * Mounts a lazily-loaded component the first time `when(state)` is true, then keeps it mounted
@@ -107,13 +108,30 @@ export default function App() {
   }, [])
 
   const doom = useGameStore((s) => s.layout.doom)
+  const cat = useGameStore((s) => s.layout.cat)
+  const nasRoom = useGameStore((s) => (ownsExpansion(s, 'nas') && !s.nasUi?.open ? NAS_PEEK_W : 0))
   const arcadeOpen = useGameStore((s) => !!s.arcade)
   const vp = useViewport()
 
   // A side-docked DoomFeed™ and the Arcade sidebar behave like Windows AppBars: the page makes room.
   const arcadeRoom = arcadeInset(vp, arcadeOpen)
-  const sideDocked = !doom.collapsed && (doom.edge === 'left' || doom.edge === 'right')
-  const reserve = sideDocked && vp.w - arcadeRoom - DOOM_WIDTH >= MIN_CONTENT_WIDTH ? DOOM_WIDTH : 0
+  // DoomFeed™ and the cat docked to a side get a column of their own while the game still fits
+  // beside them. Where one doesn't fit it starts minimized to the taskbar instead of covering the
+  // game (open it from there to look at it). Minimized, they take no room at all.
+  const side = (w) => w.edge === 'left' || w.edge === 'right'
+  const doomFits = vp.w - arcadeRoom - DOOM_WIDTH >= MIN_CONTENT_WIDTH
+  const doomRoom = side(doom) && !doom.collapsed && doomFits ? DOOM_WIDTH : 0
+  const catFits = vp.w - arcadeRoom - (cat.edge === doom.edge ? 0 : doomRoom) - CAT_ROOM >= MIN_CONTENT_WIDTH
+  const catRoom = side(cat) && !cat.collapsed && catFits ? CAT_ROOM + nasRoom : 0
+  const room = (edge) => Math.max(doom.edge === edge ? doomRoom : 0, cat.edge === edge ? catRoom : 0)
+  useEffect(() => {
+    const { layout, setDock } = useGameStore.getState()
+    if (!doomFits && side(layout.doom) && !layout.doom.collapsed) setDock('doom', { collapsed: true })
+  }, [doomFits, doom.edge])
+  useEffect(() => {
+    const { layout, setDock } = useGameStore.getState()
+    if (!catFits && side(layout.cat) && !layout.cat.collapsed) setDock('cat', { collapsed: true })
+  }, [catFits, cat.edge])
   // Toasts, the speedrun timer and other screen-anchored overlays keep clear of the sidebar too.
   useLayoutEffect(() => document.documentElement.style.setProperty('--arcade-room', `${arcadeRoom}px`), [arcadeRoom])
 
@@ -121,8 +139,8 @@ export default function App() {
     <div
       className="app-bg min-h-screen pb-24"
       style={{
-        paddingLeft: doom.edge === 'left' ? reserve : 0,
-        paddingRight: (doom.edge === 'right' ? reserve : 0) + arcadeRoom,
+        paddingLeft: room('left'),
+        paddingRight: room('right') + arcadeRoom,
         transition: 'padding .32s cubic-bezier(.2,.8,.2,1)',
       }}
     >
@@ -144,12 +162,10 @@ export default function App() {
       <RogueLooks />
       <RogueBriefing />
       <Fly />
-      <Paperclip />
       <ScratchMarks />
       <AdLayer />
       <TaxReceipt />
       <FomoFeed />
-      <SpeedrunHud />
       <CheckoutModal />
       <TosModal />
       <AuditModal />

@@ -3,7 +3,7 @@ import Docked from './Docked'
 import { useGameStore } from '../store/useGameStore'
 import { AUTHORS, makeDoomPosts } from '../data/doomfeed'
 import { PREMIUM_ITEMS } from '../data/gameData'
-import { isHorizontalEdge, TASKBAR_H } from '../lib/dock'
+import { isHorizontalEdge, SNAIL_LANE, TASKBAR_H } from '../lib/dock'
 import { sfx } from '../lib/audio/engine'
 import { liteGraphics } from '../lib/settings'
 import { dockOrigin, useCollapseAnimation } from '../lib/hooks'
@@ -34,7 +34,7 @@ const fmtDist = (m) => (m < 1000 ? `${m.toFixed(m < 10 ? 2 : 1)} m` : `${(m / 10
 function doomSize(collapsed) {
   return (edge, vp) => {
     const horizontal = isHorizontalEdge(edge)
-    const areaH = vp.h - TASKBAR_H
+    const areaH = vp.h - TASKBAR_H - SNAIL_LANE
     if (edge === 'float') {
       if (collapsed) return { w: 176, h: 36 }
       return { w: Math.min(DOOM_WIDTH, vp.w - 12), h: Math.max(260, Math.min(Math.round(areaH * 0.72), 640)) }
@@ -55,6 +55,8 @@ export default function DoomFeed() {
   const root = useRef(null)
   const collapsed = useCollapseAnimation(dock.collapsed, root, dockOrigin(dock))
   const sizeFor = useMemo(() => doomSize(collapsed), [collapsed])
+  // Minimized, it lives in the taskbar (its 🔥 button) rather than as a tab over the game.
+  if (collapsed) return null
   return (
     <Docked id="doom" sizeFor={sizeFor} gap={0} z={56} floating>
       {({ handleProps, edge }) =>

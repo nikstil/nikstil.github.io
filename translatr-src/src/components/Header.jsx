@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useGameStore, getMultiplier, getMaxStamina } from '../store/useGameStore'
 import { useAnimatedNumber } from '../lib/hooks'
 import { fmt, money } from '../lib/format'
 import { ACHIEVEMENTS } from '../data/achievements'
 import { cursesFor } from '../data/runMods'
-import { CeoDog, Speedometer } from './Toys'
+import { CeoDog, Paperclip, Speedometer } from './Toys'
+import SpeedrunHud from './SpeedrunHud'
 import { RogueBadge } from './Rogue'
 
 /** The rolling wallet number. Its own component: the roll re-renders this, not the whole command bar. */
@@ -30,6 +31,22 @@ export default function Header() {
   const afk = useGameStore((s) => s.afk)
   const ngPlus = useGameStore((s) => s.ngPlus ?? 0)
 
+  // How tall the header is right now (its tiles wrap): toasts and popups start below it.
+  const bar = useRef(null)
+  useLayoutEffect(() => {
+    const el = bar.current
+    if (!el) return
+    const set = () => {
+      const h = Math.round(el.getBoundingClientRect().height)
+      document.documentElement.style.setProperty('--header-h', `${h}px`)
+      if (useGameStore.getState().headerH !== h) useGameStore.setState({ headerH: h })
+    }
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   // Floating +$/-$ deltas next to the wallet.
   const [deltas, setDeltas] = useState([])
   const prev = useRef(cash)
@@ -41,7 +58,7 @@ export default function Header() {
   }, [cash])
 
   return (
-    <header className="cmdbar relative z-40 lg:sticky lg:top-0">
+    <header ref={bar} className="cmdbar relative z-40 lg:sticky lg:top-0">
       <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-2.5 xl:px-6">
         <div className="flex items-center gap-3">
           <div className="start-orb" aria-hidden="true">
@@ -55,6 +72,7 @@ export default function Header() {
             <div className="brand-sub text-[0.6875rem]">Home Premium · Service Pack 7 · Genuine Advantage™</div>
           </div>
           <CeoDog />
+          <Paperclip />
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -104,6 +122,7 @@ export default function Header() {
           <RogueBadge />
           {saveFilesLost > 0 && <Stat label="Saves lost" value={`☠ ${saveFilesLost}`} className="text-blood" />}
           <Speedometer />
+          <SpeedrunHud />
         </div>
       </div>
     </header>

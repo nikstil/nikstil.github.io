@@ -9,7 +9,7 @@ export default function SpeedrunHud() {
   const run = useGameStore((s) => s.run)
   const pbSplits = useGameStore((s) => s.records.pbSplits)
   const pb = useGameStore((s) => s.records.best?.any)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [now, setNow] = useState(() => Date.now())
   const daily = useGameStore((s) => s.daily)
   const cheated = useGameStore((s) => !!s.cheats)
@@ -29,8 +29,9 @@ export default function SpeedrunHud() {
   const ahead = lastShared ? run.splits[lastShared.id] - pbSplits[lastShared.id] < 0 : null
 
   return (
-    <aside className="speedrun-hud fixed right-[calc(0.75rem_+_var(--arcade-room,0px))] top-[5.25rem] z-[60] w-56 select-none" aria-label="Speedrun timer">
-      <button className="flex w-full items-baseline justify-between gap-2 px-3 py-2" onClick={() => setCollapsed((c) => !c)} title={collapsed ? 'Show splits' : 'Hide splits'}>
+    // In the header, with the other tiles (so it never covers anything); the splits drop down from it.
+    <aside className={`speedrun-hud relative z-[60] w-56 select-none ${collapsed ? '' : 'is-open'}`} aria-label="Speedrun timer">
+      <button className="flex w-full items-baseline justify-between gap-2 px-3 py-2" onClick={() => setCollapsed((c) => !c)} title={collapsed ? 'Show splits' : 'Hide splits'} aria-expanded={!collapsed}>
         <span className="text-[0.625rem] font-bold uppercase tracking-widest opacity-60">
           {mode === 'daily' ? `Daily #${daily.number}${run.endedAt ? ' ✓' : ''}` : run.endedAt ? 'Final' : 'Speedrun'}
           {cheated && <span title="Cheats are on: this time won’t be recorded"> · 🏴</span>}
@@ -39,7 +40,7 @@ export default function SpeedrunHud() {
       </button>
       {!collapsed && mode === 'daily' && <DailyBody daily={daily} done={!!run.endedAt} />}
       {!collapsed && mode === 'speedrun' && (
-        <ol className="border-t border-white/10 px-3 py-1.5 font-mono text-[0.6875rem]">
+        <ol className="speedrun-splits border-t border-white/10 px-3 py-1.5 font-mono text-[0.6875rem]">
           {SPLITS.map((sp) => {
             const t = run.splits[sp.id]
             const ref = pbSplits?.[sp.id]
@@ -67,7 +68,7 @@ export default function SpeedrunHud() {
 function DailyBody({ daily, done }) {
   const { goal, mods } = dailyLabels(daily)
   return (
-    <div className="border-t border-white/10 px-3 py-2 text-[0.6875rem]">
+    <div className="speedrun-splits border-t border-white/10 px-3 py-2 text-[0.6875rem]">
       <div className={`font-semibold ${done ? 'text-[#5dff8f]' : ''}`}>
         {done ? '✓ ' : '🎯 '}
         {goal.label}

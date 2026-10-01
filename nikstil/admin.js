@@ -83,7 +83,7 @@
         { icon: '⚙️', name: 'motivation.exe', note: '0 KB', alert: '⚠️', text: 'motivation.exe has stopped working. It never really started.' },
         { icon: '📕', name: 'sleep_schedule.pdf', note: 'corrupted', alert: '⚠️', text: 'This file is corrupted beyond repair. Have you tried going to bed?' },
         { icon: '🧾', name: 'TRANSLATR_refund_policy.txt', note: '0 bytes', alert: '🧾', text: 'The file is empty. It was always empty.' },
-        { icon: '💡', name: 'ending_ideas_v7_FINAL(2).docx', note: '', alert: '💡', text: 'Already used. There are eight endings now. Go find them.' },
+        { icon: '💡', name: 'ending_ideas_v7_FINAL(2).docx', note: '', alert: '💡', text: 'Already used. There are nine endings now. Go find them.' },
       ],
       empty: 'Access denied: these files have unionised.',
     },

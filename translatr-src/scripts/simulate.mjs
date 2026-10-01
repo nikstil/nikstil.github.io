@@ -5,11 +5,16 @@
 //   npm run simulate                 # 24 runs of each strategy
 //   npm run simulate -- --runs 60    # more runs
 //
-// The policy (per simulated second): prestige the moment a relic drops, learn skills, buy
+// The optimal policy (per simulated second): prestige the moment a relic drops, learn skills, buy
 // pickaxe/stamina upgrades, watch rewarded ads when they're off cooldown, open ×50 bundles of the
 // best Mystery Box it can comfortably afford (relics via pity, items for the loadout), equip the
 // items that pay the most, bet at the roulette table when it's +EV (half-Kelly, capped by the table
-// limit), otherwise mine. Audits, CAPTCHAs, lockouts, ads and the cat all cost time or money.
+// limit), otherwise mine. Audits, CAPTCHAs, lockouts, ads, rats and the cat all cost time or money.
+//
+// The casual policy is a person playing it for the first time: slower clicks, more time lost to
+// popups, ×10 boxes instead of CAPTCHA'd ×50 bundles, only half the rewarded ads, a pause to read
+// before every Prestige, and flat 15% bets at the table now and then. The target: a casual player
+// without microtransactions buys TRANSLATR™ within 90 minutes (the slow ones too: see p80).
 
 import { createServer } from 'vite'
 import { fileURLToPath } from 'node:url'
@@ -23,6 +28,7 @@ const LIMIT_S = 6 * 3600
 const vite = await createServer({ root, server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
 const G = await vite.ssrLoadModule('/src/data/gameData.js')
 const E = await vite.ssrLoadModule('/src/lib/economy.js')
+const X = await vite.ssrLoadModule('/src/data/expansions.js')
 await vite.close()
 
 // How a human spends time (seconds).
@@ -36,6 +42,31 @@ const T = {
   lockout: 30,
   upkeep: 0.07, // share of time spent closing ads, feeding/petting the cat, reading popups
 }
+const PROFILES = {
+  optimal: { label: 'Optimal player, no microtransactions', T, bundle: 50, adChance: 1, prestigePause: 2, spinChance: 1, bet: 'kelly', spinFromMult: 2, collectEvery: 30 },
+  casual: {
+    label: 'Casual player, no microtransactions (the target: under 90 minutes)',
+    T: { ...T, click: 0.3, ad: 15, bundle: 4, upkeep: 0.25 },
+    bundle: 10,
+    adChance: 0.5,
+    prestigePause: 25,
+    spinChance: 0.35,
+    bet: 0.15,
+    spinFromMult: 5,
+    collectEvery: 120,
+  },
+}
+PROFILES.slow = {
+  ...PROFILES.casual,
+  label: 'Slow player, no microtransactions (distracted, skips most ads, rarely gambles)',
+  T: { ...PROFILES.casual.T, click: 0.4, upkeep: 0.4 },
+  adChance: 0.25,
+  prestigePause: 60,
+  spinChance: 0.15,
+  bet: 0.1,
+}
+PROFILES.whale = { ...PROFILES.optimal, label: 'Whale (Midas Ring, relic packs, skill points)', whale: true }
+const RAT_CHANCE = 0.15 // SPOILED_BOX_CHANCE in the store
 const SKILL_ORDER = [
   'calloused', 'crit', 'bulk', 'lucky_socks', 'autominer', 'appraiser', 'charm', 'insurance', 'house_friend', 'box_whisperer',
   'high_roller', 'second_wind', 'overclock', 'hoarder', 'card_counter', 'coupon', 'thick_skin', 'fluent', 'motherlode', 'rigged',
@@ -80,6 +111,10 @@ function freshState(whale) {
     seq: 0,
     whale,
     whaleRelicsLeft: whale ? 4 : 0,
+    expansions: {},
+    forge: { level: 1, stored: 0 },
+    nas: { tier: 0 },
+    collectAt: 0,
   }
 }
 
@@ -114,8 +149,8 @@ function equipBest(s) {
  * counter and find commons; the pricier boxes are for rarer items once a bundle is pocket change
  * (Platinum at a quarter of the wallet, Golden at a fortieth).
  */
-function pickBox(s) {
-  const bundle = (id) => 50 * E.getLootboxPrice(s, id)
+function pickBox(s, n = 50) {
+  const bundle = (id) => n * E.getLootboxPrice(s, id)
   if (s.money >= bundle('platinum') * 4) return 'platinum'
   if (s.money >= bundle('golden') * 40) return 'golden'
   if (s.money >= bundle('cardboard') * 4) return 'cardboard'
@@ -126,7 +161,7 @@ function prestige(s) {
   s.items = s.items.filter((i) => i.itemId !== G.RELIC.id)
   s.prestige += 1
   s.skillPoints += G.skillPointsForPrestige(s.prestige)
-  Object.assign(s, { money: 0, pickaxeLevel: 1, staminaLevel: 1, stamina: G.STAMINA_LEVELS[0].max, items: [], equipped: [] })
+  Object.assign(s, { money: 0, pickaxeLevel: 1, staminaLevel: 1, stamina: G.STAMINA_LEVELS[0].max, items: [], equipped: [], forge: { level: 1, stored: 0 }, nas: { tier: 0 } })
 }
 
 function learnSkills(s) {
@@ -140,8 +175,7 @@ function learnSkills(s) {
   }
 }
 
-function openBundle(s, boxId) {
-  const n = 50
+function openBundle(s, boxId, n = 50) {
   const cost = n * E.getLootboxPrice(s, boxId)
   if (s.money < cost) return false
   s.money -= cost
@@ -153,6 +187,12 @@ function openBundle(s, boxId) {
   for (let i = 0; i < n; i++) {
     let loot = G.rollLoot(boxId, luck)
     s.pity += step
+    const missing = boxId === 'platinum' ? Object.keys(X.EXPANSIONS).filter((id) => !s.expansions[id]) : []
+    if (missing.length && Math.random() < X.EXPANSION_DROP_CHANCE) {
+      s.expansions[missing[Math.floor(Math.random() * missing.length)]] = true
+      continue
+    }
+    if (Math.random() < RAT_CHANCE && !(loot.kind !== 'relic' && s.pity >= G.RELIC_PITY)) continue
     if (loot.kind !== 'relic' && s.pity >= G.RELIC_PITY) loot = { kind: 'relic', id: G.RELIC.id }
     if (loot.kind === 'relic') s.pity = 0
     if (loot.kind !== 'trash') s.items.push({ uid: uid(s), itemId: loot.id })
@@ -161,7 +201,7 @@ function openBundle(s, boxId) {
   return true
 }
 
-function spin(s) {
+function spin(s, flat) {
   const limit = E.getTableLimit(s)
   const M = E.getMultiplier(s)
   const pay = E.getRoulettePayouts(s).red
@@ -170,7 +210,7 @@ function spin(s) {
   const b = pay * M * casino - 1
   const kelly = (pWin * (b + 1) - 1) / b
   if (!(kelly > 0)) return false
-  const bet = Math.floor(Math.min(limit, s.money * kelly * 0.5))
+  const bet = Math.floor(Math.min(limit, s.money * (flat ?? kelly * 0.5)))
   if (bet < 1) return false
   s.money -= bet
   if (Math.random() < pWin) s.money += Math.round(bet * pay * M * casino)
@@ -179,8 +219,11 @@ function spin(s) {
 }
 
 /** One simulated player, until they can buy the company (or give up after LIMIT_S). */
-function play(whale) {
+function play(P) {
+  const T = P.T
+  const whale = !!P.whale
   const s = freshState(whale)
+  let relicSince = null
   const hit = {}
   let busyUntil = 0
   let spinCaptchaUntil = 0
@@ -191,6 +234,8 @@ function play(whale) {
     const auto = E.getAutoSwings(s)
     if (auto) s.money += auto * E.getMiningRate(s) * (has(s, 'crit') ? 1.9 : 1)
     if (s.prestige >= 1 && s.t > 60) s.money += E.getMiningRate(s) * 0.6 // the bot (mine mode), collected now and then
+    if (s.expansions.nas) s.money += E.getNasRate(s)
+    if (s.expansions.forge) s.forge.stored += E.getForgeRate(s)
     s.regenAcc += dt * 1000
     const regen = E.getStaminaRegenMs(s)
     while (s.regenAcc >= regen) {
@@ -219,13 +264,33 @@ function play(whale) {
       s.items.push({ uid: uid(s), itemId: G.RELIC.id })
     }
     if (s.items.some((i) => i.itemId === G.RELIC.id)) {
-      prestige(s)
-      spent = 2
+      relicSince ??= s.t
+      if (s.t - relicSince >= P.prestigePause) {
+        prestige(s)
+        relicSince = null
+        spent = 2
+      }
+    }
+    if (!spent && s.expansions.forge && s.t >= s.collectAt) {
+      s.money += Math.floor(s.forge.stored)
+      s.forge.stored = 0
+      s.collectAt = s.t + P.collectEvery
+      spent = 1
+    }
+    for (const [has, level, max, cost, up] of [
+      [s.expansions.forge, s.forge.level, X.FORGE.maxLevel, () => E.getForgeUpgradeCost(s), () => (s.forge.level += 1)],
+      [s.expansions.nas, s.nas.tier + 1, X.NAS_TIERS.length, () => E.getNasUpgradeCost(s), () => (s.nas.tier += 1)],
+    ]) {
+      if (!spent && has && level < max && cost() < s.money * 0.25) {
+        s.money -= cost()
+        up()
+        spent = 0.5
+      }
     }
     learnSkills(s)
     const nextPick = G.PICKAXE_LEVELS[s.pickaxeLevel]
     const nextSta = G.STAMINA_LEVELS[s.staminaLevel]
-    const boxId = pickBox(s)
+    const boxId = pickBox(s, P.bundle)
     if (!spent && nextPick && s.money >= nextPick.cost) {
       s.money -= nextPick.cost
       s.pickaxeLevel += 1
@@ -236,12 +301,14 @@ function play(whale) {
       s.stamina += 10
       spent = 0.5
     } else if (!spent && s.t >= s.adReadyAt) {
-      s.money += E.getAdReward(s, G.REWARDED_AD_CLICKS)
-      s.adReadyAt = s.t + T.ad + G.REWARDED_AD_COOLDOWN_MS / 1000
-      spent = T.ad
+      if (Math.random() < P.adChance) {
+        s.money += E.getAdReward(s, G.REWARDED_AD_CLICKS)
+        s.adReadyAt = s.t + T.ad + G.REWARDED_AD_COOLDOWN_MS / 1000
+        spent = T.ad
+      } else s.adReadyAt = s.t + G.REWARDED_AD_COOLDOWN_MS / 1000
     } else if (!spent && boxId && (!nextPick || nextPick.cost > s.money * 4)) {
-      if (has(s, 'box_whisperer')) {
-        openBundle(s, boxId)
+      if (P.bundle < 50 || has(s, 'box_whisperer')) {
+        openBundle(s, boxId, P.bundle)
         spent = T.bundle
       } else if (s.t >= s.lockedUntil) {
         spent = T.bundle + T.captcha
@@ -249,7 +316,7 @@ function play(whale) {
         else s.lockedUntil = s.t + T.lockout
       }
     }
-    if (!spent && E.getMultiplier(s) >= 2 && s.t >= spinCaptchaUntil && spin(s)) {
+    if (!spent && E.getMultiplier(s) >= P.spinFromMult && s.t >= spinCaptchaUntil && Math.random() < P.spinChance && spin(s, P.bet === 'kelly' ? undefined : P.bet)) {
       spent = T.spin
       if (Math.random() < G.CAPTCHA.rouletteChance) {
         spent += T.captcha
@@ -266,26 +333,28 @@ function play(whale) {
     }
     busyUntil = s.t + spent * (1 + T.upkeep)
   }
-  return { hit, prestige: s.prestige, skills: Object.keys(s.skills).length, boxes: s.boxes, loadout: s.equipped.map((u) => s.items.find((i) => i.uid === u)?.itemId) }
+  return { hit, expansions: Object.keys(s.expansions), prestige: s.prestige, skills: Object.keys(s.skills).length, boxes: s.boxes, loadout: s.equipped.map((u) => s.items.find((i) => i.uid === u)?.itemId) }
 }
 
-const median = (xs) => {
-  const v = xs.filter((x) => x != null).sort((a, b) => a - b)
-  return v.length ? v[Math.floor(v.length / 2)] : null
+const quantile = (xs, q) => {
+  const v = xs.map((x) => x ?? Infinity).sort((a, b) => a - b)
+  const x = v[Math.min(v.length - 1, Math.floor(v.length * q))]
+  return Number.isFinite(x) ? x : null
 }
+const median = (xs) => quantile(xs, 0.5)
 const fmt = (sec) => (sec == null ? '  —   ' : `${String(Math.floor(sec / 60)).padStart(3)}m${String(Math.floor(sec % 60)).padStart(2, '0')}s`)
 
-for (const [label, whale] of [
-  ['No microtransactions (the secret-ending route)', false],
-  ['Whale (Midas Ring, relic packs, skill points)', true],
-]) {
-  const runs = Array.from({ length: RUNS }, () => play(whale))
-  console.log(`\n${label} · ${RUNS} runs · median time to each milestone`)
+const only = args.includes('--profile') ? [args[args.indexOf('--profile') + 1]] : Object.keys(PROFILES)
+for (const key of only) {
+  const P = PROFILES[key]
+  const runs = Array.from({ length: RUNS }, () => play(P))
+  console.log(`\n${P.label} · ${RUNS} runs · median (and slowest-20%) time to each milestone`)
   for (const [name] of MILESTONES) {
     const times = runs.map((r) => r.hit[name])
     const done = times.filter((x) => x != null).length
-    console.log(`  ${name.padEnd(10)} ${fmt(median(times))}   (${done}/${RUNS} reached it within ${LIMIT_S / 3600}h)`)
+    console.log(`  ${name.padEnd(10)} ${fmt(median(times))}  p80 ${fmt(quantile(times, 0.8))}   (${done}/${RUNS} within ${LIMIT_S / 3600}h)`)
   }
+  console.log(`  expansions dropped: forge ${runs.filter((r) => r.expansions.includes('forge')).length}/${RUNS} · nas ${runs.filter((r) => r.expansions.includes('nas')).length}/${RUNS}`)
   console.log(`  prestiges at the end: median ${median(runs.map((r) => r.prestige))} · skills learned: median ${median(runs.map((r) => r.skills))}`)
   const boxes = Object.fromEntries(G.LOOT_BOXES.map((b) => [b.id, median(runs.map((r) => r.boxes[b.id] ?? 0))]))
   console.log(`  boxes opened (median): ${G.LOOT_BOXES.map((b) => `${b.emoji} ${boxes[b.id].toLocaleString()}`).join(' · ')}`)

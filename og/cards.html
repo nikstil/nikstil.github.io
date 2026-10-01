@@ -1,0 +1,109 @@
+<!doctype html>
+<!-- The link-preview images (1200×630) for nikstil.com, TRANSLATR™ and DOOMSCROLL.EXE.
+     og/render.mjs opens this with ?card=os|translatr|doom and screenshots of the real pages in
+     og/shots/ (it takes them itself), then saves the PNGs where each page's og:image points. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { font-family: "Segoe UI", "Noto Sans", Tahoma, sans-serif; color: #12233a; }
+  .card { position: relative; width: 1200px; height: 630px; overflow: hidden; display: none; }
+  .card.on { display: block; }
+
+  /* Aero sky with the green hill (nikstilOS and TRANSLATR) */
+  .sky { background: radial-gradient(ellipse at 18% 0%, #bfe6ff 0, transparent 45%), linear-gradient(160deg, #6cc0f3 0%, #2f86d6 45%, #1158b4 100%); }
+  .sky::after { content: ""; position: absolute; left: -10%; right: -10%; bottom: -330px; height: 470px; border-radius: 50%; background: radial-gradient(ellipse at 30% 20%, #8fe05a, #3d9a24 60%, #2a7a18); }
+  .glass { position: absolute; border-radius: 14px; background: rgb(255 255 255 / 0.28); box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.6), 0 18px 50px rgb(0 30 80 / 0.35); backdrop-filter: blur(6px); }
+  .titlebar { display: flex; align-items: center; gap: 14px; padding: 14px 22px 10px; font-weight: 700; font-size: 34px; color: #fff; text-shadow: 0 0 8px #0a4ea8, 0 2px 0 #0a4ea8; }
+  .orb { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; font: 800 30px/1 "Segoe UI", sans-serif; color: #fff; background: radial-gradient(circle at 35% 30%, #8fd2ff, #1563c7 60%, #0b3f86); box-shadow: inset 0 2px 3px rgb(255 255 255 / 0.6), 0 3px 8px rgb(0 0 0 / 0.35); }
+  .pane { margin: 0 18px 18px; padding: 26px 34px; border-radius: 10px; background: rgb(244 249 255 / 0.94); box-shadow: inset 0 1px 0 #fff; }
+  h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.01em; color: #142a46; }
+  ul { list-style: none; padding: 0; margin-top: 16px; display: grid; gap: 11px; }
+  li { position: relative; padding-left: 30px; font-size: 25px; line-height: 1.25; color: #26384f; }
+  li::before { content: ""; position: absolute; left: 4px; top: 9px; width: 13px; height: 13px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #8fd2ff, #1d6fd0); }
+  li b { color: #10243d; }
+  .chips { display: flex; gap: 10px; margin-top: 18px; }
+  .chip { padding: 6px 14px; border-radius: 99px; font-size: 19px; font-weight: 700; color: #fff; background: linear-gradient(#3b8de0, #1f6fd1); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4); }
+  .chip.pink { background: linear-gradient(#e0509f, #b42a79); }
+  .chip.gold { color: #4a3000; background: linear-gradient(#ffe37a, #f2b100); }
+  .foot { position: absolute; left: 70px; bottom: 30px; z-index: 2; font-size: 30px; font-weight: 800; color: #fff; text-shadow: 0 2px 6px rgb(0 40 0 / 0.6); }
+  .stamp { position: absolute; z-index: 3; padding: 4px 22px; border: 6px solid #d32f2f; border-radius: 10px; font: 900 54px/1 Impact, "Arial Black", sans-serif; letter-spacing: 0.04em; color: #d32f2f; background: rgb(255 255 255 / 0.55); transform: rotate(-10deg); }
+
+  /* A screenshot in a little Aero window */
+  .shot { position: absolute; z-index: 2; border-radius: 9px; overflow: hidden; background: #fff; box-shadow: 0 22px 50px rgb(0 20 60 / 0.45), 0 0 0 1px rgb(0 40 100 / 0.4); }
+  .shot .bar { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; font-size: 16px; font-weight: 600; color: #0d2340; background: linear-gradient(#e8f3fd, #b9d6f2); }
+  .shot .bar i { margin-left: auto; width: 40px; height: 16px; border-radius: 3px; background: linear-gradient(#e98b70, #c1391a); }
+  .shot img { display: block; width: 100%; }
+
+  /* DOOMSCROLL */
+  .doom { color: #f2d6c9; background: radial-gradient(ellipse at 70% 30%, #4a0b08 0, #1a0302 55%, #080000 100%); }
+  .doom .logo { position: absolute; left: 60px; top: 48px; font: 900 64px/0.95 Impact, "Arial Black", sans-serif; letter-spacing: 0.02em; color: #e8261b; text-shadow: 0 4px 0 #5a0700, 0 0 30px rgb(255 40 20 / 0.45); }
+  .doom .tag { position: absolute; left: 62px; top: 124px; font: 700 22px/1.2 "Courier New", monospace; letter-spacing: 0.08em; color: #d8a08f; }
+  .doom ul { position: absolute; left: 62px; top: 196px; width: 460px; gap: 18px; }
+  .doom li { font-size: 26px; color: #f4ded4; }
+  .doom li::before { background: #e8261b; border-radius: 2px; top: 10px; }
+  .doom .foot { left: 62px; bottom: 44px; color: #ffcf6b; text-shadow: none; font-size: 28px; }
+  .doom .screen { position: absolute; right: 50px; top: 150px; width: 580px; border: 4px solid #5c1a12; border-radius: 6px; box-shadow: 0 0 0 2px #200403, 0 20px 60px rgb(0 0 0 / 0.7), 0 0 60px rgb(232 38 27 / 0.25); image-rendering: pixelated; }
+</style>
+</head>
+<body>
+  <!-- nikstil.com -->
+  <section class="card sky" id="os">
+    <div class="glass" style="left: 46px; top: 46px; width: 620px; height: 470px; z-index: 1">
+      <div class="titlebar"><span class="orb">n</span>nikstilOS</div>
+      <div class="pane">
+        <h1>A tiny retro desktop.</h1>
+        <ul>
+          <li><b>TRANSLATR™</b>, the world’s most monetized translator</li>
+          <li><b>DOOMSCROLL.EXE</b>, a 1993 shooter about pop-ups</li>
+          <li>Messenger, leaderboards, pixel-art profile pictures</li>
+          <li>Ten themes, from Windows XP to Liquid Glass</li>
+        </ul>
+      </div>
+    </div>
+    <div class="shot" style="left: 640px; top: 66px; width: 520px; transform: rotate(2deg)"><div class="bar">🌐 TRANSLATR™ Ultra+ Pro Max<i></i></div><img data-src="translatr.png" alt=""></div>
+    <div class="shot" style="left: 760px; top: 330px; width: 380px; transform: rotate(-3deg)"><div class="bar">👹 DOOMSCROLL.EXE<i></i></div><img data-src="doom.png" alt="" style="image-rendering: pixelated"></div>
+    <div class="foot">Double-click things at nikstil.com</div>
+  </section>
+
+  <!-- TRANSLATR -->
+  <section class="card sky" id="translatr">
+    <div class="glass" style="left: 70px; top: 56px; width: 1060px; z-index: 1">
+      <div class="titlebar"><span class="orb">T</span>TRANSLATR™ Ultra+ Pro Max</div>
+      <div class="pane">
+        <h1>The world’s most monetized translator.</h1>
+        <ul>
+          <li>$10 a word. Vowels cost extra.</li>
+          <li>Refuses every second request (and bills you anyway).</li>
+          <li>Loot boxes, crypto, a blacksmith, a cat, audits, ads that bounce.</li>
+          <li>Nine endings. One costs a quintillion dollars. One needs a snail.</li>
+        </ul>
+        <div class="chips"><span class="chip">⏱️ Speedrun</span><span class="chip gold">📅 Daily Challenge</span><span class="chip pink">🎲 Roguelike</span></div>
+      </div>
+    </div>
+    <div class="stamp" style="right: 60px; top: 404px">REFUSED</div>
+    <div class="foot">Play (and regret it) at nikstil.com/translatr</div>
+  </section>
+
+  <!-- DOOMSCROLL -->
+  <section class="card doom" id="doom">
+    <div class="logo">DOOMSCROLL.EXE</div>
+    <div class="tag">SHAREWARE · FROM TRANSLATR™</div>
+    <ul>
+      <li>Three episodes, fifteen levels, one final boss</li>
+      <li>Close the pop-ups. Shoot the ads. Swing the Ban Hammer.</li>
+      <li>Split-screen co-op on one keyboard</li>
+    </ul>
+    <img class="screen" data-src="doom.png" alt="">
+    <div class="foot">Play free at nikstil.com/doomscroll</div>
+  </section>
+
+  <script>
+    const q = new URLSearchParams(location.search)
+    document.getElementById(q.get('card') || 'os').classList.add('on')
+    for (const img of document.querySelectorAll('img[data-src]')) img.src = `${q.get('shots') || 'shots'}/${img.dataset.src}`
+  </script>
+</body>
+</html>

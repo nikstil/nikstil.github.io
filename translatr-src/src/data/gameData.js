@@ -179,7 +179,7 @@ export const LOOT_BOXES = [
   },
 ]
 export const LOOT_BOX_BY_ID = Object.fromEntries(LOOT_BOXES.map((b) => [b.id, b]))
-export const RELIC_PITY = 1_000 // gacha "pity": a relic is guaranteed once the counter gets here
+export const RELIC_PITY = 500 // gacha "pity": a relic is guaranteed once the counter gets here
 
 // What items do while equipped. `multiplier` multiplies all income, `translates` fixes the
 // translator, `auditImmune` hides you from the Dev IRS; everything else is a run modifier in `mods`

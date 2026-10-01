@@ -35,7 +35,7 @@ export function RogueBriefing() {
         <div className="modal-card rogue-briefing w-[min(720px,94vw)] p-6" role="dialog" aria-modal="true" aria-label="Your Roguelike run" style={{ '--accent': '#8e5bd6' }}>
           <div className="label mb-1 text-center">🎲 Roguelike run</div>
           <div className="rogue-target">
-            <div className="rogue-target-kicker">Your target{rogue.newTarget ? ' · an ending you haven’t done yet' : ''}</div>
+            <div className="rogue-target-kicker">Your target · an ending you’ve done before</div>
             <div className="rogue-target-title">
               {target.icon} {target.title}
             </div>

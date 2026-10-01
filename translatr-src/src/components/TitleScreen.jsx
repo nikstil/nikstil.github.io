@@ -2,6 +2,7 @@ import Modal from './Modal'
 import { useGameStore } from '../store/useGameStore'
 import { ENDINGS, fmtRunTime } from '../data/endings'
 import { DailyCard } from './Daily'
+import { rogueTargets } from '../data/rogue'
 
 /** The title screen: shown on a brand-new save (first visit, "Reset all", or a new game). */
 export default function TitleScreen() {
@@ -19,6 +20,7 @@ function TitleBody() {
   const endings = useGameStore((s) => s.endings)
   const { chooseMode, openEndings } = useGameStore.getState()
   const found = ENDINGS.filter((e) => endings[e.id]).length
+  const rogueReady = rogueTargets({ endings }).length > 0
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="title-heading" className="modal-card max-h-[92vh] w-[min(1100px,94vw)] overflow-y-auto p-6 text-center" style={{ '--accent': '#3da6e8' }}>
@@ -54,9 +56,10 @@ function TitleBody() {
           icon="🎲"
           title="Roguelike"
           accent="#8e5bd6"
-          points={['3 random perks, 3 random debuffs', 'One ending you have to reach (one you haven’t done yet)', 'Any other ending loses the run']}
-          cta={rogueRecord ? `Roll a run · ${rogueRecord.wins}/${rogueRecord.runs} won` : 'Roll a run'}
+          points={['3 random perks, 3 random debuffs', 'One ending you have to reach again (one you’ve already done)', 'Any other ending loses the run']}
+          cta={!rogueReady ? '🔒 Finish any ending first' : rogueRecord ? `Roll a run · ${rogueRecord.wins}/${rogueRecord.runs} won` : 'Roll a run'}
           btn="btn-magenta"
+          disabled={!rogueReady}
           onClick={() => chooseMode('rogue')}
         />
       </div>
@@ -76,7 +79,7 @@ function TitleBody() {
   )
 }
 
-function ModeCard({ icon, title, accent, points, cta, btn, onClick }) {
+function ModeCard({ icon, title, accent, points, cta, btn, onClick, disabled }) {
   return (
     <div className="inset-card flex flex-col p-4" style={{ '--accent': accent }}>
       <div className="mb-2 flex items-center gap-2">
@@ -88,7 +91,7 @@ function ModeCard({ icon, title, accent, points, cta, btn, onClick }) {
           <li key={p}>· {p}</li>
         ))}
       </ul>
-      <button className={`btn ${btn} w-full py-2.5`} onClick={onClick}>
+      <button className={`btn ${btn} w-full py-2.5`} onClick={onClick} disabled={disabled}>
         {cta}
       </button>
     </div>

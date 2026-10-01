@@ -98,22 +98,8 @@ function CatGadget({ handleProps }) {
   const needsAttention = mood !== 'happy'
   const accent = angry ? '#d32f2f' : needsAttention ? '#e0a21a' : '#3da6e8'
 
-  if (minimized) {
-    return (
-      <button
-        ref={root}
-        {...handleProps}
-        onClick={() => setMinimized(false)}
-        className={`gadget gadget-orb grid h-16 w-16 place-items-center rounded-full p-1 transition hover:scale-105 ${
-          angry ? 'animate-shake' : needsAttention ? 'animate-wiggle' : ''
-        }`}
-        style={{ ...handleProps.style, '--mood': accent }}
-        title="Your cat (still needs you) — drag to move"
-      >
-        <RealCat mood={photo} size={54} round title="Your cat (still needs you)" />
-      </button>
-    )
-  }
+  // Minimized, the cat lives in the taskbar (its button there shows its mood and fidgets when it needs you).
+  if (minimized) return null
 
   return (
     <div

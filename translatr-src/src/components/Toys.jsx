@@ -357,7 +357,7 @@ export function Paperclip() {
   }, [])
 
   return (
-    <div className="paperclip" style={{ bottom: TASKBAR_H + 10 }}>
+    <div className="paperclip">
       {line && (
         <div className="paperclip-bubble" role="status">
           {line}
@@ -464,7 +464,7 @@ export function Snail() {
   if (gaveUp || !playing) return null
   return (
     <>
-      <div className={`snail ${arrived ? 'is-home' : ''}`} style={{ left: x, bottom: TASKBAR_H - 3 }} title={arrived ? 'The snail made it. Buy TRANSLATR™.' : `A snail. ${SNAIL_PX_PER_MIN} pixels a minute. It has somewhere to be.`}>
+      <div className={`snail ${arrived ? 'is-home' : ''}`} style={{ left: x, bottom: TASKBAR_H }} title={arrived ? 'The snail made it. Buy TRANSLATR™.' : `A snail. ${SNAIL_PX_PER_MIN} pixels a minute. It has somewhere to be.`}>
         {arrived && <span className="snail-flag">🏁</span>}
         <PixelArt rows={frame && !arrived ? SNAIL_B : SNAIL_A} palette={SNAIL_PALETTE} className="snail-art" />
       </div>
