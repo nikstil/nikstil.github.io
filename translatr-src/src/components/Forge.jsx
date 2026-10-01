@@ -1,5 +1,5 @@
 import Panel from './Panel'
-import { useGameStore, getMiningRate } from '../store/useGameStore'
+import { useGameStore, getForgeRate, getForgeUpgradeCost, getForgeThemePrice } from '../store/useGameStore'
 import { FORGE, FORGE_THEMES, FORGE_THEME_BY_ID, forgeRank } from '../data/expansions'
 import { useAnimatedNumber } from '../lib/hooks'
 import { money } from '../lib/format'
@@ -13,14 +13,14 @@ export default function Forge() {
   const stored = useGameStore((s) => Math.floor(s.forge?.stored ?? 0))
   const themeId = useGameStore((s) => s.forgeTheme ?? 'medieval')
   const owned = useGameStore((s) => s.forgeThemes ?? ['medieval'])
-  const swing = useGameStore((s) => Math.max(1, getMiningRate(s)))
   const wallet = useGameStore((s) => s.money)
   const shown = useAnimatedNumber(stored)
   const theme = FORGE_THEME_BY_ID[themeId] ?? FORGE_THEMES[0]
-  const rate = FORGE.swingsPerSecond(level) * swing
+  const rate = useGameStore((s) => getForgeRate(s))
   const maxed = level >= FORGE.maxLevel
-  const cost = FORGE.upgradeSwings(level) * swing
-  const next = FORGE.swingsPerSecond(level + 1) * swing
+  const cost = useGameStore((s) => getForgeUpgradeCost(s))
+  const next = useGameStore((s) => getForgeRate(s, Math.min(FORGE.maxLevel, level + 1)))
+  const themePrice = (t) => getForgeThemePrice(useGameStore.getState(), t)
 
   const collect = () => {
     const got = useGameStore.getState().collectForge()
@@ -43,7 +43,7 @@ export default function Forge() {
         {FORGE_THEMES.map((t) => (
           <option key={t.id} value={t.id}>
             {t.icon} {t.name}
-            {owned.includes(t.id) ? '' : ` · ${money(t.price * swing)}`}
+            {owned.includes(t.id) ? '' : ` · ${money(themePrice(t))}`}
           </option>
         ))}
       </select>

@@ -22,11 +22,12 @@ export const freshMarket = (now = Date.now()) => ({
 
 // ================= Ye Olde Forge =================
 // Passive income, no downsides: it fills its coffers by itself and you collect by hand. Upgrades
-// are like the pickaxe's (each level costs more and earns more). Income is in "swings" (your
-// mining rate), so it stays worth having all game.
+// are like the pickaxe's: fixed prices in dollars, each level costing more and earning more.
+// Income is in "swings" (your mining rate), so it stays worth having all game.
 export const FORGE = {
   swingsPerSecond: (level) => 0.4 * level * (1 + level / 10),
-  upgradeSwings: (level) => Math.round(60 * 1.55 ** level),
+  /** Dollars for the level after `level`: $250, $500, $1K… */
+  upgradeCost: (level) => 250 * 2 ** (level - 1),
   maxLevel: 30,
   ranks: ['Rusty Anvil', 'Village Smithy', 'Guild Forge', 'Royal Armoury', 'Dragonfire Foundry', 'Forge of the Old Gods'],
 }
@@ -34,11 +35,11 @@ export const forgeRank = (level) => FORGE.ranks[Math.min(FORGE.ranks.length - 1,
 /** Looks for the Forge, bought with in-game money from the menu in its corner. */
 export const FORGE_THEMES = [
   { id: 'medieval', name: 'Medieval', icon: '⚒️', price: 0, smith: '🧔', blurb: 'Stone, timber and a man named Gareth.' },
-  { id: 'dwarf', name: 'Dwarven Hall', icon: '🪓', price: 500, smith: '🧔‍♂️', blurb: 'Deep under the mountain. The beards are load-bearing.' },
-  { id: 'bloodelf', name: 'Blood Elf', icon: '🩸', price: 2_000, smith: '🧝', blurb: 'Crimson, gold, and a very judgemental elf.' },
-  { id: 'wizard', name: 'Wizard’s Tower', icon: '🧙', price: 8_000, smith: '🧙', blurb: 'The hammer is optional. The hat is not.' },
-  { id: 'orc', name: 'Orcish Warforge', icon: '💀', price: 30_000, smith: '👹', blurb: 'Bones, iron and anger management issues.' },
-  { id: 'elf', name: 'Moonlit Elven Glade', icon: '🌙', price: 120_000, smith: '🧝‍♀️', blurb: 'They forge with starlight. You still pay for the coal.' },
+  { id: 'dwarf', name: 'Dwarven Hall', icon: '🪓', price: 5_000, smith: '🧔‍♂️', blurb: 'Deep under the mountain. The beards are load-bearing.' },
+  { id: 'bloodelf', name: 'Blood Elf', icon: '🩸', price: 50_000, smith: '🧝', blurb: 'Crimson, gold, and a very judgemental elf.' },
+  { id: 'wizard', name: 'Wizard’s Tower', icon: '🧙', price: 500_000, smith: '🧙', blurb: 'The hammer is optional. The hat is not.' },
+  { id: 'orc', name: 'Orcish Warforge', icon: '💀', price: 5_000_000, smith: '👹', blurb: 'Bones, iron and anger management issues.' },
+  { id: 'elf', name: 'Moonlit Elven Glade', icon: '🌙', price: 50_000_000, smith: '🧝‍♀️', blurb: 'They forge with starlight. You still pay for the coal.' },
 ]
 export const FORGE_THEME_BY_ID = Object.fromEntries(FORGE_THEMES.map((t) => [t.id, t]))
 
@@ -58,7 +59,8 @@ export const NAS_TIERS = [
 ]
 export const NAS = {
   swingsPerSecondPerBay: 0.5,
-  upgradeSwings: (tier) => Math.round(150 * 2.1 ** tier),
+  /** Dollars for the tier after `tier`: $2K, $16K, $128K… */
+  upgradeCost: (tier) => 2_000 * 8 ** tier,
 }
 
 // ================= How you get them =================

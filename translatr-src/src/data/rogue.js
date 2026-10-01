@@ -93,7 +93,13 @@ export function completedEndings(s) {
   return Object.keys(s.endings ?? {})
 }
 
-/** A fresh run: 3 perks, 3 debuffs, and an ending you haven't completed yet (any, once you have them all). */
+/** Endings a run can target: ones this account has already completed (so you know the way). */
+export const rogueTargets = (s) => {
+  const done = new Set(completedEndings(s))
+  return TARGET_POOL.filter((id) => done.has(id))
+}
+
+/** A fresh run: 3 perks, 3 debuffs, and an ending you've already completed. */
 export function draftRun(s, rand = Math.random) {
   const pick = (list, n) => {
     const pool = [...list]
@@ -101,14 +107,12 @@ export function draftRun(s, rand = Math.random) {
     while (out.length < n && pool.length) out.push(pool.splice(Math.floor(rand() * pool.length), 1)[0].id)
     return out
   }
-  const done = new Set(completedEndings(s))
-  const fresh = TARGET_POOL.filter((id) => !done.has(id))
-  const targets = fresh.length ? fresh : TARGET_POOL
+  const done = rogueTargets(s)
+  const targets = done.length ? done : TARGET_POOL // (the title screen only offers a run once you have one)
   return {
     perks: pick(PERKS, 3),
     debuffs: pick(DEBUFFS, 3),
     target: targets[Math.floor(rand() * targets.length)],
-    newTarget: fresh.length > 0,
     result: null, // 'win' | 'loss' once an ending plays
   }
 }

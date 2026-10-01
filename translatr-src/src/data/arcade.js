@@ -1,5 +1,5 @@
 // The Arcade (Start menu): DOOMSCROLL.EXE and three classics, monetized. Prices and prizes are
-// in clicks (see getArcadePrice in lib/economy.js), so they grow with your pickaxe.
+// in clicks (see getArcadePrice in lib/economy.js): $10 each, ×5 per Prestige.
 
 export const ARCADE_GAMES = [
   { id: 'shooter', icon: '👹', name: 'DOOMSCROLL.EXE', blurb: 'A 1993 shooter. Three episodes, a final boss, co-op. Every hit is an unskippable ad.' },

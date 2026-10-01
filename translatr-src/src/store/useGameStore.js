@@ -42,8 +42,8 @@ import { MAIL, MAIL_BY_ID, NEWSLETTER_EVERY_MS, SPAM, SPAM_EVERY_MS } from '../d
 import { CLIENTS, CONTRACT, CONTRACT_LANGS, PHRASES, normalizePhrase, reputationOf, reviewText, stars } from '../data/contracts'
 import { DAILY_GOAL_BY_ID, dailyFor, dailyStart, seededValue } from '../data/daily'
 import { CHEAT_ACTIONS, CHEAT_CODES, CHEAT_TOGGLES, normalizeCode } from '../data/cheats'
-import { draftRun, rogueCryptoBias, PERK_BY_ID } from '../data/rogue'
-import { COINS, COIN_BY_ID, CRYPTO_HISTORY, EXPANSIONS, EXPANSION_DROP_CHANCE, FORGE, FORGE_THEME_BY_ID, NAS, NAS_TIERS, freshMarket, ownsExpansion } from '../data/expansions'
+import { draftRun, rogueCryptoBias, rogueTargets, PERK_BY_ID } from '../data/rogue'
+import { COINS, COIN_BY_ID, CRYPTO_HISTORY, EXPANSIONS, EXPANSION_DROP_CHANCE, FORGE, FORGE_THEME_BY_ID, NAS_TIERS, freshMarket, ownsExpansion } from '../data/expansions'
 import { REFUSE_EVERY, correctTranslate, gradeSelfTranslation } from '../lib/translator'
 import { makeCaptcha } from '../lib/captcha'
 import { money as fmtMoney } from '../lib/format'
@@ -68,6 +68,11 @@ import {
   getMaxEquipped,
   getMaxStamina,
   getMiningRate,
+  getForgeRate,
+  getForgeUpgradeCost,
+  getForgeThemePrice,
+  getNasRate,
+  getNasUpgradeCost,
   getMultiplier,
   getRoulettePayouts,
   getStaminaRegenMs,
@@ -803,10 +808,9 @@ function stepCrypto(st, now, fx) {
 function stepExpansions(st, dt) {
   if (dt <= 0 || st.afk) return null
   const patch = {}
-  const swing = Math.max(1, getMiningRate(st))
-  if (ownsExpansion(st, 'forge')) patch.forge = { ...st.forge, stored: (st.forge?.stored ?? 0) + FORGE.swingsPerSecond(st.forge?.level ?? 1) * swing * dt }
+  if (ownsExpansion(st, 'forge')) patch.forge = { ...st.forge, stored: (st.forge?.stored ?? 0) + getForgeRate(st) * dt }
   if (ownsExpansion(st, 'nas')) {
-    const earned = NAS_TIERS[st.nas?.tier ?? 0].bays * NAS.swingsPerSecondPerBay * swing * dt
+    const earned = getNasRate(st) * dt
     patch.money = st.money + earned
     patch.stats = { ...st.stats, nasEarned: (st.stats.nasEarned ?? 0) + earned }
   }
@@ -1181,6 +1185,7 @@ export const useGameStore = create(
       chooseMode: (mode) => {
         const s = get()
         if (s.mode) return
+        if (mode === 'rogue' && !rogueTargets(s).length) return // a run targets an ending you've done
         const now = Date.now()
         set({
           mode,
@@ -1652,7 +1657,7 @@ export const useGameStore = create(
         const s = get()
         const level = s.forge?.level ?? 1
         if (!ownsExpansion(s, 'forge') || level >= FORGE.maxLevel) return false
-        const cost = FORGE.upgradeSwings(level) * Math.max(1, getMiningRate(s))
+        const cost = getForgeUpgradeCost(s)
         if (s.money < cost) {
           s.toast(`The smith wants ${fmtMoney(cost)} for that. Gold, not promises.`, 'bad')
           return false
@@ -1660,13 +1665,13 @@ export const useGameStore = create(
         set({ money: s.money - cost, forge: { ...s.forge, level: level + 1 }, stats: { ...s.stats, upgradesBought: (s.stats.upgradesBought ?? 0) + 1 } })
         return true
       },
-      /** Buys (if needed) and puts on one of the Forge's looks. Prices are in swings of your pickaxe. */
+      /** Buys (if needed) and puts on one of the Forge's looks. */
       setForgeTheme: (id) => {
         const s = get()
         const theme = FORGE_THEME_BY_ID[id]
         if (!theme) return false
         if (!s.forgeThemes.includes(id)) {
-          const cost = theme.price * Math.max(1, getMiningRate(s))
+          const cost = getForgeThemePrice(s, theme)
           if (s.money < cost) {
             s.toast(`${theme.name} costs ${fmtMoney(cost)}. Cosmetics are the real endgame.`, 'bad')
             return false
@@ -1682,7 +1687,7 @@ export const useGameStore = create(
         const s = get()
         const tier = s.nas?.tier ?? 0
         if (!ownsExpansion(s, 'nas') || tier >= NAS_TIERS.length - 1) return false
-        const cost = NAS.upgradeSwings(tier) * Math.max(1, getMiningRate(s))
+        const cost = getNasUpgradeCost(s)
         if (s.money < cost) {
           s.toast(`More drives cost ${fmtMoney(cost)}. Storage is cheap; this isn’t.`, 'bad')
           return false

@@ -23,6 +23,7 @@ import { dailyMods } from '../data/daily'
 import { cheatMods } from '../data/cheats'
 import { priceTranslation } from './translator'
 import { rogueModList } from '../data/rogue'
+import { FORGE, NAS, NAS_TIERS } from '../data/expansions'
 
 export const hasSkill = (s, id) => !!s.skills?.[id]
 const equippedDefs = (s) => s.equipped.map((uid) => EQUIPPABLES[s.items.find((i) => i.uid === uid)?.itemId]).filter(Boolean)
@@ -134,8 +135,17 @@ export const getMaxEquipped = (s) => MAX_EQUIPPED + (hasSkill(s, 'hoarder') ? 2 
 export const getAuditRate = (s) => (hasSkill(s, 'tax_lawyer') ? 0.1 : AUDIT.rate)
 /** Swings per second nobody has to click: the Auto-Miner skill plus hamsters, interns and geese. */
 export const getAutoSwings = (s) => (hasSkill(s, 'autominer') ? (hasSkill(s, 'overclock') ? 3 : 1) : 0) + (activeMods(s).autoSwings ?? 0)
-/** Arcade prices and prizes are quoted in clicks: what that many clicks would mine right now. */
-export const getArcadePrice = (s, clicks) => Math.max(1, Math.round(getMiningRate(s) * clicks))
+/** What a "click" is worth in the Arcade: $10, ×5 per Prestige. (Not your pickaxe: upgrading it doesn't make the Arcade dearer.) */
+export const ARCADE_CLICK = 10
+/** Arcade prices and prizes are quoted in clicks. */
+export const getArcadePrice = (s, clicks) => Math.max(1, Math.round(ARCADE_CLICK * prestigeBase(s) ** s.prestige * clicks))
+
+/** Ye Olde Forge and the HomeLab NAS earn in swings of your pickaxe; their upgrades cost fixed dollars. */
+export const getForgeRate = (s, level = s.forge?.level ?? 1) => FORGE.swingsPerSecond(level) * Math.max(1, getMiningRate(s))
+export const getForgeUpgradeCost = (s, level = s.forge?.level ?? 1) => FORGE.upgradeCost(level) * priceMult(s)
+export const getForgeThemePrice = (s, theme) => theme.price * priceMult(s)
+export const getNasRate = (s, tier = s.nas?.tier ?? 0) => NAS_TIERS[tier].bays * NAS.swingsPerSecondPerBay * Math.max(1, getMiningRate(s))
+export const getNasUpgradeCost = (s, tier = s.nas?.tier ?? 0) => NAS.upgradeCost(tier) * priceMult(s)
 /** What one rewarded ad pays (Ad Enjoyer Goggles triple it). */
 export const getAdReward = (s, clicks) => getMiningRate(s) * clicks * (activeMods(s).adReward ?? 1)
 /** What a translation contract pays on delivery (Business Cards double it). */
