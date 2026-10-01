@@ -383,6 +383,7 @@
         const signedOut = wasIn && !profile
         wasIn = !!profile
         if (!profile) {
+          if (draft) closeEditor()
           if (signedOut) setMode('in') // after signing out, the next thing is signing back in
           $('.acct-agree', el).checked = false
           return
@@ -417,6 +418,83 @@
       }
       $('.acct-shuffle', el).addEventListener('click', shuffle)
       $('.acct-pic-default', el).addEventListener('click', () => choose(null))
+
+      // Customize: build a face part by part, starting from the current one.
+      const editor = $('.acct-editor', el)
+      let draft = null
+      let editing = null // the code the editor started from
+      function openEditor() {
+        const av = window.nikstilAvatar
+        if (!av?.PARTS || !me) return
+        editing = me.avatar || me.username.toLowerCase()
+        draft = av.traitsOf(editing)
+        $('.acct-editor-parts', el).replaceChildren(...av.PARTS.map(partRow))
+        editor.hidden = false
+        $('.acct-pic-list', el).hidden = $('.acct-pic-buttons', el).hidden = true
+        drawDraft()
+        $('.acct-editor-parts', el).scrollTop = 0
+      }
+      function closeEditor() {
+        draft = null
+        editor.hidden = true
+        $('.acct-pic-list', el).hidden = $('.acct-pic-buttons', el).hidden = false
+      }
+      function setPart(key, v) {
+        draft[key] = v
+        drawDraft()
+      }
+      /** One row: colour swatches, or ‹ name › arrows. */
+      function partRow(part) {
+        const n = (part.colors ?? part.names).length
+        let control
+        if (part.colors) {
+          control = h(
+            'div',
+            { class: 'acct-swatches', role: 'radiogroup', 'aria-label': part.label },
+            ...part.colors.map((col, i) =>
+              h('button', { type: 'button', class: 'acct-swatch', role: 'radio', 'data-v': i, 'aria-label': `${part.label} ${i + 1}`, style: `--c: ${col}`, onclick: () => setPart(part.key, i) }),
+            ),
+          )
+        } else {
+          const step = (d) => setPart(part.key, (draft[part.key] + d + n) % n)
+          control = h(
+            'div',
+            { class: 'acct-stepper' },
+            h('button', { type: 'button', class: 'btn acct-step', 'aria-label': `Previous ${part.label.toLowerCase()}`, onclick: () => step(-1) }, '‹'),
+            h('span', { class: 'acct-step-name', 'aria-live': 'polite' }),
+            h('button', { type: 'button', class: 'btn acct-step', 'aria-label': `Next ${part.label.toLowerCase()}`, onclick: () => step(1) }, '›'),
+          )
+        }
+        return h('div', { class: 'acct-part', 'data-key': part.key }, h('span', { class: 'acct-part-label' }, part.label), control)
+      }
+      function drawDraft() {
+        const av = window.nikstilAvatar
+        $('.acct-editor-preview', el).src = av.url(av.encode(draft, editing))
+        for (const part of av.PARTS) {
+          const row = $(`.acct-part[data-key="${part.key}"]`, el)
+          row.hidden = part.when ? !part.when(draft) : false
+          if (part.colors) $$('.acct-swatch', row).forEach((b) => b.setAttribute('aria-checked', String(Number(b.dataset.v) === draft[part.key])))
+          else $('.acct-step-name', row).textContent = part.names[draft[part.key]]
+        }
+      }
+      $('.acct-customize', el).addEventListener('click', openEditor)
+      $('.acct-editor-cancel', el).addEventListener('click', closeEditor)
+      $('.acct-editor-random', el).addEventListener('click', () => {
+        draft = window.nikstilAvatar.randomTraits()
+        drawDraft()
+      })
+      $('.acct-editor-save', el).addEventListener('click', async (e) => {
+        const button = e.currentTarget
+        button.disabled = true
+        try {
+          await net().setAvatar(window.nikstilAvatar.encode(draft, editing))
+          closeEditor()
+        } catch (err) {
+          os.msgbox('Account', net().errorText(err), '⚠️')
+        } finally {
+          button.disabled = false
+        }
+      })
       const view = { onAuth: render }
       views.add(view)
       body.classList.add('is-loading')

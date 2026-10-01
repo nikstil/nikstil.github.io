@@ -349,8 +349,20 @@
           <legend>Profile picture</legend>
           <ul class="acct-pic-list"></ul>
           <div class="acct-pic-buttons">
+            <button type="button" class="btn acct-customize">✏️ Customize</button>
             <button type="button" class="btn acct-shuffle">🎲 More</button>
             <button type="button" class="btn acct-pic-default">Use my default</button>
+          </div>
+          <div class="acct-editor" hidden>
+            <div class="acct-editor-top">
+              <img class="acct-editor-preview avatar" width="96" height="96" alt="Preview of your picture">
+              <div class="acct-editor-actions">
+                <button type="button" class="btn btn-primary acct-editor-save">Save picture</button>
+                <button type="button" class="btn acct-editor-random">🎲 Surprise me</button>
+                <button type="button" class="btn acct-editor-cancel">Cancel</button>
+              </div>
+            </div>
+            <div class="acct-editor-parts"></div>
           </div>
         </fieldset>
         <label class="acct-check"><input type="checkbox" class="acct-dms"> Let other players message me</label>
