@@ -112,6 +112,16 @@ html:not(.icons-ready) .desk-icons, html:not(.icons-ready) .sm-head { visibility
 .desk-icon.is-selected { background: rgb(90 170 255 / 0.32); border-color: rgb(170 215 255 / 0.75); }
 .desktop.is-refreshing .desk-icons { animation: refresh 0.3s steps(2); }
 @keyframes refresh { 50% { opacity: 0; } }
+/* Icons moved by hand: each one sits in its own grid cell (os.js places them) */
+.desk-icons.is-free { display: block; position: relative; width: 100%; }
+.desk-icons.is-free > li { position: absolute; }
+.desk-icons > li.is-dragging { z-index: 3; opacity: 0.75; pointer-events: none; }
+/* The selection box */
+.marquee { position: fixed; z-index: 2; pointer-events: none; border: 1px solid rgb(120 190 255 / 0.95); background: rgb(90 170 255 / 0.22); }
+html[data-theme="retro"] .marquee, html[data-theme="luna"] .marquee { border: 1px dotted #fff; background: transparent; mix-blend-mode: difference; }
+html[data-theme="minimal"] .marquee { border: 1px solid #000; background: rgb(0 0 0 / 0.06); }
+html[data-theme="vapor"] .marquee { border-color: #ff71ce; background: rgb(255 113 206 / 0.18); }
+html[data-theme="y2k"] .marquee { border-color: #b6ff1a; background: rgb(182 255 26 / 0.12); }
 
 /* ================= Windows ================= */
 #windows { position: relative; z-index: 5; }
@@ -1280,3 +1290,4 @@ html.embed-app { --taskbar-h: 0px; }
 html.embed-app :is(.desk-icons, .taskbar, #boot, .start-menu, .ctx-menu, #balloon) { display: none !important; }
 html.embed-app .win.is-embedded { inset: 0 !important; width: auto !important; border: 0; border-radius: 0; box-shadow: none; }
 html.embed-app .win.is-embedded > .win-bar { display: none; }
+.win-foot-choices { flex-wrap: wrap; }

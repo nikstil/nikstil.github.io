@@ -425,6 +425,38 @@
     })
   }
 
+  /** A message box with several buttons: resolves to the chosen value (null if it's closed). */
+  function choicebox({ title, text, icon = '❓', choices, width = 420 }) {
+    return new Promise((resolve) => {
+      let result = null
+      const content = document.createDocumentFragment()
+      const body = document.createElement('div')
+      body.className = 'win-body msg'
+      body.innerHTML = `<span class="msg-icon" aria-hidden="true"></span><div class="msg-main"><p></p></div>`
+      $('.msg-icon', body).textContent = icon
+      $('p', body).textContent = text
+      const foot = document.createElement('div')
+      foot.className = 'win-foot win-foot-choices'
+      for (const c of choices) {
+        const b = document.createElement('button')
+        b.className = `btn${c.primary ? ' btn-primary' : ''}`
+        b.textContent = c.label
+        b.dataset.value = c.value
+        foot.append(b)
+      }
+      content.append(body, foot)
+      const win = makeWindow({ id: `msg-${++msgCount}`, title, icon, width, content, onClose: () => resolve(result) })
+      win.el.classList.add('is-msg')
+      $$('.win-foot .btn', win.el).forEach((b) =>
+        b.addEventListener('click', () => {
+          result = b.dataset.value
+          closeWin(win)
+        }),
+      )
+      ;($('.win-foot .btn-primary', win.el) ?? $('.win-foot .btn', win.el)).focus()
+    })
+  }
+
   // ================= Apps =================
   function money(n) {
     const a = Math.abs(n)
@@ -552,18 +584,212 @@
   }
 
   // ================= Desktop =================
+  // Icons: click to select (Ctrl/⌘-click to add), drag a box on the desktop to select several,
+  // double-click to open. With a mouse, icons can be dragged anywhere: they snap to a grid and stay
+  // where you put them (saved in this browser). Desktop menu → Sort icons puts them back.
   const desktop = $('#desktop')
+  const iconList = $('.desk-icons')
+  const ICON_POS_KEY = 'nikstilos-icons'
+  const CELL_W = 98
+  const CELL_H = 100
+  const PAD = 10
+  let justDragged = 0 // (a drag ends in a click on the dragged icon: that click mustn't select or open it)
+  let draggedIcons = []
+  const wasDragged = (icon) => Date.now() - justDragged < 300 && draggedIcons.includes(icon)
+  const iconKey = (icon) => icon.dataset.app ?? `link:${$('.di-label', icon).textContent}`
+  const visibleIcons = () => $$('.desk-icon').filter((i) => !i.closest('li').hidden)
+  const select = (icons, add = false) => $$('.desk-icon').forEach((i) => i.classList.toggle('is-selected', icons.includes(i) || (add && i.classList.contains('is-selected'))))
+
   function wireDeskIcon(icon, launch) {
     icon.addEventListener('click', (e) => {
-      $$('.desk-icon').forEach((i) => i.classList.toggle('is-selected', i === icon))
+      if (wasDragged(icon)) return
+      if (e.ctrlKey || e.metaKey) return icon.classList.toggle('is-selected')
+      select([icon])
       // Double-click on a mouse; a tap on touch screens; Enter/Space from the keyboard.
       if (coarsePointer || e.detail === 0) launch()
     })
-    icon.addEventListener('dblclick', () => !coarsePointer && launch())
+    icon.addEventListener('dblclick', () => !coarsePointer && !wasDragged(icon) && launch())
+    if (!coarsePointer) icon.addEventListener('pointerdown', (e) => startIconDrag(icon, e))
   }
   for (const icon of $$('.desk-icon')) wireDeskIcon(icon, () => openApp(icon.dataset.app))
+
+  // ----- where the icons are
+  const loadPositions = () => {
+    try {
+      const saved = JSON.parse(storage.get(ICON_POS_KEY))
+      return saved && typeof saved === 'object' ? saved : null
+    } catch {
+      return null
+    }
+  }
+  /** Places every icon on the grid: saved spots first, then the rest in the first free cells. */
+  function layoutIcons() {
+    const saved = loadPositions()
+    iconList.classList.toggle('is-free', !!saved)
+    if (!saved) {
+      $$('.desk-icons > li').forEach((li) => (li.style.left = li.style.top = ''))
+      return
+    }
+    const rows = Math.max(1, Math.floor((desktop.clientHeight - PAD * 2) / CELL_H))
+    const cols = Math.max(1, Math.floor((desktop.clientWidth - PAD * 2) / CELL_W))
+    const taken = new Set()
+    const place = (icon, col, row) => {
+      taken.add(`${col},${row}`)
+      const li = icon.closest('li')
+      li.style.left = `${PAD + col * CELL_W}px`
+      li.style.top = `${PAD + row * CELL_H}px`
+      icon.dataset.cell = `${col},${row}`
+    }
+    const free = (col = 0, row = 0) => {
+      for (let n = col * rows + row; n < rows * cols * 4; n++) {
+        const c = Math.floor(n / rows),
+          r = n % rows
+        if (!taken.has(`${c},${r}`)) return [c, r]
+      }
+      return [0, 0]
+    }
+    const later = []
+    for (const icon of visibleIcons()) {
+      const spot = saved[iconKey(icon)]
+      if (Array.isArray(spot) && spot[0] < cols && spot[1] < rows && !taken.has(`${spot[0]},${spot[1]}`)) place(icon, spot[0], spot[1])
+      else later.push(icon)
+    }
+    for (const icon of later) place(icon, ...free())
+  }
+  function savePositions() {
+    const data = {}
+    for (const icon of visibleIcons()) data[iconKey(icon)] = icon.dataset.cell.split(',').map(Number)
+    storage.set(ICON_POS_KEY, JSON.stringify(data))
+  }
+  addEventListener('resize', () => iconList.classList.contains('is-free') && layoutIcons())
+
+  // ----- dragging icons (the selected ones, if you grab one of them)
+  function startIconDrag(icon, e) {
+    if (e.button !== 0) return
+    const x0 = e.clientX,
+      y0 = e.clientY
+    let moving = null
+    const move = (ev) => {
+      const dx = ev.clientX - x0,
+        dy = ev.clientY - y0
+      if (!moving) {
+        if (Math.hypot(dx, dy) < 5) return
+        if (!iconList.classList.contains('is-free')) {
+          // First drag: freeze the current arrangement where it is.
+          freezeLayout()
+        }
+        if (!icon.classList.contains('is-selected')) select([icon])
+        moving = $$('.desk-icon.is-selected').filter((i) => !i.closest('li').hidden)
+        moving.forEach((i) => i.closest('li').classList.add('is-dragging'))
+      }
+      for (const i of moving) i.closest('li').style.transform = `translate(${dx}px, ${dy}px)`
+    }
+    const up = (ev) => {
+      removeEventListener('pointermove', move)
+      removeEventListener('pointerup', up)
+      removeEventListener('pointercancel', up)
+      if (!moving) return
+      justDragged = Date.now()
+      draggedIcons = moving
+      const dc = Math.round((ev.clientX - x0) / CELL_W),
+        dr = Math.round((ev.clientY - y0) / CELL_H)
+      const rows = Math.max(1, Math.floor((desktop.clientHeight - PAD * 2) / CELL_H))
+      const cols = Math.max(1, Math.floor((desktop.clientWidth - PAD * 2) / CELL_W))
+      const others = new Set(visibleIcons().filter((i) => !moving.includes(i)).map((i) => i.dataset.cell))
+      // Move them all by the same number of cells; anything that would land on another icon (or
+      // off the desktop) takes the nearest free cell instead.
+      const placed = new Set()
+      for (const i of moving) {
+        const [c, r] = i.dataset.cell.split(',').map(Number)
+        let tc = Math.min(cols - 1, Math.max(0, c + dc)),
+          tr = Math.min(rows - 1, Math.max(0, r + dr))
+        const busy = (cc, rr) => others.has(`${cc},${rr}`) || placed.has(`${cc},${rr}`)
+        if (busy(tc, tr)) {
+          let best = null
+          for (let cc = 0; cc < cols; cc++)
+            for (let rr = 0; rr < rows; rr++) {
+              if (busy(cc, rr)) continue
+              const d = Math.hypot(cc - tc, rr - tr)
+              if (!best || d < best[2]) best = [cc, rr, d]
+            }
+          if (best) [tc, tr] = best
+        }
+        placed.add(`${tc},${tr}`)
+        i.dataset.cell = `${tc},${tr}`
+        const li = i.closest('li')
+        li.classList.remove('is-dragging')
+        li.style.transform = ''
+      }
+      savePositions()
+      layoutIcons()
+    }
+    addEventListener('pointermove', move)
+    addEventListener('pointerup', up)
+    addEventListener('pointercancel', up)
+  }
+  /** Saves where the icons are right now (in the automatic layout) as their spots. */
+  function freezeLayout() {
+    const box = iconList.getBoundingClientRect()
+    for (const icon of visibleIcons()) {
+      const r = icon.closest('li').getBoundingClientRect()
+      icon.dataset.cell = `${Math.round((r.left - box.left - PAD) / CELL_W)},${Math.round((r.top - box.top - PAD) / CELL_H)}`
+    }
+    savePositions()
+    layoutIcons()
+  }
+  function sortIcons() {
+    storage.set(ICON_POS_KEY, '')
+    try {
+      localStorage.removeItem(ICON_POS_KEY)
+    } catch {}
+    layoutIcons()
+  }
+
+  // ----- the selection box: hold the left button on the desktop and drag
+  const marquee = document.createElement('div')
+  marquee.className = 'marquee'
+  marquee.hidden = true
+  desktop.append(marquee)
   desktop.addEventListener('pointerdown', (e) => {
-    if (!e.target.closest('.desk-icon')) $$('.desk-icon').forEach((i) => i.classList.remove('is-selected'))
+    if (e.target.closest('.desk-icon')) return
+    const add = e.ctrlKey || e.metaKey
+    if (!add) select([])
+    if (e.button !== 0 || e.pointerType === 'touch') return
+    const x0 = e.clientX,
+      y0 = e.clientY
+    const before = add ? $$('.desk-icon.is-selected') : []
+    let on = false
+    const move = (ev) => {
+      const x = Math.min(x0, ev.clientX),
+        y = Math.min(y0, ev.clientY),
+        w = Math.abs(ev.clientX - x0),
+        h = Math.abs(ev.clientY - y0)
+      if (!on && w + h < 4) return
+      on = true
+      marquee.hidden = false
+      Object.assign(marquee.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` })
+      const hits = visibleIcons().filter((i) => {
+        const r = i.getBoundingClientRect()
+        return r.right > x && r.left < x + w && r.bottom > y && r.top < y + h
+      })
+      select([...before, ...hits])
+    }
+    const up = () => {
+      marquee.hidden = true
+      removeEventListener('pointermove', move)
+      removeEventListener('pointerup', up)
+      removeEventListener('pointercancel', up)
+    }
+    addEventListener('pointermove', move)
+    addEventListener('pointerup', up)
+    addEventListener('pointercancel', up)
+  })
+  // Ctrl/⌘+A selects every icon (when nothing else has the keyboard).
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && (document.activeElement === document.body || document.activeElement?.closest('.desktop'))) {
+      e.preventDefault()
+      select(visibleIcons())
+    }
   })
 
   // ================= Menus =================
@@ -617,6 +843,7 @@
     if (!action) return
     closeMenus()
     if (action === 'folder') msgbox('New folder', 'Creating folders requires nikstilOS Pro. Upgrade for $4.99/month. (Kidding. There is no Pro.)', '📁')
+    if (action === 'sort') sortIcons()
     if (action === 'refresh') {
       desktop.classList.remove('is-refreshing')
       void desktop.offsetWidth
@@ -756,10 +983,12 @@
       restore,
       msgbox,
       askbox,
+      choicebox,
       closeMenus,
       iconFor,
       coarsePointer,
       siteHidden: (id) => site.apps?.[id]?.hidden === true,
+      layoutIcons: () => layoutIcons(),
       userName: () => text(site.user) || 'Guest',
     }) ?? null
 
@@ -842,6 +1071,7 @@
       const saved = storage.get(THEME_KEY) || storage.get(GAME_THEME_KEY)
       const fallback = THEMES.some((t) => t.id === site.defaultTheme) ? site.defaultTheme : 'aero'
       applyTheme(THEMES.some((t) => t.id === saved) ? saved : fallback, false)
+      layoutIcons()
       const onlineReady = Promise.resolve(online?.start()).catch(() => {})
       if (APPS[embedApp]) {
         const root = document.documentElement
@@ -858,6 +1088,8 @@
         const deep = location.hash.slice(1)
         if (APPS[deep]) openApp(deep)
         welcome()
+        // First time here: sign in, make an account, or carry on as a guest.
+        onlineReady.then(() => !APPS[deep] && online?.firstVisit())
       })
     })
   addEventListener('hashchange', () => APPS[location.hash.slice(1)] && openApp(location.hash.slice(1)))

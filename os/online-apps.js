@@ -57,6 +57,7 @@
       available = await net().configured
       if (!available) return
       for (const el of $$('[data-online]')) el.hidden = os.siteHidden(el.dataset.online)
+      os.layoutIcons?.()
       // The Start menu's name and picture open Account.
       const head = $('.sm-head')
       head.setAttribute('role', 'button')
@@ -79,6 +80,35 @@
       })
       // Signed in on this device already? (Otherwise the SDK isn't even loaded until it's needed.)
       if (net().hasStoredSession()) net().me().catch(() => {})
+    }
+
+    // ================= First visit =================
+    const VISITED_KEY = 'nikstilos-visited'
+    async function firstVisit() {
+      if (!available) return
+      try {
+        if (localStorage.getItem(VISITED_KEY)) return
+        localStorage.setItem(VISITED_KEY, '1')
+      } catch {
+        return // (no storage: we'd ask on every visit)
+      }
+      if (net().hasStoredSession()) return
+      const choice = await os.choicebox({
+        title: 'Welcome to nikstil.com',
+        icon: '👋',
+        text: 'Sign in to get your TRANSLATR™ runs on the leaderboards and chat in Messenger. Or just look around: nothing here needs an account.',
+        choices: [
+          { label: 'Continue as guest', value: 'guest' },
+          { label: 'Create account', value: 'up' },
+          { label: 'Sign in', value: 'in', primary: true },
+        ],
+      })
+      if (choice === 'in' || choice === 'up') openAccount(choice)
+    }
+    let account = null // the open Account window's controls
+    function openAccount(mode = 'in') {
+      os.openApp('account')
+      account?.setMode(mode)
     }
 
     function onAuth(profile) {
@@ -289,6 +319,13 @@
         error.hidden = true
       }
       $$('.acct-tab', el).forEach((t) => t.addEventListener('click', () => setMode(t.dataset.mode)))
+      account = {
+        setMode: (m) => {
+          if (me) return
+          setMode(m)
+          $('.acct-user', el).focus()
+        },
+      }
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault()
@@ -338,11 +375,14 @@
         }
       })
 
+      let wasIn = false
       function render(profile) {
         form.hidden = !!profile
         signedIn.hidden = !profile
+        const signedOut = wasIn && !profile
+        wasIn = !!profile
         if (!profile) {
-          setMode('in') // after signing out, the next thing is signing back in
+          if (signedOut) setMode('in') // after signing out, the next thing is signing back in
           $('.acct-agree', el).checked = false
           return
         }
@@ -387,7 +427,10 @@
           if (!p) $('.acct-user', el).focus()
         })
         .catch((err) => offline(body, net().errorText(err)))
-      return () => views.delete(view)
+      return () => {
+        views.delete(view)
+        account = null
+      }
     }
 
     // ================= Messenger =================
@@ -844,6 +887,8 @@
     const INITS = { leaderboard: initLeaderboard, messenger: initMessenger, account: initAccount }
     return {
       start,
+      firstVisit,
+      openAccount,
       init: (id, el, win) => INITS[id]?.(el, win),
     }
   }
