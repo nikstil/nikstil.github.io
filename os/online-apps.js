@@ -160,11 +160,27 @@
     function initLeaderboard(el) {
       const body = $('.lb', el)
       if (!available) return offline(body)
+      // Two dropdowns: the mode (Speedrun or Daily Challenge), then the ending or the day.
+      const mode = $('.lb-mode', el)
       const select = $('.lb-board', el)
-      select.append(
-        h('optgroup', { label: 'Speedrun' }, h('option', { value: 'any' }, 'Any% (any ending)'), ENDINGS.map(([id, icon, name]) => h('option', { value: id }, `${icon} ${name}`))),
-        h('optgroup', { label: 'Daily Challenge' }, h('option', { value: 'daily:0' }, 'Today'), h('option', { value: 'daily:-1' }, 'Yesterday')),
-      )
+      const dayName = (offset) => {
+        if (offset === 0) return 'Today'
+        if (offset === -1) return 'Yesterday'
+        const [y, m, d] = localDay(offset).split('-').map(Number)
+        return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+      }
+      function fillBoards() {
+        select.replaceChildren(
+          ...(mode.value === 'daily'
+            ? Array.from({ length: 7 }, (_, i) => h('option', { value: `daily:${-i}` }, dayName(-i)))
+            : [h('option', { value: 'any' }, 'Any% (any ending)'), ...ENDINGS.map(([id, icon, name]) => h('option', { value: id }, `${icon} ${name}`))]),
+        )
+      }
+      fillBoards()
+      mode.addEventListener('change', () => {
+        fillBoards()
+        load()
+      })
       const tbody = $('tbody', el)
       const empty = $('.lb-empty', el)
       const mine = $('.lb-me', el)

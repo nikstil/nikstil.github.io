@@ -1064,7 +1064,8 @@ html[data-theme="vapor"] .bin-file.is-selected small { color: #fbe3ff; }
 /* Leaderboards */
 .lb { display: flex; flex-direction: column; gap: 10px; }
 .lb-bar { display: flex; gap: 8px; }
-.lb-pick { flex: 1; }
+.lb-pick { flex: 1; min-width: 0; }
+.lb-pick select { width: 100%; }
 .lb-wrap { max-height: min(340px, 45vh); overflow: auto; border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); border-radius: 3px; background: rgb(255 255 255 / 0.6); }
 .lb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .lb-table th { position: sticky; top: 0; z-index: 1; padding: 5px 8px; text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); background: color-mix(in srgb, var(--ink) 6%, #fff); }
