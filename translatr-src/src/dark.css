@@ -1,0 +1,407 @@
+/* ============================================================
+   DARK MODE — html[data-mode="dark"] (Control Panel → Appearance, the Start menu's 🌙 button,
+   or the device on "Auto"). Every theme gets its own after-hours version:
+     Aero      → Aero Night: a night sky, smoked glass, dark client areas
+     Luna      → Royale Noir: Aero Night's surfaces in XP's black chrome
+     Aqua      → Graphite After Dark: Aero Night's surfaces, graphite pinstripes
+     Vaporwave → Midnight Vapor: the sun has set, the neon hasn't
+     Y2K       → Blackout Chrome: gunmetal frames, black glass everywhere
+     Skeuo     → Night Desk: dark walnut, gunmetal, cream-on-leather
+     Retro 95  → High Contrast Black (the real Windows 95 accessibility scheme, more or less)
+     Minimal   → simply inverted (it is black and white; now it is white and black)
+   Rules here out-specify the themes' own (html[data-theme][data-mode] .x), so order in the
+   cascade doesn't matter. Mine tiles, receipts and ads stay light on purpose: they're objects.
+   ============================================================ */
+
+@layer components {
+  /* ------------------------------------------------------------------
+     Shared by every theme but Minimal
+     ------------------------------------------------------------------ */
+  html[data-mode="dark"]:not([data-theme="minimal"]) { color-scheme: dark; }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .surface-soft { background: linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.03)); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .avatar-chip { background: radial-gradient(circle at 50% 30%, #44526a, #1c2432); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .note-panel { background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .delta-chip { background: rgb(8 12 18 / 0.9); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .slot-frame { background: linear-gradient(180deg, #1c2430, #10161f); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .alert-pill { background: linear-gradient(180deg, #3d1519, #2a0d10); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) :is(.glow-gold, .glow-toxic, .glow-magenta, .glow-blood) { text-shadow: 0 0 8px color-mix(in oklab, currentColor 35%, transparent); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .real-cat { background: #2a2622; }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .hell-row { background: rgb(255 255 255 / 0.04); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .hell-switch { background: #3a4452; }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .mail-row:hover { background: rgb(120 180 255 / 0.08); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .mail-row.is-open { background: rgb(120 180 255 / 0.15); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .acquisition-card {
+    background: radial-gradient(ellipse at 90% 0%, rgb(255 200 60 / 0.16), transparent 60%), linear-gradient(180deg, #2c2410, #1d1808);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 26px -10px #d4a017;
+  }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .doom-action { color: color-mix(in oklab, var(--color-ink) 55%, transparent); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .doom-action:hover { color: var(--color-ice); background: rgb(120 180 255 / 0.1); }
+  html[data-mode="dark"]:not([data-theme="minimal"]) .doom-grip { color: rgb(220 232 245 / 0.5); text-shadow: none; }
+
+  /* ------------------------------------------------------------------
+     AERO NIGHT (also the base for Luna and Aqua after dark, whose blocks below add their chrome)
+     ------------------------------------------------------------------ */
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] {
+    --color-ink: #e3ebf5;
+    --color-inset: #1a2533;
+    --color-gold: #ffc94a;
+    --color-toxic: #6fe25a;
+    --color-magenta: #ff72c9;
+    --color-blood: #ff6b6b;
+    --color-ice: #6cb8ff;
+    --badge-ring: #0b1626;
+    scrollbar-color: #3a4a5e #08111d;
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] body { background: #040c1a; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .wp-sky {
+    background:
+      radial-gradient(circle at 84% 12%, rgb(235 240 255 / 0.95) 0 1.1%, rgb(200 215 255 / 0.25) 1.6%, transparent 9%),
+      radial-gradient(ellipse at 50% 120%, rgb(40 90 170 / 0.45), transparent 60%),
+      linear-gradient(180deg, #02060f 0%, #061631 40%, #0b2750 75%, #123a6a 100%);
+  }
+  /* the rays become stars */
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .wp-rays {
+    mask-image: linear-gradient(#000 40%, transparent 85%);
+    -webkit-mask-image: linear-gradient(#000 40%, transparent 85%);
+    background:
+      radial-gradient(1.2px 1.2px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 27% 8%, #fff, transparent),
+      radial-gradient(1.4px 1.4px at 41% 26%, #dfe8ff, transparent), radial-gradient(1px 1px at 58% 12%, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 69% 31%, #fff, transparent), radial-gradient(1px 1px at 91% 22%, #cfdcff, transparent),
+      radial-gradient(1px 1px at 7% 42%, #fff, transparent), radial-gradient(1.3px 1.3px at 34% 47%, #fff, transparent),
+      radial-gradient(1px 1px at 77% 44%, #fff, transparent), radial-gradient(1.1px 1.1px at 52% 38%, #e8eeff, transparent);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .wp-hills { filter: brightness(0.3) saturate(0.75); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .wp-bubble { opacity: 0.3; }
+
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .aero-window {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.16) 0, rgb(255 255 255 / 0.05) 34px, rgb(255 255 255 / 0.02) 60%, rgb(255 255 255 / 0.06) 100%),
+      color-mix(in oklab, var(--accent) 20%, rgb(8 18 34 / 0.78));
+    border-color: rgb(0 0 0 / 0.85);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14), 0 12px 32px -8px rgb(0 0 0 / 0.8), 0 0 18px -6px color-mix(in oklab, var(--accent) 50%, transparent);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .aero-window:hover {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18), 0 14px 36px -8px rgb(0 0 0 / 0.85), 0 0 26px -4px color-mix(in oklab, var(--accent) 65%, transparent);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .aero-window::before { opacity: 0.45; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .aero-title { color: #eef6ff; text-shadow: 0 0 10px #000, 0 0 6px #000, 0 1px 2px #000; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .aero-client {
+    background: linear-gradient(180deg, rgb(22 31 45 / 0.95), rgb(14 21 32 / 0.95));
+    border-color: rgb(0 0 0 / 0.75);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.07), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .caption-btns { box-shadow: 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(255 255 255 / 0.12); border-color: rgb(0 0 0 / 0.8); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .caption-btn:not(.close) { background: linear-gradient(180deg, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0.07) 50%, rgb(0 0 0 / 0.25) 51%, rgb(255 255 255 / 0.1)); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .modal-card {
+    background:
+      linear-gradient(#1a2433, #111925) padding-box,
+      linear-gradient(180deg, rgb(160 195 240 / 0.45), rgb(50 90 145 / 0.5) 30%, color-mix(in oklab, var(--accent) 45%, rgb(15 40 75 / 0.75))) border-box;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.55), 0 24px 60px -10px rgb(0 0 0 / 0.85), 0 0 30px -8px color-mix(in oklab, var(--accent) 60%, transparent);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .inset-card { background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02)); border-color: rgb(140 175 220 / 0.2); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] :is(.label, .stat-label, .menu-heading) { color: #7fbfff; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .badge {
+    color: color-mix(in oklab, var(--accent) 40%, white);
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.1), color-mix(in oklab, var(--accent) 22%, #0c1522));
+    border-color: color-mix(in oklab, var(--accent) 45%, black);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood) {
+    color: #e6edf5;
+    border-color: #070b10;
+    background: linear-gradient(180deg, #465265 0%, #353f4f 49%, #2a323f 50%, #222933 100%);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):hover:not(:disabled) {
+    border-color: #3c8fd6;
+    background: linear-gradient(180deg, #43729f, #30598a 49%, #244b76 50%, #2b5988 100%);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15), 0 0 8px rgb(60 160 230 / 0.5);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):active:not(:disabled) { border-color: #1b4a75; background: linear-gradient(180deg, #213b58, #1b3350); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.55); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):disabled { color: #6c7684; border-color: #262c35; background: #1a1f26; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood)::after { background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.18), transparent); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .input { color: #e6edf5; background: #0b111a; border-color: #384556; border-top-color: #283341; box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.45); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .input:hover { border-color: #4f86b8; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .input:focus { border-color: #5aa6ea; box-shadow: 0 0 0 2px rgb(90 166 234 / 0.25), inset 0 1px 2px rgb(0 0 0 / 0.45); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .meter { background: linear-gradient(180deg, #0c1219, #19212b); border-color: #2b3645; box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.5); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .segments > i:not([data-on="true"]) { background: linear-gradient(180deg, #232c38, #171e27); border-color: #313c4a; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .text-gold-grad { background: linear-gradient(180deg, #ffe590 0%, #ffc233 50%, #d68a00 100%); -webkit-background-clip: text; background-clip: text; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .taskbar {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.14) 0%, rgb(255 255 255 / 0.04) 48%, rgb(0 0 0 / 0.15) 52%, rgb(255 255 255 / 0.04) 100%), rgb(4 12 26 / 0.8);
+    border-top-color: rgb(0 0 0 / 0.8);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .cmdbar {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.04) 50%, rgb(0 0 0 / 0.12) 51%, rgb(255 255 255 / 0.05)), rgb(6 16 32 / 0.72);
+    border-bottom-color: rgb(0 0 0 / 0.8);
+    box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.1), 0 6px 24px -8px rgb(0 0 0 / 0.7);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .brand-title { color: #eef6ff; text-shadow: 0 0 14px rgb(80 160 255 / 0.55), 0 1px 2px #000; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .brand-sub { color: #9fbfe0; text-shadow: none; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .stat-tile { border-color: #2a394b; background: linear-gradient(180deg, rgb(30 42 58 / 0.92), rgb(18 27 39 / 0.92)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 3px rgb(0 0 0 / 0.55); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .wallet-tile { border-color: #9a7418; background: linear-gradient(180deg, #3d2f0a, #2c2205 50%, #231b03 51%, #302507); box-shadow: inset 0 1px 0 rgb(255 225 150 / 0.15), 0 1px 3px rgb(0 0 0 / 0.6); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .wallet-label { color: #e8b64a; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .wallet-value { color: #ffd66b; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .menu-item:hover,
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .menu-item[aria-pressed="true"] { background: linear-gradient(180deg, rgb(70 140 220 / 0.32), rgb(45 105 185 / 0.22)); box-shadow: inset 0 0 0 1px rgb(110 170 240 / 0.5); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .shop-card { border-color: #2a394b; background: linear-gradient(180deg, #1b2534, #131b26); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 3px rgb(0 0 0 / 0.5); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .shop-card:hover { border-color: #3f7fc0; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .shop-card-title { color: #cfe3fa; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .slot-cell { border-color: rgb(255 255 255 / 0.08); background: linear-gradient(180deg, #19212c, #283241 50%, #19212c); box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.6); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .slot-cell.is-lit { border-color: #d9a400; background: linear-gradient(180deg, #3d3010, #5a4712 50%, #3d3010); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .gadget {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.04) 40%, rgb(255 255 255 / 0.07)), rgb(10 22 40 / 0.78);
+    border-color: rgb(0 0 0 / 0.75);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12), 0 14px 34px -8px rgb(0 0 0 / 0.8), 0 0 22px -4px var(--mood, transparent);
+  }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .gadget-orb { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2), 0 0 18px var(--mood, transparent); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .gadget-title { color: #e3eefa; text-shadow: 0 0 6px #000; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .balloon { background: linear-gradient(180deg, #1f2938, #161e29); border-color: #3a4a5f; box-shadow: 0 8px 22px -6px rgb(0 0 0 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.06); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .doom-tab-btn { color: rgb(226 235 245 / 0.7); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .doom-tab-btn:hover { background: rgb(255 255 255 / 0.08); border-color: rgb(120 160 200 / 0.4); }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .doom-tab-btn.active { color: #8cc8ff; background: linear-gradient(180deg, #243247, #1a2536); border-color: #3f7fc0; box-shadow: none; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .doom-post { background: linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.02)); border-color: rgb(140 175 220 / 0.18); box-shadow: none; }
+  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .doom-avatar { background: radial-gradient(circle at 50% 30%, #3a4a62, #1b2636); border-color: rgb(140 175 220 / 0.3); box-shadow: none; }
+
+  /* ------------------------------------------------------------------
+     Y2K: BLACKOUT CHROME
+     ------------------------------------------------------------------ */
+  html[data-theme="y2k"][data-mode="dark"] {
+    --color-ink: #e6e8ee;
+    --color-inset: #1b1d24;
+    --color-gold: #ffd84a;
+    --color-toxic: #b6ff1a;
+    --color-magenta: #ff5fe0;
+    --color-blood: #ff4d6a;
+    --color-ice: #5fd0ff;
+    --y2k-chrome: linear-gradient(180deg, #8c929e 0%, #4a4f5a 24%, #1d2027 48%, #08090c 51%, #373b45 74%, #7a808c 100%);
+    --y2k-chrome-soft: linear-gradient(180deg, #5c626e 0%, #353941 40%, #191b21 52%, #2a2d35 80%, #474c57 100%);
+    --badge-ring: #000;
+  }
+  html[data-theme="y2k"][data-mode="dark"] .aero-client {
+    background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.025) 0 1px, transparent 1px 3px), linear-gradient(180deg, #15161c, #0c0d11);
+    border-color: #000;
+    box-shadow: inset 0 2px 8px rgb(0 0 0 / 0.8), 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+  html[data-theme="y2k"][data-mode="dark"] .modal-card { background: linear-gradient(#15161c, #0c0d11) padding-box, var(--y2k-chrome) border-box; }
+  html[data-theme="y2k"][data-mode="dark"] .inset-card { background: linear-gradient(180deg, #1d1f26, #13141a); border-color: #3b404a; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06); }
+  html[data-theme="y2k"][data-mode="dark"] :is(.label, .stat-label, .menu-heading) { color: #aab0bc; }
+  html[data-theme="y2k"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood) { color: #e6e8ee; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 -1px 2px rgb(0 0 0 / 0.5), 0 2px 4px rgb(0 0 0 / 0.6); }
+  html[data-theme="y2k"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):hover:not(:disabled) { background: linear-gradient(180deg, #6b717d, #3f434d 40%, #22252c 52%, #3a3e48 80%, #5f6571); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 0 12px rgb(182 255 26 / 0.55); }
+  html[data-theme="y2k"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):active:not(:disabled) { background: linear-gradient(180deg, #1a1c22, #353941); }
+  html[data-theme="y2k"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):disabled { color: #6b707a; border-color: #2c2f37; background: linear-gradient(#1c1e24, #15161b); }
+  html[data-theme="y2k"][data-mode="dark"] .input { color: #e6e8ee; background: linear-gradient(#0b0c10, #15161c); border-color: #3b404a; }
+  html[data-theme="y2k"][data-mode="dark"] .text-gold-grad { background: linear-gradient(180deg, #ffffff 0%, #d6dbe4 45%, #8b92a0 55%, #eef1f5 100%); -webkit-background-clip: text; background-clip: text; }
+  html[data-theme="y2k"][data-mode="dark"] :is(.start-label, .gadget-title, .shop-card-title) { color: #e6e8ee; text-shadow: 0 1px 0 #000; }
+  html[data-theme="y2k"][data-mode="dark"] .balloon { background: linear-gradient(180deg, #1d1f26, #13141a); border-color: #000; box-shadow: 0 0 0 2px #3b404a, 0 10px 30px -6px rgb(0 0 0 / 0.8), 0 0 18px -4px rgb(255 43 214 / 0.5); }
+  html[data-theme="y2k"][data-mode="dark"] .menu-item:hover,
+  html[data-theme="y2k"][data-mode="dark"] .menu-item[aria-pressed="true"] { background: linear-gradient(180deg, rgb(182 255 26 / 0.22), rgb(182 255 26 / 0.08)); box-shadow: inset 0 0 0 1px #6fb300; }
+  html[data-theme="y2k"][data-mode="dark"] .shop-card { border-color: #3b404a; background: linear-gradient(180deg, #1d1f26, #121318); }
+  html[data-theme="y2k"][data-mode="dark"] .doom-post { background: linear-gradient(180deg, #1b1d23, #121318); border-color: #2c2f37; }
+  html[data-theme="y2k"][data-mode="dark"] .doom-tab-btn.active { color: #e6e8ee; }
+  html[data-theme="y2k"][data-mode="dark"] .doom-tab-btn { color: rgb(230 232 238 / 0.7); }
+  html[data-theme="y2k"][data-mode="dark"] .slot-cell { border-color: #000; background: linear-gradient(180deg, #16181e, #2a2d35 50%, #16181e); }
+  html[data-theme="y2k"][data-mode="dark"] .slot-cell.is-lit { background: linear-gradient(180deg, #243309, #3a520c 50%, #243309); }
+  html[data-theme="y2k"][data-mode="dark"] .segments > i:not([data-on="true"]) { background: #101116; }
+
+  /* ------------------------------------------------------------------
+     SKEUOMORPHISM: NIGHT DESK
+     ------------------------------------------------------------------ */
+  html[data-theme="skeuo"][data-mode="dark"] {
+    --color-ink: #f0e5d0;
+    --color-inset: #3a2e22;
+    --color-gold: #f0c050;
+    --color-toxic: #86d65f;
+    --color-magenta: #e67ab8;
+    --color-blood: #ff7f70;
+    --color-ice: #8cbcf0;
+    --skeuo-metal: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.035) 0 1px, rgb(0 0 0 / 0.05) 1px 2px, transparent 2px 4px), linear-gradient(180deg, #56565b 0%, #424246 45%, #333337 100%);
+    --skeuo-bevel: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.5);
+    --badge-ring: #1e130a;
+  }
+  html[data-theme="skeuo"][data-mode="dark"] body { background: #150c05; }
+  html[data-theme="skeuo"][data-mode="dark"] .wp-sky { background: radial-gradient(ellipse at 50% 38%, #4a301c 0%, #2e1c0f 50%, #140b05 100%); }
+  html[data-theme="skeuo"][data-mode="dark"] .aero-title { color: #e8e0d0; text-shadow: 0 -1px 0 rgb(0 0 0 / 0.85); }
+  html[data-theme="skeuo"][data-mode="dark"] .aero-client {
+    background: repeating-linear-gradient(0deg, rgb(255 230 190 / 0.022) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgb(255 230 190 / 0.022) 0 1px, transparent 1px 3px), #2a2119;
+    border-color: #141414;
+    box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.65), 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+  html[data-theme="skeuo"][data-mode="dark"] .modal-card { background: linear-gradient(#2c231a, #211a13) padding-box, linear-gradient(180deg, #6c6c70, #38383c) border-box; box-shadow: 0 0 0 1px #0e0e0e, inset 0 0 0 1px rgb(0 0 0 / 0.45), 0 30px 60px -10px rgb(0 0 0 / 0.9); }
+  html[data-theme="skeuo"][data-mode="dark"] .inset-card { background: linear-gradient(180deg, #211a13, #2b2219); border-color: #4a3b28; box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.5), 0 1px 0 rgb(255 255 255 / 0.05); }
+  html[data-theme="skeuo"][data-mode="dark"] :is(.label, .menu-heading) { color: #e2c08e; text-shadow: 0 -1px 0 rgb(0 0 0 / 0.7); }
+  html[data-theme="skeuo"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood) { color: #f0e8dc; text-shadow: 0 -1px 0 rgb(0 0 0 / 0.7); border-color: #1a1a1a; background: linear-gradient(180deg, #5e5e62 0%, #4a4a4e 50%, #3a3a3e 51%, #454549 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 2px 3px rgb(0 0 0 / 0.6); }
+  html[data-theme="skeuo"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):hover:not(:disabled) { border-color: #000; background: linear-gradient(180deg, #6c6c70 0%, #56565a 50%, #444448 51%, #505054 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 2px 5px rgb(0 0 0 / 0.65); }
+  html[data-theme="skeuo"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):active:not(:disabled) { background: linear-gradient(180deg, #333336, #404044); box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.6); }
+  html[data-theme="skeuo"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):disabled { color: #7a7a7a; border-color: #2a2a2a; background: #2e2e30; box-shadow: none; }
+  html[data-theme="skeuo"][data-mode="dark"] .input { color: #f0e5d0; border-color: #5a4a36; background: #18120d; box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.5); }
+  html[data-theme="skeuo"][data-mode="dark"] .meter { border-color: #111; background: linear-gradient(180deg, #161616, #2c2c2c); box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.6), 0 1px 0 rgb(255 255 255 / 0.06); }
+  html[data-theme="skeuo"][data-mode="dark"] .segments > i:not([data-on="true"]) { background: linear-gradient(180deg, #2a2a2c, #1e1e20); border-color: #111; }
+  html[data-theme="skeuo"][data-mode="dark"] :is(.glow-gold, .glow-toxic, .glow-magenta, .glow-blood) { text-shadow: 0 -1px 0 rgb(0 0 0 / 0.8); }
+  html[data-theme="skeuo"][data-mode="dark"] .text-gold-grad { background: linear-gradient(180deg, #ffe39a 0%, #e0b24c 55%, #a8781e 100%); -webkit-background-clip: text; background-clip: text; }
+  html[data-theme="skeuo"][data-mode="dark"] .taskbar { background: repeating-linear-gradient(88deg, rgb(0 0 0 / 0.2) 0 1px, transparent 1px 13px), linear-gradient(180deg, #6a4222 0%, #52321a 45%, #3a220f 100%); border-top-color: #8a6038; }
+  html[data-theme="skeuo"][data-mode="dark"] :is(.brand-title, .gadget-title) { color: #eee4d2; text-shadow: 0 -1px 0 #000; }
+  html[data-theme="skeuo"][data-mode="dark"] .brand-sub { color: #bda988; text-shadow: none; }
+  html[data-theme="skeuo"][data-mode="dark"] .stat-tile { border-color: #1a1a1a; background: linear-gradient(180deg, #4a4a4e, #333336); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 1px 2px rgb(0 0 0 / 0.5); }
+  html[data-theme="skeuo"][data-mode="dark"] .stat-label { color: #d4c4a4; text-shadow: 0 -1px 0 #000; }
+  /* a backlit LCD */
+  html[data-theme="skeuo"][data-mode="dark"] .wallet-tile { border-color: #1a1a1a; background: linear-gradient(180deg, #2e3a1b, #222c12); box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.55), 0 1px 0 rgb(255 255 255 / 0.08); }
+  html[data-theme="skeuo"][data-mode="dark"] .wallet-label { color: #b8d080; }
+  html[data-theme="skeuo"][data-mode="dark"] .wallet-value { color: #daf5a0; text-shadow: 0 0 6px rgb(200 240 120 / 0.45); }
+  html[data-theme="skeuo"][data-mode="dark"] .gadget { background: linear-gradient(180deg, #2c231a, #211a13); outline-color: rgb(240 215 170 / 0.35); box-shadow: 0 0 0 7px #4a2f18, 0 0 0 8px #1a0f07, 0 18px 30px -6px rgb(0 0 0 / 0.8), 0 0 22px 4px var(--mood, transparent); }
+  html[data-theme="skeuo"][data-mode="dark"] .balloon { border-color: #5a4a36; background: linear-gradient(180deg, #2e261c, #241d15); box-shadow: 0 6px 14px -4px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.06); }
+  html[data-theme="skeuo"][data-mode="dark"] .menu-item:hover,
+  html[data-theme="skeuo"][data-mode="dark"] .menu-item[aria-pressed="true"] { background: linear-gradient(180deg, #4a3a22, #382a18); box-shadow: inset 0 0 0 1px #8a6a30; }
+  html[data-theme="skeuo"][data-mode="dark"] .shop-card { border-color: #4a3b28; background: linear-gradient(180deg, #2c231a, #211a13); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 3px 6px rgb(0 0 0 / 0.5); }
+  html[data-theme="skeuo"][data-mode="dark"] .shop-card-title { color: #f0dcb8; }
+  html[data-theme="skeuo"][data-mode="dark"] .doom-post { border-color: #4a3b28; background: linear-gradient(180deg, #2a2119, #211a13); }
+  html[data-theme="skeuo"][data-mode="dark"] .slot-cell { border-color: #5a4a36; background: linear-gradient(180deg, #211a13, #2e251c 50%, #211a13); box-shadow: inset 0 3px 6px rgb(0 0 0 / 0.55); }
+  html[data-theme="skeuo"][data-mode="dark"] .acquisition-card { background: linear-gradient(180deg, #3a2c12, #281f0b); }
+
+  /* ------------------------------------------------------------------
+     RETRO 95: HIGH CONTRAST BLACK
+     ------------------------------------------------------------------ */
+  html[data-theme="retro"][data-mode="dark"] {
+    --color-ink: #f2f2f2;
+    --color-inset: #2a2a30;
+    --color-gold: #ffe14d;
+    --color-toxic: #5fe070;
+    --color-magenta: #ff80ff;
+    --color-blood: #ff6060;
+    --color-ice: #80b4ff;
+    --retro-face: #26262b;
+    --retro-raised: inset -1px -1px #000, inset 1px 1px #7a7a82, inset -2px -2px #121215, inset 2px 2px #45454c;
+    --retro-sunken: inset 1px 1px #121215, inset -1px -1px #7a7a82, inset 2px 2px #000, inset -2px -2px #45454c;
+    --badge-ring: #26262b;
+    scrollbar-color: #45454c #121215;
+  }
+  html[data-theme="retro"][data-mode="dark"] body,
+  html[data-theme="retro"][data-mode="dark"] .wp-sky { background: #002b2b; }
+  html[data-theme="retro"][data-mode="dark"] .aero-titlebar { background: linear-gradient(90deg, #600060, #b000b0); }
+  html[data-theme="retro"][data-mode="dark"] :is(.aero-client, .inset-card, .stat-tile, .doom-tab-btn.active) { background: #111114; }
+  html[data-theme="retro"][data-mode="dark"] :is(.input, .meter, .doom-post, .hell-row, .hell-switch, .slot-cell) { background: #000; }
+  html[data-theme="retro"][data-mode="dark"] .segments > i { background: #000; border-color: #777; }
+  html[data-theme="retro"][data-mode="dark"] .segments > i[data-on="true"] { border-color: #777; background: var(--bar, #800080); }
+  html[data-theme="retro"][data-mode="dark"] :is(.label, .menu-heading, .stat-label, .shop-card-title) { color: #ffe14d; }
+  html[data-theme="retro"][data-mode="dark"] :is(.btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood), .caption-btn, .caption-btn.close, .taskbar, .task-window, .start-label, .gadget-title, .doom-tab, .brand-sub) { color: #f2f2f2; }
+  html[data-theme="retro"][data-mode="dark"] .btn:not(.btn-gold, .btn-toxic, .btn-magenta, .btn-blood):disabled { color: #77777f; text-shadow: 1px 1px 0 #000; }
+  html[data-theme="retro"][data-mode="dark"] .btn:focus-visible { outline-color: #f2f2f2; }
+  html[data-theme="retro"][data-mode="dark"] .taskbar { box-shadow: inset 0 1px #45454c, inset 0 2px #7a7a82; }
+  html[data-theme="retro"][data-mode="dark"] .task-btn-on { background: repeating-conic-gradient(#1a1a1e 0 25%, #2e2e34 0 50%) 0 0 / 2px 2px; }
+  html[data-theme="retro"][data-mode="dark"] .task-btn-alert { background: #5a1a1a; }
+  html[data-theme="retro"][data-mode="dark"] :is(.badge, .balloon, .hell-tip, .harvester-tag) { color: #ffe14d; background: #1e1e00; border-color: #ffe14d; }
+  html[data-theme="retro"][data-mode="dark"] :is(.shop-card, .shop-card:hover) { background: #111114; }
+  html[data-theme="retro"][data-mode="dark"] .input { color: #f2f2f2; }
+  html[data-theme="retro"][data-mode="dark"] .slot-cell.is-lit { background: #3d3d00; }
+  html[data-theme="retro"][data-mode="dark"] .slot-cell.is-rock { background: #3d0f0f; }
+  html[data-theme="retro"][data-mode="dark"] .menu-item:hover,
+  html[data-theme="retro"][data-mode="dark"] .menu-item[aria-pressed="true"],
+  html[data-theme="retro"][data-mode="dark"] .desktop-icon:hover .desktop-icon-label { background: #800080; }
+  html[data-theme="retro"][data-mode="dark"] .text-gold-grad { color: #ffe14d; }
+  html[data-theme="retro"][data-mode="dark"] .doom-avatar { border-color: #777; }
+  html[data-theme="retro"][data-mode="dark"] :is(.window-slot.is-dragging::before, .dock-ghost) { border-color: #f2f2f2; }
+  html[data-theme="retro"][data-mode="dark"] .mail-dot { background: #ff80ff; }
+  html[data-theme="retro"][data-mode="dark"] .mail-row.is-unread { box-shadow: inset 3px 0 0 #ff80ff; }
+
+  /* ------------------------------------------------------------------
+     LUNA: ROYALE NOIR (the black XP theme). Its surfaces come from Aero Night above; this puts
+     back the XP chrome, in black.
+     ------------------------------------------------------------------ */
+  html[data-theme="luna"][data-mode="dark"] { --luna-face: #202226; scrollbar-color: #3b3f46 #121316; }
+  html[data-theme="luna"][data-mode="dark"] body { background: #071126; }
+  html[data-theme="luna"][data-mode="dark"] .aero-window { background: #1b1c1f; border-color: #000; }
+  html[data-theme="luna"][data-mode="dark"] .aero-titlebar { background: linear-gradient(180deg, #5a5d63 0%, #2c2e33 8%, #232428 45%, #1a1b1e 88%, #111214 96%, #000 100%); }
+  html[data-theme="luna"][data-mode="dark"] .aero-title { color: #fff; text-shadow: 1px 1px 0 #000; }
+  html[data-theme="luna"][data-mode="dark"] .caption-btns { box-shadow: none; }
+  html[data-theme="luna"][data-mode="dark"] .caption-btn:not(.close) { border-color: #8a8d96; background: radial-gradient(circle at 90% 90%, #0d0d0f 0%, #2a2b30 55%, #4a4c53 80%, #8a8d96 100%); }
+  html[data-theme="luna"][data-mode="dark"] .caption-btn.close { border-color: #d0a49a; background: radial-gradient(circle at 90% 90%, #5a0d00 0%, #8e2410 55%, #a8442a 75%, #e0a08e 100%); }
+  html[data-theme="luna"][data-mode="dark"] .modal-card {
+    background: linear-gradient(#1c1e22, #16181b) padding-box, linear-gradient(180deg, #5a5d63, #1a1b1e 10px, #0d0d0f) border-box;
+    box-shadow: 0 0 0 1px #000, 2px 6px 22px rgb(0 0 0 / 0.75);
+  }
+  html[data-theme="luna"][data-mode="dark"] .meter { background: #0c1219; }
+  html[data-theme="luna"][data-mode="dark"] .taskbar { background: linear-gradient(180deg, #3a3d44 0%, #1d1f23 6%, #141518 50%, #0c0d0f 100%); border-top: 1px solid #000; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12); }
+  html[data-theme="luna"][data-mode="dark"] .tray-sep { border-color: #000; }
+  html[data-theme="luna"][data-mode="dark"] .task-btn-on { border-color: #000; background: #2e3036; }
+  html[data-theme="luna"][data-mode="dark"] .task-window { border-color: #000; background: linear-gradient(180deg, #3a3d44, #25272c); }
+  html[data-theme="luna"][data-mode="dark"] .task-window:hover { border-color: #000; background: linear-gradient(180deg, #4a4e57, #30333a); }
+  html[data-theme="luna"][data-mode="dark"] .show-desktop { border-left-color: #000; background: linear-gradient(180deg, #2a2d33, #16171a); }
+  html[data-theme="luna"][data-mode="dark"] .start-btn { background: linear-gradient(180deg, #4a9a4a 0%, #2e7a2e 12%, #266c26 50%, #1b541b 100%); }
+  html[data-theme="luna"][data-mode="dark"] .cmdbar { background: linear-gradient(180deg, #2b2d31, #1d1e21); border-bottom-color: #000; box-shadow: 0 2px 8px rgb(0 0 0 / 0.5); }
+  html[data-theme="luna"][data-mode="dark"] .doom-tab { border-color: #000; background: linear-gradient(180deg, #5a5d63 0%, #2c2e33 8%, #1a1b1e 88%, #000 100%); }
+  html[data-theme="luna"][data-mode="dark"] .mail-row.is-unread { box-shadow: inset 3px 0 0 #5b8def; }
+
+  /* ------------------------------------------------------------------
+     AQUA: GRAPHITE AFTER DARK. Surfaces from Aero Night; pinstripes, traffic lights and the dock
+     come back in graphite.
+     ------------------------------------------------------------------ */
+  html[data-theme="aqua"][data-mode="dark"] {
+    --aqua-stripes: repeating-linear-gradient(180deg, #2b2b2e 0 2px, #313134 2px 4px);
+    --aqua-bar: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px), linear-gradient(180deg, #4a4a4e 0%, #333336 100%);
+    scrollbar-color: #4a6fa5 #1c1c1e;
+  }
+  html[data-theme="aqua"][data-mode="dark"] body { background: #061634; }
+  html[data-theme="aqua"][data-mode="dark"] .aero-window { background: var(--aqua-stripes); border-color: rgb(0 0 0 / 0.75); box-shadow: 0 22px 60px -12px rgb(0 0 0 / 0.85), 0 0 0 0.5px rgb(255 255 255 / 0.08); }
+  html[data-theme="aqua"][data-mode="dark"] .aero-window:hover { box-shadow: 0 22px 60px -12px rgb(0 0 0 / 0.9), 0 0 0 0.5px rgb(255 255 255 / 0.12); }
+  html[data-theme="aqua"][data-mode="dark"] .aero-titlebar { border-bottom-color: #111; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15); }
+  html[data-theme="aqua"][data-mode="dark"] .aero-title { color: #e5e5ea; text-shadow: 0 -1px 0 #000; }
+  html[data-theme="aqua"][data-mode="dark"] .caption-btns { box-shadow: none; }
+  html[data-theme="aqua"][data-mode="dark"] .caption-btn:not(.close) { background: var(--aqua-yellow); }
+  html[data-theme="aqua"][data-mode="dark"] .caption-btn:nth-child(2):not(.close) { background: var(--aqua-green); }
+  html[data-theme="aqua"][data-mode="dark"] .modal-card { background: var(--aqua-stripes); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.75), 0 22px 60px -12px rgb(0 0 0 / 0.85); }
+  html[data-theme="aqua"][data-mode="dark"] .taskbar {
+    color: #f2f2f7;
+    background: linear-gradient(180deg, rgb(72 72 78 / 0.85), rgb(32 32 36 / 0.85));
+    border-top-color: rgb(255 255 255 / 0.14);
+    box-shadow: 0 -4px 18px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.15);
+  }
+  html[data-theme="aqua"][data-mode="dark"] .tray-sep { border-color: rgb(255 255 255 / 0.12); }
+  html[data-theme="aqua"][data-mode="dark"] .task-btn-on { background: rgb(255 255 255 / 0.1); }
+  html[data-theme="aqua"][data-mode="dark"] .task-btn-minimized::after { background: #f2f2f7; }
+  html[data-theme="aqua"][data-mode="dark"] .task-window { border-color: rgb(0 0 0 / 0.55); background: linear-gradient(180deg, #4a4a4f, #35353a); box-shadow: 0 1px 2px rgb(0 0 0 / 0.4); }
+  html[data-theme="aqua"][data-mode="dark"] .task-window:hover { border-color: rgb(0 0 0 / 0.6); background: linear-gradient(180deg, #58585e, #3e3e44); }
+  html[data-theme="aqua"][data-mode="dark"] .show-desktop { border-left-color: rgb(255 255 255 / 0.1); background: rgb(255 255 255 / 0.06); }
+  html[data-theme="aqua"][data-mode="dark"] .cmdbar { background: linear-gradient(180deg, rgb(58 58 62 / 0.94), rgb(36 36 40 / 0.94)); border-bottom-color: #000; box-shadow: 0 1px 8px rgb(0 0 0 / 0.5); }
+  html[data-theme="aqua"][data-mode="dark"] .doom-tab { color: #f2f2f7; border-color: rgb(0 0 0 / 0.6); }
+
+  /* ------------------------------------------------------------------
+     VAPORWAVE: MIDNIGHT VAPOR. Every surface is a variable, so this mostly swaps them.
+     ------------------------------------------------------------------ */
+  html[data-theme="vapor"][data-mode="dark"] {
+    --color-ink: #f6e7ff;
+    --color-inset: #2a1446;
+    --color-gold: #ffd36b;
+    --color-toxic: #3ff2e0;
+    --color-magenta: #ff8ae0;
+    --color-blood: #ff6b8f;
+    --color-ice: #7fd8ff;
+    --vp-face: #3a1d5c;
+    --vp-face-hover: #4a2872;
+    --vp-light: #22103b;
+    --vp-paper: #150826;
+    --vp-text: #f6e7ff;
+    --vp-accent: #ff9be6;
+    --vp-raised: inset -1px -1px #0d0418, inset 1px 1px #8a5fc4, inset -2px -2px #1f0d36, inset 2px 2px #5a3486;
+    --vp-sunken: inset 1px 1px #1f0d36, inset -1px -1px #8a5fc4, inset 2px 2px #0d0418, inset -2px -2px #5a3486;
+    --badge-ring: #3a1d5c;
+    scrollbar-color: #b967ff #150826;
+  }
+  /* the sun has set: a dimmer, redder sky */
+  html[data-theme="vapor"][data-mode="dark"] .wp-sky { background: linear-gradient(180deg, #05000d 0%, #14022e 30%, #3a0d57 50%, #7a1f6b 60%, #b83a6e 64%, #0d001c 64.1%); }
+  html[data-theme="vapor"][data-mode="dark"] .wp-rays { filter: brightness(0.7) saturate(1.2); }
+  html[data-theme="vapor"][data-mode="dark"] .btn:disabled { color: #7a5aa6; }
+  html[data-theme="vapor"][data-mode="dark"] :is(.badge, .hell-tip, .harvester-tag) { color: #fff27a; background: #2a1446; border-color: #fff27a; }
+  html[data-theme="vapor"][data-mode="dark"] .slot-cell.is-lit { background: #4a3a00; }
+  html[data-theme="vapor"][data-mode="dark"] .slot-cell.is-rock { background: #4a0f2e; }
+  html[data-theme="vapor"][data-mode="dark"] .task-btn-alert { background: #5a1a3a; }
+  html[data-theme="vapor"][data-mode="dark"] .doom-avatar { border-color: #8a5fc4; }
+  html[data-theme="vapor"][data-mode="dark"] :is(.segments > i, .doom-avatar) { border-color: #8a5fc4; }
+  html[data-theme="vapor"][data-mode="dark"] .theme-swatch { border-color: #8a5fc4; }
+
+  /* ------------------------------------------------------------------
+     MINIMAL: INVERTED (it was black on white; now it is white on black)
+     ------------------------------------------------------------------ */
+  html[data-theme="minimal"][data-mode="dark"] { filter: grayscale(1) invert(1); color-scheme: dark; }
+  /* photos flip back (two inverts cancel out) */
+  html[data-theme="minimal"][data-mode="dark"] :is(img, video, canvas) { filter: invert(1); }
+}

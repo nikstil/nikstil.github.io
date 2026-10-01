@@ -26,8 +26,10 @@
     ['luna', 'Luna (2001)'],
     ['aqua', 'Aqua (2002)'],
     ['skeuo', 'Skeuomorphism (2010)'],
+    ['metro', 'Metro (2012)'],
     ['minimal', 'Minimalist (2013)'],
     ['vapor', 'Vaporwave (199X)'],
+    ['glass', 'Liquid Glass (2025)'],
   ]
   const APPS = [
     ['pc', '💻'],
@@ -36,6 +38,7 @@
     ['themes', '🎨'],
     ['bin', '🗑️'],
     ['doom', '👹'],
+    ['browser', '🧭'],
     ['leaderboard', '🏆'],
     ['messenger', '💬'],
     ['account', '👤'],
@@ -57,6 +60,7 @@
       themes: { label: 'Themes', title: 'Themes', hidden: false },
       bin: { label: 'Recycle Bin', title: 'Recycle Bin', hidden: false },
       doom: { label: 'DOOMSCROLL.EXE', title: 'DOOMSCROLL.EXE', hidden: false },
+      browser: { label: 'Web Browser', title: 'nikBrowser', hidden: false },
       leaderboard: { label: 'Leaderboards', title: 'Leaderboards', hidden: false },
       messenger: { label: 'Messenger', title: 'nikstil Messenger', hidden: false },
       account: { label: 'Account', title: 'Account', hidden: false },

@@ -21,6 +21,8 @@ create table if not exists public.profiles (
   banned boolean not null default false
 );
 create unique index if not exists profiles_username_key on public.profiles (lower(username));
+-- Profile picture: the seed of a generated pixel-art avatar (online/avatar.js); null = the username.
+alter table public.profiles add column if not exists avatar text check (avatar is null or avatar ~ '^[A-Za-z0-9_-]{1,32}$');
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -577,6 +579,33 @@ begin
 end;
 $$;
 
+-- ================= Endings, per account =================
+-- Which TRANSLATR™ endings an account has reached (any mode, any device): Roguelike runs pick
+-- their target from the ones it hasn't. The game page's bridge adds to it as endings play.
+alter table public.profiles add column if not exists endings_done text[] not null default '{}';
+
+create or replace function public.note_endings(p_endings text[])
+returns text[]
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := public.require_player();
+  result text[];
+begin
+  update public.profiles p
+  set endings_done = (
+    select coalesce(array_agg(distinct e order by e), '{}')
+    from unnest(p.endings_done || coalesce(p_endings, '{}')) e
+    where e ~ '^[a-z0-9_]{1,32}$'
+  )
+  where p.id = me
+  returning p.endings_done into result;
+  return result;
+end;
+$$;
+
 -- ================= Row Level Security =================
 -- Tables are read-only from the website except where a policy says otherwise: every other write
 -- goes through the functions above.
@@ -589,7 +618,7 @@ alter table public.reports enable row level security;
 
 revoke all on public.profiles, public.runs, public.messages, public.blocks, public.reports from anon, authenticated;
 grant select on public.profiles to anon, authenticated;
-grant update (allow_dms) on public.profiles to authenticated;
+grant update (allow_dms, avatar) on public.profiles to authenticated;
 grant select on public.runs, public.messages to authenticated;
 grant select, insert, delete on public.blocks to authenticated;
 
@@ -633,7 +662,8 @@ revoke execute on function
   public.admin_set_banned(uuid, boolean),
   public.admin_recent_runs(integer),
   public.admin_set_run_removed(uuid, boolean, text),
-  public.delete_account()
+  public.delete_account(),
+  public.note_endings(text[])
 from public, anon, authenticated;
 grant execute on function public.leaderboard(text, date, integer) to anon, authenticated;
 grant execute on function public.my_rank(text, date) to authenticated;
@@ -644,6 +674,7 @@ grant execute on function public.mark_read(uuid) to authenticated;
 grant execute on function public.conversations() to authenticated;
 grant execute on function public.report(uuid, text, bigint, uuid) to authenticated;
 grant execute on function public.delete_account() to authenticated;
+grant execute on function public.note_endings(text[]) to authenticated;
 grant execute on function public.is_admin() to authenticated;
 grant execute on function public.admin_reports(boolean) to authenticated;
 grant execute on function public.admin_resolve_report(bigint) to authenticated;
@@ -661,3 +692,24 @@ begin
   end if;
 end;
 $$;
+
+-- ================= GIFs in Messenger =================
+-- Players upload GIFs into their own folder of a public bucket (5 MB each, GIF or WebP); a message
+-- then carries the GIF's address. File names are random, so only the people in the chat know them.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('gifs', 'gifs', true, 5242880, array['image/gif', 'image/webp'])
+on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Players upload GIFs to their own folder" on storage.objects;
+create policy "Players upload GIFs to their own folder" on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'gifs'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+    and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and not p.banned)
+  );
+drop policy if exists "Players list their own GIFs" on storage.objects;
+create policy "Players list their own GIFs" on storage.objects for select to authenticated
+  using (bucket_id = 'gifs' and (storage.foldername(name))[1] = (select auth.uid())::text);
+drop policy if exists "Players delete their own GIFs" on storage.objects;
+create policy "Players delete their own GIFs" on storage.objects for delete to authenticated
+  using (bucket_id = 'gifs' and (storage.foldername(name))[1] = (select auth.uid())::text);

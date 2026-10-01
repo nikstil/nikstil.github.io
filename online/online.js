@@ -102,7 +102,9 @@
       const user = data.session?.user
       let next = null
       if (user) {
-        const res = await client.from('profiles').select('id, username, allow_dms, is_admin, banned, created_at').eq('id', user.id).maybeSingle()
+        let res = await client.from('profiles').select('id, username, allow_dms, avatar, is_admin, banned, created_at').eq('id', user.id).maybeSingle()
+        // (A database that hasn't had the profile-picture update yet: carry on without pictures.)
+        if (res.error?.code === '42703') res = await client.from('profiles').select('id, username, allow_dms, is_admin, banned, created_at').eq('id', user.id).maybeSingle()
         next = res.data ?? null
       }
       if (run !== seq) return
@@ -182,6 +184,16 @@
 
   async function deleteAccount() {
     const c = await connect()
+    // The GIFs they uploaded go first (files are deleted through Storage, not the database).
+    try {
+      for (let round = 0; round < 20; round++) {
+        const { data } = await c.storage.from('gifs').list(profile.id, { limit: 100 })
+        if (!data?.length) break
+        await c.storage.from('gifs').remove(data.map((f) => `${profile.id}/${f.name}`))
+      }
+    } catch {
+      // no GIFs bucket (or nothing to delete)
+    }
     const { error } = await c.rpc('delete_account')
     if (error) throw error
     await c.auth.signOut({ scope: 'local' })
@@ -292,6 +304,59 @@
     if (error) throw error
     return data.reverse()
   }
+  /** Every player (for Messenger's grid), A to Z: { id, username, avatar, allow_dms }. */
+  async function players() {
+    const c = await connect()
+    let { data, error } = await c.from('profiles').select('id, username, avatar, allow_dms').eq('banned', false).order('username').limit(1000)
+    if (error?.code === '42703') ({ data, error } = await c.from('profiles').select('id, username, allow_dms').eq('banned', false).order('username').limit(1000))
+    if (error) throw error
+    for (const p of data) names.set(p.id, p.username)
+    return data
+  }
+  /** Picks a new profile picture (an avatar code from online/avatar.js; null = from the username). */
+  async function setAvatar(seed) {
+    if (seed !== null && !/^[A-Za-z0-9_-]{1,32}$/.test(seed)) throw new OnlineError('That isn’t a valid picture.')
+    const c = await connect()
+    const { error } = await c.from('profiles').update({ avatar: seed }).eq('id', profile.id)
+    if (error?.code === '42703') throw new OnlineError('Profile pictures aren’t set up on the server yet. (Site owner: run supabase/schema.sql.)')
+    if (error) throw error
+    profile = { ...profile, avatar: seed }
+    emit('auth', profile)
+  }
+
+  // ================= GIFs =================
+  // A GIF message is "[gif] <address>". Only addresses from here, this site, GIPHY and Tenor are
+  // shown as pictures (so a message can't load images from just anywhere).
+  const GIF_PREFIX = '[gif] '
+  const GIF_MAX = 5 * 1024 * 1024
+  function gifUrl(body) {
+    if (typeof body !== 'string' || !body.startsWith(GIF_PREFIX)) return null
+    try {
+      const url = new URL(body.slice(GIF_PREFIX.length).trim())
+      if (url.protocol !== 'https:' && url.origin !== location.origin && url.origin !== config?.url) return null
+      const host = url.hostname
+      const ours = config && url.origin === config.url && url.pathname.startsWith('/storage/v1/object/public/gifs/')
+      const site = url.origin === location.origin || host === 'nikstil.com' || host === 'www.nikstil.com'
+      const giphy = /^(media\d*|i)\.giphy\.com$/.test(host)
+      const tenor = host === 'media.tenor.com' || host === 'c.tenor.com'
+      return ours || site || giphy || tenor ? url.href : null
+    } catch {
+      return null
+    }
+  }
+  /** Uploads a GIF (or animated WebP) and gives back its address. */
+  async function uploadGif(file) {
+    if (!profile) throw new OnlineError('Sign in first.')
+    if (!/^image\/(gif|webp)$/.test(file?.type ?? '')) throw new OnlineError('That isn’t a GIF. (GIF or WebP, please.)')
+    if (file.size > GIF_MAX) throw new OnlineError('That GIF is over 5 MB. Try a smaller one.')
+    const c = await connect()
+    const path = `${profile.id}/${crypto.randomUUID()}.${file.type === 'image/webp' ? 'webp' : 'gif'}`
+    const { error } = await c.storage.from('gifs').upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false })
+    if (error) throw error
+    return c.storage.from('gifs').getPublicUrl(path).data.publicUrl
+  }
+  const sendGif = (other, url) => send(other, GIF_PREFIX + url)
+
   async function send(other, body) {
     const c = await connect()
     const { data, error } = await c.rpc('send_message', { p_to: other, p_body: body })
@@ -391,6 +456,7 @@
     signIn,
     signOut,
     setAllowDms,
+    setAvatar,
     deleteAccount,
     leaderboard,
     myRank,
@@ -403,6 +469,10 @@
     conversations,
     history,
     send,
+    players,
+    gifUrl,
+    uploadGif,
+    sendGif,
     markRead,
     blocked,
     block,

@@ -93,7 +93,14 @@ button { font: inherit; cursor: pointer; }
 .btn:hover, .btn:focus-visible { border-color: #ff5a4a; outline: none; }
 .btn.blood { color: #fff; border-color: #ff5a4a; background: linear-gradient(#e0392c, #9c140d); box-shadow: 0 0 16px rgba(211, 38, 30, .35); }
 
-.episodes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: min(100%, 760px); }
+.episodes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: min(100%, 900px); }
+.ep-final { border-color: #8a6d1c; background: linear-gradient(rgba(60, 40, 6, .9), rgba(30, 10, 8, .9)); }
+.ep-final .ep-num { color: #ffd24a; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.coop-toggle { display: inline-flex; gap: 6px; align-items: center; margin-left: 12px; color: var(--ink); cursor: pointer; }
+.coop-toggle input { accent-color: var(--blood); }
+.view.coop { aspect-ratio: 32 / 10; min-height: min(480px, 80vh); }
+.frame:has(.view.coop) { width: min(100%, 1400px); }
 .ep {
   display: grid;
   gap: 6px;
@@ -168,6 +175,9 @@ button { font: inherit; cursor: pointer; }
 .embed .view { aspect-ratio: auto; height: 100%; border: 0; border-radius: 0; box-shadow: none; }
 .embed .screen { object-fit: contain; }
 
+@media (max-width: 860px) {
+  .episodes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 560px) {
   .bar-sub { display: none; }
   /* menus need more room than the game screen's 16:10 */

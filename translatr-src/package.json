@@ -1,0 +1,25 @@
+{
+  "name": "translatr-ultra",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:site": "node scripts/build-site.mjs",
+    "preview": "vite preview",
+    "simulate": "node scripts/simulate.mjs",
+    "fetch-cats": "node scripts/fetch-cats.mjs"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@vitejs/plugin-react": "^4.6.0",
+    "tailwindcss": "^4.1.11",
+    "vite": "^6.3.5"
+  }
+}

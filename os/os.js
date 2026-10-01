@@ -1,11 +1,11 @@
 // nikstilOS: the nikstil.com homepage. A tiny desktop: double-click icons to open windows, drag
-// them by the title bar, minimize them to the taskbar, switch between eight themes. No framework
+// them by the title bar, minimize them to the taskbar, switch between ten themes. No framework
 // and no build step; window contents live in <template>s in index.html, and /site.json (edited on
 // the admin page, /nikstil/) overrides the text in them.
 ;(() => {
   'use strict'
 
-  // The same eight themes as TRANSLATR™ (same ids, so the game's choice carries over), in the same
+  // The same ten themes as TRANSLATR™ (same ids, so the game's choice carries over), in the same
   // order: the era each one comes from. `fonts` is a Google Fonts family query, loaded the first
   // time the theme is used.
   const THEMES = [
@@ -15,26 +15,32 @@
     { id: 'aqua', name: 'Aqua', blurb: 'Pinstripes, gel and traffic lights (2002)', swatch: ['#1d63d3', '#ececec', '#ff5f57'], chrome: '#1d63d3', start: '' },
     { id: 'aero', name: 'Aero', blurb: 'Glass, gloss and optimism (2009)', swatch: ['#1360b9', '#9fd6f5', '#7fcf55'], chrome: '#1a73c4', start: '' },
     { id: 'skeuo', name: 'Skeuomorphism', blurb: 'Leather, brushed metal, real fake stitching (2010)', swatch: ['#6b4327', '#d6d6d6', '#d4a93f'], chrome: '#5a3a22', start: 'Start' },
+    { id: 'metro', name: 'Metro', blurb: 'Flat tiles, loud colours, no Start button (2012)', swatch: ['#5133ab', '#2d89ef', '#00a300'], chrome: '#2b1361', start: 'Start' },
     { id: 'minimal', name: 'Minimalist', blurb: 'Nothing. Beautifully. (2013)', swatch: ['#ffffff', '#000000', '#ffffff'], chrome: '#ffffff', start: 'Start', fonts: 'Inter:wght@300;400;500;600' },
     { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid (199X, forever)', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', start: 'スタート', fonts: 'VT323' },
+    { id: 'glass', name: 'Liquid Glass', blurb: 'Every surface is a lens now (2025)', swatch: ['#7fe3ff', '#ffffff', '#ff9ad5'], chrome: '#5b7cff', start: '' },
   ]
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', browser: '🧭' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', browser: '📡' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', browser: '🧭' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', browser: '⌕' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', browser: '🌐' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', browser: '🌐' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', browser: '🌐' },
+    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', browser: '🌐' },
+    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', browser: '🧭' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', browser: '🌐' },
   }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
   const GAME_THEME_KEY = 'translatr-theme' // the game's pick, used until you choose one here
   const GAME_SAVE_KEY = 'translatr-save' // same site, so the homepage can read the game's save
   const BOOTED_KEY = 'nikstilos-booted'
+  // nikstil.com/?embed=messenger: just that app, filling the page (TRANSLATR™'s Messenger bubble).
+  const embedApp = new URLSearchParams(location.search).get('embed')
 
   const APPS = {
     pc: { title: 'System Properties', icon: 'pc', width: 420, init: initPc },
@@ -43,6 +49,7 @@
     themes: { title: 'Themes', icon: 'themes', width: 600, init: initThemes },
     bin: { title: 'Recycle Bin', icon: 'bin', width: 460, init: initBin },
     doom: { title: 'DOOMSCROLL.EXE', icon: 'doom', width: 700, init: initDoom },
+    browser: { title: 'nikBrowser', icon: 'browser', width: 900, init: initBrowser },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
     messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
@@ -352,11 +359,15 @@
     const app = APPS[id]
     if (!app) return
     const existing = open.get(id)
-    if (existing) return restore(existing)
+    if (existing) {
+      restore(existing)
+      return existing
+    }
     const content = document.getElementById(`app-${id}`).content.cloneNode(true)
     const win = makeWindow({ id, title: app.title, icon: app.icon, width: app.width, content })
     const cleanup = app.init?.(win.el, win) // an app can hand back what to do when it closes
     if (typeof cleanup === 'function') win.onClose = cleanup
+    return win
   }
 
   /** A message box: one line of text and an OK button. */
@@ -416,6 +427,38 @@
         closeWin(win)
       })
       ;(field ?? $('.btn-ok', win.el)).focus()
+    })
+  }
+
+  /** A message box with several buttons: resolves to the chosen value (null if it's closed). */
+  function choicebox({ title, text, icon = '❓', choices, width = 420 }) {
+    return new Promise((resolve) => {
+      let result = null
+      const content = document.createDocumentFragment()
+      const body = document.createElement('div')
+      body.className = 'win-body msg'
+      body.innerHTML = `<span class="msg-icon" aria-hidden="true"></span><div class="msg-main"><p></p></div>`
+      $('.msg-icon', body).textContent = icon
+      $('p', body).textContent = text
+      const foot = document.createElement('div')
+      foot.className = 'win-foot win-foot-choices'
+      for (const c of choices) {
+        const b = document.createElement('button')
+        b.className = `btn${c.primary ? ' btn-primary' : ''}`
+        b.textContent = c.label
+        b.dataset.value = c.value
+        foot.append(b)
+      }
+      content.append(body, foot)
+      const win = makeWindow({ id: `msg-${++msgCount}`, title, icon, width, content, onClose: () => resolve(result) })
+      win.el.classList.add('is-msg')
+      $$('.win-foot .btn', win.el).forEach((b) =>
+        b.addEventListener('click', () => {
+          result = b.dataset.value
+          closeWin(win)
+        }),
+      )
+      ;($('.win-foot .btn-primary', win.el) ?? $('.win-foot .btn', win.el)).focus()
     })
   }
 
@@ -494,6 +537,115 @@
     $('.doom-frame', el).src = '/doomscroll/?embed'
   }
 
+  // ================= nikBrowser =================
+  // A small web browser: pages load in a frame, so only sites that allow being embedded show up
+  // (the start page lists some that do). Its theme filter makes every page look like the theme.
+  const BROWSER_TILES = [
+    { icon: '🌐', name: 'TRANSLATR™', url: '/translatr/' },
+    { icon: '👹', name: 'DOOMSCROLL.EXE', url: '/doomscroll/' },
+    { icon: '🎞️', name: 'The GIF', url: '/gif/' },
+    { icon: '📚', name: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
+    { icon: '🎲', name: 'Random article', url: 'https://en.m.wikipedia.org/wiki/Special:Random' },
+    { icon: '🗺️', name: 'OpenStreetMap', url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.25%2C51.45%2C0.05%2C51.56&layer=mapnik' },
+    { icon: '📼', name: 'A very normal video', url: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' },
+    { icon: '🕹️', name: 'Old web search', url: 'https://wiby.me/' },
+  ]
+  function initBrowser(el) {
+    const frame = $('.br-frame', el)
+    const start = $('.br-start', el)
+    const input = $('.br-url', el)
+    const status = $('.br-status', el)
+    const out = $('.br-out', el)
+    const view = $('.br-view', el)
+    let history = ['home']
+    let at = 0
+    const tiles = $('.br-tiles', el)
+    for (const t of BROWSER_TILES) {
+      const li = document.createElement('li')
+      li.innerHTML = `<button type="button" class="br-tile"><span class="br-tile-icon" aria-hidden="true"></span><span class="br-tile-name"></span></button>`
+      $('.br-tile-icon', li).textContent = t.icon
+      $('.br-tile-name', li).textContent = t.name
+      $('button', li).addEventListener('click', () => go(t.url))
+      tiles.append(li)
+    }
+    /** What was typed → an address: a URL, a domain, or a Wikipedia search. */
+    function resolve(q) {
+      q = q.trim()
+      if (!q || q === 'home' || q === 'about:home') return 'home'
+      if (q.startsWith('/')) return new URL(q, location.href).href
+      if (/^https?:\/\//i.test(q)) return safeUrl(q)?.href ?? null
+      if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/.test(q) && !/\s/.test(q)) return `https://${q}`
+      return `https://en.m.wikipedia.org/w/index.php?search=${encodeURIComponent(q)}`
+    }
+    function show(url) {
+      const home = url === 'home'
+      start.hidden = !home
+      frame.hidden = home
+      input.value = home ? '' : url.replace(location.origin, location.host)
+      out.hidden = home
+      out.href = home ? '#' : url
+      if (!home && frame.dataset.url !== url) {
+        frame.dataset.url = url
+        status.textContent = `Loading ${new URL(url).host}…`
+        frame.src = url
+      }
+      if (home) status.textContent = 'Home'
+      $('.br-back', el).disabled = at === 0
+      $('.br-fwd', el).disabled = at >= history.length - 1
+    }
+    function go(q) {
+      const url = resolve(q)
+      if (!url) return msgbox('nikBrowser', 'That address can’t be opened here.', '🧭')
+      history = history.slice(0, at + 1)
+      history.push(url)
+      at = history.length - 1
+      show(url)
+    }
+    frame.addEventListener('load', () => {
+      if (frame.hidden) return
+      // Our own pages can say where they went; other sites keep that to themselves.
+      try {
+        const href = frame.contentWindow.location.href
+        if (href && href !== 'about:blank' && href !== frame.dataset.url) {
+          frame.dataset.url = href
+          history[at] = href
+          input.value = href.replace(location.origin, location.host)
+          out.href = href
+        }
+        status.textContent = frame.contentDocument?.title || new URL(frame.dataset.url).host
+      } catch {
+        status.textContent = `${new URL(frame.dataset.url).host} · blank? Some sites won’t open inside another page: try ↗`
+      }
+    })
+    $('.br-bar', el).addEventListener('submit', (e) => {
+      e.preventDefault()
+      go(input.value)
+    })
+    $('.br-search', el).addEventListener('submit', (e) => {
+      e.preventDefault()
+      const q = $('.br-q', el).value.trim()
+      if (q) go(q.includes(' ') || !q.includes('.') ? `https://en.m.wikipedia.org/w/index.php?search=${encodeURIComponent(q)}` : q)
+    })
+    $('.br-back', el).addEventListener('click', () => at > 0 && show(history[--at]))
+    $('.br-fwd', el).addEventListener('click', () => at < history.length - 1 && show(history[++at]))
+    $('.br-home', el).addEventListener('click', () => go('home'))
+    $('.br-reload', el).addEventListener('click', () => {
+      if (frame.hidden) return
+      frame.src = 'about:blank'
+      setTimeout(() => (frame.src = frame.dataset.url), 30)
+    })
+    const fx = $('.br-fx', el)
+    const FX_KEY = 'nikstilos-browser-fx'
+    const setFx = (on) => {
+      view.classList.toggle('no-fx', !on)
+      fx.setAttribute('aria-pressed', String(on))
+      storage.set(FX_KEY, on ? '1' : '0')
+    }
+    setFx(storage.get(FX_KEY) !== '0')
+    fx.addEventListener('click', () => setFx(view.classList.contains('no-fx')))
+    show('home')
+  }
+
   function initThemes(el) {
     const grid = $('#theme-grid', el)
     for (const t of THEMES) {
@@ -546,18 +698,212 @@
   }
 
   // ================= Desktop =================
+  // Icons: click to select (Ctrl/⌘-click to add), drag a box on the desktop to select several,
+  // double-click to open. With a mouse, icons can be dragged anywhere: they snap to a grid and stay
+  // where you put them (saved in this browser). Desktop menu → Sort icons puts them back.
   const desktop = $('#desktop')
+  const iconList = $('.desk-icons')
+  const ICON_POS_KEY = 'nikstilos-icons'
+  const CELL_W = 98
+  const CELL_H = 100
+  const PAD = 10
+  let justDragged = 0 // (a drag ends in a click on the dragged icon: that click mustn't select or open it)
+  let draggedIcons = []
+  const wasDragged = (icon) => Date.now() - justDragged < 300 && draggedIcons.includes(icon)
+  const iconKey = (icon) => icon.dataset.app ?? `link:${$('.di-label', icon).textContent}`
+  const visibleIcons = () => $$('.desk-icon').filter((i) => !i.closest('li').hidden)
+  const select = (icons, add = false) => $$('.desk-icon').forEach((i) => i.classList.toggle('is-selected', icons.includes(i) || (add && i.classList.contains('is-selected'))))
+
   function wireDeskIcon(icon, launch) {
     icon.addEventListener('click', (e) => {
-      $$('.desk-icon').forEach((i) => i.classList.toggle('is-selected', i === icon))
+      if (wasDragged(icon)) return
+      if (e.ctrlKey || e.metaKey) return icon.classList.toggle('is-selected')
+      select([icon])
       // Double-click on a mouse; a tap on touch screens; Enter/Space from the keyboard.
       if (coarsePointer || e.detail === 0) launch()
     })
-    icon.addEventListener('dblclick', () => !coarsePointer && launch())
+    icon.addEventListener('dblclick', () => !coarsePointer && !wasDragged(icon) && launch())
+    if (!coarsePointer) icon.addEventListener('pointerdown', (e) => startIconDrag(icon, e))
   }
   for (const icon of $$('.desk-icon')) wireDeskIcon(icon, () => openApp(icon.dataset.app))
+
+  // ----- where the icons are
+  const loadPositions = () => {
+    try {
+      const saved = JSON.parse(storage.get(ICON_POS_KEY))
+      return saved && typeof saved === 'object' ? saved : null
+    } catch {
+      return null
+    }
+  }
+  /** Places every icon on the grid: saved spots first, then the rest in the first free cells. */
+  function layoutIcons() {
+    const saved = loadPositions()
+    iconList.classList.toggle('is-free', !!saved)
+    if (!saved) {
+      $$('.desk-icons > li').forEach((li) => (li.style.left = li.style.top = ''))
+      return
+    }
+    const rows = Math.max(1, Math.floor((desktop.clientHeight - PAD * 2) / CELL_H))
+    const cols = Math.max(1, Math.floor((desktop.clientWidth - PAD * 2) / CELL_W))
+    const taken = new Set()
+    const place = (icon, col, row) => {
+      taken.add(`${col},${row}`)
+      const li = icon.closest('li')
+      li.style.left = `${PAD + col * CELL_W}px`
+      li.style.top = `${PAD + row * CELL_H}px`
+      icon.dataset.cell = `${col},${row}`
+    }
+    const free = (col = 0, row = 0) => {
+      for (let n = col * rows + row; n < rows * cols * 4; n++) {
+        const c = Math.floor(n / rows),
+          r = n % rows
+        if (!taken.has(`${c},${r}`)) return [c, r]
+      }
+      return [0, 0]
+    }
+    const later = []
+    for (const icon of visibleIcons()) {
+      const spot = saved[iconKey(icon)]
+      if (Array.isArray(spot) && spot[0] < cols && spot[1] < rows && !taken.has(`${spot[0]},${spot[1]}`)) place(icon, spot[0], spot[1])
+      else later.push(icon)
+    }
+    for (const icon of later) place(icon, ...free())
+  }
+  function savePositions() {
+    const data = {}
+    for (const icon of visibleIcons()) data[iconKey(icon)] = icon.dataset.cell.split(',').map(Number)
+    storage.set(ICON_POS_KEY, JSON.stringify(data))
+  }
+  addEventListener('resize', () => iconList.classList.contains('is-free') && layoutIcons())
+
+  // ----- dragging icons (the selected ones, if you grab one of them)
+  function startIconDrag(icon, e) {
+    if (e.button !== 0) return
+    const x0 = e.clientX,
+      y0 = e.clientY
+    let moving = null
+    const move = (ev) => {
+      const dx = ev.clientX - x0,
+        dy = ev.clientY - y0
+      if (!moving) {
+        if (Math.hypot(dx, dy) < 5) return
+        if (!iconList.classList.contains('is-free')) {
+          // First drag: freeze the current arrangement where it is.
+          freezeLayout()
+        }
+        if (!icon.classList.contains('is-selected')) select([icon])
+        moving = $$('.desk-icon.is-selected').filter((i) => !i.closest('li').hidden)
+        moving.forEach((i) => i.closest('li').classList.add('is-dragging'))
+      }
+      for (const i of moving) i.closest('li').style.transform = `translate(${dx}px, ${dy}px)`
+    }
+    const up = (ev) => {
+      removeEventListener('pointermove', move)
+      removeEventListener('pointerup', up)
+      removeEventListener('pointercancel', up)
+      if (!moving) return
+      justDragged = Date.now()
+      draggedIcons = moving
+      const dc = Math.round((ev.clientX - x0) / CELL_W),
+        dr = Math.round((ev.clientY - y0) / CELL_H)
+      const rows = Math.max(1, Math.floor((desktop.clientHeight - PAD * 2) / CELL_H))
+      const cols = Math.max(1, Math.floor((desktop.clientWidth - PAD * 2) / CELL_W))
+      const others = new Set(visibleIcons().filter((i) => !moving.includes(i)).map((i) => i.dataset.cell))
+      // Move them all by the same number of cells; anything that would land on another icon (or
+      // off the desktop) takes the nearest free cell instead.
+      const placed = new Set()
+      for (const i of moving) {
+        const [c, r] = i.dataset.cell.split(',').map(Number)
+        let tc = Math.min(cols - 1, Math.max(0, c + dc)),
+          tr = Math.min(rows - 1, Math.max(0, r + dr))
+        const busy = (cc, rr) => others.has(`${cc},${rr}`) || placed.has(`${cc},${rr}`)
+        if (busy(tc, tr)) {
+          let best = null
+          for (let cc = 0; cc < cols; cc++)
+            for (let rr = 0; rr < rows; rr++) {
+              if (busy(cc, rr)) continue
+              const d = Math.hypot(cc - tc, rr - tr)
+              if (!best || d < best[2]) best = [cc, rr, d]
+            }
+          if (best) [tc, tr] = best
+        }
+        placed.add(`${tc},${tr}`)
+        i.dataset.cell = `${tc},${tr}`
+        const li = i.closest('li')
+        li.classList.remove('is-dragging')
+        li.style.transform = ''
+      }
+      savePositions()
+      layoutIcons()
+    }
+    addEventListener('pointermove', move)
+    addEventListener('pointerup', up)
+    addEventListener('pointercancel', up)
+  }
+  /** Saves where the icons are right now (in the automatic layout) as their spots. */
+  function freezeLayout() {
+    const box = iconList.getBoundingClientRect()
+    for (const icon of visibleIcons()) {
+      const r = icon.closest('li').getBoundingClientRect()
+      icon.dataset.cell = `${Math.round((r.left - box.left - PAD) / CELL_W)},${Math.round((r.top - box.top - PAD) / CELL_H)}`
+    }
+    savePositions()
+    layoutIcons()
+  }
+  function sortIcons() {
+    storage.set(ICON_POS_KEY, '')
+    try {
+      localStorage.removeItem(ICON_POS_KEY)
+    } catch {}
+    layoutIcons()
+  }
+
+  // ----- the selection box: hold the left button on the desktop and drag
+  const marquee = document.createElement('div')
+  marquee.className = 'marquee'
+  marquee.hidden = true
+  desktop.append(marquee)
   desktop.addEventListener('pointerdown', (e) => {
-    if (!e.target.closest('.desk-icon')) $$('.desk-icon').forEach((i) => i.classList.remove('is-selected'))
+    if (e.target.closest('.desk-icon')) return
+    const add = e.ctrlKey || e.metaKey
+    if (!add) select([])
+    if (e.button !== 0 || e.pointerType === 'touch') return
+    const x0 = e.clientX,
+      y0 = e.clientY
+    const before = add ? $$('.desk-icon.is-selected') : []
+    let on = false
+    const move = (ev) => {
+      const x = Math.min(x0, ev.clientX),
+        y = Math.min(y0, ev.clientY),
+        w = Math.abs(ev.clientX - x0),
+        h = Math.abs(ev.clientY - y0)
+      if (!on && w + h < 4) return
+      on = true
+      marquee.hidden = false
+      Object.assign(marquee.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` })
+      const hits = visibleIcons().filter((i) => {
+        const r = i.getBoundingClientRect()
+        return r.right > x && r.left < x + w && r.bottom > y && r.top < y + h
+      })
+      select([...before, ...hits])
+    }
+    const up = () => {
+      marquee.hidden = true
+      removeEventListener('pointermove', move)
+      removeEventListener('pointerup', up)
+      removeEventListener('pointercancel', up)
+    }
+    addEventListener('pointermove', move)
+    addEventListener('pointerup', up)
+    addEventListener('pointercancel', up)
+  })
+  // Ctrl/⌘+A selects every icon (when nothing else has the keyboard).
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && (document.activeElement === document.body || document.activeElement?.closest('.desktop'))) {
+      e.preventDefault()
+      select(visibleIcons())
+    }
   })
 
   // ================= Menus =================
@@ -611,6 +957,7 @@
     if (!action) return
     closeMenus()
     if (action === 'folder') msgbox('New folder', 'Creating folders requires nikstilOS Pro. Upgrade for $4.99/month. (Kidding. There is no Pro.)', '📁')
+    if (action === 'sort') sortIcons()
     if (action === 'refresh') {
       desktop.classList.remove('is-refreshing')
       void desktop.offsetWidth
@@ -750,10 +1097,12 @@
       restore,
       msgbox,
       askbox,
+      choicebox,
       closeMenus,
       iconFor,
       coarsePointer,
       siteHidden: (id) => site.apps?.[id]?.hidden === true,
+      layoutIcons: () => layoutIcons(),
       userName: () => text(site.user) || 'Guest',
     }) ?? null
 
@@ -836,12 +1185,25 @@
       const saved = storage.get(THEME_KEY) || storage.get(GAME_THEME_KEY)
       const fallback = THEMES.some((t) => t.id === site.defaultTheme) ? site.defaultTheme : 'aero'
       applyTheme(THEMES.some((t) => t.id === saved) ? saved : fallback, false)
-      online?.start()
+      layoutIcons()
+      const onlineReady = Promise.resolve(online?.start()).catch(() => {})
+      if (APPS[embedApp]) {
+        const root = document.documentElement
+        root.classList.add('embed-app', 'booted')
+        // (After the online check, so the app knows whether it's switched on.)
+        onlineReady.then(() => {
+          const win = openApp(embedApp)
+          win.el.classList.add('is-embedded', 'is-max')
+        })
+        return
+      }
       runBoot(() => {
         // nikstil.com/#translatr opens that window straight away (handy for links).
         const deep = location.hash.slice(1)
         if (APPS[deep]) openApp(deep)
         welcome()
+        // First time here: sign in, make an account, or carry on as a guest.
+        onlineReady.then(() => !APPS[deep] && online?.firstVisit())
       })
     })
   addEventListener('hashchange', () => APPS[location.hash.slice(1)] && openApp(location.hash.slice(1)))

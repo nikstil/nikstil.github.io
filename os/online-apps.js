@@ -15,6 +15,7 @@
     ['shooter', '👹', 'Knee-Deep in the Ads'],
     ['deleted', '⏻', 'Account Deleted'],
     ['secret', '🕊️', 'Not One Cent'],
+    ['snail', '🐌', 'ive waited 4 no 5000 years for this'],
   ]
   const ending = (id) => ENDINGS.find((e) => e[0] === id)
 
@@ -57,6 +58,7 @@
       available = await net().configured
       if (!available) return
       for (const el of $$('[data-online]')) el.hidden = os.siteHidden(el.dataset.online)
+      os.layoutIcons?.()
       // The Start menu's name and picture open Account.
       const head = $('.sm-head')
       head.setAttribute('role', 'button')
@@ -81,9 +83,46 @@
       if (net().hasStoredSession()) net().me().catch(() => {})
     }
 
+    // ================= First visit =================
+    const VISITED_KEY = 'nikstilos-visited'
+    async function firstVisit() {
+      if (!available) return
+      try {
+        if (localStorage.getItem(VISITED_KEY)) return
+        localStorage.setItem(VISITED_KEY, '1')
+      } catch {
+        return // (no storage: we'd ask on every visit)
+      }
+      if (net().hasStoredSession()) return
+      const choice = await os.choicebox({
+        title: 'Welcome to nikstil.com',
+        icon: '👋',
+        text: 'Sign in to get your TRANSLATR™ runs on the leaderboards and chat in Messenger. Or just look around: nothing here needs an account.',
+        choices: [
+          { label: 'Continue as guest', value: 'guest' },
+          { label: 'Create account', value: 'up' },
+          { label: 'Sign in', value: 'in', primary: true },
+        ],
+      })
+      if (choice === 'in' || choice === 'up') openAccount(choice)
+    }
+    let account = null // the open Account window's controls
+    function openAccount(mode = 'in') {
+      os.openApp('account')
+      account?.setMode(mode)
+    }
+
     function onAuth(profile) {
       me = profile
       $('.sm-user').textContent = me ? me.username : os.userName()
+      const smPic = $('.sm-avatar')
+      if (me) {
+        delete smPic.dataset.icon
+        smPic.replaceChildren(pic(me, 32, 'sm-avatar-img'))
+      } else {
+        smPic.dataset.icon = 'avatar'
+        smPic.textContent = os.iconFor('avatar')
+      }
       $('#msgr-tray').hidden = !me || os.siteHidden('messenger')
       unread.clear()
       if (me) refreshUnread()
@@ -125,7 +164,8 @@
       const balloon = $('#balloon')
       balloonFrom = { id: msg.sender, username: name }
       $('.balloon-title', balloon).textContent = `💬 ${name}`
-      $('.balloon-text', balloon).textContent = msg.body.length > 90 ? `${msg.body.slice(0, 90)}…` : msg.body
+      const text = preview(msg.body)
+      $('.balloon-text', balloon).textContent = text.length > 90 ? `${text.slice(0, 90)}…` : text
       balloon.hidden = false
       clearTimeout(balloonTimer)
       balloonTimer = setTimeout(() => (balloon.hidden = true), 7000)
@@ -134,6 +174,11 @@
       $('#balloon').hidden = true
       if (balloonFrom) openChat(balloonFrom)
     }
+
+    /** A player's profile picture (online/avatar.js). */
+    const pic = (who, size = 40, className = 'avatar') => window.nikstilAvatar?.img(who, size, className) ?? h('span', { class: className })
+    /** What a message says, for one-line previews (a GIF is just "GIF"). */
+    const preview = (body) => (net().gifUrl(body) ? '🎞️ GIF' : body)
 
     /** Opens Messenger on a chat with `user` ({ id, username }). */
     function openChat(user) {
@@ -160,11 +205,27 @@
     function initLeaderboard(el) {
       const body = $('.lb', el)
       if (!available) return offline(body)
+      // Two dropdowns: the mode (Speedrun or Daily Challenge), then the ending or the day.
+      const mode = $('.lb-mode', el)
       const select = $('.lb-board', el)
-      select.append(
-        h('optgroup', { label: 'Speedrun' }, h('option', { value: 'any' }, 'Any% (any ending)'), ENDINGS.map(([id, icon, name]) => h('option', { value: id }, `${icon} ${name}`))),
-        h('optgroup', { label: 'Daily Challenge' }, h('option', { value: 'daily:0' }, 'Today'), h('option', { value: 'daily:-1' }, 'Yesterday')),
-      )
+      const dayName = (offset) => {
+        if (offset === 0) return 'Today'
+        if (offset === -1) return 'Yesterday'
+        const [y, m, d] = localDay(offset).split('-').map(Number)
+        return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+      }
+      function fillBoards() {
+        select.replaceChildren(
+          ...(mode.value === 'daily'
+            ? Array.from({ length: 7 }, (_, i) => h('option', { value: `daily:${-i}` }, dayName(-i)))
+            : [h('option', { value: 'any' }, 'Any% (any ending)'), ...ENDINGS.map(([id, icon, name]) => h('option', { value: id }, `${icon} ${name}`))]),
+        )
+      }
+      fillBoards()
+      mode.addEventListener('change', () => {
+        fillBoards()
+        load()
+      })
       const tbody = $('tbody', el)
       const empty = $('.lb-empty', el)
       const mine = $('.lb-me', el)
@@ -259,6 +320,13 @@
         error.hidden = true
       }
       $$('.acct-tab', el).forEach((t) => t.addEventListener('click', () => setMode(t.dataset.mode)))
+      account = {
+        setMode: (m) => {
+          if (me) return
+          setMode(m)
+          $('.acct-user', el).focus()
+        },
+      }
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault()
@@ -308,19 +376,47 @@
         }
       })
 
+      let wasIn = false
       function render(profile) {
         form.hidden = !!profile
         signedIn.hidden = !profile
+        const signedOut = wasIn && !profile
+        wasIn = !!profile
         if (!profile) {
-          setMode('in') // after signing out, the next thing is signing back in
+          if (signedOut) setMode('in') // after signing out, the next thing is signing back in
           $('.acct-agree', el).checked = false
           return
         }
         $('.acct-name', el).textContent = profile.username
         $('.acct-since', el).textContent = `Joined ${new Date(profile.created_at).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}`
         $('.acct-dms', el).checked = profile.allow_dms
-        $('.acct-avatar', el).textContent = os.iconFor('account')
+        $('.acct-avatar', el).src = window.nikstilAvatar?.url(profile.avatar || profile.username.toLowerCase()) ?? ''
+        if (!$('.acct-pic-list', el).children.length) shuffle()
+        markPicked()
       }
+      // Profile picture: pick one of six generated portraits (🎲 for six more).
+      function shuffle() {
+        const list = $('.acct-pic-list', el)
+        list.replaceChildren(
+          ...Array.from({ length: 6 }, () => {
+            const seed = window.nikstilAvatar?.randomSeed() ?? String(Math.random()).slice(2, 12)
+            return h('li', {}, h('button', { type: 'button', class: 'acct-pic', 'data-seed': seed, 'aria-label': 'Use this picture', onclick: () => choose(seed) }, pic(seed, 44)))
+          }),
+        )
+        markPicked()
+      }
+      function markPicked() {
+        $$('.acct-pic', el).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.seed === me?.avatar)))
+      }
+      async function choose(seed) {
+        try {
+          await net().setAvatar(seed)
+        } catch (err) {
+          os.msgbox('Account', net().errorText(err), '⚠️')
+        }
+      }
+      $('.acct-shuffle', el).addEventListener('click', shuffle)
+      $('.acct-pic-default', el).addEventListener('click', () => choose(null))
       const view = { onAuth: render }
       views.add(view)
       body.classList.add('is-loading')
@@ -332,7 +428,10 @@
           if (!p) $('.acct-user', el).focus()
         })
         .catch((err) => offline(body, net().errorText(err)))
-      return () => views.delete(view)
+      return () => {
+        views.delete(view)
+        account = null
+      }
     }
 
     // ================= Messenger =================
@@ -351,6 +450,9 @@
       let oldest = null
       let blocked = new Set()
       let chats = []
+      let people = [] // every player, for the grid
+      const byId = new Map()
+      const peopleList = $('.msgr-people', el)
 
       $('.msgr-signin', el).addEventListener('click', () => os.openApp('account'))
       $('.msgr-back', el).addEventListener('click', () => {
@@ -377,9 +479,10 @@
               h(
                 'button',
                 { class: `msgr-conv${current?.id === c.user_id ? ' is-current' : ''}`, 'data-user': c.user_id, onclick: () => show({ id: c.user_id, username: c.username }) },
+                pic(byId.get(c.user_id) ?? { username: c.username }, 32, 'avatar msgr-conv-pic'),
                 h('span', { class: 'msgr-conv-name' }, c.username, c.blocked && h('small', { class: 'muted' }, ' (blocked)')),
                 h('span', { class: 'msgr-conv-when muted' }, when(c.last_at)),
-                h('span', { class: 'msgr-conv-last muted' }, `${c.last_from_me ? 'You: ' : ''}${c.last_body}`),
+                h('span', { class: 'msgr-conv-last muted' }, `${c.last_from_me ? 'You: ' : ''}${preview(c.last_body)}`),
                 n > 0 && h('b', { class: 'msgr-unread', 'aria-label': `${n} unread` }, String(n)),
               ),
             )
@@ -392,10 +495,65 @@
         chatsTimer = setTimeout(loadChats, 300)
       }
 
+      // ----- everyone, in a grid (shown when no chat is open; the find box filters it)
+      async function loadPeople() {
+        try {
+          people = await net().players()
+        } catch (err) {
+          peopleList.replaceChildren(h('li', { class: 'muted msgr-people-none' }, net().errorText(err)))
+          return
+        }
+        byId.clear()
+        people.forEach((p) => byId.set(p.id, p))
+        renderPeople()
+        loadChats() // (now with everyone's pictures)
+      }
+      function renderPeople() {
+        const q = find.value.trim().toLowerCase()
+        const others = people.filter((p) => p.id !== me?.id)
+        const list = others.filter((p) => !q || p.username.toLowerCase().includes(q))
+        $('.msgr-people-count', el).textContent = `· ${others.length} player${others.length === 1 ? '' : 's'}`
+        peopleList.replaceChildren(
+          ...list.map((p) =>
+            h(
+              'li',
+              {},
+              h(
+                'button',
+                { class: `msgr-person${p.allow_dms ? '' : ' is-closed'}`, title: p.allow_dms ? `Message ${p.username}` : `${p.username} isn’t taking messages`, onclick: () => show({ id: p.id, username: p.username }) },
+                pic(p, 64, 'avatar msgr-person-pic'),
+                h('span', { class: 'msgr-person-name' }, p.username),
+              ),
+            ),
+          ),
+        )
+        if (!list.length) peopleList.replaceChildren(h('li', { class: 'muted msgr-people-none' }, q ? 'Nobody by that name.' : 'Nobody else is here yet. Tell a friend.'))
+      }
+
+      // ----- full screen (the Messenger window on its own)
+      const fullBtn = $('.msgr-full', el)
+      const isFull = () => (document.fullscreenElement ?? document.webkitFullscreenElement) === el
+      fullBtn.hidden = !(el.requestFullscreen || el.webkitRequestFullscreen)
+      fullBtn.addEventListener('click', () => {
+        if (isFull()) return void (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document)
+        Promise.resolve((el.requestFullscreen ?? el.webkitRequestFullscreen).call(el)).catch(() =>
+          os.msgbox('Full screen', 'Your browser said no. Try maximizing the window instead.', '⛔'),
+        )
+      })
+      const syncFull = () => {
+        const on = isFull()
+        fullBtn.textContent = on ? '🗗' : '⛶'
+        fullBtn.title = on ? 'Exit full screen' : 'Full screen'
+        fullBtn.setAttribute('aria-label', fullBtn.title)
+      }
+      document.addEventListener('fullscreenchange', syncFull)
+      document.addEventListener('webkitfullscreenchange', syncFull)
+
       // ----- finding someone to message
       let findTimer = 0
       find.addEventListener('input', () => {
         clearTimeout(findTimer)
+        renderPeople()
         const q = find.value.trim()
         if (!q) return (suggest.hidden = true)
         findTimer = setTimeout(async () => {
@@ -429,11 +587,20 @@
         const mine = m.sender === net().profile?.id
         return h(
           'li',
-          { class: `msgr-msg${mine ? ' is-mine' : ''}`, 'data-id': m.id },
-          h('span', { class: 'msgr-body' }, m.body),
+          { class: `msgr-msg${mine ? ' is-mine' : ''}${net().gifUrl(m.body) ? ' is-gif' : ''}`, 'data-id': m.id },
+          gifOrText(m.body),
           h('time', { class: 'msgr-time', datetime: m.created_at, title: new Date(m.created_at).toLocaleString() }, when(m.created_at)),
           !mine && h('button', { class: 'msgr-flag', title: 'Report this message', 'aria-label': 'Report this message', onclick: () => reportUser(m.id) }, '⚑'),
         )
+      }
+      function gifOrText(body) {
+        const url = net().gifUrl(body)
+        if (!url) return h('span', { class: 'msgr-body' }, body)
+        const img = h('img', { class: 'msgr-gif', src: url, alt: 'GIF', loading: 'lazy', decoding: 'async' })
+        // Keep the chat scrolled to the bottom when a GIF finishes loading and gets taller.
+        img.addEventListener('load', () => log.scrollHeight - log.scrollTop - log.clientHeight < img.height + 60 && toBottom())
+        img.addEventListener('error', () => img.replaceWith(h('span', { class: 'msgr-body muted' }, '🎞️ (this GIF is gone)')))
+        return h('a', { class: 'msgr-gif-link-out', href: url, target: '_blank', rel: 'noopener noreferrer' }, img)
       }
       const atBottom = () => log.scrollHeight - log.scrollTop - log.clientHeight < 40
       const toBottom = () => (log.scrollTop = log.scrollHeight)
@@ -492,10 +659,13 @@
         chat.classList.toggle('has-chat', !!current)
         if (!current) return
         $('.msgr-with', el).textContent = current.username
+        $('.msgr-with-pic', el).src = window.nikstilAvatar?.url(byId.get(current.id)?.avatar || current.username.toLowerCase()) ?? ''
         const isBlocked = blocked.has(current.id)
         $('.msgr-block', el).textContent = isBlocked ? 'Unblock' : 'Block'
         text.disabled = isBlocked
         $('.msgr-send', el).disabled = isBlocked
+        $('.msgr-gif-btn', el).disabled = isBlocked
+        $('.msgr-gifs', el).hidden = true
         text.placeholder = isBlocked ? `You’ve blocked ${current.username}.` : `Message ${current.username}…`
         $$('.msgr-conv', el).forEach((b) => b.classList.toggle('is-current', b.dataset.user === current.id))
       }
@@ -528,6 +698,73 @@
         text.style.height = `${Math.min(text.scrollHeight, 120)}px`
       }
       text.addEventListener('input', autosize)
+
+      // ----- GIFs: upload one, paste a GIPHY/Tenor link, or pick from the shelf (the site's own GIFs
+      // and the ones you sent lately)
+      const RECENT_KEY = 'nikstil-recent-gifs'
+      const SITE_GIFS = ['/animation.gif', '/true.gif'].map((p) => new URL(p, location.href).href)
+      const gifPanel = $('.msgr-gifs', el)
+      const gifBtn = $('.msgr-gif-btn', el)
+      const recentGifs = () => {
+        try {
+          return (JSON.parse(localStorage.getItem(RECENT_KEY)) ?? []).filter((u) => typeof u === 'string' && net().gifUrl(`[gif] ${u}`))
+        } catch {
+          return []
+        }
+      }
+      function rememberGif(url) {
+        try {
+          localStorage.setItem(RECENT_KEY, JSON.stringify([url, ...recentGifs().filter((u) => u !== url)].slice(0, 12)))
+        } catch {}
+      }
+      function showGifs(on) {
+        gifPanel.hidden = !on
+        gifBtn.setAttribute('aria-expanded', String(on))
+        if (!on) return
+        const shelf = $('.msgr-gif-shelf', el)
+        const urls = [...recentGifs(), ...SITE_GIFS.filter((u) => !recentGifs().includes(u))]
+        shelf.replaceChildren(...urls.map((u) => h('li', {}, h('button', { type: 'button', class: 'msgr-gif-pick', title: 'Send this GIF', onclick: () => sendGif(u) }, h('img', { src: u, alt: 'GIF', loading: 'lazy' })))))
+      }
+      gifBtn.addEventListener('click', () => showGifs(gifPanel.hidden))
+      async function sendGif(url) {
+        if (!current) return
+        const to = current
+        showGifs(false)
+        try {
+          const sent = await net().sendGif(to.id, url)
+          rememberGif(url)
+          if (current?.id === to.id && !shown.has(sent.id)) {
+            $('.msgr-hello', log)?.remove()
+            log.append(bubble(sent))
+            toBottom()
+          }
+          reloadChats()
+        } catch (err) {
+          os.msgbox('nikstil Messenger', net().errorText(err), '⚠️')
+        }
+      }
+      $('.msgr-gif-file', el).addEventListener('change', async (e) => {
+        const file = e.target.files?.[0]
+        e.target.value = ''
+        if (!file) return
+        const label = $('.msgr-gif-upload', el)
+        label.classList.add('is-busy')
+        try {
+          await sendGif(await net().uploadGif(file))
+        } catch (err) {
+          os.msgbox('nikstil Messenger', net().errorText(err), '⚠️')
+        } finally {
+          label.classList.remove('is-busy')
+        }
+      })
+      $('.msgr-gif-link', el).addEventListener('submit', (e) => {
+        e.preventDefault()
+        const input = $('.msgr-gif-url', el)
+        const url = net().gifUrl(`[gif] ${input.value.trim()}`)
+        if (!url) return os.msgbox('nikstil Messenger', 'Paste the link of the GIF itself (it ends in .gif, from media.giphy.com or media.tenor.com), or upload one.', '🎞️')
+        input.value = ''
+        sendGif(url)
+      })
       text.addEventListener('keydown', (e) => {
         // Enter sends, Shift+Enter is a new line (on phones, the Send button sends).
         if (e.key === 'Enter' && !e.shiftKey && !os.coarsePointer) {
@@ -608,6 +845,7 @@
         blocked = await net().blocked().catch(() => new Set())
         renderChat()
         loadChats()
+        loadPeople()
       }
       // Coming back to a chat with unread messages in it marks them read.
       el.addEventListener('pointerdown', () => {
@@ -641,6 +879,8 @@
         .catch((err) => offline(body, net().errorText(err)))
       return () => {
         views.delete(view)
+        document.removeEventListener('fullscreenchange', syncFull)
+        document.removeEventListener('webkitfullscreenchange', syncFull)
         if (messenger?.show === show) messenger = null
       }
     }
@@ -648,6 +888,8 @@
     const INITS = { leaderboard: initLeaderboard, messenger: initMessenger, account: initAccount }
     return {
       start,
+      firstVisit,
+      openAccount,
       init: (id, el, win) => INITS[id]?.(el, win),
     }
   }
