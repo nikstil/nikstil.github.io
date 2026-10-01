@@ -21,14 +21,14 @@
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', browser: '🧭' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', browser: '📡' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', browser: '🧭' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', browser: '⌕' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', browser: '🌐' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', browser: '🌐' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', browser: '🌐' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', browser: '🌐' },
   }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
@@ -45,6 +45,7 @@
     themes: { title: 'Themes', icon: 'themes', width: 600, init: initThemes },
     bin: { title: 'Recycle Bin', icon: 'bin', width: 460, init: initBin },
     doom: { title: 'DOOMSCROLL.EXE', icon: 'doom', width: 700, init: initDoom },
+    browser: { title: 'nikBrowser', icon: 'browser', width: 900, init: initBrowser },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
     messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
@@ -530,6 +531,115 @@
   /** DOOMSCROLL.EXE runs in the window (the page at /doomscroll/, loaded only once it's opened). */
   function initDoom(el) {
     $('.doom-frame', el).src = '/doomscroll/?embed'
+  }
+
+  // ================= nikBrowser =================
+  // A small web browser: pages load in a frame, so only sites that allow being embedded show up
+  // (the start page lists some that do). Its theme filter makes every page look like the theme.
+  const BROWSER_TILES = [
+    { icon: '🌐', name: 'TRANSLATR™', url: '/translatr/' },
+    { icon: '👹', name: 'DOOMSCROLL.EXE', url: '/doomscroll/' },
+    { icon: '🎞️', name: 'The GIF', url: '/gif/' },
+    { icon: '📚', name: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
+    { icon: '🎲', name: 'Random article', url: 'https://en.m.wikipedia.org/wiki/Special:Random' },
+    { icon: '🗺️', name: 'OpenStreetMap', url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.25%2C51.45%2C0.05%2C51.56&layer=mapnik' },
+    { icon: '📼', name: 'A very normal video', url: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' },
+    { icon: '🕹️', name: 'Old web search', url: 'https://wiby.me/' },
+  ]
+  function initBrowser(el) {
+    const frame = $('.br-frame', el)
+    const start = $('.br-start', el)
+    const input = $('.br-url', el)
+    const status = $('.br-status', el)
+    const out = $('.br-out', el)
+    const view = $('.br-view', el)
+    let history = ['home']
+    let at = 0
+    const tiles = $('.br-tiles', el)
+    for (const t of BROWSER_TILES) {
+      const li = document.createElement('li')
+      li.innerHTML = `<button type="button" class="br-tile"><span class="br-tile-icon" aria-hidden="true"></span><span class="br-tile-name"></span></button>`
+      $('.br-tile-icon', li).textContent = t.icon
+      $('.br-tile-name', li).textContent = t.name
+      $('button', li).addEventListener('click', () => go(t.url))
+      tiles.append(li)
+    }
+    /** What was typed → an address: a URL, a domain, or a Wikipedia search. */
+    function resolve(q) {
+      q = q.trim()
+      if (!q || q === 'home' || q === 'about:home') return 'home'
+      if (q.startsWith('/')) return new URL(q, location.href).href
+      if (/^https?:\/\//i.test(q)) return safeUrl(q)?.href ?? null
+      if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/.test(q) && !/\s/.test(q)) return `https://${q}`
+      return `https://en.m.wikipedia.org/w/index.php?search=${encodeURIComponent(q)}`
+    }
+    function show(url) {
+      const home = url === 'home'
+      start.hidden = !home
+      frame.hidden = home
+      input.value = home ? '' : url.replace(location.origin, location.host)
+      out.hidden = home
+      out.href = home ? '#' : url
+      if (!home && frame.dataset.url !== url) {
+        frame.dataset.url = url
+        status.textContent = `Loading ${new URL(url).host}…`
+        frame.src = url
+      }
+      if (home) status.textContent = 'Home'
+      $('.br-back', el).disabled = at === 0
+      $('.br-fwd', el).disabled = at >= history.length - 1
+    }
+    function go(q) {
+      const url = resolve(q)
+      if (!url) return msgbox('nikBrowser', 'That address can’t be opened here.', '🧭')
+      history = history.slice(0, at + 1)
+      history.push(url)
+      at = history.length - 1
+      show(url)
+    }
+    frame.addEventListener('load', () => {
+      if (frame.hidden) return
+      // Our own pages can say where they went; other sites keep that to themselves.
+      try {
+        const href = frame.contentWindow.location.href
+        if (href && href !== 'about:blank' && href !== frame.dataset.url) {
+          frame.dataset.url = href
+          history[at] = href
+          input.value = href.replace(location.origin, location.host)
+          out.href = href
+        }
+        status.textContent = frame.contentDocument?.title || new URL(frame.dataset.url).host
+      } catch {
+        status.textContent = `${new URL(frame.dataset.url).host} · blank? Some sites won’t open inside another page: try ↗`
+      }
+    })
+    $('.br-bar', el).addEventListener('submit', (e) => {
+      e.preventDefault()
+      go(input.value)
+    })
+    $('.br-search', el).addEventListener('submit', (e) => {
+      e.preventDefault()
+      const q = $('.br-q', el).value.trim()
+      if (q) go(q.includes(' ') || !q.includes('.') ? `https://en.m.wikipedia.org/w/index.php?search=${encodeURIComponent(q)}` : q)
+    })
+    $('.br-back', el).addEventListener('click', () => at > 0 && show(history[--at]))
+    $('.br-fwd', el).addEventListener('click', () => at < history.length - 1 && show(history[++at]))
+    $('.br-home', el).addEventListener('click', () => go('home'))
+    $('.br-reload', el).addEventListener('click', () => {
+      if (frame.hidden) return
+      frame.src = 'about:blank'
+      setTimeout(() => (frame.src = frame.dataset.url), 30)
+    })
+    const fx = $('.br-fx', el)
+    const FX_KEY = 'nikstilos-browser-fx'
+    const setFx = (on) => {
+      view.classList.toggle('no-fx', !on)
+      fx.setAttribute('aria-pressed', String(on))
+      storage.set(FX_KEY, on ? '1' : '0')
+    }
+    setFx(storage.get(FX_KEY) !== '0')
+    fx.addEventListener('click', () => setFx(view.classList.contains('no-fx')))
+    show('home')
   }
 
   function initThemes(el) {

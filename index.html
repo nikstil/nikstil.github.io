@@ -54,6 +54,7 @@
       <li><button class="desk-icon" data-app="translatr"><span class="di-img" data-icon="translatr" aria-hidden="true">🌐</span><span class="di-label">TRANSLATR™</span></button></li>
       <li><button class="desk-icon" data-app="gif"><span class="di-img" data-icon="gif" aria-hidden="true">🎞️</span><span class="di-label">The GIF</span></button></li>
       <li><button class="desk-icon" data-app="themes"><span class="di-img" data-icon="themes" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
+      <li><button class="desk-icon" data-app="browser"><span class="di-img" data-icon="browser" aria-hidden="true">🧭</span><span class="di-label">Web Browser</span></button></li>
       <li><button class="desk-icon" data-app="doom"><span class="di-img" data-icon="doom" aria-hidden="true">👹</span><span class="di-label">DOOMSCROLL.EXE</span></button></li>
       <li><button class="desk-icon" data-app="bin"><span class="di-img" data-icon="bin" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
       <li data-online="leaderboard" hidden><button class="desk-icon" data-app="leaderboard"><span class="di-img" data-icon="leaderboard" aria-hidden="true">🏆</span><span class="di-label">Leaderboards</span></button></li>
@@ -85,6 +86,7 @@
         <ul class="sm-list">
           <li><button class="sm-item" role="menuitem" data-app="translatr"><span data-icon="translatr" aria-hidden="true">🌐</span> <span class="sm-label">TRANSLATR™</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> <span class="sm-label">The GIF</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="browser"><span data-icon="browser" aria-hidden="true">🧭</span> <span class="sm-label">Web Browser</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="doom"><span data-icon="doom" aria-hidden="true">👹</span> <span class="sm-label">DOOMSCROLL.EXE</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">This PC</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
@@ -184,6 +186,37 @@
       <span class="status muted">animation.gif · click it</span>
       <a class="btn" href="/gif/">⛶ Full screen</a>
     </div>
+  </template>
+
+  <template id="app-browser">
+    <div class="win-body br">
+      <form class="br-bar" autocomplete="off">
+        <button type="button" class="btn br-nav br-back" aria-label="Back" title="Back" disabled>◀</button>
+        <button type="button" class="btn br-nav br-fwd" aria-label="Forward" title="Forward" disabled>▶</button>
+        <button type="button" class="btn br-nav br-reload" aria-label="Reload" title="Reload">⟳</button>
+        <button type="button" class="btn br-nav br-home" aria-label="Home" title="Home">⌂</button>
+        <label class="sr-only" for="br-url">Address</label>
+        <input id="br-url" class="br-url" type="text" spellcheck="false" autocapitalize="none" enterkeyhint="go" placeholder="Search Wikipedia or type an address">
+        <button class="btn br-go">Go</button>
+        <button type="button" class="btn br-nav br-fx" aria-pressed="true" title="Theme filter (looks like the theme you picked)" aria-label="Theme filter">🎨</button>
+        <a class="btn br-nav br-out" href="#" target="_blank" rel="noopener noreferrer" title="Open in a new tab" aria-label="Open in a new tab">↗</a>
+      </form>
+      <div class="br-view">
+        <div class="br-start">
+          <h3 class="br-logo">nik<b>Browser</b></h3>
+          <form class="br-search" autocomplete="off">
+            <label class="sr-only" for="br-q">Search Wikipedia</label>
+            <input id="br-q" class="br-q" type="search" placeholder="Search Wikipedia…">
+            <button class="btn btn-primary">Search</button>
+          </form>
+          <ul class="br-tiles"></ul>
+          <p class="br-note muted">Plenty of sites refuse to be shown inside another page (their choice, not ours). If one stays blank, open it in a new tab with ↗.</p>
+        </div>
+        <iframe class="br-frame" title="Web page" hidden referrerpolicy="no-referrer" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"></iframe>
+        <div class="br-fx-layer" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="win-foot"><span class="status br-status">Home</span></div>
   </template>
 
   <template id="app-doom">

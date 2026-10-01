@@ -37,6 +37,11 @@
       "title": "DOOMSCROLL.EXE",
       "hidden": false
     },
+    "browser": {
+      "label": "Web Browser",
+      "title": "nikBrowser",
+      "hidden": false
+    },
     "leaderboard": {
       "label": "Leaderboards",
       "title": "Leaderboards",
