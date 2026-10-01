@@ -14,6 +14,7 @@ import DoomFeed, { DOOM_WIDTH } from './components/DoomFeed'
 import WindowGrid from './components/WindowGrid'
 import { Paperclip, Snail } from './components/Toys'
 import Nas from './components/Nas'
+import { Fly, RogueBriefing, RogueLooks } from './components/Rogue'
 import DataHarvester from './components/DataHarvester'
 import DailyRewards from './components/DailyRewards'
 import AfkBanner from './components/AfkBanner'
@@ -140,6 +141,9 @@ export default function App() {
       <Cat />
       <Snail />
       <Nas />
+      <RogueLooks />
+      <RogueBriefing />
+      <Fly />
       <Paperclip />
       <ScratchMarks />
       <AdLayer />

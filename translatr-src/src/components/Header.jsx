@@ -5,6 +5,7 @@ import { fmt, money } from '../lib/format'
 import { ACHIEVEMENTS } from '../data/achievements'
 import { cursesFor } from '../data/runMods'
 import { CeoDog, Speedometer } from './Toys'
+import { RogueBadge } from './Rogue'
 
 /** The rolling wallet number. Its own component: the roll re-renders this, not the whole command bar. */
 function WalletValue({ cash }) {
@@ -100,6 +101,7 @@ export default function Header() {
             <Stat label="Shame" value={`🏆 ${trophies}/${ACHIEVEMENTS.length}`} className="text-gold" />
           </button>
           <Stat label="Ads endured" value={fmt(adsSeen)} className="text-ink/80" />
+          <RogueBadge />
           {saveFilesLost > 0 && <Stat label="Saves lost" value={`☠ ${saveFilesLost}`} className="text-blood" />}
           <Speedometer />
         </div>

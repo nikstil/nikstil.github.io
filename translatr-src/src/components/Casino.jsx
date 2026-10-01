@@ -46,7 +46,7 @@ export default function Casino() {
 
     // The result is decided up front; the wheel animates to it. (Seeded on a Daily Challenge.)
     const [roll, favour, pick] = store.rngMany('roulette', 3)
-    const drama = wager >= wallet * DRAMA_SHARE && store.rng('roulette-drama') < DRAMA_CHANCE
+    const drama = !!eventMods(store).slowRoulette || (wager >= wallet * DRAMA_SHARE && store.rng('roulette-drama') < DRAMA_CHANCE)
     const ms = drama ? SPIN_MS * DRAMA_SLOWDOWN : SPIN_MS
     setSpinMs(ms)
     let index = Math.floor(roll * POCKETS.length)

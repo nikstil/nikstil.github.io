@@ -1,6 +1,5 @@
 // Pure economy selectors. Shared by the store, the UI and the balance simulator
 // (scripts/simulate.mjs), so the numbers the player sees are the numbers the sim tests.
-
 import {
   ADS,
   AUDIT,
@@ -23,6 +22,7 @@ import { combineMods, ngPlusMods } from '../data/runMods'
 import { dailyMods } from '../data/daily'
 import { cheatMods } from '../data/cheats'
 import { priceTranslation } from './translator'
+import { rogueModList } from '../data/rogue'
 
 export const hasSkill = (s, id) => !!s.skills?.[id]
 const equippedDefs = (s) => s.equipped.map((uid) => EQUIPPABLES[s.items.find((i) => i.uid === uid)?.itemId]).filter(Boolean)
@@ -64,12 +64,13 @@ const modsCache = new Map()
 export function activeMods(s) {
   const cheats = s.cheats?.toggles ?? []
   const loadout = loadoutKey(s)
-  const key = `${s.event?.id ?? ''}|${s.ngPlus ?? 0}|${s.mode === 'daily' ? (s.daily?.mods ?? []).join(',') : ''}|${cheats.join(',')}|${loadout}`
+  const rogue = s.mode === 'rogue' ? s.rogue : null
+  const key = `${s.event?.id ?? ''}|${s.ngPlus ?? 0}|${s.mode === 'daily' ? (s.daily?.mods ?? []).join(',') : ''}|${cheats.join(',')}|${loadout}|${rogue ? [...rogue.perks, ...rogue.debuffs].join(',') : ''}`
   let mods = modsCache.get(key)
   if (!mods) {
     const event = s.event && EVENT_BY_ID[s.event.id]?.mods
     const items = loadout && itemMods(equippedDefs(s))
-    mods = Object.freeze(combineMods(ngPlusMods(s.ngPlus ?? 0), ...(s.mode === 'daily' ? dailyMods(s.daily?.mods) : []), event, ...cheatMods(cheats), items))
+    mods = Object.freeze(combineMods(ngPlusMods(s.ngPlus ?? 0), ...(s.mode === 'daily' ? dailyMods(s.daily?.mods) : []), ...rogueModList(rogue), event, ...cheatMods(cheats), items))
     modsCache.set(key, mods)
   }
   return mods

@@ -118,7 +118,54 @@
     }
   }
 
+  // ================= Endings, per account =================
+  // The signed-in account's completed endings (all devices), kept in localStorage for the game: a
+  // Roguelike run picks its target from the ones the account hasn't done. Endings reached here are
+  // added to the account as they happen.
+  const ACCOUNT_KEY = 'translatr-account'
+  let accountEndings = null // Set, while signed in
+  function writeAccount(me) {
+    try {
+      if (me && accountEndings) localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: me.id, username: me.username, endings: [...accountEndings] }))
+      else localStorage.removeItem(ACCOUNT_KEY)
+    } catch {
+      // storage blocked: the game falls back to this device's endings
+    }
+  }
+  async function loadAccountEndings(me) {
+    accountEndings = null
+    if (!me) return writeAccount(null)
+    try {
+      const c = await online.connect()
+      const { data } = await c.from('profiles').select('endings_done').eq('id', me.id).maybeSingle()
+      accountEndings = new Set(data?.endings_done ?? [])
+      writeAccount(me)
+      syncEndings(lastState)
+    } catch {
+      // older database without endings_done: nothing to sync
+    }
+  }
+  async function syncEndings(state) {
+    const me = online?.profile
+    if (!me || !accountEndings || !state?.endings) return
+    const fresh = Object.keys(state.endings).filter((id) => !accountEndings.has(id))
+    if (!fresh.length) return
+    fresh.forEach((id) => accountEndings.add(id))
+    writeAccount(me)
+    try {
+      const c = await online.connect()
+      const { data } = await c.rpc('note_endings', { p_endings: fresh })
+      if (Array.isArray(data)) {
+        accountEndings = new Set(data)
+        writeAccount(me)
+      }
+    } catch {
+      // try again with the next ending
+    }
+  }
+
   async function follow(state) {
+    syncEndings(state)
     const mode = state?.mode
     const run = state?.run
     if ((mode !== 'speedrun' && mode !== 'daily') || !run?.startedAt) return
@@ -511,6 +558,8 @@
     online = window.nikstilOnline
     online.configured.then((on) => {
       if (!on) return
+      online.on('auth', loadAccountEndings)
+      if (!online.hasStoredSession()) writeAccount(null) // signed out (elsewhere): back to this device's endings
       messengerBubble()
       check()
       setInterval(check, 750)

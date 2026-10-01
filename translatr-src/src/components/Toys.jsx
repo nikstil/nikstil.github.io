@@ -4,6 +4,7 @@ import { TASKBAR_H } from '../lib/dock'
 import { sfx } from '../lib/audio/engine'
 import { money } from '../lib/format'
 import { reducedMotion } from '../lib/settings'
+import { useRogueToy } from './Rogue'
 
 // Small things that live around the edges of the screen: the CEO Dog (in the header), the mouse
 // speedometer (header, top right), the paperclip assistant and the snail.
@@ -61,10 +62,20 @@ const DOG_ASLEEP = DOG.map((row, y) => {
 })
 
 export function CeoDog() {
-  const asleep = useGameStore((s) => !!s.premium.dog_nap)
+  const restless = useRogueToy('barky') // Roguelike debuff: he barks at random, asleep or not
+  const asleep = useGameStore((s) => !!s.premium.dog_nap) && !restless
   const [barking, setBarking] = useState(false)
   const timer = useRef(0)
   useEffect(() => () => clearTimeout(timer.current), [])
+  useEffect(() => {
+    if (!restless) return
+    let t = setTimeout(function again() {
+      bark()
+      t = setTimeout(again, 20_000 + Math.random() * 40_000)
+    }, 8_000)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restless])
   const bark = () => {
     if (asleep) return
     sfx('bark')
@@ -280,6 +291,7 @@ const TALK_EVERY = [45_000, 90_000]
 const TALK_FOR_MS = 7_000
 
 export function Paperclip() {
+  const chatty = useRogueToy('clippy') // Roguelike debuff: it won't shut up
   const [line, setLine] = useState(null)
   const pupil = useRef(null)
   const eye = useRef(null)
@@ -295,16 +307,17 @@ export function Paperclip() {
 
   // Talks now and then, all by itself.
   useEffect(() => {
+    const every = chatty ? [9_000, 14_000] : TALK_EVERY
     let t = setTimeout(function next() {
       const s = useGameStore.getState()
       if (s.mode && !s.over && !s.shooterOpen && !document.hidden) talk()
-      t = setTimeout(next, TALK_EVERY[0] + Math.random() * (TALK_EVERY[1] - TALK_EVERY[0]))
-    }, FIRST_TALK_MS)
+      t = setTimeout(next, every[0] + Math.random() * (every[1] - every[0]))
+    }, chatty ? 4_000 : FIRST_TALK_MS)
     return () => {
       clearTimeout(t)
       clearTimeout(hideTimer.current)
     }
-  }, [])
+  }, [chatty])
 
   // The googly eye: the pupil lags behind where the mouse is, and wobbles when it gets there.
   useEffect(() => {

@@ -1690,3 +1690,35 @@ html.shooter-open :is(.paperclip, .snail) { display: none; }
 .nas-led-blue { --on: #3db0ff; }
 @keyframes nas-blink { 0%, 49% { background: var(--on); box-shadow: 0 0 4px var(--on); } 50%, 100% { background: #2b2f35; box-shadow: none; } }
 html.shooter-open :is(.nas-peek, .nas-window) { display: none; }
+
+/* ================= Roguelike mode ================= */
+.rogue-target { padding: 14px 16px; border-radius: 12px; text-align: center; color: #fff; background: linear-gradient(135deg, #5b2a9e, #8e5bd6 60%, #c25bd6); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 6px 18px rgb(91 42 158 / 0.35); }
+.rogue-target-kicker { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.8; }
+.rogue-target-title { margin-top: 2px; font-size: 1.6rem; font-weight: 700; }
+.rogue-target-how { margin-top: 4px; font-size: 0.8125rem; opacity: 0.9; }
+.rogue-target-rule { margin-top: 6px; font-size: 0.6875rem; font-weight: 600; opacity: 0.75; }
+.rogue-card { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; border: 1px solid; }
+.rogue-card.is-good { border-color: rgb(44 154 30 / 0.4); background: rgb(44 154 30 / 0.08); }
+.rogue-card.is-bad { border-color: rgb(211 47 47 / 0.4); background: rgb(211 47 47 / 0.07); }
+.rogue-card-icon { font-size: 1.6rem; line-height: 1; }
+.rogue-card-name { font-weight: 700; font-size: 0.875rem; }
+.rogue-card-desc { font-size: 0.75rem; opacity: 0.75; }
+.rogue-result { display: inline-block; margin-top: 10px; padding: 6px 12px; border-radius: 8px; font-weight: 700; }
+.rogue-result.is-win { color: #0b2a12; background: #8ff0a4; }
+.rogue-result.is-loss { color: #fff; background: rgb(211 47 47 / 0.85); }
+/* Debuffs that change the look of the page */
+html.rogue-tilt body { transform: rotate(-1.4deg); transform-origin: 50% 30%; }
+html.rogue-comic body, html.rogue-comic body * { font-family: "Comic Sans MS", "Comic Neue", "Chalkboard SE", cursive !important; }
+html.rogue-gray { filter: grayscale(1); }
+html.rogue-flip-wallet .wallet-value { display: inline-block; transform: rotate(180deg); }
+html.rogue-tiny body { zoom: 0.88; }
+html.rogue-blur #root { filter: blur(0.7px); }
+html.rogue-fried { filter: saturate(2.4) contrast(1.6) hue-rotate(-8deg); }
+/* The fly */
+.fly { position: fixed; left: 0; top: 0; z-index: 236; width: 28px; height: 24px; pointer-events: none; will-change: transform; }
+.fly-art { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.35)); }
+.fly-wing { transform-origin: 12px 8px; animation: fly-wing 0.05s linear infinite alternate; }
+.fly-wing-r { animation-direction: alternate-reverse; }
+@keyframes fly-wing { to { transform: scaleY(0.4); } }
+.fly-block { position: fixed; z-index: 180; display: grid; place-items: end center; padding-bottom: 10px; border-radius: 10px; background: rgb(40 30 20 / 0.18); box-shadow: inset 0 0 0 2px rgb(90 60 30 / 0.35); cursor: not-allowed; }
+.fly-block-label { padding: 3px 9px; border-radius: 999px; font: 600 11px/1.3 system-ui, sans-serif; color: #fff; background: rgb(30 20 10 / 0.75); }

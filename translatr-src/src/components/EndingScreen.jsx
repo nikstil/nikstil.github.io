@@ -175,6 +175,7 @@ function Summary({ id, snap, at }) {
   const nextNg = (snap.ngPlus ?? 0) + 1
   const newCurse = NG_CURSES.find((c) => c.level === nextNg)
   const skillsKept = Object.keys(snap.skills ?? {}).length
+  const rogue = snap.mode === 'rogue' ? snap.rogue : null
 
   const stats = [
     ['Time', time != null ? fmtRunTime(time, speedrun) : '—'],
@@ -195,6 +196,13 @@ function Summary({ id, snap, at }) {
       <h2 className="mt-1 text-3xl font-semibold">{def.title}</h2>
       {snap.ngPlus > 0 && <div className="mt-1 text-[0.75rem] font-semibold opacity-80">in New Game+ {snap.ngPlus} ({cursesFor(snap.ngPlus).map((c) => c.name).join(', ')})</div>}
       <p className="mt-1 text-sm opacity-75">{def.how}</p>
+      {rogue && (
+        <div className={`rogue-result ${rogue.result === 'win' ? 'is-win' : 'is-loss'}`}>
+          {rogue.result === 'win'
+            ? `🎲 Run cleared. Target hit: ${ENDING_BY_ID[rogue.target]?.title}.${records.rogue?.streak > 1 ? ` ${records.rogue.streak} wins in a row.` : ''}`
+            : `🎲 Run lost. The target was ${ENDING_BY_ID[rogue.target]?.icon} ${ENDING_BY_ID[rogue.target]?.title}, not this one.`}
+        </div>
+      )}
       {snap.cheats && <div className="mt-2 text-[0.75rem] font-semibold opacity-80">🏴 Modified game · {speedrun ? 'this time wasn’t recorded' : 'cheats were on'}</div>}
       {speedrun && time != null && !snap.cheats && (
         <div className={`mt-3 inline-block rounded-lg px-3 py-1.5 font-mono text-lg font-bold ${pb ? 'bg-[#5dff8f]/20 text-[#5dff8f]' : 'bg-white/10'}`}>
@@ -229,6 +237,9 @@ function Summary({ id, snap, at }) {
         </button>
         <button className="btn btn-gold" onClick={() => restartGame({ scope: 'game', mode: 'speedrun' })}>
           ⏱️ New speedrun
+        </button>
+        <button className="btn btn-magenta" onClick={() => restartGame({ scope: 'game', mode: 'rogue' })}>
+          🎲 New roguelike run
         </button>
         <button className="btn btn-blood" onClick={() => restartGame({ scope: 'game', mode: 'normal', ngPlus: nextNg })} title="Keep your skills. Add a curse.">
           ✚ New Game+ {nextNg}

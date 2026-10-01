@@ -579,6 +579,33 @@ begin
 end;
 $$;
 
+-- ================= Endings, per account =================
+-- Which TRANSLATR™ endings an account has reached (any mode, any device): Roguelike runs pick
+-- their target from the ones it hasn't. The game page's bridge adds to it as endings play.
+alter table public.profiles add column if not exists endings_done text[] not null default '{}';
+
+create or replace function public.note_endings(p_endings text[])
+returns text[]
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := public.require_player();
+  result text[];
+begin
+  update public.profiles p
+  set endings_done = (
+    select coalesce(array_agg(distinct e order by e), '{}')
+    from unnest(p.endings_done || coalesce(p_endings, '{}')) e
+    where e ~ '^[a-z0-9_]{1,32}$'
+  )
+  where p.id = me
+  returning p.endings_done into result;
+  return result;
+end;
+$$;
+
 -- ================= Row Level Security =================
 -- Tables are read-only from the website except where a policy says otherwise: every other write
 -- goes through the functions above.
@@ -635,7 +662,8 @@ revoke execute on function
   public.admin_set_banned(uuid, boolean),
   public.admin_recent_runs(integer),
   public.admin_set_run_removed(uuid, boolean, text),
-  public.delete_account()
+  public.delete_account(),
+  public.note_endings(text[])
 from public, anon, authenticated;
 grant execute on function public.leaderboard(text, date, integer) to anon, authenticated;
 grant execute on function public.my_rank(text, date) to authenticated;
@@ -646,6 +674,7 @@ grant execute on function public.mark_read(uuid) to authenticated;
 grant execute on function public.conversations() to authenticated;
 grant execute on function public.report(uuid, text, bigint, uuid) to authenticated;
 grant execute on function public.delete_account() to authenticated;
+grant execute on function public.note_endings(text[]) to authenticated;
 grant execute on function public.is_admin() to authenticated;
 grant execute on function public.admin_reports(boolean) to authenticated;
 grant execute on function public.admin_resolve_report(bigint) to authenticated;

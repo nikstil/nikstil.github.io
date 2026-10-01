@@ -15,21 +15,22 @@ export default function TitleScreen() {
 
 function TitleBody() {
   const records = useGameStore((s) => s.records)
+  const rogueRecord = records.rogue
   const endings = useGameStore((s) => s.endings)
   const { chooseMode, openEndings } = useGameStore.getState()
   const found = ENDINGS.filter((e) => endings[e.id]).length
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="title-heading" className="modal-card max-h-[92vh] w-[min(900px,94vw)] overflow-y-auto p-6 text-center" style={{ '--accent': '#3da6e8' }}>
+    <div role="dialog" aria-modal="true" aria-labelledby="title-heading" className="modal-card max-h-[92vh] w-[min(1100px,94vw)] overflow-y-auto p-6 text-center" style={{ '--accent': '#3da6e8' }}>
       <div className="title-logo mx-auto mb-3" aria-hidden="true">
         T
       </div>
       <h1 id="title-heading" className="brand-title text-3xl">
         TRANSLATR<span className="align-top text-base">™</span> <span className="brand-edition">Ultra+ Pro Max</span>
       </h1>
-      <p className="mt-1 text-sm text-ink/55">The world’s most monetized translator. Eight endings. Zero refunds. Pick how you’d like to suffer.</p>
+      <p className="mt-1 text-sm text-ink/55">The world’s most monetized translator. Nine endings. Zero refunds. Pick how you’d like to suffer.</p>
 
-      <div className="mt-5 grid gap-3 text-left sm:grid-cols-2 md:grid-cols-3">
+      <div className="mt-5 grid gap-3 text-left sm:grid-cols-2 lg:grid-cols-4">
         <ModeCard
           icon="🌐"
           title="Normal"
@@ -49,6 +50,15 @@ function TitleBody() {
           onClick={() => chooseMode('speedrun')}
         />
         <DailyCard onStart={() => chooseMode('daily')} />
+        <ModeCard
+          icon="🎲"
+          title="Roguelike"
+          accent="#8e5bd6"
+          points={['3 random perks, 3 random debuffs', 'One ending you have to reach (one you haven’t done yet)', 'Any other ending loses the run']}
+          cta={rogueRecord ? `Roll a run · ${rogueRecord.wins}/${rogueRecord.runs} won` : 'Roll a run'}
+          btn="btn-magenta"
+          onClick={() => chooseMode('rogue')}
+        />
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[0.71875rem] text-ink/55">

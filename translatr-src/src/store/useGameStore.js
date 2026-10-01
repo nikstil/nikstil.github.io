@@ -42,6 +42,7 @@ import { MAIL, MAIL_BY_ID, NEWSLETTER_EVERY_MS, SPAM, SPAM_EVERY_MS } from '../d
 import { CLIENTS, CONTRACT, CONTRACT_LANGS, PHRASES, normalizePhrase, reputationOf, reviewText, stars } from '../data/contracts'
 import { DAILY_GOAL_BY_ID, dailyFor, dailyStart, seededValue } from '../data/daily'
 import { CHEAT_ACTIONS, CHEAT_CODES, CHEAT_TOGGLES, normalizeCode } from '../data/cheats'
+import { draftRun, rogueCryptoBias, PERK_BY_ID } from '../data/rogue'
 import { COINS, COIN_BY_ID, CRYPTO_HISTORY, EXPANSIONS, EXPANSION_DROP_CHANCE, FORGE, FORGE_THEME_BY_ID, NAS, NAS_TIERS, freshMarket, ownsExpansion } from '../data/expansions'
 import { REFUSE_EVERY, correctTranslate, gradeSelfTranslation } from '../lib/translator'
 import { makeCaptcha } from '../lib/captcha'
@@ -208,6 +209,23 @@ function dailyRun(now) {
   }
 }
 
+/** A new Roguelike run: the draft, and whatever the perks and debuffs start you with. */
+function rogueStart(s, now) {
+  const rogue = { ...draftRun(s), seen: false }
+  const patch = { rogue }
+  for (const id of rogue.perks) {
+    const st = PERK_BY_ID[id]?.start
+    if (!st) continue
+    if (st.money) patch.money = (patch.money ?? s.money) + st.money
+    if (st.gems) patch.gems = (patch.gems ?? s.gems) + st.gems
+    if (st.skillPoints) patch.skillPoints = (patch.skillPoints ?? s.skillPoints) + st.skillPoints
+    if (st.pickaxe) patch.pickaxeLevel = Math.max(s.pickaxeLevel, st.pickaxe)
+    if (st.expansion) patch.expansions = { ...(patch.expansions ?? s.expansions), [st.expansion]: true }
+  }
+  if (rogue.debuffs.includes('starting_debt')) patch.loan = { principal: 25_000, debt: 25_000, lastAccrual: now }
+  return patch
+}
+
 /** "$9.99/wk" → 999 (for the fake-spend counter). */
 const priceCents = (price) => Math.round(parseFloat(String(price).replace(/[^\d.]/g, '')) * 100) || 0
 const randBetween = (a, b) => a + Math.random() * (b - a)
@@ -368,6 +386,7 @@ const freshGame = () => ({
   nextEventAt: null,
   lastEventId: null,
   snailArrived: false, // the snail crossed the screen before any ending: the secret choice is on offer
+  rogue: null, // Roguelike mode: { perks, debuffs, target, result, seen }
 })
 const PHANTOM_START = { start: 3, store: 7 }
 
@@ -749,6 +768,7 @@ function stepCrypto(st, now, fx) {
   const version = { ...m.version }
   let holdings = st.crypto
   const r = streamRand(st, 'crypto')
+  const downChance = 0.5 - (st.mode === 'rogue' ? rogueCryptoBias(st.rogue) : 0)
   for (const c of COINS) {
     if (!c.every) continue
     if (now < (next[c.id] ?? 0)) continue
@@ -757,7 +777,7 @@ function stepCrypto(st, now, fx) {
     let p = prices[c.id]
     const h = [...(history[c.id] ?? [])]
     while (moves-- > 0) {
-      p *= r.rand() < 0.5 ? 1 - c.move : 1 + c.move
+      p *= r.rand() < downChance ? 1 - c.move : 1 + c.move
       h.push(p)
     }
     next[c.id] = now + c.every
@@ -852,7 +872,7 @@ function stepMail(st, now, fx) {
   if (st.nextSpamAt == null) patch.nextSpamAt = now + randIn(SPAM_EVERY_MS)
   else if (now >= st.nextSpamAt) {
     fresh.push(newMail(SPAM[Math.floor(Math.random() * SPAM.length)].id, now))
-    patch.nextSpamAt = now + randIn(SPAM_EVERY_MS)
+    patch.nextSpamAt = now + randIn(SPAM_EVERY_MS) / (activeMods(st).spamRate ?? 1)
   }
   if (st.nextNewsAt == null) patch.nextNewsAt = now + randIn(NEWSLETTER_EVERY_MS)
   else if (now >= st.nextNewsAt) {
@@ -895,6 +915,15 @@ function stepAchievements(st, now) {
   }
   if (queue !== st.achievementQueue) patch.achievementQueue = queue
   return Object.keys(patch).length ? patch : null
+}
+
+/** Roguelike runs: how many, how many won, the current win streak (kept with the speedrun records). */
+function rogueRecord(records, s, id) {
+  if (s.mode !== 'rogue' || !s.rogue || s.rogue.result) return records
+  const win = id === s.rogue.target
+  const r = records.rogue ?? { runs: 0, wins: 0, streak: 0, best: 0 }
+  const streak = win ? r.streak + 1 : 0
+  return { ...records, rogue: { runs: r.runs + 1, wins: r.wins + (win ? 1 : 0), streak, best: Math.max(r.best, streak) } }
 }
 
 /** Folds a finished speedrun into the records (they survive everything, even "Reset all"). */
@@ -1157,6 +1186,7 @@ export const useGameStore = create(
           mode,
           run: { startedAt: now, endedAt: null, splits: {} },
           ...(mode === 'daily' ? dailyRun(now) : {}),
+          ...(mode === 'rogue' ? rogueStart(s, now) : {}),
           lastTickAt: now,
           // The world starts now, not when the page loaded.
           nextAdAt: now + getAdInterval(s),
@@ -1169,6 +1199,9 @@ export const useGameStore = create(
         if (mode === 'speedrun') s.toast('⏱️ Speedrun started. Every cookie was accepted on your behalf. Time is money.', 'info')
         if (mode === 'daily') s.toast('📅 Daily Challenge started. Everyone gets the same luck today. Good luck anyway.', 'info')
       },
+
+      /** The Roguelike run's briefing was read. */
+      seeRogue: () => set((s) => (s.rogue ? { rogue: { ...s.rogue, seen: true } } : {})),
 
       // ---- Daily Challenge ----
       /** Parks your game (it comes back when you leave) and starts today's challenge. */
@@ -1697,7 +1730,7 @@ export const useGameStore = create(
             continue
           }
           // A rat got there first. (It even eats relics. It does not respect the economy.)
-          if (r.rand() < SPOILED_BOX_CHANCE && !(loot.kind !== 'relic' && pity >= RELIC_PITY)) {
+          if (r.rand() < (mods.ratChance ?? SPOILED_BOX_CHANCE) && !(loot.kind !== 'relic' && pity >= RELIC_PITY)) {
             spoiled++
             results.push({ kind: 'spoiled', name: 'Eaten by a rat', ate: loot.kind === 'trash' ? null : loot.name })
             continue
@@ -2010,6 +2043,8 @@ export const useGameStore = create(
         const fresh = { ...freshSave(), ...freshGame(), ...(scope === 'all' ? freshLifetime() : {}), mode, ngPlus }
         // New Game+: the whole Ascension Tree comes with you (the curses are the price).
         if (ngPlus > 0) Object.assign(fresh, { skills: s.skills, skillPoints: s.skillPoints })
+        // A new Roguelike run goes straight to its draft.
+        if (mode === 'rogue') Object.assign(fresh, rogueStart({ ...s, ...fresh }, Date.now()))
         get().replaceSave({ ...s, ...fresh }, ngPlus > 0 ? 'ngplus' : scope === 'all' ? 'reset' : 'newgame')
       },
       /** Start menu "Reset all": a brand-new player (theme, sound, settings and speedrun records stay). */
@@ -2051,7 +2086,8 @@ export const useGameStore = create(
           over: id,
           endings,
           run,
-          records: running && s.mode === 'speedrun' && !s.cheats ? recordRun(s.records, run, id) : s.records,
+          records: rogueRecord(running && s.mode === 'speedrun' && !s.cheats ? recordRun(s.records, run, id) : s.records, s, id),
+          ...(s.mode === 'rogue' && s.rogue && !s.rogue.result ? { rogue: { ...s.rogue, result: id === s.rogue.target ? 'win' : 'loss', ending: id } } : {}),
           ads: [],
           modal: null,
           captcha: null,
@@ -2423,6 +2459,7 @@ export const useGameStore = create(
         daily: s.daily,
         dailyDone: s.dailyDone,
         snailArrived: s.snailArrived,
+        rogue: s.rogue,
         crypto: s.crypto,
         forge: s.forge,
         nas: s.nas,
