@@ -35,6 +35,8 @@
   const GAME_THEME_KEY = 'translatr-theme' // the game's pick, used until you choose one here
   const GAME_SAVE_KEY = 'translatr-save' // same site, so the homepage can read the game's save
   const BOOTED_KEY = 'nikstilos-booted'
+  // nikstil.com/?embed=messenger: just that app, filling the page (TRANSLATR™'s Messenger bubble).
+  const embedApp = new URLSearchParams(location.search).get('embed')
 
   const APPS = {
     pc: { title: 'System Properties', icon: 'pc', width: 420, init: initPc },
@@ -352,11 +354,15 @@
     const app = APPS[id]
     if (!app) return
     const existing = open.get(id)
-    if (existing) return restore(existing)
+    if (existing) {
+      restore(existing)
+      return existing
+    }
     const content = document.getElementById(`app-${id}`).content.cloneNode(true)
     const win = makeWindow({ id, title: app.title, icon: app.icon, width: app.width, content })
     const cleanup = app.init?.(win.el, win) // an app can hand back what to do when it closes
     if (typeof cleanup === 'function') win.onClose = cleanup
+    return win
   }
 
   /** A message box: one line of text and an OK button. */
@@ -836,7 +842,17 @@
       const saved = storage.get(THEME_KEY) || storage.get(GAME_THEME_KEY)
       const fallback = THEMES.some((t) => t.id === site.defaultTheme) ? site.defaultTheme : 'aero'
       applyTheme(THEMES.some((t) => t.id === saved) ? saved : fallback, false)
-      online?.start()
+      const onlineReady = Promise.resolve(online?.start()).catch(() => {})
+      if (APPS[embedApp]) {
+        const root = document.documentElement
+        root.classList.add('embed-app', 'booted')
+        // (After the online check, so the app knows whether it's switched on.)
+        onlineReady.then(() => {
+          const win = openApp(embedApp)
+          win.el.classList.add('is-embedded', 'is-max')
+        })
+        return
+      }
       runBoot(() => {
         // nikstil.com/#translatr opens that window straight away (handy for links).
         const deep = location.hash.slice(1)

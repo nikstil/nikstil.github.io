@@ -423,11 +423,94 @@
     }
   }
 
+  // ================= Messenger bubble =================
+  // A chat bubble in the bottom-right corner. It opens nikstil Messenger (nikstil.com/?embed=messenger)
+  // in a little panel over the game, with an unread count, and a full-screen button.
+  function messengerBubble() {
+    const style = document.createElement('style')
+    style.textContent = `
+      #nk-msgr-bubble { position: fixed; right: 14px; bottom: 58px; z-index: 2147483000; width: 52px; height: 52px; border: 2px solid #fff; border-radius: 50%; display: grid; place-items: center; font-size: 24px; line-height: 1; cursor: pointer; color: #fff; background: radial-gradient(circle at 35% 30%, #6fc3ff, #1f6fd1 70%); box-shadow: 0 6px 18px rgba(0,0,0,.35); transition: transform .15s; }
+      #nk-msgr-bubble:hover { transform: scale(1.07); }
+      #nk-msgr-bubble:focus-visible { outline: 3px solid #ffd24a; outline-offset: 2px; }
+      #nk-msgr-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; padding: 0 5px; border-radius: 10px; font: 700 11px/20px "Segoe UI", system-ui, sans-serif; text-align: center; color: #fff; background: #d93025; box-shadow: 0 0 0 2px #fff; }
+      #nk-msgr-panel { position: fixed; right: 14px; bottom: 120px; z-index: 2147483000; display: flex; flex-direction: column; width: min(420px, calc(100vw - 28px)); height: min(600px, calc(100vh - 140px)); border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 16px 48px rgba(0,0,0,.45); font: 13px "Segoe UI", system-ui, sans-serif; }
+      #nk-msgr-panel[hidden], #nk-msgr-badge[hidden] { display: none; }
+      #nk-msgr-panel:fullscreen { width: 100%; height: 100%; border-radius: 0; }
+      #nk-msgr-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; color: #fff; background: linear-gradient(#3b8de0, #1f6fd1); font-weight: 600; }
+      #nk-msgr-head span { flex: 1; }
+      #nk-msgr-head button { width: 28px; height: 26px; border: 0; border-radius: 5px; color: #fff; background: rgba(255,255,255,.15); font-size: 14px; cursor: pointer; }
+      #nk-msgr-head button:hover { background: rgba(255,255,255,.3); }
+      #nk-msgr-panel iframe { flex: 1; width: 100%; border: 0; }
+      html.shooter-open :is(#nk-msgr-bubble, #nk-msgr-panel) { display: none; }
+    `
+    document.head.append(style)
+    const bubble = document.createElement('button')
+    bubble.id = 'nk-msgr-bubble'
+    bubble.title = 'nikstil Messenger'
+    bubble.setAttribute('aria-label', 'nikstil Messenger')
+    bubble.innerHTML = '💬<span id="nk-msgr-badge" hidden></span>'
+    const panel = document.createElement('section')
+    panel.id = 'nk-msgr-panel'
+    panel.hidden = true
+    panel.setAttribute('aria-label', 'nikstil Messenger')
+    panel.innerHTML = '<div id="nk-msgr-head"><span>💬 nikstil Messenger</span><button class="nk-full" title="Full screen" aria-label="Full screen">⛶</button><button class="nk-close" title="Close" aria-label="Close">✕</button></div>'
+    document.body.append(bubble, panel)
+    const badge = bubble.querySelector('#nk-msgr-badge')
+    let unread = 0
+    const showBadge = () => {
+      badge.hidden = !unread
+      badge.textContent = unread > 99 ? '99+' : String(unread)
+      bubble.setAttribute('aria-label', unread ? `nikstil Messenger (${unread} unread)` : 'nikstil Messenger')
+    }
+    function toggle(open = panel.hidden) {
+      panel.hidden = !open
+      if (!open) return
+      if (!panel.querySelector('iframe')) {
+        const frame = document.createElement('iframe')
+        frame.src = '/?embed=messenger'
+        frame.title = 'nikstil Messenger'
+        panel.append(frame)
+      }
+      unread = 0 // the Messenger itself shows what's unread from here
+      showBadge()
+    }
+    bubble.addEventListener('click', () => toggle())
+    panel.querySelector('.nk-close').addEventListener('click', () => {
+      if (document.fullscreenElement === panel) document.exitFullscreen?.()
+      toggle(false)
+    })
+    const full = panel.querySelector('.nk-full')
+    full.hidden = !panel.requestFullscreen
+    full.addEventListener('click', () => (document.fullscreenElement === panel ? document.exitFullscreen() : panel.requestFullscreen().catch(() => {})))
+    document.addEventListener('fullscreenchange', () => {
+      const on = document.fullscreenElement === panel
+      full.textContent = on ? '🗗' : '⛶'
+      full.title = on ? 'Exit full screen' : 'Full screen'
+    })
+    // Unread messages while the panel is closed (only when signed in on this device).
+    online.on('message', (m) => {
+      if (!panel.hidden || m.sender === online.profile?.id) return
+      unread += 1
+      showBadge()
+    })
+    online.on('auth', async (me) => {
+      unread = 0
+      if (me) {
+        try {
+          unread = (await online.conversations()).reduce((n, c) => n + Number(c.unread || 0), 0)
+        } catch {}
+      }
+      showBadge()
+    })
+    if (online.hasStoredSession()) online.me().catch(() => {})
+  }
+
   // ================= Start =================
   function start() {
     online = window.nikstilOnline
     online.configured.then((on) => {
       if (!on) return
+      messengerBubble()
       check()
       setInterval(check, 750)
       setInterval(watchEnding, 500)
