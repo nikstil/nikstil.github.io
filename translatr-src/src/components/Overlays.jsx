@@ -30,7 +30,7 @@ const TONES = {
 export function Toasts() {
   const toasts = useGameStore((s) => s.toasts)
   return (
-    <div className="pointer-events-none fixed right-[calc(1rem_+_var(--arcade-room,0px))] top-24 z-[400] flex w-80 flex-col gap-2">
+    <div className="pointer-events-none fixed right-[calc(1rem_+_var(--arcade-room,0px))] top-3 z-[400] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2 lg:top-[calc(var(--header-h,5rem)_+_0.5rem)]">
       {toasts.map((t) => {
         const tone = TONES[t.tone] ?? TONES.info
         return (
@@ -424,12 +424,12 @@ function TrophyButton() {
 }
 
 /** Taskbar button that shows/hides a docked widget; lit like a running Win7 app while open. */
-function WidgetToggle({ id, icon, label }) {
+function WidgetToggle({ id, icon, label, fidget = false }) {
   const open = useGameStore((s) => !s.layout[id].collapsed)
   const setDock = useGameStore((s) => s.setDock)
   return (
     <button
-      className={`task-btn text-xl ${open ? 'task-btn-on' : ''}`}
+      className={`task-btn text-xl ${open ? 'task-btn-on' : ''} ${fidget && !open ? 'animate-wiggle' : ''}`}
       title={`${open ? 'Minimize' : 'Show'} ${label}`}
       aria-pressed={open}
       onClick={() => setDock(id, { collapsed: open })}
@@ -563,6 +563,7 @@ function TaskOverflow({ ids }) {
 /** Windows 7-style taskbar: Start orb, pinned windows, tips ticker, tray (music, sound, volume, clock). */
 export function Taskbar() {
   const minute = useGameStore((s) => Math.floor(s.clock / 60_000)) // the clock shows hours and minutes
+  const catMood = useCatMood()
   const audio = useGameStore((s) => s.audio)
   const setAudio = useGameStore((s) => s.setAudio)
   const toggleDesktop = useGameStore((s) => s.toggleDesktop)
@@ -607,7 +608,7 @@ export function Taskbar() {
       </div>
       <div className="tray-sep flex items-center gap-0.5 pl-1">
         <WidgetToggle id="doom" icon="🔥" label="DoomFeed™" />
-        <WidgetToggle id="cat" icon={<CatToggleIcon />} label="Sir Scratchington" />
+        <WidgetToggle id="cat" icon={<CatToggleIcon />} label="Sir Scratchington" fidget={catMood !== 'happy'} />
       </div>
 
       <div ref={areaRef} className="tray-sep flex h-full min-w-0 flex-1 items-center gap-1 pl-1">
@@ -639,6 +640,8 @@ export function Taskbar() {
         <button className="task-btn px-2 text-sm max-sm:hidden" title="Volume mixer" onClick={() => setVolumeOpen((o) => !o)}>
           🎚️
         </button>
+        {/* nikstil Messenger's button goes here (online/translatr-bridge.js), when online play is on */}
+        <span id="nk-tray-slot" className="flex h-full items-center empty:hidden" />
         <TrophyButton />
         {volumeOpen && (
           <div className="modal-card anim-modal-in absolute bottom-12 right-10 w-64 p-3 text-ink">
@@ -728,7 +731,7 @@ export function DebugPanel() {
     ['×1000 money', () => useGameStore.setState((st) => ({ money: Math.max(1000, st.money * 1000) }))],
     ['underwater', () => useGameStore.setState((st) => ({ loan: { principal: 1e3, debt: st.money + 5e3, lastAccrual: Date.now() } }))],
     ['grass ×49', () => useGameStore.setState({ grassStreak: 49 })],
-    ['pity 1990', () => useGameStore.setState({ pity: 1990 })],
+    ['pity 490', () => useGameStore.setState({ pity: 490 })],
     ['play +1h', () => useGameStore.setState((st) => ({ stats: { ...st.stats, playSeconds: (st.stats.playSeconds ?? 0) + 3600 } }))],
     ['contract now', () => useGameStore.setState({ nextContractAt: 0 })],
     ['dark/light', () => s.setSettings({ colorMode: colorMode() === 'dark' ? 'light' : 'dark' })],

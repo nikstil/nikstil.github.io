@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGameStore } from '../store/useGameStore'
+import { ownsExpansion } from '../data/expansions'
 import { useViewport } from '../lib/useViewport'
-import { arcadeInset, clamp, dockArea, dockTarget, placeOnEdge, scrollbarWidth, snapTarget } from '../lib/dock'
+import { arcadeInset, clamp, dockArea, dockTarget, NAS_PEEK_W, placeOnEdge, scrollbarWidth, snapTarget } from '../lib/dock'
 
 const DRAG_THRESHOLD = 5 // px of movement before a press becomes a drag (so clicks still work)
 const SNAP_PX = 48 // floating widgets dock only when dragged (by the pointer) this close to an edge
@@ -25,7 +26,11 @@ export default function Docked({ id, sizeFor, gap = 0, z = 56, floating = false,
   const vp = useViewport()
   const arcadeOpen = useGameStore((s) => !!s.arcade)
   const arcadeRoom = arcadeInset(vp, arcadeOpen)
-  const area = dockArea(vp, arcadeRoom && arcadeRoom + scrollbarWidth()) // widgets move out of the Arcade sidebar's way
+  const nasRoom = useGameStore((s) => (ownsExpansion(s, 'nas') && !s.nasUi?.open ? NAS_PEEK_W : 0))
+  // Widgets move out of the Arcade sidebar's way, and the NAS's
+  const area = dockArea(vp, (arcadeRoom && arcadeRoom + scrollbarWidth()) + nasRoom)
+  // Below the lg breakpoint the header isn't sticky: at the top of the page, keep clear of it.
+  const headerH = useGameStore((s) => s.headerH ?? 0)
   const ref = useRef(null)
   const gesture = useRef(null)
   const suppressClick = useRef(false)
@@ -50,6 +55,8 @@ export default function Docked({ id, sizeFor, gap = 0, z = 56, floating = false,
   const sizeOf = useCallback((edge) => (sizeFor ? sizeFor(edge, vp) : (measured ?? { w: 0, h: 0 })), [sizeFor, vp, measured])
   const ready = !!sizeFor || !!measured
   const size = sizeOf(dock.edge)
+  // (as far as the widget still fits above the taskbar)
+  if (vp.w < 1024) area.top = Math.max(0, Math.min(headerH, area.bottom - size.h))
   const pos = drag ?? placeOnEdge(dock, size, area, gap)
 
   // Enable position transitions one frame after the first real placement (no slide-in on load).

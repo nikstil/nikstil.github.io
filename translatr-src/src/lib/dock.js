@@ -5,6 +5,8 @@
 // travel across and down the screen.
 
 export const TASKBAR_H = 44 // the taskbar owns the bottom strip of the screen
+export const SNAIL_LANE = 24 // and the snail crawls along a strip just above it, where no widget docks
+export const NAS_PEEK_W = 14 // the HomeLab NAS peeks out of the right edge; widgets dock left of it
 export const EDGES = ['left', 'right', 'top', 'bottom']
 export const isHorizontalEdge = (edge) => edge === 'top' || edge === 'bottom'
 
@@ -20,7 +22,7 @@ export const arcadeInset = (vp, open) => (open && vp.w - ARCADE_WIDTH >= ARCADE_
 export const scrollbarWidth = () => (typeof document === 'undefined' ? 0 : Math.max(0, window.innerWidth - document.documentElement.clientWidth))
 
 /** The part of the viewport widgets may occupy (`rightInset`: room taken by the Arcade sidebar). */
-export const dockArea = (vp, rightInset = 0) => ({ left: 0, top: 0, right: vp.w - rightInset, bottom: vp.h - TASKBAR_H })
+export const dockArea = (vp, rightInset = 0) => ({ left: 0, top: 0, right: vp.w - rightInset, bottom: vp.h - TASKBAR_H - SNAIL_LANE })
 
 /** Top-left corner of a widget of `size` docked at `dock` inside `area`. */
 export function placeOnEdge({ edge, at, fx, fy }, size, area, gap = 0) {

@@ -472,14 +472,19 @@
   }
 
   // ================= Messenger bubble =================
-  // A chat bubble in the bottom-right corner. It opens nikstil Messenger (nikstil.com/?embed=messenger)
-  // in a little panel over the game, with an unread count, and a full-screen button.
+  // A chat button in the bottom-right corner: in the game's taskbar tray (#nk-tray-slot) so it never
+  // covers anything, or floating if the page has no tray. It opens nikstil Messenger
+  // (nikstil.com/?embed=messenger) in a little panel over the game, with an unread count, and a
+  // full-screen button.
   function messengerBubble() {
     const style = document.createElement('style')
     style.textContent = `
       #nk-msgr-bubble { position: fixed; right: 14px; bottom: 58px; z-index: 2147483000; width: 52px; height: 52px; border: 2px solid #fff; border-radius: 50%; display: grid; place-items: center; font-size: 24px; line-height: 1; cursor: pointer; color: #fff; background: radial-gradient(circle at 35% 30%, #6fc3ff, #1f6fd1 70%); box-shadow: 0 6px 18px rgba(0,0,0,.35); transition: transform .15s; }
       #nk-msgr-bubble:hover { transform: scale(1.07); }
       #nk-msgr-bubble:focus-visible { outline: 3px solid #ffd24a; outline-offset: 2px; }
+      #nk-msgr-bubble.in-tray { position: relative; right: auto; bottom: auto; z-index: auto; width: auto; height: 100%; min-width: 34px; padding: 0 8px; border: 0; border-radius: 0; font-size: 18px; color: inherit; background: none; box-shadow: none; }
+      #nk-msgr-bubble.in-tray:hover { transform: none; }
+      #nk-msgr-bubble.in-tray #nk-msgr-badge { top: 2px; right: 0; min-width: 16px; padding: 0 4px; font-size: 10px; line-height: 16px; }
       #nk-msgr-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; padding: 0 5px; border-radius: 10px; font: 700 11px/20px "Segoe UI", system-ui, sans-serif; text-align: center; color: #fff; background: #d93025; box-shadow: 0 0 0 2px #fff; }
       #nk-msgr-panel { position: fixed; right: 14px; bottom: 120px; z-index: 2147483000; display: flex; flex-direction: column; width: min(420px, calc(100vw - 28px)); height: min(600px, calc(100vh - 140px)); border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 16px 48px rgba(0,0,0,.45); font: 13px "Segoe UI", system-ui, sans-serif; }
       #nk-msgr-panel[hidden], #nk-msgr-badge[hidden] { display: none; }
@@ -503,6 +508,17 @@
     panel.setAttribute('aria-label', 'nikstil Messenger')
     panel.innerHTML = '<div id="nk-msgr-head"><span>💬 nikstil Messenger</span><button class="nk-full" title="Full screen" aria-label="Full screen">⛶</button><button class="nk-close" title="Close" aria-label="Close">✕</button></div>'
     document.body.append(bubble, panel)
+    // Into the taskbar tray when there is one (and back in if the taskbar is redrawn).
+    const dock = () => {
+      const slot = document.getElementById('nk-tray-slot')
+      if (slot && bubble.parentElement !== slot) {
+        slot.append(bubble)
+        bubble.className = 'in-tray task-btn'
+        panel.style.bottom = '52px'
+      }
+    }
+    dock()
+    new MutationObserver(dock).observe(document.body, { childList: true, subtree: true })
     const badge = bubble.querySelector('#nk-msgr-badge')
     let unread = 0
     const showBadge = () => {
