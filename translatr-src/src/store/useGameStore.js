@@ -358,6 +358,7 @@ const freshGame = () => ({
   event: null, // the running limited-time event: { id, startedAt, endsAt }
   nextEventAt: null,
   lastEventId: null,
+  snailArrived: false, // the snail crossed the screen before any ending: the secret choice is on offer
 })
 const PHANTOM_START = { start: 3, store: 7 }
 
@@ -1878,7 +1879,7 @@ export const useGameStore = create(
         if (s.over || s.resetting || !ENDING_BY_ID[id]) return
         const now = Date.now()
         const endings = { ...s.endings }
-        for (const e of id === 'secret' ? ['secret', 'buy'] : [id]) endings[e] ??= now
+        for (const e of id === 'secret' ? ['secret', 'buy'] : id === 'snail' ? ['snail', 'buy'] : [id]) endings[e] ??= now
         const running = !!s.run?.startedAt && !s.run.endedAt
         const run = running ? { ...s.run, endedAt: now, ending: id, splits: { ...s.run.splits, end: now - s.run.startedAt } } : s.run
         clearTimeout(checkoutTimer)
@@ -1919,12 +1920,35 @@ export const useGameStore = create(
         set({ over: null, lastTickAt: Date.now() })
         s.toast('▶ Back to work. The ads missed you.', 'info')
       },
+      /** The snail made it across the screen (before any ending): the secret choice unlocks. */
+      arriveSnail: () => {
+        const s = get()
+        if (s.snailArrived || s.over || s.run?.endedAt) return false
+        set({ snailArrived: true, stats: { ...s.stats, snailArrivals: (s.stats.snailArrivals ?? 0) + 1 } })
+        s.toast('🐌 The snail made it. It has waited a very long time for this. Buy TRANSLATR™ and see.', 'good')
+        return true
+      },
       /** The Buy ending: one quintillion dollars. Without a single microtransaction, it's the secret one. */
       buyCompany: () => {
         const s = get()
         if (s.over) return
         const price = getCompanyPrice(s)
         if (s.money < price) return s.toast(`TRANSLATR™ Inc. costs ${fmtMoney(price)}. You have ${fmtMoney(s.money)}. The board laughs.`, 'bad')
+        // The snail crossed the screen: its ending is offered next to the usual one (or two).
+        if (s.snailArrived && !s.cheats) {
+          const usual = (s.stats.purchases ?? 0) === 0 ? 'secret' : 'buy'
+          return s.showModal({
+            tone: 'warn',
+            sfx: 'printer',
+            title: '🏢 Sign here, here and… is that a snail?',
+            body: `The paperwork for TRANSLATR™ Inc. (${fmtMoney(price)}) is ready. Something small and slimy has been waiting by the pen for hours.`,
+            choices: [
+              { label: 'Buy the company', className: 'btn-gold', onClick: () => get().acquire(usual) },
+              ...(corporateSlaveReady(s) ? [{ label: 'Take the job instead', className: 'btn-ghost', onClick: () => get().acquire('slave') }] : []),
+              { label: '🐌 ive waited 4 no 5000 years for this', note: 'Secret ending', className: 'btn-toxic', onClick: () => get().acquire('snail') },
+            ],
+          })
+        }
         // Not One Cent is for honest games: no microtransactions and no cheats.
         if ((s.stats.purchases ?? 0) === 0 && !s.cheats) return get().acquire('secret')
         // Bought everything, lived on ads: the board has a counter-offer (the Corporate Slave ending).
@@ -2234,6 +2258,7 @@ export const useGameStore = create(
         ngPlus: s.ngPlus,
         daily: s.daily,
         dailyDone: s.dailyDone,
+        snailArrived: s.snailArrived,
       }),
       merge: (persisted, current) => {
         const merged = {

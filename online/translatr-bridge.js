@@ -21,6 +21,7 @@
     shooter: 'Knee-Deep in the Ads',
     deleted: 'Account Deleted',
     secret: 'Not One Cent',
+    snail: 'ive waited 4 no 5000 years for this',
   }
 
   const read = (key) => {
@@ -190,7 +191,7 @@
   // When a speedrun ends, the results page gets two live boards: this ending's on the left and
   // Any% on the right. Where the screen is too narrow for both beside the results (phones), a
   // button at the top opens them one at a time.
-  const ICONS = { buy: '🏢', slave: '👔', bankrupt: '💀', grass: '🌱', taught: '✍️', shooter: '👹', deleted: '⏻', secret: '🕊️' }
+  const ICONS = { buy: '🏢', slave: '👔', bankrupt: '💀', grass: '🌱', taught: '✍️', shooter: '👹', deleted: '⏻', secret: '🕊️', snail: '🐌' }
   const TOP = 10
   const STYLE = `
 .tro-boards { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font: 13px/1.35 "Segoe UI", system-ui, -apple-system, sans-serif; color: #fff; --w: 300px; --gap: 20px; }

@@ -588,6 +588,15 @@ export const PREMIUM_ITEMS = [
     tag: 'COSMETIC',
   },
   {
+    id: 'dog_nap',
+    name: 'CEO Nap Time™',
+    price: '$9.99',
+    emoji: '💤',
+    desc: 'Puts The Founder & CEO to sleep. Hovering over him no longer makes him bark. Pay to win, finally.',
+    oneTime: true,
+    tag: 'PAY TO WIN',
+  },
+  {
     id: 'remove_ads',
     name: 'Remove Ads',
     price: '$2.99',

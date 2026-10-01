@@ -61,14 +61,30 @@ export function BigModal() {
   const accent = { bad: '#d32f2f', warn: '#8a4fc4', good: '#c07a00' }[shown?.tone] ?? '#1a73c4'
 
   return (
-    <Modal open={!!modal} z={300} onBackdrop={modal?.onConfirm ? undefined : closeModal}>
+    <Modal open={!!modal} z={300} onBackdrop={modal?.onConfirm || modal?.choices ? undefined : closeModal}>
       {shown && (
         <div className="modal-card w-[min(440px,92vw)] p-7 text-center" style={{ '--accent': accent }}>
           <h2 className="text-2xl font-light" style={{ color: accent }}>
             {shown.title}
           </h2>
           <p className="mt-3 leading-relaxed text-ink/70">{shown.body}</p>
-          {shown.onConfirm ? (
+          {shown.choices ? (
+            <div className="mt-6 grid gap-2.5">
+              {shown.choices.map((c) => (
+                <button
+                  key={c.label}
+                  onClick={() => {
+                    closeModal()
+                    c.onClick()
+                  }}
+                  className={`btn flex-col ${c.className ?? 'btn-ghost'}`}
+                >
+                  {c.note && <span className="text-[0.625rem] font-bold uppercase tracking-[0.18em] opacity-80">{c.note}</span>}
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          ) : shown.onConfirm ? (
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 onClick={() => {

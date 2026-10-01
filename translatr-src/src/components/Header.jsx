@@ -4,6 +4,7 @@ import { useAnimatedNumber } from '../lib/hooks'
 import { fmt, money } from '../lib/format'
 import { ACHIEVEMENTS } from '../data/achievements'
 import { cursesFor } from '../data/runMods'
+import { CeoDog, Speedometer } from './Toys'
 
 /** The rolling wallet number. Its own component: the roll re-renders this, not the whole command bar. */
 function WalletValue({ cash }) {
@@ -52,6 +53,7 @@ export default function Header() {
             </h1>
             <div className="brand-sub text-[0.6875rem]">Home Premium · Service Pack 7 · Genuine Advantage™</div>
           </div>
+          <CeoDog />
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -99,6 +101,7 @@ export default function Header() {
           </button>
           <Stat label="Ads endured" value={fmt(adsSeen)} className="text-ink/80" />
           {saveFilesLost > 0 && <Stat label="Saves lost" value={`☠ ${saveFilesLost}`} className="text-blood" />}
+          <Speedometer />
         </div>
       </div>
     </header>

@@ -15,6 +15,7 @@
     ['shooter', '👹', 'Knee-Deep in the Ads'],
     ['deleted', '⏻', 'Account Deleted'],
     ['secret', '🕊️', 'Not One Cent'],
+    ['snail', '🐌', 'ive waited 4 no 5000 years for this'],
   ]
   const ending = (id) => ENDINGS.find((e) => e[0] === id)
 

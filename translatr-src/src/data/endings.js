@@ -67,6 +67,17 @@ export const ENDINGS = [
     hideHint: true,
   },
   {
+    id: 'snail',
+    icon: '🐌',
+    title: 'ive waited 4 no 5000 years for this',
+    how: 'Let the snail crawl all the way across the screen before you reach any ending, then buy TRANSLATR™ and pick the snail.',
+    hint: 'Something small is heading somewhere at five pixels a minute. Don’t end the game before it gets there.',
+    color: '#8bc34a',
+    secret: true,
+    tag: 'Secret ending',
+    hideHint: true,
+  },
+  {
     id: 'secret',
     icon: '🕊️',
     title: 'Not One Cent',

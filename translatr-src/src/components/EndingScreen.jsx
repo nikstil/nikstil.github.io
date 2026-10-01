@@ -10,8 +10,8 @@ import { sfx } from '../lib/audio/engine'
 
 const LINE_MS = 2800 // story lines appear one at a time (click to hurry them)
 const DELETE_STEP_MS = 700
-const SOUND = { buy: 'jackpot', slave: 'printer', secret: 'ascend', bankrupt: 'hiss', grass: 'purr', taught: 'levelup', shooter: 'horn', deleted: 'shutdown' }
-const PARTICLES = { slave: ['📄', '💼', '📎'], shooter: ['💥', '👹', '🔥'], buy: ['💰', '💸'], secret: ['🕊️', '✨'], bankrupt: ['💸', '🧾'], grass: ['🌱', '✨'], taught: ['ibus', 'um', 'ae', 'us', 'ex', '✍️'], deleted: [] }
+const SOUND = { snail: 'fanfare', buy: 'jackpot', slave: 'printer', secret: 'ascend', bankrupt: 'hiss', grass: 'purr', taught: 'levelup', shooter: 'horn', deleted: 'shutdown' }
+const PARTICLES = { snail: ['🐌', '🍃', '✨'], slave: ['📄', '💼', '📎'], shooter: ['💥', '👹', '🔥'], buy: ['💰', '💸'], secret: ['🕊️', '✨'], bankrupt: ['💸', '🧾'], grass: ['🌱', '✨'], taught: ['ibus', 'um', 'ae', 'us', 'ex', '✍️'], deleted: [] }
 
 /** Plays when the store's `over` is set: story → credits → summary. Loaded on demand. */
 export default function EndingScreen() {

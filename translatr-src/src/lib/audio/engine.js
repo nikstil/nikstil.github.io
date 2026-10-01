@@ -412,6 +412,25 @@ const SFX = {
     },
   },
   denied: { gap: 200, play: (t) => { tone(t, { f: 110, type: 'square', dur: 0.32, gain: 0.06, lp: 900 }); tone(t, { f: 116, type: 'square', dur: 0.32, gain: 0.05, lp: 900 }) } },
+  // The CEO Dog: a low-bit "wuf wuf" (square waves stepped like an old sound chip).
+  bark: {
+    gap: 600,
+    play: (t) => {
+      for (const [at, f] of [[0, 330], [0.19, 300]]) {
+        for (let i = 0; i < 5; i++) tone(t + at + i * 0.018, { f: f - i * 38, type: 'square', dur: 0.03, gain: 0.07, lp: 1400 })
+        noiseHit(t + at, { dur: 0.06, gain: 0.05, f: 700, q: 0.8 })
+      }
+    },
+  },
+  // The snail arrives: a tiny 8-bit fanfare.
+  fanfare: {
+    gap: 2000,
+    play: (t) => arp(t, [523, 659, 784, 1046, 784, 1046, 1319], 0.11, (tt, f, i) => tone(tt, { f, type: 'square', dur: i === 6 ? 0.5 : 0.1, gain: 0.05, lp: 3000 })),
+  },
+  // The paperclip has something to say.
+  boing: { gap: 400, play: (t) => tone(t, { f: 260, f2: 620, type: 'triangle', dur: 0.16, gain: 0.07, glide: 0.12 }) },
+  // A fly landing.
+  buzz: { gap: 800, play: (t) => tone(t, { f: 180, f2: 140, type: 'sawtooth', dur: 0.5, gain: 0.025, lp: 900, glide: 0.5 }) },
 }
 
 const lastPlayed = {}

@@ -88,6 +88,7 @@ export const ACHIEVEMENTS = [
   { id: 'arcade_rat', icon: '🕹️', title: 'Arcade Rat', desc: 'Play every game in the Arcade.', check: (s) => ['mines', 'solitaire', 'snake'].every((g) => (s.stats.arcadePlayed ?? []).includes(g)) && stat(s, 'shooterRuns') >= 1 },
   { id: 'unskippable', icon: '📺', title: 'Unskippable', desc: 'Watch 10 ads in DOOMSCROLL.EXE (by getting hit).', check: (s) => stat(s, 'shooterAds') >= 10 },
   { id: 'ending_deleted', icon: '🗑️', title: 'Account Deleted', desc: 'Find the off switch. Use it.', check: (s) => ending(s, 'deleted') },
+  { id: 'ending_snail', icon: '🐌', title: '5000 Years', desc: 'Let the snail finish its journey, then follow it.', check: (s) => ending(s, 'snail') },
   { id: 'ending_secret', icon: '🕊️', title: 'Not One Cent', desc: 'Buy TRANSLATR™ without a single microtransaction.', check: (s) => ending(s, 'secret') },
   { id: 'all_endings', icon: '🏁', title: 'Completionist (Derogatory)', desc: `See all ${ENDINGS.length} endings.`, check: (s) => ENDINGS.every((e) => ending(s, e.id)) },
   // ---- Speedrun ----

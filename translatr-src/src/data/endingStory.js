@@ -18,6 +18,17 @@ export const ENDING_STORY = {
       'Congratulations. You have become the thing you swore to destroy.',
     ],
   },
+  snail: {
+    lines: [
+      'It started on top of the Start button. Five pixels a minute. You didn’t even notice at first.',
+      'Hours of ads, loot boxes and a cat with a grudge. It just kept going.',
+      'It reaches the edge of the screen, turns around and looks at you. Respect.',
+      'You buy TRANSLATR™ and hand the whole company to a snail. The board doesn’t notice for a week.',
+      'New company policy: every page loads at five pixels a minute. Engagement is down 99%. Everyone’s sleeping better.',
+      'The snail’s first all-hands is just it sitting on the stage for forty minutes. Standing ovation.',
+      'Secret ending. You didn’t speedrun anything. You let something take its time.',
+    ],
+  },
   secret: {
     lines: [
       'The wire transfer clears. One quintillion dollars. Earned, not bought.',
