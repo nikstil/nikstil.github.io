@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Modal from './Modal'
+import { TRACKS } from '../lib/audio/tracks'
 import { useGameStore } from '../store/useGameStore'
 import { TEXT_SIZES, graphicsMode, weakHardware } from '../lib/settings'
 import { LANGUAGES } from '../lib/language'
@@ -140,6 +141,16 @@ function PanelBody({ onClose }) {
               {audio.sfx ? '🔊 Sound effects on' : '🔇 Sound effects off'}
             </button>
           </div>
+          <label className="mt-3 flex items-center gap-3 text-[0.75rem] text-ink/60">
+            Background music
+            <select className="input max-w-[16rem] py-1 text-[0.8125rem]" value={audio.track ?? 'hold'} onChange={(e) => setAudio({ track: e.target.value, music: true })}>
+              {TRACKS.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="mt-3 flex items-center gap-3 text-[0.75rem] text-ink/60">
             Master volume
             <input

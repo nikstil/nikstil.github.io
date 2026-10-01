@@ -8,8 +8,8 @@ import { focusWindow, setRestoreOrigin } from '../lib/windowFx'
 import { ENDINGS } from '../data/endings'
 import { mailFolderOf } from '../data/mail'
 import { TASKBAR_H } from '../lib/dock'
-import { onMusicStatus, sfx } from '../lib/audio/engine'
-import { TRACK_TITLE } from '../lib/audio/music'
+import { currentTrackTitle, onMusicStatus, sfx } from '../lib/audio/engine'
+import { TRACKS } from '../lib/audio/tracks'
 import { THEMES } from '../data/themes'
 import { revealChange, switchTheme } from '../lib/theme'
 import { colorMode, motionReduced } from '../lib/settings'
@@ -593,7 +593,7 @@ export function Taskbar() {
   const now = new Date(minute * 60_000)
   const playing = musicStatus === 'playing' && audio.music
   const musicLabel =
-    musicStatus === 'rendering' ? 'Composing hold music…' : musicStatus === 'playing' ? TRACK_TITLE : 'Click anywhere to start the hold music'
+    musicStatus === 'rendering' ? 'Composing the music…' : musicStatus === 'playing' ? currentTrackTitle() : 'Click anywhere to start the music'
 
   return (
     // Above floating ads (≤190) so the Start menu stays usable; below the Trap Ad and modals.
@@ -651,9 +651,22 @@ export function Taskbar() {
             <VolumeRow label="Master" value={audio.volume} onChange={(v) => setAudio({ volume: v })} />
             <VolumeRow label="Music" value={audio.musicVolume ?? 1} muted={!audio.music} onMute={() => setAudio({ music: !audio.music })} onChange={(v) => setAudio({ musicVolume: v })} />
             <VolumeRow label="SFX" value={audio.sfxVolume ?? 1} muted={!audio.sfx} onMute={() => setAudio({ sfx: !audio.sfx })} onChange={(v) => setAudio({ sfxVolume: v })} />
-            <div className="mt-2 truncate border-t border-ink/10 pt-2 text-[0.6875rem] text-ink/60" title={musicLabel}>
-              {playing ? '♪ ' : ''}
-              {musicLabel}
+            <div className="mt-2 flex items-center gap-2 border-t border-ink/10 pt-2 text-[0.6875rem] text-ink/60">
+              <span className="min-w-0 flex-1 truncate" title={musicLabel}>
+                {playing ? '♪ ' : ''}
+                {musicLabel}
+              </span>
+              <button
+                className="btn btn-ghost btn-sm shrink-0 px-2"
+                title="Next track"
+                aria-label="Next track"
+                onClick={() => {
+                  const i = TRACKS.findIndex((t) => t.id === (audio.track ?? 'hold'))
+                  setAudio({ track: TRACKS[(i + 1) % TRACKS.length].id, music: true })
+                }}
+              >
+                ⏭
+              </button>
             </div>
           </div>
         )}

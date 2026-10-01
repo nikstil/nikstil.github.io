@@ -4,7 +4,7 @@
 // Browsers only allow audio after a user gesture, so nothing plays until unlockAudio()
 // is called from the first pointer/key event.
 
-import { renderElevatorMusic } from './music'
+import { DEFAULT_TRACK, TRACK_BY_ID } from './tracks'
 
 const MUSIC_LEVEL = 0.4
 
@@ -15,10 +15,11 @@ let musicBus = null
 let musicDuck = null
 let noise = null
 let unlocked = false
-let settings = { music: true, sfx: true, volume: 0.6, musicVolume: 1, sfxVolume: 1 }
+let settings = { music: true, sfx: true, volume: 0.6, musicVolume: 1, sfxVolume: 1, track: DEFAULT_TRACK }
 
-let musicRender = null // Promise<AudioBuffer>, rendered once
+const renders = {} // trackId -> Promise<AudioBuffer>, each rendered once
 let musicSource = null
+let playingTrack = null
 let startingMusic = false
 let status = 'idle' // idle | rendering | ready | playing
 const statusListeners = new Set()
@@ -67,38 +68,61 @@ function applySettings(immediate = false) {
   musicBus.gain.setTargetAtTime(settings.music ? MUSIC_LEVEL * (settings.musicVolume ?? 1) : 0, t, immediate ? 0.001 : 0.35)
 }
 
-/** Start rendering the music early (no gesture needed for offline rendering). */
-export function prepareMusic() {
-  if (!musicRender) {
+const trackId = () => (TRACK_BY_ID[settings.track] ? settings.track : DEFAULT_TRACK)
+/** The title of the track that's playing (or about to). */
+export const currentTrackTitle = () => TRACK_BY_ID[playingTrack ?? trackId()].title
+
+/** Start rendering a track early (no gesture needed for offline rendering). */
+export function prepareMusic(id = trackId()) {
+  if (!renders[id]) {
     setStatus('rendering')
-    musicRender = renderElevatorMusic()
+    renders[id] = TRACK_BY_ID[id]
+      .render()
       .then((buffer) => {
         if (status === 'rendering') setStatus('ready')
         return buffer
       })
       .catch((err) => {
-        console.warn('Hold music failed to render', err)
-        musicRender = null
+        console.warn(`Music (${id}) failed to render`, err)
+        delete renders[id]
         setStatus('idle')
         throw err
       })
   }
-  return musicRender
+  return renders[id]
 }
 
 async function startMusic() {
-  if (musicSource || startingMusic || !ctx) return
+  if (startingMusic || !ctx) return
+  if (musicSource && playingTrack === trackId()) return
   startingMusic = true
   try {
-    const buffer = await prepareMusic()
-    if (musicSource || !ctx) return // re-check after the await
+    const id = trackId()
+    const buffer = await prepareMusic(id)
+    if (!ctx || (musicSource && playingTrack === id)) return // re-check after the await
+    // Switching tracks: a quick fade out of the old one, then the new one.
+    if (musicSource) {
+      const old = musicSource
+      const g = ctx.createGain()
+      try {
+        old.disconnect()
+        old.connect(g).connect(musicBus)
+        g.gain.setValueAtTime(1, ctx.currentTime)
+        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6)
+        old.stop(ctx.currentTime + 0.65)
+      } catch {
+        // already stopped
+      }
+    }
     const src = ctx.createBufferSource()
     src.buffer = buffer
     src.loop = true
     src.connect(musicBus)
     src.start()
     musicSource = src
+    playingTrack = id
     setStatus('playing')
+    if (trackId() !== id) startMusic() // the pick changed while this one was rendering
   } catch {
     /* already logged */
   } finally {

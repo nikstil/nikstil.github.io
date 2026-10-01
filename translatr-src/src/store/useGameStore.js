@@ -921,7 +921,7 @@ export const useGameStore = create(
       ...freshLifetime(),
       // Preferences (survive everything, even "Reset all"): sound (mute flags + master /
       // per-channel volume, 0–1), the site theme, settings and speedrun records.
-      audio: { music: true, sfx: true, volume: 0.6, musicVolume: 1, sfxVolume: 1 },
+      audio: { music: true, sfx: true, volume: 0.6, musicVolume: 1, sfxVolume: 1, track: 'hold' },
       theme: DEFAULT_THEME,
       settings: { ...DEFAULT_SETTINGS },
       records: { runs: 0, best: {}, pbSplits: {}, last: null },
