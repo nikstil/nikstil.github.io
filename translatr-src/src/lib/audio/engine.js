@@ -428,7 +428,7 @@ const SFX = {
     play: (t) => arp(t, [523, 659, 784, 1046, 784, 1046, 1319], 0.11, (tt, f, i) => tone(tt, { f, type: 'square', dur: i === 6 ? 0.5 : 0.1, gain: 0.05, lp: 3000 })),
   },
   // The paperclip has something to say.
-  boing: { gap: 400, play: (t) => tone(t, { f: 260, f2: 620, type: 'triangle', dur: 0.16, gain: 0.07, glide: 0.12 }) },
+  clipsay: { gap: 400, play: (t) => tone(t, { f: 260, f2: 620, type: 'triangle', dur: 0.16, gain: 0.07, glide: 0.12 }) },
   // A fly landing.
   buzz: { gap: 800, play: (t) => tone(t, { f: 180, f2: 140, type: 'sawtooth', dur: 0.5, gain: 0.025, lp: 900, glide: 0.5 }) },
 }

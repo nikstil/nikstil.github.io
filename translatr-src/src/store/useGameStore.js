@@ -42,6 +42,7 @@ import { MAIL, MAIL_BY_ID, NEWSLETTER_EVERY_MS, SPAM, SPAM_EVERY_MS } from '../d
 import { CLIENTS, CONTRACT, CONTRACT_LANGS, PHRASES, normalizePhrase, reputationOf, reviewText, stars } from '../data/contracts'
 import { DAILY_GOAL_BY_ID, dailyFor, dailyStart, seededValue } from '../data/daily'
 import { CHEAT_ACTIONS, CHEAT_CODES, CHEAT_TOGGLES, normalizeCode } from '../data/cheats'
+import { COINS, COIN_BY_ID, CRYPTO_HISTORY, EXPANSIONS, EXPANSION_DROP_CHANCE, FORGE, FORGE_THEME_BY_ID, NAS, NAS_TIERS, freshMarket, ownsExpansion } from '../data/expansions'
 import { REFUSE_EVERY, correctTranslate, gradeSelfTranslation } from '../lib/translator'
 import { makeCaptcha } from '../lib/captcha'
 import { money as fmtMoney } from '../lib/format'
@@ -221,6 +222,9 @@ const freshRun = () => ({
   trash: {}, // name -> count
   items: [], // { uid, itemId } — equippables and relics
   equipped: [], // item uids, max MAX_EQUIPPED
+  crypto: {}, // coinId -> how many you hold
+  forge: { level: 1, stored: 0 }, // Ye Olde Forge: its level and the coffers waiting to be collected
+  nas: { tier: 0 }, // HomeLab NAS: which NAS_TIERS entry
 })
 
 // Everything the Trap Ad wipes.
@@ -246,6 +250,11 @@ const freshSave = () => ({
   cat: { hunger: 100, fun: 100, love: 100 },
   loan: null, // { principal, debt, lastAccrual } — survives Prestige. Debt is forever.
   lockouts: {}, // action -> timestamp the CAPTCHA lockout ends
+  expansions: {}, // expansionId -> true (won from a Platinum Box; buying the DLC also counts)
+  forgeThemes: ['medieval'], // looks bought for the Forge
+  forgeTheme: 'medieval',
+  market: null, // CryptoBro Exchange prices (freshMarket() on first use)
+  nasUi: { open: false, x: null, y: null }, // the NAS: peeking from the right edge, or opened where you put it
   stats: {
     clicks: 0,
     boxesOpened: 0,
@@ -730,6 +739,60 @@ function stepContracts(st, now, fx) {
   return { ...patch, ...r.patch(), contracts: [...contracts, job], nextContractAt: now + randIn(CONTRACT.every, r.rand) }
 }
 
+/** CryptoBro Exchange: every coin moves on its own clock (seeded on a Daily Challenge). */
+function stepCrypto(st, now, fx) {
+  const m = st.market ?? freshMarket(now)
+  let changed = !st.market
+  const prices = { ...m.prices }
+  const history = { ...m.history }
+  const next = { ...m.next }
+  const version = { ...m.version }
+  let holdings = st.crypto
+  const r = streamRand(st, 'crypto')
+  for (const c of COINS) {
+    if (!c.every) continue
+    if (now < (next[c.id] ?? 0)) continue
+    // Catch up (capped: a long break is a few hundred moves, not millions).
+    let moves = Math.min(300, Math.floor((now - next[c.id]) / c.every) + 1)
+    let p = prices[c.id]
+    const h = [...(history[c.id] ?? [])]
+    while (moves-- > 0) {
+      p *= r.rand() < 0.5 ? 1 - c.move : 1 + c.move
+      h.push(p)
+    }
+    next[c.id] = now + c.every
+    if (p < c.floor) {
+      // Rugged. Relaunched as "v2": the old tokens are worth exactly nothing.
+      const lost = holdings[c.id] ?? 0
+      version[c.id] = (version[c.id] ?? 1) + 1
+      p = c.start
+      h.length = 0 // a fresh chart for the fresh coin
+      h.push(p)
+      if (lost) holdings = { ...holdings, [c.id]: 0 }
+      fx.push((api) => api.toast(`🧶 ${c.ticker} collapsed and relaunched as ${c.ticker} v${version[c.id]}.${lost ? ' Your old bags are worth nothing now. Diamond hands!' : ''}`, lost ? 'bad' : 'info'))
+    }
+    prices[c.id] = p
+    history[c.id] = h.slice(-CRYPTO_HISTORY)
+    changed = true
+  }
+  if (!changed) return null
+  return { ...r.patch(), market: { prices, history, next, version }, ...(holdings !== st.crypto ? { crypto: holdings } : {}) }
+}
+
+/** Ye Olde Forge fills its coffers; the HomeLab NAS pays straight into the wallet. */
+function stepExpansions(st, dt) {
+  if (dt <= 0 || st.afk) return null
+  const patch = {}
+  const swing = Math.max(1, getMiningRate(st))
+  if (ownsExpansion(st, 'forge')) patch.forge = { ...st.forge, stored: (st.forge?.stored ?? 0) + FORGE.swingsPerSecond(st.forge?.level ?? 1) * swing * dt }
+  if (ownsExpansion(st, 'nas')) {
+    const earned = NAS_TIERS[st.nas?.tier ?? 0].bays * NAS.swingsPerSecondPerBay * swing * dt
+    patch.money = st.money + earned
+    patch.stats = { ...st.stats, nasEarned: (st.stats.nasEarned ?? 0) + earned }
+  }
+  return Object.keys(patch).length ? patch : null
+}
+
 /** Your best leaderboard rank (it counts even while the leaderboard window is minimized). */
 function stepRank(st) {
   const rank = rankFor(Math.max(st.money, st.stats.peakMoney ?? 0), st.stats.playSeconds ?? 0)
@@ -943,6 +1006,8 @@ export const useGameStore = create(
         run(stepTos, () => stepTos(st, now))
         run(stepFomo, () => stepFomo(st, now))
         run(stepDoom, () => stepDoom(st, dt))
+        run(stepCrypto, () => stepCrypto(st, now, fx))
+        run(stepExpansions, () => stepExpansions(st, dt))
         run(stepTime, () => stepTime(st, dt))
         run(stepEvents, () => stepEvents(st, now, fx))
         run(stepRank, () => stepRank(st))
@@ -1506,6 +1571,95 @@ export const useGameStore = create(
       },
       cancelCaptcha: (id) => set((s) => (s.captcha?.id === id ? { captcha: null } : {})),
 
+      // ================= CryptoBro Exchange =================
+      /** Buys `dollars` worth of a coin at today's price. */
+      buyCrypto: (id, dollars) => {
+        const s = get()
+        const coin = COIN_BY_ID[id]
+        const amount = Math.floor(dollars)
+        if (!coin || !(amount > 0)) return false
+        if (amount > s.money) {
+          s.toast('You can’t buy the dip with money you don’t have. (Vinnie can help.)', 'bad')
+          return false
+        }
+        const market = s.market ?? freshMarket()
+        const qty = amount / market.prices[id]
+        set({
+          market,
+          money: s.money - amount,
+          crypto: { ...s.crypto, [id]: (s.crypto[id] ?? 0) + qty },
+          stats: { ...s.stats, cryptoBought: (s.stats.cryptoBought ?? 0) + amount, cryptoTrades: (s.stats.cryptoTrades ?? 0) + 1 },
+        })
+        return true
+      },
+      /** Sells a share (0–1) of what you hold of a coin. Returns the dollars you got. */
+      sellCrypto: (id, share = 1) => {
+        const s = get()
+        const held = s.crypto[id] ?? 0
+        if (!COIN_BY_ID[id] || held <= 0) return 0
+        const qty = share >= 1 ? held : held * share
+        const value = Math.floor(qty * (s.market ?? freshMarket()).prices[id])
+        set({
+          money: s.money + value,
+          crypto: { ...s.crypto, [id]: share >= 1 ? 0 : held - qty },
+          stats: { ...s.stats, cryptoSold: (s.stats.cryptoSold ?? 0) + value, cryptoTrades: (s.stats.cryptoTrades ?? 0) + 1 },
+        })
+        return value
+      },
+
+      // ================= Ye Olde Forge & HomeLab NAS =================
+      collectForge: () => {
+        const s = get()
+        const amount = Math.floor(s.forge?.stored ?? 0)
+        if (!ownsExpansion(s, 'forge') || amount <= 0) return 0
+        set({ money: s.money + amount, forge: { ...s.forge, stored: (s.forge.stored ?? 0) - amount }, stats: { ...s.stats, forgeCollected: (s.stats.forgeCollected ?? 0) + amount } })
+        return amount
+      },
+      upgradeForge: () => {
+        const s = get()
+        const level = s.forge?.level ?? 1
+        if (!ownsExpansion(s, 'forge') || level >= FORGE.maxLevel) return false
+        const cost = FORGE.upgradeSwings(level) * Math.max(1, getMiningRate(s))
+        if (s.money < cost) {
+          s.toast(`The smith wants ${fmtMoney(cost)} for that. Gold, not promises.`, 'bad')
+          return false
+        }
+        set({ money: s.money - cost, forge: { ...s.forge, level: level + 1 }, stats: { ...s.stats, upgradesBought: (s.stats.upgradesBought ?? 0) + 1 } })
+        return true
+      },
+      /** Buys (if needed) and puts on one of the Forge's looks. Prices are in swings of your pickaxe. */
+      setForgeTheme: (id) => {
+        const s = get()
+        const theme = FORGE_THEME_BY_ID[id]
+        if (!theme) return false
+        if (!s.forgeThemes.includes(id)) {
+          const cost = theme.price * Math.max(1, getMiningRate(s))
+          if (s.money < cost) {
+            s.toast(`${theme.name} costs ${fmtMoney(cost)}. Cosmetics are the real endgame.`, 'bad')
+            return false
+          }
+          set({ money: s.money - cost, forgeThemes: [...s.forgeThemes, id], forgeTheme: id })
+          s.toast(`${theme.icon} The Forge is now a ${theme.name}.`, 'good')
+          return true
+        }
+        set({ forgeTheme: id })
+        return true
+      },
+      upgradeNas: () => {
+        const s = get()
+        const tier = s.nas?.tier ?? 0
+        if (!ownsExpansion(s, 'nas') || tier >= NAS_TIERS.length - 1) return false
+        const cost = NAS.upgradeSwings(tier) * Math.max(1, getMiningRate(s))
+        if (s.money < cost) {
+          s.toast(`More drives cost ${fmtMoney(cost)}. Storage is cheap; this isn’t.`, 'bad')
+          return false
+        }
+        set({ money: s.money - cost, nas: { ...s.nas, tier: tier + 1 }, stats: { ...s.stats, upgradesBought: (s.stats.upgradesBought ?? 0) + 1 } })
+        s.toast(`🗄️ Upgraded to a ${NAS_TIERS[tier + 1].name}. More blinking. More money.`, 'good')
+        return true
+      },
+      setNasUi: (patch) => set((s) => ({ nasUi: { ...s.nasUi, ...patch } })),
+
       // ================= Loot boxes =================
       /** Opens `count` boxes of one tier (LOOT_BOXES). Returns what came out, or null if you're broke. */
       buyLootBoxes: (count, boxId = 'cardboard') => {
@@ -1526,6 +1680,7 @@ export const useGameStore = create(
         let pityRelics = 0
         let found = 0
         let spoiled = 0
+        const expansions = { ...s.expansions }
         const trash = { ...s.trash }
         const items = [...s.items]
         const results = []
@@ -1533,6 +1688,14 @@ export const useGameStore = create(
         for (let i = 0; i < count; i++) {
           let loot = rollLoot(boxId, luck, r.rand)
           pity += pityStep
+          // Platinum Boxes: 1 in 100 holds a whole expansion you don't have yet.
+          const missing = boxId === 'platinum' ? Object.keys(EXPANSIONS).filter((id) => !ownsExpansion({ ...s, expansions }, id)) : []
+          if (missing.length && r.rand() < EXPANSION_DROP_CHANCE) {
+            const id = missing[Math.floor(r.rand() * missing.length)]
+            expansions[id] = true
+            results.push({ kind: 'expansion', id, name: EXPANSIONS[id].name })
+            continue
+          }
           // A rat got there first. (It even eats relics. It does not respect the economy.)
           if (r.rand() < SPOILED_BOX_CHANCE && !(loot.kind !== 'relic' && pity >= RELIC_PITY)) {
             spoiled++
@@ -1561,6 +1724,7 @@ export const useGameStore = create(
           trash,
           items,
           pity,
+          expansions,
           stats: {
             ...s.stats,
             boxesOpened: s.stats.boxesOpened + count,
@@ -2259,6 +2423,14 @@ export const useGameStore = create(
         daily: s.daily,
         dailyDone: s.dailyDone,
         snailArrived: s.snailArrived,
+        crypto: s.crypto,
+        forge: s.forge,
+        nas: s.nas,
+        expansions: s.expansions,
+        forgeThemes: s.forgeThemes,
+        forgeTheme: s.forgeTheme,
+        market: s.market,
+        nasUi: s.nasUi,
       }),
       merge: (persisted, current) => {
         const merged = {

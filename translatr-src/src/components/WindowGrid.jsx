@@ -18,6 +18,8 @@ import BotPanel from './BotPanel'
 import SkillTree from './SkillTree'
 import PremiumStore from './PremiumStore'
 import Inbox from './Inbox'
+import Crypto from './Crypto'
+import Forge from './Forge'
 import { reducedMotion } from '../lib/settings'
 
 // Column/row spans in the 3-column layout (single column on narrow screens).
@@ -34,6 +36,7 @@ const REGISTRY = {
   mine: { Component: Mine, span: 'tall' },
   casino: { Component: Casino },
   slots: { Component: Slots },
+  crypto: { Component: Crypto },
   loot: { Component: LootBoxes },
   inventory: { Component: Inventory },
   mail: { Component: Inbox, span: 'wide' },
@@ -42,6 +45,7 @@ const REGISTRY = {
   bot: { Component: BotPanel },
   skills: { Component: SkillTree, span: 'full' },
   store: { Component: PremiumStore, span: 'full' },
+  forge: { Component: Forge },
 }
 const IDS = Object.keys(REGISTRY)
 

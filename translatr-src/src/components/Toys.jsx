@@ -288,7 +288,7 @@ export function Paperclip() {
   const talk = () => {
     const s = useGameStore.getState()
     setLine(Math.random() < 0.3 ? liveObservation(s) : OBSERVATIONS[Math.floor(Math.random() * OBSERVATIONS.length)])
-    sfx('boing')
+    sfx('clipsay')
     clearTimeout(hideTimer.current)
     hideTimer.current = setTimeout(() => setLine(null), TALK_FOR_MS)
   }

@@ -237,6 +237,11 @@ export default function LootBoxes() {
         <div className="inset-card mt-4 max-h-48 overflow-auto p-3 text-sm animate-fade-up">
           <div className="label mb-2">Last opened · {results.length} box{results.length > 1 ? 'es' : ''}</div>
           {good.length === 0 && <div className="text-ink/40">Nothing good. Shocking. Buy more?</div>}
+          {results.filter((r) => r.kind === 'expansion').map((r) => (
+            <div key={r.id} className="font-semibold glow-gold">
+              {r.id === 'nas' ? '🗄️' : '⚒️'} {r.name} unlocked! (A whole expansion, in a box.)
+            </div>
+          ))}
           {good.map((r, i) =>
             r.kind === 'relic' ? (
               <div key={i} className="font-semibold glow-gold">

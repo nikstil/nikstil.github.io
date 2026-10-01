@@ -21,6 +21,7 @@ const RARITY = {
   rare: { glow: '#3de8ff', card: 'border-ice/60 bg-[radial-gradient(circle_at_50%_30%,#3de8ff2e,#051218)] shadow-[0_0_16px_-6px_#3de8ff] text-ice', label: 'RARE' },
   common: { glow: '#cbd5e1', card: 'border-white/30 bg-[radial-gradient(circle_at_50%_30%,#cbd5e126,#0b0f14)] shadow-[0_0_12px_-6px_#cbd5e1] text-[#dbe4ee]', label: 'COMMON' },
   trash: { glow: '#6b7280', card: 'border-white/10 bg-white/[0.03] text-white/40', label: 'TRASH' },
+  expansion: { glow: '#ffcf3f', card: 'border-gold bg-[radial-gradient(circle_at_50%_30%,#ffcf3f66,#1a1405)] shadow-[0_0_30px_0_#ffcf3f] text-gold', label: 'EXPANSION' },
   spoiled: { glow: '#7a5a3a', card: 'border-[#7a5a3a]/60 bg-[radial-gradient(circle_at_50%_30%,#7a5a3a40,#120c07)] text-[#c9a27a]', label: 'SPOILED' },
 }
 
@@ -30,6 +31,7 @@ function describe(loot) {
     const def = EQUIPPABLES[loot.id]
     return { rarity: def.tier ?? 'rare', emoji: def.emoji, name: def.name }
   }
+  if (loot.kind === 'expansion') return { rarity: 'expansion', emoji: loot.id === 'nas' ? '🗄️' : '⚒️', name: `${loot.name} unlocked!` }
   if (loot.kind === 'spoiled') return { rarity: 'spoiled', emoji: '🐀', name: loot.ate ? `A rat ate your ${loot.ate}` : 'A rat ate it' }
   return { rarity: 'trash', emoji: TRASH_EMOJI[hash(loot.name) % TRASH_EMOJI.length], name: loot.name }
 }
@@ -48,8 +50,8 @@ export default function LootOpening({ results, onClose }) {
   }, [])
 
   const items = results.map(describe)
-  const order = { relic: 0, legendary: 1, epic: 2, rare: 3, common: 4, trash: 5, spoiled: 6 }
-  const best = ['relic', 'legendary', 'epic', 'rare', 'common'].find((r) => items.some((i) => i.rarity === r)) ?? 'trash'
+  const order = { expansion: -1, relic: 0, legendary: 1, epic: 2, rare: 3, common: 4, trash: 5, spoiled: 6 }
+  const best = ['expansion', 'relic', 'legendary', 'epic', 'rare', 'common'].find((r) => items.some((i) => i.rarity === r)) ?? 'trash'
 
   // Rumble while shaking; one reveal sound when it opens (or when skipped).
   const revealed = useRef(false)

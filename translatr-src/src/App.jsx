@@ -13,6 +13,7 @@ import Wallpaper from './components/Wallpaper'
 import DoomFeed, { DOOM_WIDTH } from './components/DoomFeed'
 import WindowGrid from './components/WindowGrid'
 import { Paperclip, Snail } from './components/Toys'
+import Nas from './components/Nas'
 import DataHarvester from './components/DataHarvester'
 import DailyRewards from './components/DailyRewards'
 import AfkBanner from './components/AfkBanner'
@@ -138,6 +139,7 @@ export default function App() {
       <DoomFeed />
       <Cat />
       <Snail />
+      <Nas />
       <Paperclip />
       <ScratchMarks />
       <AdLayer />
