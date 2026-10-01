@@ -1,11 +1,11 @@
 // nikstilOS: the nikstil.com homepage. A tiny desktop: double-click icons to open windows, drag
-// them by the title bar, minimize them to the taskbar, switch between eight themes. No framework
+// them by the title bar, minimize them to the taskbar, switch between ten themes. No framework
 // and no build step; window contents live in <template>s in index.html, and /site.json (edited on
 // the admin page, /nikstil/) overrides the text in them.
 ;(() => {
   'use strict'
 
-  // The same eight themes as TRANSLATR™ (same ids, so the game's choice carries over), in the same
+  // The same ten themes as TRANSLATR™ (same ids, so the game's choice carries over), in the same
   // order: the era each one comes from. `fonts` is a Google Fonts family query, loaded the first
   // time the theme is used.
   const THEMES = [
@@ -15,8 +15,10 @@
     { id: 'aqua', name: 'Aqua', blurb: 'Pinstripes, gel and traffic lights (2002)', swatch: ['#1d63d3', '#ececec', '#ff5f57'], chrome: '#1d63d3', start: '' },
     { id: 'aero', name: 'Aero', blurb: 'Glass, gloss and optimism (2009)', swatch: ['#1360b9', '#9fd6f5', '#7fcf55'], chrome: '#1a73c4', start: '' },
     { id: 'skeuo', name: 'Skeuomorphism', blurb: 'Leather, brushed metal, real fake stitching (2010)', swatch: ['#6b4327', '#d6d6d6', '#d4a93f'], chrome: '#5a3a22', start: 'Start' },
+    { id: 'metro', name: 'Metro', blurb: 'Flat tiles, loud colours, no Start button (2012)', swatch: ['#5133ab', '#2d89ef', '#00a300'], chrome: '#2b1361', start: 'Start' },
     { id: 'minimal', name: 'Minimalist', blurb: 'Nothing. Beautifully. (2013)', swatch: ['#ffffff', '#000000', '#ffffff'], chrome: '#ffffff', start: 'Start', fonts: 'Inter:wght@300;400;500;600' },
     { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid (199X, forever)', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', start: 'スタート', fonts: 'VT323' },
+    { id: 'glass', name: 'Liquid Glass', blurb: 'Every surface is a lens now (2025)', swatch: ['#7fe3ff', '#ffffff', '#ff9ad5'], chrome: '#5b7cff', start: '' },
   ]
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
@@ -28,6 +30,8 @@
     retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', browser: '🌐' },
     luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', browser: '🌐' },
     aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', browser: '🌐' },
+    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', browser: '🌐' },
+    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', browser: '🧭' },
     vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', browser: '🌐' },
   }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key

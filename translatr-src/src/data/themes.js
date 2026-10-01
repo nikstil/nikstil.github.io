@@ -11,8 +11,10 @@ export const THEMES = [
   { id: 'aqua', name: 'Aqua', blurb: 'Pinstripes, gel and traffic lights (2002)', swatch: ['#1d63d3', '#ececec', '#ff5f57'], chrome: '#1d63d3', cursor: 'stark' },
   { id: 'aero', name: 'Aero', blurb: 'Glass, gloss and optimism (2009)', swatch: ['#1360b9', '#9fd6f5', '#7fcf55'], chrome: '#1a73c4', cursor: 'aero' },
   { id: 'skeuo', name: 'Skeuomorphism', blurb: 'Leather, brushed metal, real fake stitching (2010)', swatch: ['#6b4327', '#d6d6d6', '#d4a93f'], chrome: '#5a3a22', cursor: 'brass' },
+  { id: 'metro', name: 'Metro', blurb: 'Flat tiles, loud colours, no Start button (2012)', swatch: ['#5133ab', '#2d89ef', '#00a300'], chrome: '#2b1361', cursor: 'stark' },
   { id: 'minimal', name: 'Minimalist', blurb: 'Nothing. Beautifully. Still has ads. (2013)', swatch: ['#ffffff', '#000000', '#ffffff'], chrome: '#ffffff', cursor: 'stark' },
   { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid (199X, forever)', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', cursor: 'pixel' },
+  { id: 'glass', name: 'Liquid Glass', blurb: 'Every surface is a lens now (2025)', swatch: ['#7fe3ff', '#ffffff', '#ff9ad5'], chrome: '#5b7cff', cursor: 'aero' },
 ]
 
 export const THEME_IDS = THEMES.map((t) => t.id)

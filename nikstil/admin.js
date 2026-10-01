@@ -26,8 +26,10 @@
     ['luna', 'Luna (2001)'],
     ['aqua', 'Aqua (2002)'],
     ['skeuo', 'Skeuomorphism (2010)'],
+    ['metro', 'Metro (2012)'],
     ['minimal', 'Minimalist (2013)'],
     ['vapor', 'Vaporwave (199X)'],
+    ['glass', 'Liquid Glass (2025)'],
   ]
   const APPS = [
     ['pc', '💻'],
