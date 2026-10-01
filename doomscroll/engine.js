@@ -1034,10 +1034,12 @@ export function createEngine(
   };
   function makePlayer(n, start, fx, fy, carry, levelIndex) {
     const hasRifle = carry?.rifle ?? (rifleLevel >= 0 && levelIndex > rifleLevel);
+    // Player 2 starts beside player 1 (on the first free side), not inside them.
+    const side = n ? [[-fy, fx], [fy, -fx], [-fx, -fy]].find(([ox, oy]) => grid[(start.y + oy) | 0]?.[(start.x + ox) | 0] === 0) ?? [0.3, 0.3] : [0, 0];
     return {
       n,
-      x: start.x + (n ? 0.3 : 0),
-      y: start.y + (n ? 0.3 : 0),
+      x: start.x + side[0] * 0.8,
+      y: start.y + side[1] * 0.8,
       dx: fx,
       dy: fy,
       px: -fy * 0.66,
@@ -1560,7 +1562,7 @@ export function createEngine(
             lift: Z[e.type].fly ? -30 - Math.sin(run.seconds * 5 + e.wobble) * 8 : 0,
           },
         })),
-      ...players.filter((q) => q !== pl && !q.down).map((q) => ({ tex: q.n ? he.marine2 : he.marine, x: q.x, y: q.y, scale: 0.8, opts: {} })),
+      ...players.filter((q) => q !== pl && !q.down && Math.hypot(q.x - pl.x, q.y - pl.y) > 0.5).map((q) => ({ tex: q.n ? he.marine2 : he.marine, x: q.x, y: q.y, scale: 0.8, opts: {} })),
       ...shots.map((s) => ({ tex: s.back ? he.shotBack : he.shot, x: s.x, y: s.y, scale: 0.6, opts: { lift: -20 } })),
     ].sort((a, c) => Math.hypot(c.x - pl.x, c.y - pl.y) - Math.hypot(a.x - pl.x, a.y - pl.y));
     const dazed = [];
@@ -1851,7 +1853,7 @@ export function createEngine(
       ctx.textAlign = "center";
       ctx.fillStyle = "#b8b8b8";
       ctx.font = "7px Arial, sans-serif";
-      ctx.fillText(level.final ? "THE FINAL BOSS" : `LEVEL ${run.level + 1} OF ${levels.length}`, W / 2, 40);
+      ctx.fillText(level.final ? "THE FINAL BOSS" : level.banner ?? `LEVEL ${run.level + 1} OF ${levels.length}`, W / 2, 40);
       ctx.fillStyle = "#e8331f";
       ctx.font = 'bold 13px "Courier New", monospace';
       ctx.fillText(`${level.id}: ${level.name.toUpperCase()}`, W / 2, 54);

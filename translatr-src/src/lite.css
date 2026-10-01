@@ -1,0 +1,39 @@
+/*
+ * Lite graphics (Control Panel → Display → Graphics, or picked automatically on weak devices).
+ * Windows 7 did the same on weak PCs and called it "Aero Basic": the glass blur goes (it has to
+ * be redrawn whenever anything behind it moves, which is expensive on small GPUs), decorative
+ * animations that repaint every frame stop, and windows outside the screen skip rendering.
+ * Gameplay motion (ads, toasts, the mine, the wheel) stays. Unlayered, so it beats the themes.
+ */
+
+html[data-perf="lite"] *,
+html[data-perf="lite"] *::before,
+html[data-perf="lite"] *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Aero's glass without the blur needs a solid base to stay readable. */
+html[data-perf="lite"][data-theme="aero"] .aero-window { background-color: color-mix(in oklab, var(--accent) 30%, #b4cfea); }
+html[data-perf="lite"][data-theme="aero"] .cmdbar { background-color: #cddff1; }
+html[data-perf="lite"][data-theme="aero"] .taskbar { background-color: #1d4a7c; }
+html[data-perf="lite"][data-theme="aero"] .gadget { background-color: #d6e7f7; }
+html[data-perf="lite"][data-theme="aero"] .modal-card { background-color: #cfe1f3; }
+html[data-perf="lite"][data-theme="aero"][data-mode="dark"] .aero-window { background-color: color-mix(in oklab, var(--accent) 20%, #0a1628); }
+html[data-perf="lite"][data-theme="aero"][data-mode="dark"] .cmdbar { background-color: #081629; }
+html[data-perf="lite"][data-theme="aero"][data-mode="dark"] .taskbar { background-color: #06101f; }
+html[data-perf="lite"][data-theme="aero"][data-mode="dark"] .gadget { background-color: #0c1a2e; }
+html[data-perf="lite"][data-theme="aero"][data-mode="dark"] .modal-card { background-color: #111925; }
+
+/* Decorative loops that repaint every frame (glows, rainbows, glints, the equalizer). */
+html[data-perf="lite"] :is(.animate-glow-pulse, .animate-rainbow, .animate-rays, .animate-spin-slow, .animate-live, .animate-wiggle, .shiny-text) {
+  animation: none !important;
+}
+html[data-perf="lite"] .meter > span::after { display: none; }
+html[data-perf="lite"] .eq > i { animation: none; height: 60%; }
+
+/* Windows scrolled out of view aren't rendered until they come back (sizes are remembered). */
+html[data-perf="lite"] .window-slot:not(.is-dragging) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
+}
