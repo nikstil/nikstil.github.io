@@ -1553,3 +1553,21 @@ html.shooter-open .harvester { display: none; }
 @keyframes snake-blink { 50% { opacity: 0; } }
 .snake-pad { display: grid; grid-template: ". up ." 52px "left . right" 52px ". down ." 52px / 52px 52px 52px; gap: 4px; margin-top: 10px; touch-action: none; }
 .snake-key { font-size: 18px; }
+
+/* The trap ad's only tell: fine print along its bottom edge, like a real ad's "sponsored" line. */
+.trap-fine-print {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  padding: 1px 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 500 8.5px/1.3 var(--font-sans, system-ui);
+  letter-spacing: 0.01em;
+  color: rgb(255 255 255 / 0.62);
+  background: rgb(0 0 0 / 0.38);
+  border-radius: 0 0 6px 6px;
+  pointer-events: none;
+}

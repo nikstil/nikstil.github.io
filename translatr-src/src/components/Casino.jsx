@@ -14,6 +14,10 @@ const SEG = 360 / POCKETS.length
 const COLORS = { red: '#e53935', black: '#1f2630', green: '#2fb52a' }
 const WHEEL_BG = `conic-gradient(${POCKETS.map((c, i) => `${COLORS[c]} ${i * SEG}deg ${(i + 1) * SEG - 0.6}deg, #0a0a0f ${(i + 1) * SEG - 0.6}deg ${(i + 1) * SEG}deg`).join(', ')})`
 const SPIN_MS = 3200
+// Bet half your wallet or more and, one time in ten, the wheel takes its time: five times slower.
+const DRAMA_SHARE = 0.5
+const DRAMA_CHANCE = 0.1
+const DRAMA_SLOWDOWN = 5
 
 export default function Casino() {
   const cash = useGameStore((s) => s.money)
@@ -24,6 +28,7 @@ export default function Casino() {
   const [bet, setBet] = useState(10)
   const [rotation, setRotation] = useState(0)
   const [spinning, setSpinning] = useState(false)
+  const [spinMs, setSpinMs] = useState(SPIN_MS)
   const [history, setHistory] = useState([])
   const [message, setMessage] = useState('Place your bets. The house believes in you (to lose).')
   const spinningRef = useRef(false)
@@ -34,12 +39,16 @@ export default function Casino() {
   const doSpin = (choice, wager) => {
     if (spinningRef.current) return
     const store = useGameStore.getState()
+    const wallet = store.money
     if (!store.placeBet(wager)) return
     spinningRef.current = true
     setSpinning(true)
 
     // The result is decided up front; the wheel animates to it. (Seeded on a Daily Challenge.)
     const [roll, favour, pick] = store.rngMany('roulette', 3)
+    const drama = wager >= wallet * DRAMA_SHARE && store.rng('roulette-drama') < DRAMA_CHANCE
+    const ms = drama ? SPIN_MS * DRAMA_SLOWDOWN : SPIN_MS
+    setSpinMs(ms)
     let index = Math.floor(roll * POCKETS.length)
     // The Croupier Owes You: 1 in 5 losing spins quietly lands on your colour instead.
     if (POCKETS[index] !== choice && hasSkill(store, 'rigged') && favour < 0.2) {
@@ -47,9 +56,9 @@ export default function Casino() {
       index = mine[Math.floor(pick * mine.length)]
     }
     const target = (360 - (index + 0.5) * SEG) % 360
-    wheelTicks((SPIN_MS - 200) / 1000)
+    wheelTicks((ms - 200) / 1000, drama ? DRAMA_SLOWDOWN : 1)
     setRotation((r) => r + 360 * 5 + ((target - (((r % 360) + 360) % 360) + 360) % 360))
-    setMessage(`Spinning… ${money(wager)} on ${choice.toUpperCase()}`)
+    setMessage(drama ? `🐌 The wheel can sense ${money(wager)} of desperation on ${choice.toUpperCase()}. It’s taking its time.` : `Spinning… ${money(wager)} on ${choice.toUpperCase()}`)
 
     timer.current = setTimeout(() => {
       const s = useGameStore.getState()
@@ -67,7 +76,7 @@ export default function Casino() {
       }
       spinningRef.current = false
       setSpinning(false)
-    }, SPIN_MS)
+    }, ms)
   }
 
   const spin = (choice) => {
@@ -103,7 +112,7 @@ export default function Casino() {
             style={{
               background: WHEEL_BG,
               transform: `rotate(${rotation}deg)`,
-              transition: spinning ? `transform ${SPIN_MS - 200}ms cubic-bezier(0.12, 0.8, 0.18, 1)` : 'none',
+              transition: spinning ? `transform ${spinMs - 200}ms ${spinMs > SPIN_MS ? 'cubic-bezier(0.1, 0.55, 0.02, 1)' : 'cubic-bezier(0.12, 0.8, 0.18, 1)'}` : 'none',
             }}
           />
           <div className="absolute inset-[32%] grid place-items-center rounded-full border border-gold/50 bg-[radial-gradient(circle_at_40%_35%,#ffffff,#dbe7f2_60%,#a9bfd4)] text-2xl shadow-[0_2px_8px_rgba(0,30,70,.45)]">

@@ -6,12 +6,13 @@ import { sfx, setAudioSettings, duckMusic, unlockAudio, prepareMusic } from './e
 
 const MODAL_SFX = { bad: 'error', good: 'ascend', warn: 'uac' }
 const TOAST_SFX = { bad: 'error', good: 'success', info: 'notify' }
-const isDanger = (s) => !!s.resetting || !!s.over || !!s.audit || s.ads.some((a) => a.type === 'trap')
+// (The trap ad isn't one: it's meant to pass for an ordinary ad, so it gets no alarm or ducking.)
+const isDanger = (s) => !!s.resetting || !!s.over || !!s.audit
 
 function onChange(s, p) {
   if (s.audio !== p.audio) setAudioSettings(s.audio)
 
-  if (s.ads.length > p.ads.length) sfx(s.ads.at(-1).type === 'trap' ? 'alarm' : 'popup')
+  if (s.ads.length > p.ads.length) sfx('popup')
   if (s.saveFilesLost > p.saveFilesLost || (s.resetting && !p.resetting)) sfx('shutdown')
   if (s.modal && s.modal !== p.modal && s.modal.sfx !== 'none') sfx(s.modal.sfx ?? MODAL_SFX[s.modal.tone] ?? 'notify')
   if (s.audit && s.audit !== p.audit) sfx('audit')

@@ -193,7 +193,8 @@ export default function LootBoxes() {
   }
 
   const trash = results?.filter((r) => r.kind === 'trash') ?? []
-  const good = results?.filter((r) => r.kind !== 'trash') ?? []
+  const good = results?.filter((r) => r.kind === 'equip' || r.kind === 'relic') ?? []
+  const spoiled = results?.filter((r) => r.kind === 'spoiled') ?? []
 
   return (
     <>
@@ -248,6 +249,11 @@ export default function LootBoxes() {
             ),
           )}
           {trash.length > 0 && <div className="mt-1 text-ink/35">🗑️ {trash.length}× Useless Trash</div>}
+          {spoiled.length > 0 && (
+            <div className="mt-1 text-[#8a5a2a]">
+              🐀 {spoiled.length}× eaten by a rat{spoiled.some((r) => r.ate) ? ` (including ${spoiled.find((r) => r.ate).ate})` : ''}. No refunds. The rat is not an employee.
+            </div>
+          )}
         </div>
       )}
     </Panel>

@@ -80,7 +80,7 @@ export default function AdLayer() {
     <>
       {ads.map((ad, i) =>
         ad.type === 'trap' ? (
-          <TrapAd key={ad.id} ad={ad} onCorner={celebrate} />
+          <TrapAd key={ad.id} ad={ad} z={zFor(ad, i)} onRaise={raise} onCorner={celebrate} />
         ) : (
           <FloatingAd key={ad.id} ad={ad} z={zFor(ad, i)} onRaise={raise} onCorner={celebrate} />
         ),
@@ -426,16 +426,20 @@ function SlipperyAd({ ad, cardRef, dvd, onClose }) {
 }
 
 /** Every 25th ad: close it before 10s and lose your entire save (and all other ads). */
-function TrapAd({ ad, onCorner }) {
+/**
+ * Every 25th ad: "do not close before 10 seconds" (closing it early wipes the save). It looks and
+ * moves exactly like any other ad: same creatives, same spot, same DVD bounce, nothing to give it
+ * away but the fine print along its bottom edge.
+ */
+function TrapAd({ ad, z, onRaise, onCorner }) {
   const [left, setLeft] = useState(10)
   const frameRef = useRef(null)
   const cardRef = useRef(null)
   const dvd = useDvd(ad, frameRef, onCorner)
-  const mover = useAdMover(ad, { frameRef, cardRef, floor: 0, center: true, onBounce: dvd.onBounce })
+  const mover = useAdMover(ad, { frameRef, cardRef, floor: TASKBAR_H, onGrab: () => onRaise(ad.id), onBounce: dvd.onBounce })
 
   useEffect(() => {
     if (left <= 0) return
-    if (left < 10) sfx('tick')
     const id = setTimeout(() => setLeft((l) => l - 1), 1000)
     return () => clearTimeout(id)
   }, [left])
@@ -447,55 +451,12 @@ function TrapAd({ ad, onCorner }) {
   }
 
   return (
-    <div className="anim-backdrop-in fixed inset-0 z-[200] overflow-hidden bg-[radial-gradient(circle,rgba(120,0,20,.55),rgba(0,0,0,.92))] backdrop-blur-md">
-      <div
-        ref={frameRef}
-        className={`floater ${mover.grabbed ? 'is-grabbed' : ''}`}
-        style={{ position: 'absolute', '--dvd': dvd.initialColor }}
-        onPointerDown={mover.onPointerDown}
-      >
-        <div
-          ref={cardRef}
-          data-floater-grip
-          className={`floater-card floater-grip modal-card scanlines anim-modal-in relative w-[min(28rem,calc(100vw-2rem))] overflow-hidden p-7 text-center ${dvd.enabled ? 'dvd-glow' : ''}`}
-          style={{ '--accent': '#ff3b5c', borderColor: 'rgba(255,59,92,.5)' }}
-        >
-          <button
-            onClick={onClose}
-            aria-label="Close ad"
-            className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-ink/5 text-sm text-ink/60 ring-1 ring-ink/15 transition hover:bg-blood hover:text-ink"
-          >
-            ✕
-          </button>
-          {dvd.enabled && <DvdLogo className="mx-auto mb-2 block h-6" />}
-          <div className="label mb-2 text-blood/80">Mandatory Premium Partner Message · #{ad.n}</div>
-          <div className="font-display text-2xl font-bold tracking-wide glow-blood animate-flash">DO NOT CLOSE BEFORE 10 SECONDS</div>
-          <p className="mt-3 text-sm text-ink/60">
-            Closing early will <b className="text-blood">permanently delete your save file</b>.
-          </p>
-          <div className="relative mx-auto my-6 grid h-32 w-32 place-items-center">
-            <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
-              <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="6" />
-              <circle
-                cx="50"
-                cy="50"
-                r="44"
-                fill="none"
-                stroke={left > 0 ? '#ff3b5c' : '#39ff14'}
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 44}
-                strokeDashoffset={2 * Math.PI * 44 * (left / 10)}
-                style={{ transition: 'stroke-dashoffset 1s linear', filter: `drop-shadow(0 0 6px ${left > 0 ? '#ff3b5c' : '#39ff14'})` }}
-              />
-            </svg>
-            <span className={`font-mono text-5xl font-bold ${left > 0 ? 'text-ink' : 'glow-toxic'}`}>{left > 0 ? left : '✓'}</span>
-          </div>
-          <p className="text-sm text-ink/45">
-            {left > 0
-              ? `Please enjoy this tasteful ${dvd.enabled ? 'bouncing' : 'black'} rectangle.`
-              : 'You may now close this ad. Well done. Truly.'}
-          </p>
+    <div ref={frameRef} className={`floater ${mover.grabbed ? 'is-grabbed' : ''}`} style={{ zIndex: z, '--dvd': dvd.initialColor }} onPointerDown={mover.onPointerDown}>
+      <div className="anim-modal-in relative">
+        <AdBody ad={ad} cardRef={cardRef} dvd={dvd} />
+        <CloseButton onClick={onClose} className="absolute right-1.5 top-[2px]" />
+        <div className="trap-fine-print" data-trap-ad={left > 0 ? 'armed' : 'safe'}>
+          {left > 0 ? `Ad · do not close for ${left}s · closing early deletes your save (ToS §25)` : 'Ad · you may close this ad now'}
         </div>
       </div>
     </div>

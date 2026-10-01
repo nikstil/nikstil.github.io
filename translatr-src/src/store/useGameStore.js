@@ -133,6 +133,8 @@ const FLUENCY_PROGRESS = {
   7: '⚖️ Seven in a row. Legal says learning a language may breach section 12.4 of the Terms.',
   9: '🚨 Nine in a row. One more and you won’t need us. Please make a mistake.',
 }
+// 15% of boxes arrive "spoiled": a rat got in first and ate whatever was inside.
+export const SPOILED_BOX_CHANCE = 0.15
 const COPIES_KEPT = 40 // TranslatrAI™ remembers what it translated for you (pasting it back doesn't count)
 
 /** What a one-off cheat does (null when it can't right now, with the reason for the toast). */
@@ -1522,6 +1524,7 @@ export const useGameStore = create(
         let relics = 0
         let pityRelics = 0
         let found = 0
+        let spoiled = 0
         const trash = { ...s.trash }
         const items = [...s.items]
         const results = []
@@ -1529,6 +1532,12 @@ export const useGameStore = create(
         for (let i = 0; i < count; i++) {
           let loot = rollLoot(boxId, luck, r.rand)
           pity += pityStep
+          // A rat got there first. (It even eats relics. It does not respect the economy.)
+          if (r.rand() < SPOILED_BOX_CHANCE && !(loot.kind !== 'relic' && pity >= RELIC_PITY)) {
+            spoiled++
+            results.push({ kind: 'spoiled', name: 'Eaten by a rat', ate: loot.kind === 'trash' ? null : loot.name })
+            continue
+          }
           // Gacha pity: after RELIC_PITY boxes without a relic, the next one is guaranteed.
           if (loot.kind !== 'relic' && pity >= RELIC_PITY) {
             loot = { kind: 'relic', id: RELIC.id, name: RELIC.name, pity: true }
@@ -1558,6 +1567,7 @@ export const useGameStore = create(
             relicsFound: (s.stats.relicsFound ?? 0) + relics,
             pityRelics: (s.stats.pityRelics ?? 0) + pityRelics,
             itemsFound: (s.stats.itemsFound ?? 0) + found,
+            boxesSpoiled: (s.stats.boxesSpoiled ?? 0) + spoiled,
             [`${boxId}Boxes`]: (s.stats[`${boxId}Boxes`] ?? 0) + count,
             // The collection: every kind of item you've ever pulled.
             itemIds: [...new Set([...(s.stats.itemIds ?? []), ...results.filter((l) => l.kind === 'equip').map((l) => l.id)])],

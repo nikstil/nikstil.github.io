@@ -433,17 +433,17 @@ export function sfx(name, opts = {}) {
   def.play(ctx.currentTime + 0.005, opts)
 }
 
-/** Roulette wheel: ticks that decelerate over `seconds`. */
-export function wheelTicks(seconds = 3) {
+/** The roulette wheel's clicks, slowing down over `seconds` (`slow` stretches the gaps, for the 5× spin). */
+export function wheelTicks(seconds = 3, slow = 1) {
   if (!ctx || ctx.state !== 'running' || !settings.sfx) return
   let at = 0
-  let step = 0.035
+  let step = 0.035 * Math.sqrt(slow)
   const start = ctx.currentTime + 0.01
   while (at < seconds) {
     const t = start + at
     noiseHit(t, { dur: 0.012, gain: 0.08, type: 'highpass', f: 3200 })
     tone(t, { f: 2400, dur: 0.012, gain: 0.02 })
     at += step
-    step *= 1.075
+    step *= 1 + 0.075 / Math.sqrt(slow)
   }
 }
