@@ -226,3 +226,36 @@ html.embed .bar .home-link, html.embed .help { display: none; }
   .alm-card { max-height: 40vh; }
   .help { display: none; }
 }
+
+/* ================= Pixel art =================
+   Both games (LAWN OF THE DEAD and BRAINS FIRST) in a pixel-art skin: pixel fonts, square
+   corners, hard drop shadows, and the canvas scaled up with hard edges. */
+:root { --pixel: 'Press Start 2P', monospace; --pixel-body: 'VT323', 'Courier New', monospace; }
+body { font: 20px/1.15 var(--pixel-body); }
+*, *::before, *::after { border-radius: 0 !important; }
+.screen, .seed canvas, .alm-grid canvas, .alm-card canvas, .won-art, .preview-list canvas { image-rendering: pixelated; }
+.bar, .bar-btn, .btn, .menu-btn, .tab, .lvl, .logo, .panel h2, .big, .kicker, .tag, .wallet, .area b, .alm-card h3, .shop-item b, .puzzle b { font-family: var(--pixel); }
+.bar { font-size: 11px; box-shadow: 4px 4px 0 var(--ink); }
+.bar-sub { font-size: 9px; }
+.bar-btn { font-size: 10px; box-shadow: 3px 3px 0 var(--ink); }
+.logo { font-size: clamp(22px, 5.4vw, 58px); line-height: 1.15; letter-spacing: 0; -webkit-text-stroke: 0; text-shadow: 5px 5px 0 var(--ink), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink); }
+.logo span { display: inline; }
+.tag { font-size: clamp(9px, 1.3vw, 13px); line-height: 1.6; }
+.btn { font-size: 11px; line-height: 1.5; box-shadow: 4px 4px 0 var(--ink); border-width: 3px; }
+.btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+.btn.big { font-size: clamp(12px, 1.8vw, 16px); }
+.btn.big small, .btn small { font-family: var(--pixel); font-size: 9px; }
+.title-buttons .btn { box-shadow: 4px 4px 0 #2a1608; }
+.title-buttons .btn::before, .title-buttons .btn::after { border-width: 3px; }
+.menu-btn { font-size: 10px; box-shadow: 3px 3px 0 var(--ink); }
+.panel h2 { font-size: clamp(14px, 2.6vw, 24px); -webkit-text-stroke: 0; text-shadow: 3px 3px 0 var(--ink); line-height: 1.4; }
+.big { font-size: clamp(14px, 3vw, 30px); line-height: 1.4; -webkit-text-stroke: 0; text-shadow: 4px 4px 0 var(--ink); }
+.kicker, .wallet { font-size: 11px; }
+.fine { font-size: 16px; }
+.copy { font-size: 20px; }
+.tab, .lvl { font-size: 10px; box-shadow: 3px 3px 0 var(--ink); }
+.area b { font-size: 10px; }
+.alm-card, .shop-item, .chosen, .puzzle { box-shadow: 4px 4px 0 var(--ink); }
+.alm-card h3, .shop-item b, .puzzle b { font-size: 11px; line-height: 1.5; }
+.alm-grid button { font-family: var(--pixel-body); font-size: 14px; }
+.help, .rotate-hint { font-size: 16px; }

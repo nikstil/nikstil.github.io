@@ -1,8 +1,8 @@
-// TOUCHPHONE.EXE: the puzzles. Each garden is planted already (five rows, one letter per square,
-// from the left); you place Scrollers right of the red line and need to get one to the Wi-Fi
-// router at the end of every row. Sun Daisies they eat drop sun, which buys more Scrollers.
+// BRAINS FIRST: the puzzles. Each garden is planted already (five rows, one letter per square,
+// from the left); you place zombies right of the red line and need to get one to the brain at
+// the end of every row. Sun Daisies they eat drop sun, which buys more zombies.
 
-/** What each Scroller costs to send. */
+/** What each zombie costs to send. */
 export const COST = {
   scroller: 50,
   ipadkid: 50,
@@ -49,72 +49,72 @@ export const LETTERS = {
 const P = (id, area, name, sun, scrollers, rows, extra = {}) => ({ id, area, name, sunStart: sun, scrollers, rows, line: 5, ...extra })
 
 export const PUZZLES = [
-  P(1, 'day', 'Logging On', 150, ['scroller', 'beanie'], [
+  P(1, 'day', 'First Bite', 150, ['scroller', 'beanie'], [
     'ssp..',
     's.pp.',
     'sp...',
     's.p.s',
     'spp..',
-  ], { tip: 'Pick a Scroller at the top, then a square right of the red line. Eaten Sun Daisies drop sun: click it.' }),
-  P(2, 'day', 'Selfie Position', 150, ['scroller', 'beanie', 'selfie'], [
+  ], { tip: 'Pick a zombie at the top, then a square right of the red line. Eaten Sun Daisies drop sun: click it.' }),
+  P(2, 'day', 'Pole Position', 150, ['scroller', 'beanie', 'selfie'], [
     's.pw.',
     'spd..',
     's.p.w',
     'sdp..',
     's.wp.',
-  ], { tip: 'A Selfie-Stick Scroller vaults over the first plant it meets.' }),
+  ], { tip: 'A Pole Zombie vaults over the first plant it meets.' }),
   P(3, 'day', 'Headgear', 150, ['scroller', 'beanie', 'selfie', 'vr'], [
     'sfg..',
     'sp.ms',
     'sgf..',
     's.pm.',
     'sfg.s',
-  ], { tip: 'Gulp Traps swallow one Scroller whole, then chew for a while. Send a cheap one first.' }),
+  ], { tip: 'Gulp Traps swallow one zombie whole, then chew for a while. Send a cheap one first.' }),
   P(4, 'night', 'Night Shift', 150, ['scroller', 'beanie', 'miner', 'vr'], [
     'suk..',
     'sp.h.',
     's.ku.',
     'sh.p.',
     'suk..',
-  ], { tip: 'Crypto Miners dig under everything and pop up at the far end, then eat from behind.' }),
+  ], { tip: 'Miner Zombies dig under everything and pop up at the far end, then eat from behind.' }),
   P(5, 'day', 'Up and Over', 200, ['scroller', 'beanie', 'selfie', 'ladderguy'], [
     'sdzw.',
     'sd.ws',
     'spzw.',
     'sd.w.',
     'sdzws',
-  ], { tip: 'Ladder Guy leans his ladder on the first wall, and everyone behind him climbs over it.' }),
+  ], { tip: 'The Ladder Zombie leans his ladder on the first wall, and everyone behind him climbs over it.' }),
   P(6, 'night', 'Bungee Jumping', 200, ['scroller', 'beanie', 'bungee', 'vr'], [
     'skhu.',
     'sg.ks',
     'sk.h.',
     'sgk.s',
     'skhu.',
-  ], { tip: 'A Bungee Thief can drop anywhere, even behind the line, and steals the plant there.' }),
+  ], { tip: 'A Bungee Zombie can drop anywhere, even behind the line, and steals the plant there.' }),
   P(7, 'day', 'Fast Lane', 200, ['scroller', 'beanie', 'vr', 'cryptobro'], [
     'sdtf.',
     'sg.ds',
     'sftd.',
     'sdm.s',
     'sdtf.',
-  ], { tip: 'Crypto Bros are fast and wear a helmet. Turnip Mines are armed and waiting.' }),
+  ], { tip: 'Hockey Zombies are fast and wear a helmet. Turnip Mines are armed and waiting.' }),
   P(8, 'night', 'Dance Floor', 300, ['ipadkid', 'scroller', 'vr', 'miner', 'dancer'], [
     'skua.',
     'shk.s',
     'sau.k',
     'sk.hs',
     'skua.',
-  ], { tip: 'A Trend Dancer calls Backup Dancers into the rows next to it. Magnet Morels steal metal hats.' }),
+  ], { tip: 'A Disco Zombie calls Backup Dancers into the rows next to it. Magnet Morels steal metal hats.' }),
   P(9, 'day', 'Big Mood', 550, ['scroller', 'beanie', 'vr', 'pogo', 'cryptobro', 'gigachad'], [
     'sdwgs',
     'stdwz',
     'sfdws',
     'stdwz',
     'sdwgs',
-  ], { tip: 'Gigachad flattens whatever he reaches and throws his iPad Kid when he’s hurt.' }),
+  ], { tip: 'The Giant Zombie flattens whatever he reaches and throws the little one when he’s hurt.' }),
 ]
 
-// ================= Phone Addiction (endless) =================
+// ================= Endless Night (endless) =================
 // Random gardens that get harder; your sun carries over from one to the next.
 function mulberry(seed) {
   let a = seed >>> 0
@@ -140,7 +140,7 @@ export function endless(streak, seed = 1) {
     return row
   })
   const scrollers = night ? ['scroller', 'beanie', 'vr', 'miner', 'bungee', 'dancer'] : ['scroller', 'beanie', 'selfie', 'vr', 'ladderguy', 'cryptobro', 'pogo', 'gigachad']
-  return P(`E${streak + 1}`, night ? 'night' : 'day', `Phone Addiction · garden ${streak + 1}`, 0, scrollers, rows)
+  return P(`E${streak + 1}`, night ? 'night' : 'day', `Endless · garden ${streak + 1}`, 0, scrollers, rows)
 }
 
 /** A puzzle as a level for touchgrass/sim.js (special: 'reverse'). */

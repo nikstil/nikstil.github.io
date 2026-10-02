@@ -7,7 +7,7 @@ export const ARCADE_GAMES = [
   { id: 'solitaire', icon: '🃏', name: 'Pay-Per-Card Solitaire', blurb: 'Klondike, except every card you draw costs money. Undo is Premium.' },
   { id: 'snake', icon: '🐍', name: 'Wallet Snake', blurb: 'Insert coin. Eat money. The platform keeps 30%.' },
   { id: 'loggle', icon: '🟩', name: 'LOGGLE', blurb: 'The daily name puzzle. Twelve letters, six guesses, a new name every day.' },
-  { id: 'grass', icon: '🌱', name: 'TOUCHGRASS.EXE', blurb: 'Plant a garden, hold off the Scrollers. They want your Wi-Fi. 50 levels, from nikstil.com.' },
+  { id: 'grass', icon: '🌱', name: 'LAWN OF THE DEAD', blurb: 'Plant a garden, hold off the zombies. 50 levels of pixel-art lawn defence, from nikstil.com.' },
 ]
 
 export const MINES = {

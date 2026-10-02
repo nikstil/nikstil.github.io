@@ -3,20 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOUCHPHONE.EXE · nikstil.com</title>
-  <meta name="description" content="TOUCHPHONE.EXE: you're the Scrollers now. Break into the garden and get to the Wi-Fi. 9 puzzles and an endless mode, from TRANSLATR™.">
+  <title>BRAINS FIRST · nikstil.com</title>
+  <meta name="description" content="BRAINS FIRST: you're the zombies now. Break through the garden and get to the brains. 9 puzzles and an endless mode, in pixel art.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="nikstil.com">
   <meta property="og:url" content="https://nikstil.com/touchphone/">
-  <meta property="og:title" content="TOUCHPHONE.EXE">
-  <meta property="og:description" content="You're the Scrollers now. The garden's planted, the Wi-Fi's behind it. 9 puzzles and an endless mode.">
+  <meta property="og:title" content="BRAINS FIRST">
+  <meta property="og:description" content="You're the zombies now. The garden's planted, the brains are behind it. 9 puzzles and an endless mode, in pixel art.">
   <meta property="og:image" content="https://nikstil.com/touchgrass/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="TOUCHPHONE.EXE">
-  <meta name="twitter:description" content="You're the Scrollers now. The garden's planted, the Wi-Fi's behind it. 9 puzzles and an endless mode.">
+  <meta name="twitter:title" content="BRAINS FIRST">
+  <meta name="twitter:description" content="You're the zombies now. The garden's planted, the brains are behind it. 9 puzzles and an endless mode, in pixel art.">
   <meta name="twitter:image" content="https://nikstil.com/touchgrass/og-image.png">
   <meta name="theme-color" content="#3a2a5c">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%233a2a5c'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E📱%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%233a2a5c'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E🧠%3C/text%3E%3C/svg%3E">
+  <link rel="preload" href="/touchgrass/fonts/press-start-2p.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/touchgrass/fonts/fonts.css">
   <link rel="stylesheet" href="/touchgrass/style.css">
   <link rel="stylesheet" href="/touchphone/style.css">
   <script type="module" src="/touchphone/app.js"></script>
@@ -24,27 +26,27 @@
 <body>
   <main class="frame" id="frame">
     <header class="bar">
-      <span class="bar-name">TOUCHPHONE.EXE</span>
-      <span class="bar-sub" id="bar-sub">You’re the Scrollers now</span>
+      <span class="bar-name">BRAINS FIRST</span>
+      <span class="bar-sub" id="bar-sub">You’re the zombies now</span>
       <button class="bar-btn" id="mute" title="Sound on/off (M)" aria-label="Sound on/off">🔊</button>
       <button class="bar-btn" id="full" title="Full screen" aria-label="Full screen">⛶</button>
       <a class="bar-btn home-link" href="/" title="Back to nikstil.com">nikstil.com</a>
     </header>
 
     <div class="view" id="view">
-      <canvas id="screen" class="screen" width="960" height="620" aria-label="TOUCHPHONE game screen"></canvas>
+      <canvas id="screen" class="screen" width="960" height="620" aria-label="BRAINS FIRST game screen"></canvas>
       <button class="menu-btn" id="menu-btn" hidden>Menu</button>
 
       <section class="overlay title" id="title">
-        <h1 class="logo">TOUCH<span>PHONE</span><small>.EXE</small></h1>
-        <p class="tag">The garden’s planted. The Wi-Fi’s behind it. You’re the Scrollers now.</p>
+        <h1 class="logo">BRAINS <span>FIRST</span></h1>
+        <p class="tag">The garden’s planted. The brains are behind it. You’re the zombies now.</p>
         <div class="title-buttons">
           <button class="btn big go" data-do="next"><b id="next-label">Puzzles</b><small id="next-sub">Puzzle 1</small></button>
           <button class="btn" data-do="levels">🧩 Pick a puzzle</button>
-          <button class="btn" data-do="endless" id="endless-btn">♾️ Phone Addiction</button>
+          <button class="btn" data-do="endless" id="endless-btn">♾️ Endless</button>
         </div>
         <p class="wallet" id="record"></p>
-        <p class="fine">The other side of TOUCHGRASS.EXE. Gameplay borrowed from a lawn-defence classic’s “play the zombies” puzzles. Everything you can see is new.</p>
+        <p class="fine">The other side of LAWN OF THE DEAD. Gameplay borrowed from a lawn-defence classic’s “play the zombies” puzzles. Everything you can see is new.</p>
       </section>
 
       <section class="overlay panel" id="levels" hidden>
@@ -60,11 +62,11 @@
           <button class="btn" data-do="restart">↻ Restart</button>
           <button class="btn" data-do="title">Main menu</button>
         </div>
-        <p class="fine">Esc or Space pauses. 1–8 pick a Scroller, right-click or Esc lets go.</p>
+        <p class="fine">Esc or Space pauses. 1–8 pick a zombie, right-click or Esc lets go.</p>
       </section>
 
       <section class="overlay lost" id="lost" hidden>
-        <h2 class="big">THE GARDEN HELD. NO WI-FI FOR YOU.</h2>
+        <h2 class="big">THE GARDEN HELD. NO BRAINS FOR YOU.</h2>
         <p class="copy" id="lost-copy"></p>
         <div class="row">
           <button class="btn go" data-do="restart">↻ Try again</button>
@@ -80,7 +82,7 @@
       </section>
     </div>
     <p class="rotate-hint">📱↻ Turn your phone sideways for a bigger lawn.</p>
-    <p class="help">Pick a Scroller at the top, then a square right of the red line. Get one to the router at the end of every row. Eaten Sun Daisies drop sun: click it.</p>
+    <p class="help">Pick a zombie at the top, then a square right of the red line. Get one to the brain at the end of every row. Eaten Sun Daisies drop sun: click it.</p>
   </main>
 </body>
 </html>

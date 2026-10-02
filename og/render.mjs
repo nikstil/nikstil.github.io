@@ -55,7 +55,7 @@ const noOnline = (ctx) => ctx.route('**/site.json', (r) => r.fulfill({ contentTy
   await page.locator('#screen').screenshot({ path: join(shots, 'doom.png') })
   await ctx.close()
 }
-// TOUCHGRASS.EXE, a staged moment on the pool level
+// LAWN OF THE DEAD, a staged moment on the pool level
 {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 } })
   const page = await ctx.newPage()
@@ -78,6 +78,7 @@ const noOnline = (ctx) => ctx.route('**/site.json', (r) => r.fulfill({ contentTy
     g.phase = 'won'
   })
   await page.waitForTimeout(300)
+  await page.waitForTimeout(300) // the pixel font
   await page.locator('#screen').screenshot({ path: join(shots, 'grass.png') })
   await ctx.close()
 }

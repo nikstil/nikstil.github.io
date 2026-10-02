@@ -1,9 +1,9 @@
 // TOUCHGRASS.EXE: draws a game (sim.js) onto a canvas: the area, the seed bank, plants,
-// Scrollers, shots, sun, fog and banners. Everything is in a fixed 960×620 space; app.js scales
+// zombies, shots, sun, fog and banners. Everything is in a fixed 960×620 space; app.js scales
 // the canvas to fit.
 
 import { PLANT_BY_ID } from './data.js'
-import { INK, circle, rr, drawPlant, drawShellFront, drawZombie, drawSun, drawCoin, drawShot, drawGrave, drawVase, drawMower, drawRake, drawReward, algorithmBot } from './art.js'
+import { INK, PIXEL_FONT, circle, rr, drawPlant, drawShellFront, drawZombie, drawSun, drawCoin, drawShot, drawGrave, drawVase, drawMower, drawRake, drawReward, algorithmBot } from './art.js'
 
 export const W = 960
 export const H = 620
@@ -173,7 +173,7 @@ function paintBackground(ctx, g) {
 }
 function paintHouse(ctx, g, L) {
   const night = g.area.night
-  // a pastel house wall with a door, and the Wi-Fi router everyone's after
+  // a pastel house wall with a door and a window
   ctx.fillStyle = night ? '#4a4a5a' : '#efe3c4'
   ctx.fillRect(0, L.y0 - 30, L.x0 - 34, H)
   ctx.fillStyle = night ? '#3a3a4a' : '#d9c9a0'
@@ -187,21 +187,11 @@ function paintHouse(ctx, g, L) {
   // the door
   rr(ctx, 12, L.y0 + 2.2 * L.th - 40, 46, 110, 6, night ? '#2a3a6a' : '#5a8ad8')
   circle(ctx, 50, L.y0 + 2.2 * L.th + 18, 3.5, '#ffd23f', INK, 1.5)
-  // the router
-  rr(ctx, 14, L.y0 + 0.6 * L.th, 46, 18, 4, '#f2f2f2')
-  for (const ax of [20, 36, 52]) {
-    ctx.strokeStyle = INK
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.moveTo(ax, L.y0 + 0.6 * L.th)
-    ctx.lineTo(ax - 2, L.y0 + 0.6 * L.th - 18)
-    ctx.stroke()
-  }
-  for (let i = 0; i < 4; i++) circle(ctx, 22 + i * 9, L.y0 + 0.6 * L.th + 9, 2, i % 2 ? '#3fe06a' : '#7fe0ff', null)
-  ctx.font = 'bold 9px Verdana, sans-serif'
-  ctx.fillStyle = night ? '#ccc' : '#6a5a6a'
-  ctx.textAlign = 'center'
-  ctx.fillText('WI-FI', 37, L.y0 + 0.6 * L.th + 34)
+  // a window (lit at night)
+  rr(ctx, 12, L.y0 + 0.3 * L.th, 46, 50, 3, night ? '#ffd86b' : '#9fd3ff')
+  ctx.fillStyle = INK
+  ctx.fillRect(34, L.y0 + 0.3 * L.th, 2, 50)
+  ctx.fillRect(12, L.y0 + 0.3 * L.th + 24, 46, 2)
 }
 function paintRoof(ctx, g, L) {
   // a roof with solar panels; the left five columns slope up
@@ -259,6 +249,131 @@ function paintRoof(ctx, g, L) {
  * { tool: 'shovel' | 'cannon' | 'mallet' }, banners: [{ text, kind, until }], now, paused,
  * shovel: whether the shovel is unlocked, flash: lawn cell to flash }
  */
+// ================= Pixel art =================
+// Every frame is drawn at 960×620, then shrunk PIXEL times with no smoothing (each block takes one
+// sample, so there are no soft edges) and blown back up with hard edges: chunky pixel art.
+// Text is held back while drawing and written straight onto the small picture afterwards, in the
+// pixel font at its real 8px size (numbers in a tiny 3×5 font where 8px won't fit), so it stays sharp.
+export const PIXEL = 3
+const buffers = new Map()
+function buffer(key, w, h) {
+  let b = buffers.get(key)
+  if (!b || b.width !== w || b.height !== h) {
+    b = document.createElement('canvas')
+    b.width = w
+    b.height = h
+    buffers.set(key, b)
+  }
+  return b
+}
+/**
+ * Pixel art in general: draw(ctx) draws a w×h picture (in its own units); it ends up on target
+ * (whose transform maps those units onto it) in blocks of `factor` units, with sharp text.
+ */
+export function pixelRender(target, w, h, factor, draw, key = 'main') {
+  const big = buffer(`${key}:big`, w, h)
+  const lo = buffer(`${key}:lo`, Math.ceil(w / factor), Math.ceil(h / factor))
+  const bc = big.getContext('2d')
+  bc.setTransform(1, 0, 0, 1, 0, 0)
+  bc.clearRect(0, 0, w, h)
+  const texts = []
+  const hold = (kind) =>
+    function (text, x, y) {
+      const m = this.getTransform()
+      texts.push({ kind, text: String(text), x: (m.a * x + m.c * y + m.e) / factor, y: (m.b * x + m.d * y + m.f) / factor, scale: Math.hypot(m.a, m.b) / factor, font: this.font, fill: this.fillStyle, stroke: this.strokeStyle, lineWidth: this.lineWidth, align: this.textAlign, base: this.textBaseline, alpha: this.globalAlpha })
+    }
+  bc.fillText = hold('fill')
+  bc.strokeText = hold('stroke')
+  draw(bc)
+  delete bc.fillText
+  delete bc.strokeText
+  const lc = lo.getContext('2d')
+  lc.imageSmoothingEnabled = false
+  lc.setTransform(1, 0, 0, 1, 0, 0)
+  lc.clearRect(0, 0, lo.width, lo.height)
+  lc.drawImage(big, 0, 0, lo.width, lo.height)
+  for (const t of texts) pixelText(lc, t)
+  target.save()
+  target.imageSmoothingEnabled = false
+  target.drawImage(lo, 0, 0, lo.width * factor, lo.height * factor)
+  target.restore()
+}
+/** Draws the game onto ctx (already scaled to the 960×620 space) as pixel art. */
+export function drawGamePixel(ctx, g, ui) {
+  pixelRender(ctx, W, H, PIXEL, (c) => drawGame(c, g, ui), 'game')
+}
+
+// A 3×5 font for numbers (and $, /, ×) that won't fit at 8px.
+const MINI = {
+  0: '111101101101111', 1: '010110010010111', 2: '111001111100111', 3: '111001111001111', 4: '101101111001001',
+  5: '111100111001111', 6: '111100111101111', 7: '111001010010010', 8: '111101111101111', 9: '111101111001111',
+  $: '011110111011110', '/': '001001010100100', '×': '000101010101000', ' ': '000000000000000', '-': '000000111000000',
+}
+function pixelText(lc, t) {
+  const size = parseFloat(t.font) || 16
+  const px = size * t.scale // its size on the small picture
+  lc.save()
+  lc.globalAlpha = t.alpha
+  const mini = px < 7 && /^[\d$/× -]+$/.test(t.text)
+  if (mini) {
+    // the tiny font: 4px per character, with a 1px dark outline
+    const w = t.text.length * 4 - 1
+    let x = Math.round(t.align === 'center' ? t.x - w / 2 : t.align === 'right' || t.align === 'end' ? t.x - w : t.x)
+    const y = Math.round(t.base === 'middle' ? t.y - 2.5 : t.base === 'top' ? t.y : t.y - 5)
+    if (t.kind === 'stroke') return lc.restore()
+    for (const ch of t.text) {
+      const bits = MINI[ch] ?? MINI[' ']
+      for (let i = 0; i < 15; i++) if (bits[i] === '1') {
+        lc.fillStyle = typeof t.fill === 'string' ? t.fill : '#000'
+        lc.fillRect(x + (i % 3), y + Math.floor(i / 3), 1, 1)
+      }
+      x += 4
+    }
+    return lc.restore()
+  }
+  // the pixel font at a whole multiple of its 8px design size: 16 for big text, else 8
+  let fs = px >= 14 ? 16 : 8
+  const room = lc.canvas.width - 8
+  lc.font = `${fs}px 'Press Start 2P', monospace`
+  if (fs > 8 && lc.measureText(t.text).width > room) {
+    fs = 8
+    lc.font = `${fs}px 'Press Start 2P', monospace`
+  }
+  // still too long: wrap it onto more lines
+  const lines = []
+  for (const word of t.text.split(' ')) {
+    const last = lines.at(-1)
+    if (last != null && lc.measureText(`${last} ${word}`).width <= room) lines[lines.length - 1] = `${last} ${word}`
+    else lines.push(word)
+  }
+  lc.textAlign = t.align
+  lc.textBaseline = t.base
+  const x = Math.round(t.x)
+  const lh = fs + 3
+  lines.forEach((ln, i) => {
+    const y = Math.round(t.y + (i - (lines.length - 1) / 2) * lh * (lines.length > 1 ? 1 : 0))
+    if (t.kind === 'stroke') {
+      // a hard outline: the text stamped in the outline colour all round it
+      lc.fillStyle = t.stroke
+      const r = Math.max(1, Math.round((t.lineWidth * t.scale) / 2))
+      for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) if (dx || dy) lc.fillText(ln, x + dx, y + dy)
+    } else {
+      lc.fillStyle = t.fill
+      lc.fillText(ln, x, y)
+    }
+  })
+  lc.restore()
+}
+/** Draws onto a whole canvas (draw gets its context, unscaled) as pixel art with blocks of `factor` canvas pixels. */
+export function pixelCanvas(c, factor, draw) {
+  const ctx = c.getContext('2d')
+  ctx.save()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.clearRect(0, 0, c.width, c.height)
+  pixelRender(ctx, c.width, c.height, factor, draw, `canvas:${c.width}x${c.height}`)
+  ctx.restore()
+}
+
 export function drawGame(ctx, g, ui) {
   const L = layout(g)
   const t = g.t
@@ -293,7 +408,7 @@ export function drawGame(ctx, g, ui) {
     ctx.stroke()
     ctx.restore()
   }
-  // Reverse (TOUCHPHONE): Scrollers go in to the right of the red line
+  // Reverse (the zombie side): zombies go in to the right of the red line
   if (g.special === 'reverse') {
     ctx.save()
     ctx.strokeStyle = '#e8322b'
@@ -314,7 +429,7 @@ export function drawGame(ctx, g, ui) {
   }
 
   const ps = L.th * 0.78 / 80 // plant scale
-  const zs = (L.th * 1.12) / 120 // Scroller scale
+  const zs = (L.th * 1.12) / 120 // zombie scale
 
   // rows, top to bottom (lower rows overlap higher ones)
   for (let r = 0; r < g.rows; r++) {
@@ -374,10 +489,10 @@ export function drawGame(ctx, g, ui) {
         ctx.restore()
       }
     }
-    // Scrollers in this row, back to front
+    // zombies in this row, back to front
     const zsRow = g.zombies.filter((z) => z.row === r && !z.gone).sort((a, b) => b.x - a.x)
     for (const z of zsRow) drawZ(ctx, g, z, L, zs, t)
-    // Reverse: the Wi-Fi router at the end of the row
+    // Reverse: the brain at the end of the row
     if (g.routers?.[r]) {
       ctx.save()
       ctx.translate(L.x0 - 0.42 * L.tw, rowY)
@@ -558,7 +673,7 @@ function drawZ(ctx, g, z, L, zs, t) {
   if (inWater && !(z.type === 'floatie' || z.floatie) && z.type !== 'scuba') ctx.translate(0, 26)
   drawZombie(ctx, z.floatie && z.type !== 'floatie' ? z.type : z.type, z, g.t)
   if (z.floatie && z.type !== 'floatie') {
-    // basic Scrollers in the pool get a flamingo float
+    // basic zombies in the pool get a flamingo float
     ctx.save()
     ctx.translate(4, -12)
     ctx.restore()
@@ -610,7 +725,7 @@ function drawFx(ctx, g, f, L, t) {
       ctx.ellipse(x, y, R, R * 0.75, 0, 0, Math.PI * 2)
       ctx.fill()
       if (f.kind !== 'squash' && k < 0.3) {
-        ctx.font = `bold ${30 + k * 30}px Impact, 'Arial Black', sans-serif`
+        ctx.font = PIXEL_FONT(Math.round((24 + k * 24) / 8) * 8)
         ctx.fillStyle = '#fff'
         ctx.strokeStyle = INK
         ctx.lineWidth = 4
@@ -662,7 +777,7 @@ function drawFx(ctx, g, f, L, t) {
       break
     }
     case 'drop':
-      ctx.font = 'bold 12px Verdana, sans-serif'
+      ctx.font = PIXEL_FONT(16)
       ctx.fillStyle = '#fff'
       ctx.strokeStyle = INK
       ctx.lineWidth = 3
@@ -679,7 +794,7 @@ function drawFx(ctx, g, f, L, t) {
       }
       break
     case 'whack':
-      ctx.font = 'bold 26px Impact, sans-serif'
+      ctx.font = PIXEL_FONT(24)
       ctx.fillStyle = '#ffd23f'
       ctx.strokeStyle = INK
       ctx.lineWidth = 4
@@ -689,7 +804,7 @@ function drawFx(ctx, g, f, L, t) {
       break
     case 'bonk':
     case 'bounce':
-      ctx.font = 'bold 18px Impact, sans-serif'
+      ctx.font = PIXEL_FONT(16)
       ctx.fillStyle = '#fff'
       ctx.strokeStyle = INK
       ctx.lineWidth = 3
@@ -757,41 +872,40 @@ function drawFog(ctx, g, L) {
   ctx.globalAlpha = 1
 }
 
-/** A home Wi-Fi router (TOUCHPHONE): blinking until a Scroller gets to it, then very much offline. */
+/** A brain on a plate at the end of a row (the zombie side): there until a zombie gets to it. */
 export function drawRouter(ctx, rt, t) {
   const eaten = rt?.eaten
   ctx.save()
-  if (eaten) ctx.rotate(-0.25)
-  // antennas
-  ctx.strokeStyle = INK
-  ctx.lineWidth = 5
-  ctx.lineCap = 'round'
+  // the plate
   ctx.beginPath()
-  ctx.moveTo(-18, -26)
-  ctx.lineTo(eaten ? -34 : -24, -64)
-  ctx.moveTo(18, -26)
-  ctx.lineTo(eaten ? 30 : 24, eaten ? -48 : -64)
+  ctx.ellipse(0, -6, 30, 9, 0, 0, Math.PI * 2)
+  ctx.fillStyle = '#f2f2f4'
+  ctx.fill()
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 2.5
   ctx.stroke()
-  rr(ctx, -32, -30, 64, 28, 7, eaten ? '#6d6f75' : '#f2f2f4')
-  rr(ctx, -32, -12, 64, 10, 4, eaten ? '#55575c' : '#cfd2d8', null)
-  for (let i = 0; i < 4; i++) {
-    const on = !eaten && Math.floor(t * 3 + i * 1.7) % 3 !== 0
-    circle(ctx, -18 + i * 12, -20, 3.2, eaten ? '#3a3a3a' : on ? '#3fe05a' : '#1d7a2c', null)
+  if (eaten) {
+    // just crumbs
+    for (const [cx, cy] of [[-10, -8], [6, -6], [12, -9]]) circle(ctx, cx, cy, 3, '#e98aa0', INK, 1.5)
+    ctx.restore()
+    return
   }
-  if (!eaten) {
-    // signal arcs
-    ctx.strokeStyle = `rgba(60,160,255,${0.5 + 0.4 * Math.sin(t * 4)})`
-    ctx.lineWidth = 4
-    for (let k = 1; k <= 3; k++) {
-      ctx.beginPath()
-      ctx.arc(0, -64, k * 9, -Math.PI * 0.75, -Math.PI * 0.25)
-      ctx.stroke()
-    }
-  } else {
-    ctx.fillStyle = '#e8322b'
-    ctx.font = 'bold 26px Verdana, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('✕', 0, -40)
+  const pulse = 1 + Math.sin(t * 3) * 0.03
+  ctx.translate(0, -24)
+  ctx.scale(pulse, pulse)
+  ctx.beginPath()
+  ctx.ellipse(0, 0, 24, 17, 0, 0, Math.PI * 2)
+  ctx.fillStyle = '#f2a0b4'
+  ctx.fill()
+  ctx.stroke()
+  // folds
+  ctx.strokeStyle = '#c4627c'
+  ctx.lineWidth = 2
+  for (const [a, b, c2, d] of [[-16, -6, -6, 0], [-14, 6, -2, 4], [2, -10, 10, -2], [6, 4, 16, 8], [0, -16, 0, 14]]) {
+    ctx.beginPath()
+    ctx.moveTo(a, b)
+    ctx.quadraticCurveTo((a + c2) / 2, b - 6, c2, d)
+    ctx.stroke()
   }
   ctx.restore()
 }
@@ -915,7 +1029,7 @@ export function drawPacket(ctx, id, x, y, w, h, { cost = null, ready = 1, afford
   } else drawPlant(ctx, id, imitated ? { imitated: true } : null, t)
   ctx.restore()
   if (cost != null) {
-    ctx.font = 'bold 13px Verdana, sans-serif'
+    ctx.font = PIXEL_FONT(16)
     ctx.fillStyle = affordable ? INK : '#b33'
     ctx.textAlign = 'center'
     ctx.fillText(String(cost), w / 2, h - 7)
@@ -964,7 +1078,7 @@ function drawBank(ctx, g, ui) {
     ctx.scale(0.75, 0.75)
     drawSun(ctx, g.t)
     ctx.restore()
-    ctx.font = 'bold 16px Verdana, sans-serif'
+    ctx.font = PIXEL_FONT(16)
     ctx.fillStyle = INK
     ctx.textAlign = 'center'
     ctx.fillText(String(g.sun), BANK.x + 6 + BANK.sunW / 2, BANK.y + BANK.h - 14)
@@ -1017,23 +1131,21 @@ function drawProgress(ctx, g) {
   const x = W - 236
   const y = H - 24
   const w = 160
-  ctx.font = 'bold 13px Verdana, sans-serif'
+  ctx.font = PIXEL_FONT(16)
   ctx.fillStyle = '#fff'
   ctx.strokeStyle = INK
   ctx.lineWidth = 3
   ctx.textAlign = 'right'
+  if (g.routers) {
+    const n = g.routers.filter((rt) => rt.eaten).length
+    const text = `BRAINS ${n}/${g.routers.length}`
+    ctx.strokeText(text, W - 12, y + 12)
+    ctx.fillText(text, W - 12, y + 12)
+    return
+  }
   const label = g.level.label ?? `Level ${g.level.id}`
   ctx.strokeText(label, x - 10, y + 12)
   ctx.fillText(label, x - 10, y + 12)
-  if (g.routers) {
-    const n = g.routers.filter((rt) => rt.eaten).length
-    const text = `📶 Routers: ${n} / ${g.routers.length}`
-    ctx.textAlign = 'left'
-    ctx.font = 'bold 16px Verdana, sans-serif'
-    ctx.strokeText(text, x, y + 12)
-    ctx.fillText(text, x, y + 12)
-    return
-  }
   if (!g.waves.total && !g.vases.length && !g.boss) return
   rr(ctx, x, y, w, 16, 8, '#3a3a3a', INK, 2)
   const k = g.progress()
@@ -1049,7 +1161,7 @@ function drawProgress(ctx, g) {
     ctx.fill()
     void fx
   }
-  // a little phone-zombie head showing how far along it is
+  // a little zombie head showing how far along it is
   circle(ctx, x + 2 + (w - 4) * (1 - k), y + 8, 9, '#c7c2d6', INK, 2)
 }
 
@@ -1057,18 +1169,19 @@ function drawBanners(ctx, g, ui) {
   const text = []
   if (g.phase === 'intro') {
     const k = g.introLeft
-    text.push({ text: k > 1.7 ? 'READY…' : k > 0.8 ? 'SET…' : g.special === 'reverse' ? 'SCROLL!' : 'PLANT!', kind: 'huge', size: k > 0.8 ? 54 : 66 })
+    text.push({ text: k > 1.7 ? 'READY…' : k > 0.8 ? 'SET…' : g.special === 'reverse' ? 'BRAINS!' : 'PLANT!', kind: 'huge', size: k > 0.8 ? 48 : 64 })
   }
-  for (const b of ui.banners ?? []) text.push({ ...b, size: b.kind === 'final' ? 64 : b.kind === 'huge' ? 30 : 40 })
+  for (const b of ui.banners ?? []) text.push({ ...b, size: b.kind === 'final' ? 48 : b.kind === 'huge' ? 24 : 32 })
   let y = H / 2 - 10
   for (const b of text.slice(-2)) {
     ctx.save()
-    ctx.font = `bold ${b.size}px Impact, 'Arial Black', sans-serif`
+    ctx.font = PIXEL_FONT(b.size)
     // long messages shrink to fit the screen
     const width = ctx.measureText(b.text).width
     if (width > W - 60) {
-      b.size = Math.floor((b.size * (W - 60)) / width)
-      ctx.font = `bold ${b.size}px Impact, 'Arial Black', sans-serif`
+      // (in steps of 8, so the pixel font stays sharp)
+      b.size = Math.max(8, Math.floor((b.size * (W - 60)) / width / 8) * 8)
+      ctx.font = PIXEL_FONT(b.size)
     }
     ctx.textAlign = 'center'
     ctx.lineWidth = 7
@@ -1081,7 +1194,7 @@ function drawBanners(ctx, g, ui) {
   }
 }
 
-// For the Almanac and the seed picker: a plant or Scroller on its own.
+// For the Almanac and the seed picker: a plant or zombie on its own.
 export function drawPlantCard(ctx, id, x, y, s, t = 0) {
   ctx.save()
   ctx.translate(x, y)

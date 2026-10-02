@@ -1,9 +1,9 @@
-/* TOUCHPHONE.EXE: TOUCHGRASS.EXE's frame (touchgrass/style.css), turned to the dark side. */
+/* BRAINS FIRST: LAWN OF THE DEAD's frame (touchgrass/style.css), turned to the dark side. */
 :root { --ink: #1f1830; --paper: #efe8ff; }
 body { background: radial-gradient(ellipse at 50% 20%, #8f7bd6, #4a3a86 55%, #1f1830); }
 .bar { background: linear-gradient(#4a3a86, #2e2358); color: #f4efff; }
 .overlay.title {
-  /* the same back yard, at night, lit by a phone screen */
+  /* the same back yard, at night, under a full moon */
   background:
     radial-gradient(circle at 78% 30%, rgba(120, 200, 255, .55), transparent 22%),
     linear-gradient(transparent 62%, rgba(0, 0, 0, .2) 62.5%, transparent 63%),

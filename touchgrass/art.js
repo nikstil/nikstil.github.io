@@ -5,6 +5,8 @@
 // tall; Scrollers stand on (0, 0) facing left, about 120 units tall. The caller scales.
 
 export const INK = '#2a2620'
+/** The pixel font (Press Start 2P, loaded by the page), at a size. */
+export const PIXEL_FONT = (px) => `${px}px 'Press Start 2P', monospace`
 const TAU = Math.PI * 2
 
 // ================= Little helpers =================
@@ -92,8 +94,14 @@ function leaf(ctx, x, y, len, ang, fill = '#5fbf4a') {
   ], 'rgba(0,0,0,.25)', 2)
   ctx.restore()
 }
-/** Dot eyes and a small mouth. mood: happy | sleep | angry | scared | sad | focus */
-function face(ctx, x, y, s = 1, mood = 'happy', look = 0) {
+/**
+ * Plants don't have faces (they're plants). Kept so every plant's art can still say where a face
+ * would go; sleeping mushrooms get their "z"s from the caller.
+ */
+function face() {}
+// The old cartoon face, unused.
+// eslint-disable-next-line no-unused-vars
+function oldFace(ctx, x, y, s = 1, mood = 'happy', look = 0) {
   ctx.save()
   ctx.translate(x, y)
   ctx.scale(s, s)
@@ -164,7 +172,7 @@ function face(ctx, x, y, s = 1, mood = 'happy', look = 0) {
 }
 function zzz(ctx, x, y, t) {
   ctx.save()
-  ctx.font = 'bold 13px Verdana, sans-serif'
+  ctx.font = PIXEL_FONT(16)
   ctx.fillStyle = '#bcd7ff'
   ctx.strokeStyle = INK
   ctx.lineWidth = 3
@@ -267,7 +275,7 @@ function daisy(ctx, x, y, t, { petal = '#fff', center = '#f8c62c', glow = 0, s =
   }
   circle(ctx, 0, 0, 15, center)
   if (coin) {
-    ctx.font = 'bold 15px Verdana, sans-serif'
+    ctx.font = PIXEL_FONT(16)
     ctx.fillStyle = '#8a5a00'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -648,10 +656,8 @@ const PLANT_ART = {
     ctx.closePath()
     path(ctx, fuse > 0.4 && Math.floor(t * 14) % 2 ? '#ff8a3d' : '#e8322b')
     rr(ctx, -5, -38, 10, 14, 4, '#3f9a3a')
-    // ghostly eyes
-    ellipse(ctx, -6, -4, 4, 6, '#fff', INK, 2)
-    ellipse(ctx, 6, -4, 4, 6, '#fff', INK, 2)
-    ellipse(ctx, 0, 10, 4, 5, INK, null)
+    // a shine on the skin
+    ellipse(ctx, -7, -8, 3, 7, 'rgba(255,255,255,.45)', null)
     ctx.restore()
   },
   rug: (ctx, p, t, a) => thornRug(ctx, a, false),
@@ -663,10 +669,8 @@ const PLANT_ART = {
       [6, sy],
     ], '#8a6a3a', 2)
     rr(ctx, -16, -82, 32, 30, 6, '#8a5a2e')
-    // carved face
-    rr(ctx, -10, -76, 8, 6, 2, '#ffd36b', INK, 2)
-    rr(ctx, 2, -76, 8, 6, 2, '#ffd36b', INK, 2)
-    rr(ctx, -8, -64, 16, 6, 2, '#5a2e12', INK, 2)
+    // a band of rope around the bowl
+    rr(ctx, -16, -70, 32, 6, 2, '#c49a5c', INK, 2)
     // the flame
     const fl = Math.sin(t * 14) * 3
     ctx.beginPath()
@@ -921,13 +925,8 @@ function coconut(ctx, p, tall) {
       [Math.cos(ang) * (r - 6), -30 * tall + Math.sin(ang) * (30 * tall - 8)],
     ], '#5a3418', 2)
   }
-  // a coconut's three "eyes": two eyes and a mouth
-  const fy = -34 * tall
-  for (const ex of [-8, 8]) {
-    circle(ctx, ex, fy, 5, '#3a1e0e', INK, 2)
-    circle(ctx, ex + 1.5, fy - 1.5, 1.4, '#fff', null)
-  }
-  ellipse(ctx, 0, fy + 13, 4, k < 0.33 ? 6 : 3.2, '#3a1e0e', INK, 2)
+  // the husk's grain
+  for (let i = -2; i <= 2; i++) line(ctx, [[i * 7, -48 * tall], [i * 8, -14 * tall]], 'rgba(60,30,14,.35)', 2)
   if (k < 0.66) line(ctx, [
     [-18, -30 * tall - 8],
     [-8, -30 * tall + 2],
@@ -964,10 +963,7 @@ function puffball(ctx, p, t, a, s) {
 function thornRug(ctx, a, rock, p) {
   rr(ctx, -34, -10, 68, 12, 4, rock ? '#7a7f88' : '#c46a3a')
   if (!rock) {
-    ctx.font = 'bold 7px Verdana, sans-serif'
-    ctx.fillStyle = '#ffe0b0'
-    ctx.textAlign = 'center'
-    ctx.fillText('WELCOME', 0, -2)
+    for (let i = -3; i <= 3; i++) rr(ctx, i * 9 - 2, -7, 4, 4, 1, '#ffe0b0', null)
   }
   for (let i = 0; i < 6; i++) {
     const x = -28 + i * 11
@@ -978,7 +974,7 @@ function thornRug(ctx, a, rock, p) {
     ], rock ? '#c9ced6' : '#e8e2d0', INK, 2)
   }
   if (rock && p) {
-    ctx.font = 'bold 9px Verdana, sans-serif'
+    ctx.font = PIXEL_FONT(8)
     ctx.fillStyle = '#fff'
     ctx.fillText(String(p.uses ?? 9), 28, -12)
   }
@@ -1030,7 +1026,7 @@ function magnetMorel(ctx, p, t, a, color) {
   if (p?.holding && p.timer > 0) {
     ctx.save()
     ctx.translate(0, -64)
-    ctx.font = 'bold 9px Verdana, sans-serif'
+    ctx.font = PIXEL_FONT(8)
     ctx.textAlign = 'center'
     rr(ctx, -20, -10, 40, 14, 4, '#c9ced6', INK, 2)
     ctx.fillStyle = INK
@@ -1057,12 +1053,12 @@ function lobber(ctx, t, a, color, ammo, big = false) {
   ctx.restore()
 }
 
-// ================= Scrollers =================
-const SKIN = '#b9c4b0'
-const SKIN_DARK = '#8d9a86'
+// ================= Zombies =================
+const SKIN = '#9fb88a'
+const SKIN_DARK = '#6f8a5e'
 /**
- * A Scroller: a hunched person staring at a phone. o: { shirt, pants, hat(ctx), front(ctx),
- * back(ctx), eat, walk (0..1 cycle), noPhone, scale, bodyless (legs hidden) }
+ * A zombie: hunched, shambling, arms out in front. o: { shirt, pants, hat(ctx), front(ctx),
+ * back(ctx), eat, walk (0..1 cycle), noPhone (hands busy: no reaching arm), scale, bodyless (legs hidden) }
  */
 function person(ctx, z, t, o = {}) {
   const walk = o.walk ?? 0
@@ -1100,63 +1096,54 @@ function person(ctx, z, t, o = {}) {
   ctx.save()
   ctx.translate(6, -46)
   ctx.rotate(-0.22)
-  rr(ctx, -14, -40, 28, 44, 10, o.shirt ?? '#6b8fb3')
+  rr(ctx, -14, -40, 28, 44, 10, o.shirt ?? '#7a5a3a')
   if (o.shirtDetail) o.shirtDetail(ctx)
+  else if (!o.shirt) {
+    // a torn shirt collar and a red tie
+    poly(ctx, [[-8, -40], [0, -32], [8, -40]], '#e8e2d0', INK, 1.5)
+    poly(ctx, [[-2, -33], [2, -33], [3, -14], [0, -10], [-3, -14]], '#b8322b', INK, 1.5)
+  }
   ctx.restore()
   // back arm
   if (!lostArm) {
     const ay = eat ? Math.sin(t * 12) * 4 : 0
     line(ctx, [
-      [8, -78],
-      [-10, -70 + ay],
-      [-22, -74 + ay],
+      [8, -80],
+      [-8, -84 + ay],
+      [-24, -86 + ay],
     ], INK, 10)
     line(ctx, [
-      [8, -78],
-      [-10, -70 + ay],
-      [-22, -74 + ay],
-    ], o.sleeve ?? o.shirt ?? '#6b8fb3', 6)
-    circle(ctx, -23, -74 + ay, 4, SKIN, INK, 2)
+      [8, -80],
+      [-8, -84 + ay],
+      [-24, -86 + ay],
+    ], o.sleeve ?? o.shirt ?? '#7a5a3a', 6)
+    circle(ctx, -26, -86 + ay, 4, SKIN, INK, 2)
   }
-  // head, bent towards the phone
+  // head, lolling forward
   const nod = eat ? Math.sin(t * 12) * 2 : Math.sin(walk * TAU * 2) * 1
   ctx.save()
   ctx.translate(-6, -92 + nod)
   if (!(z && z.headless)) {
     ellipse(ctx, 0, 0, 15, 17, z?.hypno ? '#d9c7ff' : SKIN)
-    // the glow of the screen on its face
-    if (!o.noPhone) {
-      ctx.globalAlpha = 0.35
-      ellipse(ctx, -8, 6, 8, 9, '#9fe7ff', null)
-      ctx.globalAlpha = 1
-    }
-    // eyes: tired, staring down at the phone
-    const eyeCol = z?.hypno ? '#a24bff' : '#2a2a3a'
-    ctx.fillStyle = eyeCol
-    ctx.beginPath()
-    ctx.ellipse(-9, 0, 3.2, 2.2, 0.3, 0, TAU)
-    ctx.fill()
-    ctx.beginPath()
-    ctx.ellipse(-1, 0, 3.2, 2.2, 0.3, 0, TAU)
-    ctx.fill()
+    // undead eyes: one wide and staring, one droopy
+    circle(ctx, -9, -1, 4.2, '#f4f1dc', INK, 1.5)
+    circle(ctx, -10, 0, 1.6, z?.hypno ? '#a24bff' : '#2a2a3a', null)
+    ellipse(ctx, -1, 1, 3.4, 2.4, '#f4f1dc', INK, 1.5)
+    circle(ctx, -2, 1.5, 1.2, z?.hypno ? '#a24bff' : '#2a2a3a', null)
+    // dark rings, a stitch on the cheek
     line(ctx, [
-      [-13, -4],
-      [-5, -3],
-    ], SKIN_DARK, 2)
-    line(ctx, [
-      [-4, -3],
-      [3, -4],
-    ], SKIN_DARK, 2)
-    // bags under the eyes
-    line(ctx, [
-      [-11, 4],
-      [-7, 5],
+      [-13, 4],
+      [-6, 5],
     ], SKIN_DARK, 1.5)
-    if (eat) ellipse(ctx, -10, 10, 4, 4 + Math.abs(Math.sin(t * 12)) * 3, '#5a3040', INK, 2)
-    else line(ctx, [
-      [-12, 10],
-      [-6, 9],
-    ], INK, 2)
+    line(ctx, [
+      [5, 4],
+      [9, 8],
+    ], SKIN_DARK, 1.5)
+    // the mouth: slack jaw, a couple of teeth
+    const jaw = eat ? 4 + Math.abs(Math.sin(t * 12)) * 3 : 3
+    rr(ctx, -15, 8, 11, jaw + 2, 2, '#3a1e24', INK, 1.5)
+    rr(ctx, -13, 8, 3, 3, 0.5, '#f4f1dc', null)
+    rr(ctx, -8, 8, 3, 3, 0.5, '#f4f1dc', null)
     // hair
     ctx.beginPath()
     ctx.ellipse(3, -8, 13, 9, 0.4, Math.PI * 1.1, Math.PI * 2.05)
@@ -1164,26 +1151,20 @@ function person(ctx, z, t, o = {}) {
     if (o.hat) o.hat(ctx)
   }
   ctx.restore()
-  // front arm with the phone
+  // front arm, reaching out
   if (!o.noPhone) {
-    const ay = eat ? Math.sin(t * 12 + 1) * 5 : 0
+    const ay = eat ? Math.sin(t * 12 + 1) * 5 : Math.sin(walk * TAU) * 2
     line(ctx, [
       [0, -78],
-      [-14, -66 + ay],
-      [-24, -82 + ay],
+      [-16, -76 + ay],
+      [-32, -78 + ay],
     ], INK, 10)
     line(ctx, [
       [0, -78],
-      [-14, -66 + ay],
-      [-24, -82 + ay],
-    ], o.sleeve ?? o.shirt ?? '#6b8fb3', 6)
-    ctx.save()
-    ctx.translate(-26, -88 + ay)
-    ctx.rotate(-0.5)
-    rr(ctx, -5, -9, 10, 18, 2.5, '#22252e', INK, 2)
-    rr(ctx, -3.5, -7, 7, 13, 1.5, z?.hypno ? '#c58bff' : '#7fe0ff', null)
-    ctx.restore()
-    circle(ctx, -24, -82 + ay, 4, SKIN, INK, 2)
+      [-16, -76 + ay],
+      [-32, -78 + ay],
+    ], o.sleeve ?? o.shirt ?? '#7a5a3a', 6)
+    circle(ctx, -34, -78 + ay, 4.5, SKIN, INK, 2)
   }
   if (o.front) o.front(ctx)
   ctx.restore()
@@ -1213,7 +1194,6 @@ const ZOMBIE_ART = {
   trend: (ctx, z, t, a) => {
     person(ctx, z, t, {
       ...a,
-      shirt: '#ff5fa2',
       back: (c) => {
         line(c, [
           [14, -60],
@@ -1226,40 +1206,53 @@ const ZOMBIE_ART = {
         c.lineTo(52, -124)
         c.quadraticCurveTo(36, -120 + wave, 20, -124)
         c.closePath()
-        path(c, '#fff', INK, 2)
-        c.save()
-        c.font = 'bold 15px Verdana, sans-serif'
-        c.fillStyle = '#ff2f7a'
-        c.textAlign = 'center'
-        c.fillText('#', 36, -132)
-        c.restore()
+        path(c, '#b8322b', INK, 2)
+        // a torn corner and a skull-ish blot
+        poly(c, [[44, -124], [52, -124], [52, -132]], '#7a5a3a', null)
+        circle(c, 34, -138, 5, '#f4f1dc', null)
       },
     })
   },
-  beanie: (ctx, z, t, a) => person(ctx, z, t, { ...a, shirt: '#8a6bb3', hat: z?.helmet === null && z ? null : beanie('#e8742e') }),
-  vr: (ctx, z, t, a) =>
+  beanie: (ctx, z, t, a) =>
     person(ctx, z, t, {
       ...a,
-      shirt: '#4a5a6a',
-      noPhone: !!(z ? z.helmet : true),
       hat:
         z?.helmet === null && z
           ? null
           : (c) => {
-              rr(c, -22, -10, 30, 16, 5, '#e9edf2')
-              rr(c, -20, -6, 18, 9, 3, '#2a3240', null)
-              line(c, [
-                [6, -6],
-                [16, -14],
-              ], '#2a3240', 4)
-              circle(c, -14, -2, 2, '#7fe0ff', null)
+              const dent = z?.helmet ? 1 - z.helmet.hp / z.helmet.max : 0
+              c.beginPath()
+              c.arc(0, -6, 17, Math.PI, 0)
+              c.closePath()
+              path(c, dent > 0.6 ? '#c9a226' : '#ffd23f')
+              rr(c, -22, -8, 44, 5, 2, dent > 0.6 ? '#c9a226' : '#ffd23f')
+              rr(c, -3, -22, 6, 15, 2, '#e8b800', null)
+              if (dent > 0.3) line(c, [[-8, -18], [-2, -10], [-6, -6]], INK, 1.5)
+            },
+    }),
+  vr: (ctx, z, t, a) =>
+    person(ctx, z, t, {
+      ...a,
+      hat:
+        z?.helmet === null && z
+          ? null
+          : (c) => {
+              // a dented cooking pot, upside down
+              const dent = z?.helmet ? 1 - z.helmet.hp / z.helmet.max : 0
+              rr(c, -18, -30, 36, 26, 4, '#aab2bc')
+              rr(c, -22, -8, 44, 6, 2, '#8a929c')
+              line(c, [[18, -20], [30, -22]], '#5a5a62', 4)
+              if (dent > 0.3) circle(c, -6, -20, 5, '#7a828c', null)
+              if (dent > 0.6) circle(c, 8, -14, 6, '#7a828c', null)
             },
     }),
   selfie: (ctx, z, t, a) =>
     person(ctx, z, t, {
       ...a,
-      shirt: '#ffcf3f',
+      shirt: '#e8e2d0',
+      pants: '#b8322b',
       hair: '#e8b04a',
+      shirtDetail: (c) => rr(c, -10, -30, 20, 6, 2, '#b8322b', null),
       front:
         z?.lostStick || (z && z.state === 'walk' && !z.def?.vaults)
           ? null
@@ -1269,10 +1262,9 @@ const ZOMBIE_ART = {
               c.translate(-20, -84)
               c.rotate(-0.6 - vault * 2)
               line(c, [
-                [0, 0],
-                [-70, 0],
-              ], '#c9ced6', 4)
-              rr(c, -80, -6, 12, 12, 2, '#22252e', INK, 2)
+                [30, 0],
+                [-80, 0],
+              ], '#c49a5c', 4)
               c.restore()
             },
     }),
@@ -1312,11 +1304,6 @@ const ZOMBIE_ART = {
                 [-44, -100 + i * 7],
                 [-16, -100 + i * 7],
               ], '#9a9a9a', 1.5)
-              c.save()
-              c.font = 'bold 6px Georgia, serif'
-              c.fillStyle = INK
-              c.fillText('NEWS', -44, -101)
-              c.restore()
             },
     }),
   bigscreen: (ctx, z, t, a) =>
@@ -1328,48 +1315,53 @@ const ZOMBIE_ART = {
           ? null
           : (c) => {
               const dmg = z?.shield ? 1 - z.shield.hp / z.shield.max : 0
-              rr(c, -64, -128, 56, 82, 4, '#2a2d34', INK, 3)
-              rr(c, -59, -123, 46, 70, 2, dmg > 0.6 ? '#334' : '#3fa6e8', null)
-              c.save()
-              c.globalAlpha = 0.5
-              rr(c, -55, -118, 18, 12, 2, '#fff', null)
-              c.restore()
-              if (dmg > 0.3) line(c, [
-                [-58, -100],
-                [-40, -84],
-                [-48, -66],
-              ], '#fff', 2)
-              line(c, [
-                [-36, -46],
-                [-36, -36],
-              ], INK, 4)
+              // a screen door: a frame with a wire mesh
+              rr(c, -64, -128, 56, 92, 3, '#8a929c', INK, 3)
+              rr(c, -58, -122, 44, 80, 1, dmg > 0.6 ? '#4a4f58' : '#6a717c', null)
+              c.strokeStyle = 'rgba(30,30,36,.5)'
+              c.lineWidth = 1
+              for (let i = 0; i < 11; i++) {
+                c.beginPath()
+                c.moveTo(-58 + i * 4, -122)
+                c.lineTo(-58 + i * 4, -42)
+                c.stroke()
+              }
+              for (let i = 0; i < 20; i++) {
+                c.beginPath()
+                c.moveTo(-58, -122 + i * 4)
+                c.lineTo(-14, -122 + i * 4)
+                c.stroke()
+              }
+              rr(c, -60, -86, 6, 10, 2, '#c9a226', INK, 1.5)
+              if (dmg > 0.3) line(c, [[-50, -110], [-32, -92], [-44, -70]], INK, 2)
             },
     }),
   cryptobro: (ctx, z, t, a) =>
     person(ctx, z, t, {
       ...a,
-      shirt: '#2b2f3a',
-      pants: '#c8b98a',
+      shirt: '#b8322b',
+      pants: '#2a2d34',
       shirtDetail: (c) => {
-        c.save()
-        c.font = 'bold 14px Verdana, sans-serif'
-        c.fillStyle = '#f7931a'
-        c.fillText('₿', -6, -14)
-        c.restore()
+        rr(c, -14, -22, 28, 6, 0, '#f4f1dc', null)
       },
       hat:
         z?.helmet === null && z
           ? null
           : (c) => {
+              // a hockey helmet with a cage
               c.beginPath()
-              c.arc(0, -2, 19, Math.PI * 0.9, Math.PI * 2.15)
+              c.arc(0, -2, 18, Math.PI * 0.95, Math.PI * 2.1)
               c.closePath()
-              path(c, '#d12a2a')
-              rr(c, -20, -6, 16, 10, 3, '#1a1a1a', INK, 2)
-              line(c, [
-                [-4, -20],
-                [10, -18],
-              ], '#fff', 3)
+              path(c, '#f4f1dc')
+              c.strokeStyle = '#8a929c'
+              c.lineWidth = 2
+              for (let i = 0; i < 4; i++) {
+                c.beginPath()
+                c.moveTo(-20 + i * 4, -4)
+                c.lineTo(-20 + i * 4, 14)
+                c.stroke()
+              }
+              line(c, [[-22, 4], [-6, 4]], '#8a929c', 2)
             },
     }),
   dancer: (ctx, z, t, a) => {
@@ -1382,17 +1374,10 @@ const ZOMBIE_ART = {
       shirt: '#9b3cff',
       pants: '#ff3fa8',
       shoes: '#fff',
+      hair: '#1a120c',
       hat: (c) => {
-        rr(c, -14, -18, 30, 10, 4, '#39e2ff')
-        rr(c, -22, -12, 18, 5, 2, '#39e2ff')
-      },
-      back: (c) => {
-        // ring light
-        circle(c, 30, -130, 16, null, '#fff9c4', 4)
-        line(c, [
-          [30, -114],
-          [30, -40],
-        ], '#5a5a6a', 3)
+        // a big afro
+        for (const [hx, hy, hr] of [[2, -14, 14], [-10, -10, 11], [14, -6, 11], [4, -2, 12]]) circle(c, hx, hy, hr, '#1a120c', null)
       },
     })
     ctx.restore()
@@ -1441,23 +1426,9 @@ const ZOMBIE_ART = {
       circle(ctx, wx, -12, 12, '#2a2d34')
       circle(ctx, wx, -12, 4, '#c9ced6', INK, 1.5)
     }
-    // giant slushie cup on the roof
-    poly(ctx, [
-      [8, -60],
-      [36, -60],
-      [32, -104],
-      [12, -104],
-    ], '#ff5fa2')
-    ellipse(ctx, 22, -104, 14, 6, '#5fd3ff')
-    line(ctx, [
-      [26, -104],
-      [32, -124],
-    ], '#fff', 3)
-    ctx.save()
-    ctx.font = 'bold 11px Verdana, sans-serif'
-    ctx.fillStyle = '#fff'
-    ctx.fillText('SLUSH', -46, -32)
-    ctx.restore()
+    // the ice tank on the back, and the scraper at the front
+    rr(ctx, 6, -100, 34, 42, 4, '#c9ced6')
+    rr(ctx, -62, -24, 12, 18, 2, '#8a929c')
     ctx.save()
     ctx.translate(-30, -100)
     ctx.scale(0.55, 0.55)
@@ -1487,23 +1458,21 @@ const ZOMBIE_ART = {
     const swell = z?.boomAt ? Math.max(0, 1 - (z.boomAt - t) / 8) : 0
     person(ctx, z, t, {
       ...a,
-      shirt: '#5a5a6a',
+      shirt: '#6a3a8a',
       back: (c) => {
         if (z && !z.box) return
         const s = 1 + swell * 0.4 + Math.sin(t * (6 + swell * 30)) * swell * 0.05
         c.save()
         c.translate(22, -80)
         c.scale(s, s)
-        rr(c, -12, -24, 24, 44, 5, '#2a2d34', INK, 3)
-        rr(c, -8, -18, 16, 30, 3, swell > 0.6 && Math.floor(t * 10) % 2 ? '#ff4d4d' : '#3fe06a', null)
-        poly(c, [
-          [2, -14],
-          [-4, -2],
-          [1, -2],
-          [-2, 8],
-          [5, -5],
-          [0, -5],
-        ], '#fff', null)
+        // a jack-in-the-box, the crank turning
+        rr(c, -16, -18, 32, 32, 3, swell > 0.6 && Math.floor(t * 10) % 2 ? '#ff4d4d' : '#b8322b', INK, 3)
+        rr(c, -16, -18, 32, 8, 2, '#ffd23f', null)
+        c.save()
+        c.translate(18, 0)
+        c.rotate(t * 6)
+        line(c, [[0, 0], [8, 0]], INK, 3)
+        c.restore()
         c.restore()
       },
     })
@@ -1512,20 +1481,16 @@ const ZOMBIE_ART = {
     const flying = z ? z.balloon > 0 : true
     ctx.save()
     if (flying) ctx.translate(0, -30 + Math.sin(t * 3) * 3)
-    person(ctx, z, t, { ...a, shirt: '#6bb3ff', walk: flying ? 0.25 : a.walk })
+    person(ctx, z, t, { ...a, shirt: '#3a7a4a', walk: flying ? 0.25 : a.walk })
     if (flying) {
+      // hanging off a big red balloon
       line(ctx, [
         [-10, -110],
-        [-10, -146],
-      ], '#5a5a6a', 2)
-      rr(ctx, -34, -156, 48, 10, 4, '#2a2d34')
-      for (const px of [-36, 16]) {
-        line(ctx, [
-          [px - 12, -160],
-          [px + 12, -160],
-        ], Math.floor(t * 30) % 2 ? '#9aa3ad' : '#d9dde3', 3)
-      }
-      circle(ctx, -10, -150, 3, '#3fe06a', null)
+        [-6, -150],
+      ], '#e8e2d0', 2)
+      ellipse(ctx, -6, -176, 22, 27, '#e8322b')
+      ellipse(ctx, -13, -186, 6, 9, 'rgba(255,255,255,.45)', null)
+      poly(ctx, [[-10, -150], [-2, -150], [-6, -145]], '#b8322b', null)
     }
     ctx.restore()
   },
@@ -1539,7 +1504,7 @@ const ZOMBIE_ART = {
     }
     person(ctx, z, t, {
       ...a,
-      shirt: '#e8962e',
+      shirt: '#5a4a3a',
       pants: '#4a4a3a',
       hat: (c) => {
         c.beginPath()
@@ -1574,17 +1539,8 @@ const ZOMBIE_ART = {
     ctx.translate(0, -hop)
     person(ctx, z, t, {
       ...a,
-      shirt: '#8a3cff',
-      hat: (c) => {
-        c.beginPath()
-        c.arc(-2, -2, 17, Math.PI * 1.05, Math.PI * 1.95)
-        path(c, null, '#2a2d34', 4)
-        circle(c, -18, 4, 5, '#2a2d34')
-        line(c, [
-          [-18, 6],
-          [-20, 18],
-        ], '#2a2d34', 2)
-      },
+      shirt: '#2a6bd1',
+      hair: '#c9a226',
     })
     if (z?.pogo || !z) {
       line(ctx, [
@@ -1652,7 +1608,7 @@ const ZOMBIE_ART = {
             },
     }),
   flinger: (ctx, z, t) => {
-    rr(ctx, -50, -50, 104, 38, 8, '#3f6b9a')
+    rr(ctx, -50, -50, 104, 38, 8, '#6a5a3a')
     for (const wx of [-30, 34]) {
       circle(ctx, wx, -10, 13, '#2a2d34')
       circle(ctx, wx, -10, 4, '#c9ced6', INK, 1.5)
@@ -1666,20 +1622,13 @@ const ZOMBIE_ART = {
       [-56, 0],
     ], '#8a6a3a', 6)
     rr(ctx, -66, -10, 16, 12, 3, '#6a4a2a')
-    if (z?.ammo > 0) rr(ctx, -62, -16, 8, 12, 2, '#22252e', INK, 2)
+    if (z?.ammo > 0) circle(ctx, -58, -12, 7, '#8a8a8a', INK, 2)
     ctx.restore()
     ctx.save()
     ctx.translate(-22, -48)
     ctx.scale(0.6, 0.6)
-    person(ctx, z, t, { shirt: '#3f6b9a', bodyless: true })
+    person(ctx, z, t, { shirt: '#5a6a3a', bodyless: true })
     ctx.restore()
-    if (z) {
-      ctx.save()
-      ctx.font = 'bold 10px Verdana, sans-serif'
-      ctx.fillStyle = '#fff'
-      ctx.fillText(`📱×${z.ammo}`, -40, -24)
-      ctx.restore()
-    }
   },
   gigachad: (ctx, z, t, a) => {
     const smash = z?.state === 'smash' ? Math.min(1, 1 - (z.smashAt - t) / 1.3) : 0
@@ -1687,17 +1636,17 @@ const ZOMBIE_ART = {
     ctx.scale(1.7, 1.7)
     person(ctx, z, t, {
       ...a,
-      shirt: '#e9e6f0',
-      pants: '#2a3a5a',
+      shirt: '#6a5a4a',
+      pants: '#3a3a2a',
       noPhone: true,
       keepArm: true,
-      hair: '#1a1a1a',
+      hair: '#3a2a1a',
       shirtDetail: (c) => {
         line(c, [
           [-8, -28],
           [-2, -20],
           [8, -28],
-        ], '#c9c3d6', 2)
+        ], '#4a3a2a', 2)
       },
       back:
         z && !z.imp
@@ -1706,27 +1655,16 @@ const ZOMBIE_ART = {
               c.save()
               c.translate(20, -84)
               c.scale(0.45, 0.45)
-              person(c, null, t, { shirt: '#ffd23f', noPhone: true })
+              person(c, null, t, { shirt: '#c9a226', noPhone: true })
               c.restore()
             },
       front: (c) => {
-        // the phone mast he swings
+        // the log he swings
         c.save()
         c.translate(-14, -84)
-        c.rotate(-0.4 + smash * 1.9 - (smash > 0.95 ? 0 : 0))
-        line(c, [
-          [0, 0],
-          [-6, -58],
-        ], '#9aa3ad', 5)
-        for (let i = 1; i < 4; i++) line(c, [
-          [-6 - i, -12 * i],
-          [6 - i, -12 * i - 6],
-        ], '#9aa3ad', 2)
-        poly(c, [
-          [-14, -64],
-          [2, -64],
-          [-6, -50],
-        ], '#c9ced6', INK, 2)
+        c.rotate(-0.4 + smash * 1.9)
+        rr(c, -8, -62, 14, 66, 5, '#7a5a3a', INK, 2)
+        for (let i = 1; i < 4; i++) line(c, [[-6, -14 * i], [2, -14 * i - 4]], '#5a3a1e', 2)
         c.restore()
       },
     })
@@ -1737,12 +1675,8 @@ const ZOMBIE_ART = {
     ctx.scale(0.62, 0.62)
     person(ctx, z, t, {
       ...a,
-      shirt: '#ffd23f',
-      noPhone: true,
-      front: (c) => {
-        rr(c, -42, -100, 24, 32, 3, '#22252e', INK, 2)
-        rr(c, -39, -97, 18, 26, 2, '#ff9f3f', null)
-      },
+      shirt: '#c9a226',
+      shirtDetail: (c) => line(c, [[-10, -30], [10, -18]], '#7a5a3a', 3),
     })
     ctx.restore()
   },
@@ -1774,7 +1708,7 @@ function flamingo(ctx, t) {
   ctx.restore()
 }
 
-/** The final boss: The Algorithm, in a giant robot made of server racks. */
+/** The final boss: a mad zombie scientist's giant robot. */
 export function algorithmBot(ctx, t, boss) {
   const hurt = boss?.hitAt != null && t - boss.hitAt < 0.08
   const head = boss?.head ? 1 : 0
@@ -1786,12 +1720,13 @@ export function algorithmBot(ctx, t, boss) {
     rr(ctx, lx, -160, 50, 160, 8, '#3a3f4a')
     for (let i = 0; i < 5; i++) circle(ctx, lx + 12, -140 + i * 28, 4, Math.floor(t * 3 + i) % 2 ? '#3fe06a' : '#1a5a2a', INK, 1.5)
   }
-  // body: a server rack
-  rr(ctx, -110, -420, 220, 270, 18, hurt ? '#fff' : '#4a5160')
-  for (let i = 0; i < 7; i++) {
-    rr(ctx, -94, -400 + i * 34, 188, 26, 4, '#2a2d34', INK, 2)
-    for (let j = 0; j < 6; j++) circle(ctx, -80 + j * 10, -387 + i * 34, 3, (i + j + Math.floor(t * 4)) % 3 ? '#3fe06a' : '#ff4d4d', null)
+  // body: riveted armour plates
+  rr(ctx, -110, -420, 220, 270, 18, hurt ? '#fff' : '#5a6070')
+  for (let i = 0; i < 4; i++) {
+    rr(ctx, -94, -400 + i * 62, 188, 52, 6, '#4a5060', INK, 2)
+    for (let j = 0; j < 8; j++) circle(ctx, -84 + j * 24, -392 + i * 62, 3, '#9aa3ad', null)
   }
+  rr(ctx, -40, -330, 80, 60, 10, (Math.floor(t * 3) % 2) ? '#ff4d4d' : '#b8322b', INK, 3)
   // arms
   for (const s of [-1, 1]) {
     line(ctx, [
@@ -1805,24 +1740,16 @@ export function algorithmBot(ctx, t, boss) {
       [s * 130, -220],
     ], '#6a7180', 24)
   }
-  // the head: a giant screen with a face made of the "loading" spinner
+  // the head: a robot skull with a glass dome, the scientist inside
   ctx.save()
   ctx.translate(-30, -470 + head * 150)
-  rr(ctx, -80, -70, 160, 120, 16, '#22252e')
-  rr(ctx, -70, -60, 140, 100, 10, boss?.ballKind === 'fire' && head ? '#ff6a2a' : boss?.ballKind === 'ice' && head ? '#7fd8ff' : '#7fe0ff', null)
-  for (let i = 0; i < 8; i++) {
-    const ang = t * 4 + (i / 8) * TAU
-    ctx.globalAlpha = (i + 1) / 8
-    circle(ctx, Math.cos(ang) * 22, -10 + Math.sin(ang) * 22, 5, '#22252e', null)
-  }
-  ctx.globalAlpha = 1
-  for (const ex of [-40, 40]) {
-    rr(ctx, ex - 14, -46, 28, 10, 4, '#22252e', null)
-  }
-  ctx.font = 'bold 13px Verdana, sans-serif'
-  ctx.fillStyle = '#22252e'
-  ctx.textAlign = 'center'
-  ctx.fillText('FOR YOU', 0, 30)
+  rr(ctx, -80, -70, 160, 120, 22, '#4a5060')
+  const mouthGlow = boss?.ballKind === 'fire' && head ? '#ff6a2a' : boss?.ballKind === 'ice' && head ? '#7fd8ff' : '#2a2d34'
+  rr(ctx, -50, 10, 100, 26, 6, mouthGlow, INK, 3)
+  for (let i = 0; i < 6; i++) rr(ctx, -46 + i * 16, 10, 10, 10, 2, '#c9ced6', null)
+  for (const ex of [-40, 40]) circle(ctx, ex, -24, 16, Math.floor(t * 4) % 2 ? '#ff4d4d' : '#ff8a8a', INK, 3)
+  ellipse(ctx, 0, -78, 40, 26, 'rgba(180,230,255,.55)', INK, 3)
+  circle(ctx, 0, -78, 14, SKIN, INK, 2)
   ctx.restore()
   ctx.restore()
 }
@@ -1847,19 +1774,7 @@ export function drawSun(ctx, t, small = false) {
     ctx.restore()
   }
   circle(ctx, 0, 0, 18, '#ffd84a', '#e08a00', 3)
-  ctx.restore()
-  // sunglasses: it's a cool sun
-  ctx.save()
-  ctx.scale(s, s)
-  rr(ctx, -13, -5, 11, 7, 3, '#22252e', null)
-  rr(ctx, 2, -5, 11, 7, 3, '#22252e', null)
-  line(ctx, [
-    [-2, -3],
-    [2, -3],
-  ], '#22252e', 2)
-  ctx.beginPath()
-  ctx.arc(0, 5, 5, 0.2 * Math.PI, 0.8 * Math.PI)
-  path(ctx, null, '#a35a00', 2)
+  circle(ctx, -5, -5, 6, '#fff3a0', null)
   ctx.restore()
 }
 export function drawCoin(ctx, kind, t) {
@@ -1882,7 +1797,7 @@ export function drawCoin(ctx, kind, t) {
   const w = Math.abs(Math.cos(t * 3)) * 13 + 2
   ellipse(ctx, 0, 0, w, 14, kind === 'gold' ? '#ffd23f' : '#d9dde3', kind === 'gold' ? '#a87a00' : '#7a808a', 2.5)
   if (w > 8) {
-    ctx.font = 'bold 13px Verdana, sans-serif'
+    ctx.font = PIXEL_FONT(16)
     ctx.fillStyle = kind === 'gold' ? '#a87a00' : '#7a808a'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -1965,11 +1880,11 @@ export function drawShot(ctx, s, t) {
         [sx, 10],
       ], s.kind === 'melon' ? '#2e7d32' : '#4aa3cf', 3)
       return
-    case 'phone':
+    case 'phone': // (the catapult's ammo: a rock)
       ctx.save()
-      ctx.rotate(t * 12)
-      rr(ctx, -6, -11, 12, 22, 3, '#22252e', INK, 2)
-      rr(ctx, -4, -8, 8, 15, 1.5, '#7fe0ff', null)
+      ctx.rotate(t * 8)
+      poly(ctx, [[-9, -4], [-3, -10], [7, -8], [10, 2], [2, 9], [-8, 6]], '#8a8a8a', INK, 2)
+      circle(ctx, -2, -3, 2, '#aaa', null)
       ctx.restore()
       return
     case 'cob':
@@ -1990,9 +1905,7 @@ export function drawShot(ctx, s, t) {
     case 'van':
       rr(ctx, -44, -40, 88, 44, 8, '#e8e2d6')
       rr(ctx, -40, -34, 22, 14, 2, '#7fe0ff', INK, 2)
-      ctx.font = 'bold 10px Verdana, sans-serif'
-      ctx.fillStyle = '#c42c2c'
-      ctx.fillText('ALGO', -10, -12)
+      rr(ctx, -14, -20, 40, 8, 2, '#b8322b', null)
       for (const wx of [-26, 26]) circle(ctx, wx, 4, 10, '#2a2d34')
       return
   }
@@ -2031,7 +1944,7 @@ export function drawVase(ctx, v, t) {
   ], '#a8885a', 3)
   if (v.leaf) leaf(ctx, -4, -40, 16, -0.4, '#5fbf4a')
   else {
-    ctx.font = 'bold 16px Verdana, sans-serif'
+    ctx.font = PIXEL_FONT(16)
     ctx.fillStyle = '#a8885a'
     ctx.textAlign = 'center'
     ctx.fillText('?', 0, -36)
@@ -2136,7 +2049,7 @@ export function drawReward(ctx, kind, unlock, t) {
     ctx.bezierCurveTo(-30, 24, -30, -10, -4, -18)
     ctx.closePath()
     path(ctx, '#c9a86a')
-    ctx.font = 'bold 22px Verdana, sans-serif'
+    ctx.font = PIXEL_FONT(24)
     ctx.fillStyle = '#5a7a2a'
     ctx.textAlign = 'center'
     ctx.fillText('$', 0, 12)
