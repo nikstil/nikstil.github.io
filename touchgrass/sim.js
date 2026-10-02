@@ -51,7 +51,7 @@ export function createGame(levelId, opts = {}) {
     t: 0,
     phase: 'intro', // 'intro' → 'play' → 'won' | 'lost'
     introLeft: opts.skipIntro ? 0 : 2.6,
-    sun: special === 'conveyor' || special === 'bowling' || special === 'tiny' || special === 'vase' || special === 'bungeeblitz' || special === 'boss' ? 0 : (opts.sun ?? level.sunStart),
+    sun: level.noSun || special === 'conveyor' || special === 'bowling' || special === 'tiny' || special === 'vase' || special === 'bungeeblitz' || special === 'boss' ? 0 : (opts.sun ?? level.sunStart),
     plants: [],
     zombies: [],
     shots: [],
@@ -114,16 +114,31 @@ export function createGame(levelId, opts = {}) {
     for (let r = 0; r < R; r++) for (let c = 0; c < (level.pots ?? 3); c++) addPlant('pot', r, c, { free: true })
   }
   if (special === 'boss') for (let r = 0; r < R; r++) for (let c = 0; c < 3; c++) addPlant('pot', r, c, { free: true })
-  // Conveyor-belt levels.
-  if (level.conveyor || special === 'bowling' || special === 'vase') g.belt = { items: [], timer: 1.5, cap: 10 }
-  // Vase Smasher: a wall of vases to break, half plants, half zombies.
-  if (special === 'vase') {
-    const plants = ['pea', 'double', 'frost', 'pom', 'coco', 'gulp', 'mine', 'ghost', 'zucchini', 'pea', 'double', 'pom']
-    const zs = ['scroller', 'scroller', 'beanie', 'beanie', 'vr', 'cryptobro', 'selfie', 'scroller', 'beanie', 'vr', 'scroller', 'beanie', 'selfie']
-    const contents = [...plants.map((id) => ({ plant: id })), ...zs.map((id) => ({ zombie: id }))].sort(() => rand() - 0.5)
-    let i = 0
-    for (let c = 4; c < 9; c++) for (let r = 0; r < R; r++) g.vases.push({ row: r, col: c, ...contents[i++ % contents.length], leaf: false })
-    for (const v of g.vases) v.leaf = !!v.plant && rand() < 0.35 // some vases show a leaf: a plant's inside
+  // Conveyor-belt levels (on the zombie side, a belt of zombies: level.zbelt).
+  if (level.conveyor || special === 'bowling' || special === 'vase') g.belt = { items: [], timer: 1.5, cap: 10, pending: 0 }
+  if (reverse && level.zbelt) g.belt = { items: [], timer: 1.5, cap: 10, pending: 0, zombie: true, left: level.zbeltTotal ?? Infinity }
+  // Vase Smasher: a wall of vases to break. level.vases: { cols: [from, to], contents: [{ plant } | { zombie }] }
+  // (the original level: half plants, half zombies, in the five columns on the right).
+  const vaseSpec =
+    level.vases ??
+    (special === 'vase'
+      ? {
+          cols: [4, 8],
+          contents: [
+            ...['pea', 'double', 'frost', 'pom', 'coco', 'gulp', 'mine', 'ghost', 'zucchini', 'pea', 'double', 'pom'].map((id) => ({ plant: id })),
+            ...['scroller', 'scroller', 'beanie', 'beanie', 'vr', 'cryptobro', 'selfie', 'scroller', 'beanie', 'vr', 'scroller', 'beanie', 'selfie'].map((id) => ({ zombie: id })),
+          ],
+        }
+      : null)
+  if (vaseSpec) {
+    const contents = [...vaseSpec.contents].sort(() => rand() - 0.5)
+    const spots = []
+    for (let c = vaseSpec.cols[0]; c <= vaseSpec.cols[1]; c++) for (let r = 0; r < R; r++) if (!g.isWater(r) && (!g.sod || g.sod.includes(r))) spots.push([r, c])
+    // fill from the right, so a short list leaves the left columns open
+    spots.sort((a, b) => b[1] - a[1] || a[0] - b[0])
+    contents.slice(0, spots.length).forEach((v, i) => g.vases.push({ row: spots[i][0], col: spots[i][1], ...v, leaf: false }))
+    for (const v of g.vases) v.leaf = !!v.plant && rand() < (vaseSpec.leafChance ?? 0.35) // some show a leaf: a plant's inside
+    g.vaseTotal = g.vases.length
   }
   // Reverse: the plants are in already ("r,c": plant id), and the seeds are zombies.
   if (reverse) {
@@ -142,7 +157,7 @@ export function createGame(levelId, opts = {}) {
     }
     g.routers = Array.from({ length: R }, (_, r) => ({ row: r, eaten: false, at: 0 }))
     g.line = level.line
-    g.zseeds = level.scrollers.map((z) => ({ ...z, readyAt: 0 }))
+    g.zseeds = (level.scrollers ?? []).map((z) => ({ ...z, readyAt: 0 }))
   }
   // Seeds: what you picked (or, on conveyor levels, nothing: the belt brings them).
   if (!g.belt && special !== 'whack' && special !== 'vase' && !reverse) {
@@ -205,7 +220,7 @@ export function createGame(levelId, opts = {}) {
     g.plants = g.plants.filter((x) => x !== p)
     if (how === 'eaten') sfx('gulp')
     // Reverse: an eaten Sun Daisy spills 150 sun (that's your money: three big ones).
-    if (reverse && how === 'eaten' && p.def.kind === 'sun') for (let i = 0; i < 3 * (p.def.count ?? 1); i++) dropSun(p.col + 0.15 + i * 0.25, p.row, 50)
+    if (reverse && !level.noSun && how === 'eaten' && p.def.kind === 'sun') for (let i = 0; i < 3 * (p.def.count ?? 1); i++) dropSun(p.col + 0.15 + i * 0.25, p.row, 50)
     if (how === 'smashed') g.fx.push({ kind: 'smash', x: p.col + 0.5, y: p.row, t: g.t, life: 0.6 })
   }
 
@@ -334,15 +349,40 @@ export function createGame(levelId, opts = {}) {
     return true
   }
 
+  /** Reverse: why a zombie of this type can't go at row r, column c (or null if it can). */
+  g.whyNotZombieAt = (id, r, c) => {
+    if (!ZOMBIE_BY_ID[id] || !g.rowOk(r) || c >= COLS) return 'off'
+    if (c < 0 || (c < g.line && !ZOMBIE_BY_ID[id].bungee)) return 'line'
+    if (g.isWater(r) && !ZOMBIE_BY_ID[id].water) return 'water'
+    if (g.vases.some((v) => v.row === r && v.col === c)) return 'vase'
+    return null
+  }
   /** Reverse: why zombie seed `i` can't go at row r, column c (or null if it can). */
   g.whyNotScroller = (i, r, c) => {
     const s = g.zseeds?.[i]
-    if (!s || !g.rowOk(r) || c >= COLS) return 'off'
-    if (c < 0 || (c < g.line && !ZOMBIE_BY_ID[s.id].bungee)) return 'line'
+    if (!s) return 'off'
+    const where = g.whyNotZombieAt(s.id, r, c)
+    if (where) return where
     if (g.sun < s.cost) return 'sun'
     if (g.t < s.readyAt) return 'charging'
-    if (g.isWater(r) && !ZOMBIE_BY_ID[s.id].water) return 'water'
     return null
+  }
+  /** Reverse: sends zombie `id` in at row r, column c (no checks). */
+  function sendZombie(id, r, c) {
+    // A Bungee Zombie drops onto any square (past the line or not) and takes the plant in it.
+    const z = ZOMBIE_BY_ID[id].bungee
+      ? spawn(id, r, c + 0.5, { bungee: 'aim', bungeeMode: 'steal', col: c, aimUntil: g.t + 0.6, state: 'bungee' })
+      : spawn(id, r, c + 0.6)
+    g.stats.planted++
+    sfx('plant')
+    return z
+  }
+  /** Reverse: sends zombie `i` off the conveyor belt. */
+  g.placeBeltZombie = (i, r, c) => {
+    const item = g.belt?.items[i]
+    if (!item?.zombie || g.phase !== 'play' || g.whyNotZombieAt(item.id, r, c)) return null
+    g.belt.items.splice(i, 1)
+    return sendZombie(item.id, r, c)
   }
   /** Reverse: sends zombie seed `i` onto the lawn at row r, column c. */
   g.placeScroller = (i, r, c) => {
@@ -350,13 +390,7 @@ export function createGame(levelId, opts = {}) {
     const s = g.zseeds[i]
     g.sun -= s.cost
     s.readyAt = g.t + (s.recharge ?? 0)
-    // A Bungee Thief drops onto any square (past the line or not) and takes the plant in it.
-    const z = ZOMBIE_BY_ID[s.id].bungee
-      ? spawn(s.id, r, c + 0.5, { bungee: 'aim', bungeeMode: 'steal', col: c, aimUntil: g.t + 0.6, state: 'bungee' })
-      : spawn(s.id, r, c + 0.6)
-    g.stats.planted++
-    sfx('plant')
-    return z
+    return sendZombie(s.id, r, c)
   }
 
   // ================= Drops: sun, coins, the reward =================
@@ -641,6 +675,7 @@ export function createGame(levelId, opts = {}) {
       }
       w.finalSpawned = true
     }
+    if (level.beltPerZombie && g.belt) g.belt.pending += spawned.filter(Boolean).length
     w.current = spawned
     w.currentHp = spawned.reduce((a, z) => a + totalHp(z), 0) || 1
     w.startedAt = g.t
@@ -679,7 +714,7 @@ export function createGame(levelId, opts = {}) {
     const left = w.current.filter((z) => !gone(z)).reduce((a, z) => a + totalHp(z), 0)
     return left < w.currentHp * 0.5
   }
-  g.progress = () => (W ? Math.min(1, g.waves.index / W) : g.vases.length ? 1 - g.vases.length / 25 : g.boss ? 1 - g.boss.hp / g.boss.maxHp : 0)
+  g.progress = () => (W ? Math.min(1, g.waves.index / W) : g.vases.length ? 1 - g.vases.length / (g.vaseTotal || 25) : g.boss ? 1 - g.boss.hp / g.boss.maxHp : 0)
 
   // Whack-a-Zombie: zombies climb out of gravestones that pop up all over the lawn.
   function riseFromGrave(type) {
@@ -716,7 +751,17 @@ export function createGame(levelId, opts = {}) {
     const [v] = g.vases.splice(i, 1)
     sfx('vase')
     g.fx.push({ kind: 'shards', x: c + 0.5, y: r, t: g.t, life: 0.7 })
-    if (v.plant) g.belt.items.push({ id: v.plant, x: 99 })
+    if (v.plant) {
+      if (reverse) {
+        // on the zombie side, a plant in a vase takes root right there
+        const p = addPlant(v.plant, r, c, { free: true })
+        p.asleep = false
+        if (p.def.kind === 'mine') {
+          p.armed = true
+          p.timer = 0
+        }
+      } else g.belt.items.push({ id: v.plant, x: Math.max(10.5, (g.belt.items.at(-1)?.x ?? 0) + 1) })
+    }
     if (v.zombie) spawn(v.zombie, r, c + 0.7, { state: 'walk' })
     return v
   }
@@ -900,6 +945,25 @@ export function createGame(levelId, opts = {}) {
     })
     if (special === 'vase') return
     b.timer -= dt
+    // one plant for every zombie (level.beltPerZombie): items owed come out a moment apart
+    if (level.beltPerZombie) {
+      if (b.pending > 0 && b.timer <= 0 && b.items.length < b.cap) {
+        b.items.push({ id: pick(level.conveyor), x: 10.5 })
+        b.pending--
+        b.timer = 0.7
+      }
+      return
+    }
+    if (b.zombie) {
+      if (b.left > 0 && b.timer <= 0 && b.items.length < b.cap) {
+        let id = pick(level.zbelt)
+        if (b.items.at(-1)?.id === id) id = pick(level.zbelt)
+        b.items.push({ id, x: 10.5, zombie: true })
+        b.left--
+        b.timer = level.beltEvery ?? 3.5
+      }
+      return
+    }
     if (b.timer <= 0 && b.items.length < b.cap) {
       let id
       if (special === 'bowling') id = rand() < 0.1 ? 'bowlBoom' : rand() < 0.06 ? 'bowlBig' : 'bowl'
@@ -910,7 +974,7 @@ export function createGame(levelId, opts = {}) {
         if (b.items.at(-1)?.id === id) id = pick(list)
       }
       b.items.push({ id, x: 10.5 })
-      b.timer = special === 'bowling' ? 3.2 : special === 'boss' ? 3 : 4.2
+      b.timer = special === 'bowling' ? 3.2 : special === 'boss' ? 3 : level.beltEvery ?? 4.2
     }
   }
   function stepSeeds() {
@@ -2089,10 +2153,11 @@ export function createGame(levelId, opts = {}) {
       if (g.routers.every((rt) => rt.eaten)) done = true
       else {
         // Lost: nobody left on the lawn, no sun left to pick up, and nothing you can afford.
-        const cheapest = Math.min(...g.zseeds.map((s) => s.cost))
+        const cheapest = g.zseeds.length ? Math.min(...g.zseeds.map((s) => s.cost)) : Infinity
         const sunLying = g.drops.some((d) => d.kind === 'sun' && !d.collected)
         const busy = alive.some((z) => z.dir < 0 || z.bungee)
-        if (!busy && !sunLying && g.sun < cheapest) {
+        const more = (g.belt && (g.belt.items.length > 0 || g.belt.left > 0)) || g.vases.some((v) => v.zombie)
+        if (!busy && !sunLying && g.sun < cheapest && !more) {
           g.phase = 'lost'
           sfx('lose')
           event('lost', { zombie: null })

@@ -44,6 +44,7 @@
           <button class="slab hero" data-do="next"><b id="next-label">Puzzles</b><small id="next-sub">Puzzle 1</small></button>
           <button class="slab" data-do="levels">Pick a Puzzle</button>
           <button class="slab" data-do="endless" id="endless-btn">Endless</button>
+          <button class="slab" data-do="minis">Mini-games</button>
         </div>
         <p class="wallet" id="record"></p>
         <p class="fine">The other side of LAWN OF THE DEAD. Gameplay borrowed from a lawn-defence classic’s “play the zombies” puzzles. Everything you can see is new.</p>
@@ -52,6 +53,12 @@
       <section class="overlay panel" id="levels" hidden>
         <h2>Pick a puzzle</h2>
         <div class="puzzles" id="puzzle-list"></div>
+        <div class="row"><button class="btn" data-do="title">← Back</button></div>
+      </section>
+
+      <section class="overlay panel" id="minis" hidden>
+        <h2>Mini-games</h2>
+        <div class="minis" id="mini-list"></div>
         <div class="row"><button class="btn" data-do="title">← Back</button></div>
       </section>
 

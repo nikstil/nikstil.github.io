@@ -4,10 +4,12 @@
 
 import { ZOMBIE_BY_ID } from '/touchgrass/data.js'
 import { createGame } from '/touchgrass/sim.js'
-import { W, H, drawGamePixel, toLawn, seedRect } from '/touchgrass/draw.js'
+import { W, H, drawGamePixel, toLawn, seedRect, beltRect } from '/touchgrass/draw.js'
 import { playSfx, setMusic, setSound, setVolume, getVolume, unlockAudio } from '/touchgrass/audio.js'
 import { PUZZLES, asLevel, endless } from '/touchphone/levels.js'
 import { drawTitleScene } from '/touchgrass/scene.js'
+import { MODES } from '/touchphone/minigames.js'
+import { AREAS } from '/touchgrass/data.js'
 
 const $ = (sel) => document.querySelector(sel)
 const q = new URLSearchParams(location.search)
@@ -66,7 +68,7 @@ $('#full').addEventListener('click', () => {
 $('#full').hidden = !document.documentElement.requestFullscreen
 
 // ================= Screens =================
-const SCREENS = ['title', 'levels', 'paused', 'lost', 'won']
+const SCREENS = ['title', 'levels', 'paused', 'lost', 'won', 'minis']
 let screen = 'title'
 let game = null
 let ui = null
@@ -83,6 +85,7 @@ function show(name) {
     renderTitle()
   }
   if (name === 'levels') renderLevels()
+  if (name === 'minis') renderMinis()
   $('#bar-sub').textContent = game && name !== 'title' ? game.level.label + (current?.puzzle ? ` · ${game.level.title}` : '') : 'You’re the zombies now'
 }
 
@@ -124,7 +127,7 @@ function begin(level, sun) {
   game = createGame(null, { level, sun })
   ui = { hover: null, mouse: null, holding: null }
   banners = []
-  const tip = current.puzzle?.tip
+  const tip = current.puzzle?.tip ?? (level.mini === 'vase' ? 'Click a vase to break it. Zombies inside go for the brains; plants take root.' : level.mini === 'conveyor' ? 'No sun: zombies arrive on the belt. Pick one, then a square right of the line.' : null)
   banners.push({ text: level.title, kind: 'go', until: performance.now() + 2400 })
   // the puzzle's tip, once the intro's done
   if (tip) banners.push({ text: tip, kind: 'info', from: performance.now() + 3200, until: performance.now() + 9500 })
@@ -154,8 +157,77 @@ function onEvents() {
   game.events.length = 0
 }
 
+// ================= Mini-games =================
+// (minigames.js: Conveyor Chaos and Vase Breaker, 10 levels each and a Random one)
+const miniDone = (mode) => save.minis?.[mode] ?? []
+const miniOpen = (mode, n) => n === 0 || miniDone(mode).includes(n) || miniDone(mode).includes(n - 1)
+function renderMinis() {
+  const list = $('#mini-list')
+  list.replaceChildren()
+  for (const m of MODES) {
+    const card = document.createElement('div')
+    card.className = 'mini-card'
+    card.innerHTML = `<h3>${m.name}</h3><p>${m.blurb}</p><div class="mini-levels"></div><p class="mini-random">${m.randomBlurb}</p>`
+    const row = card.querySelector('.mini-levels')
+    m.levels.forEach((l, n) => {
+      const b = document.createElement('button')
+      b.className = `lvl${miniDone(m.id).includes(n) ? ' done' : ''}`
+      b.textContent = String(n + 1)
+      b.title = `${l.title} (${AREAS[l.area].name})`
+      b.disabled = !miniOpen(m.id, n)
+      b.addEventListener('click', () => startMini(m.id, n))
+      row.append(b)
+    })
+    const r = document.createElement('button')
+    r.className = 'lvl random'
+    r.textContent = '🎲 Random'
+    r.title = m.randomBlurb
+    r.addEventListener('click', () => startMini(m.id, 'random'))
+    row.append(r)
+    list.append(card)
+  }
+}
+function startMini(mode, n, level = null) {
+  const m = MODES.find((x) => x.id === mode)
+  current = { mini: { mode, n, level: level ?? (n === 'random' ? m.random() : m.levels[n]) } }
+  begin(current.mini.level, 0)
+}
+function finishMini(won) {
+  const { mode, n, level } = current.mini
+  const m = MODES.find((x) => x.id === mode)
+  const brains = game.routers.filter((r) => r.eaten).length
+  if (won && n !== 'random' && !miniDone(mode).includes(n)) save.minis = { ...save.minis, [mode]: [...miniDone(mode), n] }
+  store()
+  if (!won) {
+    $('#lost-copy').textContent = `${level.label}: you got ${brains} of 5 brains before the ${mode === 'vase' ? 'vases' : 'belt'} ran out.`
+    show('lost')
+    return
+  }
+  $('#won-kicker').textContent = `${m.name} · ${level.label}`
+  $('#won-title').textContent = 'All five brains. Delicious.'
+  $('#won-copy').textContent = n === 'random' ? 'Another one? It’s different every time.' : n === 9 ? `That’s all of ${m.name}. Random has no end.` : ''
+  const buttons = $('#won-buttons')
+  buttons.replaceChildren()
+  const button = (text, go, fn) => {
+    const b = document.createElement('button')
+    b.className = `btn${go ? ' go' : ''}`
+    b.textContent = text
+    b.addEventListener('click', fn)
+    buttons.append(b)
+  }
+  if (n === 'random') button('🎲 Another random one', true, () => startMini(mode, 'random'))
+  else if (n < 9) button(`Next: ${m.name} ${n + 2} →`, true, () => startMini(mode, n + 1))
+  button('Mini-games', false, () => {
+    game = null
+    show('minis')
+  })
+  button('Main menu', false, () => show('title'))
+  show('won')
+}
+
 function finish(won) {
   if (!game) return
+  if (current.mini) return finishMini(won)
   const routers = game.routers.filter((r) => r.eaten).length
   if (!won) {
     if (current.endless != null) {
@@ -245,11 +317,23 @@ canvas.addEventListener('pointerdown', (e) => {
 const WHY = {
   line: 'Right of the red line (a Bungee Thief can go anywhere).',
   sun: 'Not enough sun.',
+  vase: 'There’s a vase in the way.',
 }
 function click(p) {
   const g = game
   if (g.phase !== 'play') return
   const lawn = toLawn(g, p.x, p.y)
+  // the zombie belt (Conveyor Chaos)
+  if (g.belt) {
+    for (let i = 0; i < g.belt.items.length; i++) {
+      if (!inside(p, beltRect(i, g.belt.items[i]))) continue
+      ui.holding = ui.holding?.from === 'belt' && ui.holding.index === i ? null : { zid: g.belt.items[i].id, from: 'belt', index: i }
+      playSfx('pick')
+      return
+    }
+  }
+  // vases (Vase Breaker)
+  if (g.vases.length && lawn.inside && !ui.holding && g.breakVase(lawn.r, lawn.c)) return
   for (let i = 0; i < g.zseeds.length; i++) {
     if (!inside(p, seedRect(i))) continue
     const s = g.zseeds[i]
@@ -266,6 +350,15 @@ function click(p) {
   // Sun (also while holding a zombie)
   if (g.collectAt(lawn.x, lawn.y)) return
   const h = ui.holding
+  if (h?.from === 'belt' && lawn.inside) {
+    const why = g.whyNotZombieAt(h.zid, lawn.r, lawn.c)
+    if (!why && g.placeBeltZombie(h.index, lawn.r, lawn.c)) ui.holding = null
+    else {
+      playSfx('buzz')
+      if (WHY[why]) banners.push({ text: WHY[why], kind: 'info', until: performance.now() + 1400 })
+    }
+    return
+  }
   if (h && lawn.inside) {
     const why = g.whyNotScroller(h.index, lawn.r, lawn.c)
     if (!why && g.placeScroller(h.index, lawn.r, lawn.c)) ui.holding = null
@@ -291,7 +384,10 @@ document.addEventListener('keydown', (e) => {
   }
   if (screen !== 'play') return
   const n = '12345678'.indexOf(e.key)
-  if (n >= 0 && n < game.zseeds.length) {
+  if (n >= 0 && game.belt?.items[n]) {
+    const r = beltRect(n, game.belt.items[n])
+    click({ x: r.x + 10, y: r.y + 10 })
+  } else if (n >= 0 && n < game.zseeds.length) {
     const r = seedRect(n)
     click({ x: r.x + 10, y: r.y + 10 })
   }
@@ -320,6 +416,7 @@ document.addEventListener('click', (e) => {
     if (nx) startPuzzle(nx)
     else show('levels')
   } else if (what === 'levels') show('levels')
+  else if (what === 'minis') show('minis')
   else if (what === 'endless') startEndless()
   else if (what === 'title') {
     paused = false
@@ -327,7 +424,8 @@ document.addEventListener('click', (e) => {
   } else if (what === 'resume') pause(false)
   else if (what === 'restart') {
     paused = false
-    if (current?.endless != null) startEndless(current.endless, current.sun)
+    if (current?.mini) startMini(current.mini.mode, current.mini.n, current.mini.level)
+    else if (current?.endless != null) startEndless(current.endless, current.sun)
     else if (current?.puzzle) startPuzzle(current.puzzle)
   }
 })

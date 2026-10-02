@@ -374,7 +374,7 @@ const PLANT_ART = {
     daisy(ctx, 0, -48, t, { petal: '#f7b928', center: '#ffe36b', glow, coin: true, s: 0.9 })
   },
   pom: (ctx, p, t) => {
-    const fuse = p ? Math.max(0, 1 - p.timer / p.def.fuse) : 0
+    const fuse = p?.def?.fuse ? Math.max(0, 1 - p.timer / p.def.fuse) : 0
     const s = 1 + fuse * 0.35 + (fuse > 0 ? Math.sin(t * 40) * fuse * 0.05 : 0)
     ctx.save()
     ctx.translate(0, -30)
