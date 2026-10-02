@@ -5,8 +5,9 @@
 import { ZOMBIE_BY_ID } from '/touchgrass/data.js'
 import { createGame } from '/touchgrass/sim.js'
 import { W, H, drawGamePixel, toLawn, seedRect } from '/touchgrass/draw.js'
-import { playSfx, setMusic, setSound, unlockAudio } from '/touchgrass/audio.js'
+import { playSfx, setMusic, setSound, setVolume, getVolume, unlockAudio } from '/touchgrass/audio.js'
 import { PUZZLES, asLevel, endless } from '/touchphone/levels.js'
+import { drawTitleScene } from '/touchgrass/scene.js'
 
 const $ = (sel) => document.querySelector(sel)
 const q = new URLSearchParams(location.search)
@@ -296,6 +297,18 @@ document.addEventListener('keydown', (e) => {
   }
 })
 
+// ================= Volume (the pause menu's sliders) =================
+{
+  const v = getVolume()
+  const music = document.querySelector('#vol-music')
+  const sfx = document.querySelector('#vol-sfx')
+  music.value = Math.round(v.music * 100)
+  sfx.value = Math.round(v.sfx * 100)
+  music.addEventListener('input', () => setVolume({ music: music.value / 100 }))
+  sfx.addEventListener('input', () => setVolume({ sfx: sfx.value / 100 }))
+  sfx.addEventListener('change', () => playSfx('sun'))
+}
+
 // ================= Buttons =================
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-do]')
@@ -337,6 +350,10 @@ function frame(now) {
     onEvents()
   } else acc = 0
   if (game && (game.phase === 'won' || game.phase === 'lost')) game.update(dt)
+  if (!game) {
+    drawTitleScene(ctx, now / 1000, { night: true, title: ['BRAINS', 'FIRST'] })
+    return
+  }
   const g = game ?? titleScene(now)
   banners = banners.filter((b) => b.until > now)
   const view = game ? { ...ui, banners: banners.filter((b) => !b.from || b.from <= now) } : { banners: [], hover: null, holding: null }

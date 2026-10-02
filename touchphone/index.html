@@ -38,12 +38,12 @@
       <button class="menu-btn" id="menu-btn" hidden>Menu</button>
 
       <section class="overlay title" id="title">
-        <h1 class="logo">BRAINS <span>FIRST</span></h1>
-        <p class="tag">The garden’s planted. The brains are behind it. You’re the zombies now.</p>
+        <h1 class="logo sr-only">BRAINS FIRST</h1>
+        <p class="tag sr-only">The garden’s planted. The brains are behind it. You’re the zombies now.</p>
         <div class="title-buttons">
-          <button class="btn big go" data-do="next"><b id="next-label">Puzzles</b><small id="next-sub">Puzzle 1</small></button>
-          <button class="btn" data-do="levels">🧩 Pick a puzzle</button>
-          <button class="btn" data-do="endless" id="endless-btn">♾️ Endless</button>
+          <button class="slab hero" data-do="next"><b id="next-label">Puzzles</b><small id="next-sub">Puzzle 1</small></button>
+          <button class="slab" data-do="levels">Pick a Puzzle</button>
+          <button class="slab" data-do="endless" id="endless-btn">Endless</button>
         </div>
         <p class="wallet" id="record"></p>
         <p class="fine">The other side of LAWN OF THE DEAD. Gameplay borrowed from a lawn-defence classic’s “play the zombies” puzzles. Everything you can see is new.</p>
@@ -55,14 +55,16 @@
         <div class="row"><button class="btn" data-do="title">← Back</button></div>
       </section>
 
-      <section class="overlay panel" id="paused" hidden>
-        <h2>Paused</h2>
-        <div class="row col">
-          <button class="btn go" data-do="resume">▶ Back to the lawn</button>
-          <button class="btn" data-do="restart">↻ Restart</button>
-          <button class="btn" data-do="title">Main menu</button>
+      <section class="overlay tomb" id="paused" hidden>
+        <div class="tombstone">
+          <h2>Menu</h2>
+          <label class="vol"><span>Music</span><input type="range" id="vol-music" min="0" max="100" aria-label="Music volume"></label>
+          <label class="vol"><span>Sound FX</span><input type="range" id="vol-sfx" min="0" max="100" aria-label="Sound effects volume"></label>
+          <button class="slab small" data-do="restart">Restart Puzzle</button>
+          <button class="slab small" data-do="title">Main Menu</button>
+          <button class="slab back" data-do="resume">Back to the Lawn</button>
+          <p class="fine">Esc or Space pauses · 1–8 pick a zombie</p>
         </div>
-        <p class="fine">Esc or Space pauses. 1–8 pick a zombie, right-click or Esc lets go.</p>
       </section>
 
       <section class="overlay lost" id="lost" hidden>

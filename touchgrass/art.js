@@ -27,7 +27,7 @@ function mix(hex, to, k) {
 }
 export const darken = (hex, k = 0.45) => mix(hex, 'black', k)
 export const lighten = (hex, k = 0.35) => mix(hex, 'white', k)
-function path(ctx, fill, stroke = INK, width = 3, box = null) {
+export function path(ctx, fill, stroke = INK, width = 3, box = null) {
   if (fill) {
     if (box && rgb(fill)) {
       const [x, y, w, h] = box
@@ -51,7 +51,7 @@ export function circle(ctx, x, y, r, fill, stroke = INK, width = 3) {
   ctx.arc(x, y, r, 0, TAU)
   path(ctx, fill, stroke, width, r > 3 ? [x - r, y - r, 2 * r, 2 * r] : null)
 }
-function ellipse(ctx, x, y, rx, ry, fill, stroke = INK, width = 3, rot = 0) {
+export function ellipse(ctx, x, y, rx, ry, fill, stroke = INK, width = 3, rot = 0) {
   ctx.beginPath()
   ctx.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot, 0, TAU)
   path(ctx, fill, stroke, width, rx > 3 ? [x - rx, y - ry, 2 * rx, 2 * ry] : null)
@@ -61,7 +61,7 @@ export function rr(ctx, x, y, w, h, r, fill, stroke = INK, width = 3) {
   ctx.roundRect(x, y, w, h, r)
   path(ctx, fill, stroke, width, w > 6 && h > 6 ? [x, y, w, h] : null)
 }
-function poly(ctx, pts, fill, stroke = INK, width = 3) {
+export function poly(ctx, pts, fill, stroke = INK, width = 3) {
   ctx.beginPath()
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
   ctx.closePath()
@@ -70,7 +70,7 @@ function poly(ctx, pts, fill, stroke = INK, width = 3) {
   const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)]
   path(ctx, fill, stroke, width, box[2] > 6 && box[3] > 6 ? box : null)
 }
-function line(ctx, pts, stroke = INK, width = 3) {
+export function line(ctx, pts, stroke = INK, width = 3) {
   ctx.beginPath()
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
   ctx.lineCap = 'round'
@@ -79,7 +79,7 @@ function line(ctx, pts, stroke = INK, width = 3) {
   ctx.strokeStyle = stroke
   ctx.stroke()
 }
-function leaf(ctx, x, y, len, ang, fill = '#5fbf4a') {
+export function leaf(ctx, x, y, len, ang, fill = '#5fbf4a') {
   ctx.save()
   ctx.translate(x, y)
   ctx.rotate(ang)

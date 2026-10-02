@@ -4,7 +4,8 @@
 import { LEVELS, LEVEL_BY_ID, PLANTS, PLANT_BY_ID, PLANT_ORDER, ZOMBIES, ZOMBIE_BY_ID, AREAS, SHOP, POTS_FROM, nextLevelId } from './data.js'
 import { createGame } from './sim.js'
 import { W, H, PIXEL, drawGamePixel, pixelCanvas, toLawn, seedRect, shovelRect, beltRect, drawPacket, drawPlantCard, drawZombieCard } from './draw.js'
-import { playSfx, setMusic, setSound, unlockAudio } from './audio.js'
+import { playSfx, setMusic, setSound, setVolume, getVolume, unlockAudio } from './audio.js'
+import { drawTitleScene } from './scene.js'
 
 const $ = (sel) => document.querySelector(sel)
 const $$ = (sel) => [...document.querySelectorAll(sel)]
@@ -31,17 +32,29 @@ function store() {
   }
 }
 const levelIndex = (id) => LEVELS.findIndex((l) => l.id === id)
-const reached = (id) => levelIndex(id) <= levelIndex(save.next) || save.beaten.includes(id)
+/** Open on the map: everything up to where you are, anything beaten or right after a beaten
+ * level, and the first level of every area (you can skip ahead to any of those). */
+const firstOfArea = (id) => id.endsWith('-1')
+const reached = (id) => {
+  const i = levelIndex(id)
+  return i <= levelIndex(save.next) || save.beaten.includes(id) || firstOfArea(id) || save.beaten.includes(LEVELS[i - 1]?.id)
+}
 /** Plants you've won (and upgrades you've bought). */
-function unlockedPlants() {
+/**
+ * Plants you've won (and upgrades you've bought). With `at` (a level), also every plant the levels
+ * before it give, so skipping ahead to an area doesn't leave you with just a Pea Spitter.
+ */
+function unlockedPlants(at = null) {
   const out = new Set(['pea'])
   for (const l of LEVELS) if (save.beaten.includes(l.id) && l.unlock) out.add(l.unlock)
+  if (at) for (const l of LEVELS.slice(0, levelIndex(at))) if (l.unlock) out.add(l.unlock)
+  if (at && levelIndex(at) >= levelIndex(POTS_FROM)) out.add('pot')
   for (const o of save.owned) if (o.startsWith('plant:')) out.add(o.slice(6))
   if (reached(POTS_FROM)) out.add('pot')
   return PLANT_ORDER.filter((id) => out.has(id))
 }
 const slots = () => 6 + ['slot7', 'slot8', 'slot9', 'slot10'].filter((s) => save.owned.includes(s)).length
-const hasShovel = () => save.beaten.includes('1-4')
+const hasShovel = (at = null) => save.beaten.includes('1-4') || (at != null && levelIndex(at) > levelIndex('1-4'))
 const shopOpen = () => save.beaten.includes('3-4')
 const almanacOpen = () => save.beaten.includes('1-8') || save.beaten.length >= 8
 
@@ -88,6 +101,7 @@ function show(name) {
   }
   if (name === 'levels') renderLevels()
   if (name === 'almanac') renderAlmanac()
+  if (name === 'paused') $('#pause-almanac').hidden = !almanacOpen()
   if (name === 'shop') renderShop()
   const lv = name === 'picker' ? LEVEL_BY_ID[pickedLevel] : game?.level
   $('#bar-sub').textContent = lv && name !== 'title' ? `${AREAS[lv.area].name} · Level ${lv.id}${lv.title ? ` · ${lv.title}` : ''}` : 'Your lawn vs. the dead'
@@ -119,6 +133,10 @@ function renderLevels() {
       b.textContent = l.id
       b.title = l.title ?? `Level ${l.id}`
       b.disabled = !reached(l.id)
+      if (firstOfArea(l.id) && levelIndex(l.id) > levelIndex(save.next ?? '5-10') && !save.beaten.includes(l.id)) {
+        b.classList.add('skip')
+        b.title = `Skip ahead to ${l.id}: you get every plant from the levels before it`
+      }
       b.addEventListener('click', () => startLevel(l.id))
       row.querySelector('.area-levels').append(b)
     }
@@ -135,7 +153,7 @@ function startLevel(id) {
   const level = LEVEL_BY_ID[id]
   pickedLevel = id
   const needsSeeds = !level.conveyor && !['bowling', 'whack', 'vase'].includes(level.special)
-  const have = unlockedPlants()
+  const have = unlockedPlants(id)
   if (!needsSeeds) return begin(id, [])
   if (level.plants) return begin(id, level.plants)
   const usable = have.filter((p) => PLANT_BY_ID[p])
@@ -176,7 +194,7 @@ function renderPicker() {
   })
   const grid = $('#seed-grid')
   grid.replaceChildren()
-  const have = unlockedPlants()
+  const have = unlockedPlants(pickedLevel)
   for (const id of PLANT_ORDER) {
     if (!have.includes(id)) continue
     const b = document.createElement('button')
@@ -229,7 +247,7 @@ function begin(id, seeds) {
   clearTimeout(endTimer)
   unlockAudio()
   game = createGame(id, { seeds, owned: save.owned })
-  ui = { hover: null, mouse: null, holding: null, banners: [], shovel: hasShovel() && !game.belt && !['whack', 'vase'].includes(game.special) }
+  ui = { hover: null, mouse: null, holding: null, banners: [], shovel: hasShovel(id) && !game.belt && !['whack', 'vase'].includes(game.special) }
   if (game.special === 'whack') ui.holding = { tool: 'mallet' }
   banners = []
   if (game.usedRake) {
@@ -286,7 +304,8 @@ function finish(won, e) {
     if (first) {
       save.beaten.push(level.id)
       const nx = nextLevelId(level.id)
-      if (levelIndex(save.next) <= levelIndex(level.id)) save.next = nx
+      // (skipping ahead doesn't move the Adventure along: it carries on from where you were)
+      if (save.next === level.id) save.next = nx
     } else {
       bag = 250
       save.coins += bag
@@ -473,7 +492,20 @@ document.addEventListener('keydown', (e) => {
   }
 })
 
+// ================= Volume (the pause menu's sliders) =================
+{
+  const v = getVolume()
+  const music = document.querySelector('#vol-music')
+  const sfx = document.querySelector('#vol-sfx')
+  music.value = Math.round(v.music * 100)
+  sfx.value = Math.round(v.sfx * 100)
+  music.addEventListener('input', () => setVolume({ music: music.value / 100 }))
+  sfx.addEventListener('input', () => setVolume({ sfx: sfx.value / 100 }))
+  sfx.addEventListener('change', () => playSfx('sun'))
+}
+
 // ================= Buttons =================
+let almanacFromPause = false
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-do]')
   if (!b) return
@@ -481,9 +513,16 @@ document.addEventListener('click', (e) => {
   const what = b.dataset.do
   if (what === 'adventure') startLevel(save.next ?? '5-10')
   else if (what === 'levels') show('levels')
-  else if (what === 'almanac') show('almanac')
+  else if (what === 'almanac') {
+    // from the pause menu, the Almanac's Back goes back to the pause menu
+    almanacFromPause = screen === 'paused'
+    show('almanac')
+  }
   else if (what === 'shop') show('shop')
-  else if (what === 'title') {
+  else if (what === 'title' && screen === 'almanac' && almanacFromPause) {
+    almanacFromPause = false
+    show('paused')
+  } else if (what === 'title') {
     paused = false
     show('title')
   } else if (what === 'resume') pause(false)
@@ -625,6 +664,11 @@ function frame(now) {
   } else acc = 0
   if (game && game.phase !== 'intro' && (game.phase === 'won' || game.phase === 'lost')) game.update(dt)
   // draw
+  // the title screen is its own little scene
+  if (!game) {
+    drawTitleScene(ctx, now / 1000, { night: false, title: ['LAWN OF', 'THE DEAD'] })
+    return
+  }
   const g = game ?? titleScene(now)
   if (g) {
     ui ??= { banners: [] }
