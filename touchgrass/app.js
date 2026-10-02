@@ -6,6 +6,7 @@ import { createGame } from './sim.js'
 import { W, H, SPRITE_PIXEL, drawGamePixel, pixelCanvas, toLawn, seedRect, shovelRect, beltRect, drawPacket, drawPlantCard, drawZombieCard } from './draw.js'
 import { playSfx, setMusic, setSound, setVolume, getVolume, unlockAudio } from './audio.js'
 import { drawTitleScene } from './scene.js'
+import { MODES } from './minigames.js'
 
 const $ = (sel) => document.querySelector(sel)
 const $$ = (sel) => [...document.querySelectorAll(sel)]
@@ -88,7 +89,7 @@ $('#full').addEventListener('click', () => {
 $('#full').hidden = !document.documentElement.requestFullscreen
 
 // ================= Screens =================
-const SCREENS = ['title', 'levels', 'picker', 'paused', 'lost', 'won', 'almanac', 'shop']
+const SCREENS = ['title', 'levels', 'picker', 'paused', 'lost', 'won', 'almanac', 'shop', 'minis']
 let screen = 'title'
 function show(name) {
   screen = name
@@ -101,10 +102,11 @@ function show(name) {
   }
   if (name === 'levels') renderLevels()
   if (name === 'almanac') renderAlmanac()
+  if (name === 'minis') renderMinis()
   if (name === 'paused') $('#pause-almanac').hidden = !almanacOpen()
   if (name === 'shop') renderShop()
   const lv = name === 'picker' ? LEVEL_BY_ID[pickedLevel] : game?.level
-  $('#bar-sub').textContent = lv && name !== 'title' ? `${AREAS[lv.area].name} · Level ${lv.id}${lv.title ? ` · ${lv.title}` : ''}` : 'Your lawn vs. the dead'
+  $('#bar-sub').textContent = lv && name !== 'title' ? `${AREAS[lv.area].name} · ${lv.label ?? `Level ${lv.id}`}${lv.title ? ` · ${lv.title}` : ''}` : 'Your lawn vs. the dead'
 }
 
 function renderTitle() {
@@ -148,7 +150,78 @@ function renderLevels() {
 let pickedLevel = null
 let chosen = []
 let copycatPending = false
+// ================= Mini-games =================
+// (minigames.js: Conveyor Chaos and Vase Breaker, 10 levels each and a Random one)
+let mini = null // the mini-game being played: { mode, n (0..9 or 'random'), level }
+const miniDone = (mode) => save.minis?.[mode] ?? []
+const miniOpen = (mode, n) => n === 0 || miniDone(mode).includes(n) || miniDone(mode).includes(n - 1)
+function renderMinis() {
+  const list = $('#mini-list')
+  list.replaceChildren()
+  for (const m of MODES) {
+    const card = document.createElement('div')
+    card.className = 'mini-card'
+    card.innerHTML = `<h3>${m.name}</h3><p>${m.blurb}</p><div class="mini-levels"></div><p class="mini-random">${m.randomBlurb}</p>`
+    const row = card.querySelector('.mini-levels')
+    m.levels.forEach((l, n) => {
+      const b = document.createElement('button')
+      b.className = `lvl${miniDone(m.id).includes(n) ? ' done' : ''}`
+      b.textContent = String(n + 1)
+      b.title = `${l.title} (${AREAS[l.area].name})`
+      b.disabled = !miniOpen(m.id, n)
+      b.addEventListener('click', () => startMini(m.id, n))
+      row.append(b)
+    })
+    const r = document.createElement('button')
+    r.className = 'lvl random'
+    r.textContent = '🎲 Random'
+    r.title = m.randomBlurb
+    r.addEventListener('click', () => startMini(m.id, 'random'))
+    row.append(r)
+    list.append(card)
+  }
+}
+function startMini(mode, n, level = null) {
+  const m = MODES.find((x) => x.id === mode)
+  mini = { mode, n, level: level ?? (n === 'random' ? m.random() : m.levels[n]) }
+  begin(mini.level, [])
+}
+function finishMini(won) {
+  const { mode, n, level } = mini
+  save.coins += game.coinsEarned
+  if (won && n !== 'random' && !miniDone(mode).includes(n)) save.minis = { ...save.minis, [mode]: [...miniDone(mode), n] }
+  store()
+  const m = MODES.find((x) => x.id === mode)
+  if (!won) {
+    $('#lost-copy').textContent = `${level.label}${n === 'random' ? '' : `: ${level.title}`}. Try again?`
+    show('lost')
+    return
+  }
+  $('#won-art').getContext('2d').clearRect(0, 0, 200, 160)
+  $('#won-kicker').textContent = `${m.name} · ${level.label}${game.coinsEarned ? ` · +$${game.coinsEarned}` : ''}`
+  $('#won-title').textContent = n === 'random' ? 'Random level cleared!' : n === 9 ? `All of ${m.name}, done!` : 'Cleared!'
+  $('#won-copy').textContent = n === 'random' ? 'Another one? It’s different every time.' : n === 9 ? 'Every level of it. Random has no end.' : ''
+  const buttons = $('#won-buttons')
+  buttons.replaceChildren()
+  const button = (text, go, fn) => {
+    const b = document.createElement('button')
+    b.className = `btn${go ? ' go' : ''}`
+    b.textContent = text
+    b.addEventListener('click', fn)
+    buttons.append(b)
+  }
+  if (n === 'random') button('🎲 Another random one', true, () => startMini(mode, 'random'))
+  else if (n < 9) button(`Next: ${m.name} ${n + 2} →`, true, () => startMini(mode, n + 1))
+  button('Mini-games', false, () => {
+    game = null
+    show('minis')
+  })
+  button('Main menu', false, () => show('title'))
+  show('won')
+}
+
 function startLevel(id) {
+  mini = null
   unlockAudio()
   const level = LEVEL_BY_ID[id]
   pickedLevel = id
@@ -246,8 +319,9 @@ let endTimer = null
 function begin(id, seeds) {
   clearTimeout(endTimer)
   unlockAudio()
-  game = createGame(id, { seeds, owned: save.owned })
-  ui = { hover: null, mouse: null, holding: null, banners: [], shovel: hasShovel(id) && !game.belt && !['whack', 'vase'].includes(game.special) }
+  // (a level object, for the mini-games, or an Adventure level's id)
+  game = typeof id === 'object' ? createGame(null, { level: id, seeds, owned: save.owned }) : createGame(id, { seeds, owned: save.owned })
+  ui = { hover: null, mouse: null, holding: null, banners: [], shovel: hasShovel(typeof id === 'object' ? null : id) && !game.belt && !['whack', 'vase'].includes(game.special) }
   if (game.special === 'whack') ui.holding = { tool: 'mallet' }
   banners = []
   if (game.usedRake) {
@@ -256,6 +330,8 @@ function begin(id, seeds) {
   }
   const level = game.level
   if (level.special && level.title) banners.push({ text: level.title, kind: 'go', until: performance.now() + 2600 })
+  const tip = level.mini === 'vase' ? 'Click a vase to break it. Plants inside become seeds; zombies climb out.' : level.mini === 'conveyor' ? 'No sun: plants arrive on the belt. Pick one, then a tile.' : null
+  if (tip) banners.push({ text: tip, kind: 'info', from: performance.now() + 3000, until: performance.now() + 8500 })
   setMusic(level.special === 'boss' ? 'boss' : level.area)
   show('play')
   save.seen = [...new Set([...(save.seen ?? []), ...level.zombies])]
@@ -295,6 +371,7 @@ const NOTES = {
 }
 function finish(won, e) {
   if (!game) return
+  if (mini) return finishMini(won)
   const level = game.level
   const earned = game.coinsEarned
   save.coins += earned
@@ -513,6 +590,7 @@ document.addEventListener('click', (e) => {
   const what = b.dataset.do
   if (what === 'adventure') startLevel(save.next ?? '5-10')
   else if (what === 'levels') show('levels')
+  else if (what === 'minis') show('minis')
   else if (what === 'almanac') {
     // from the pause menu, the Almanac's Back goes back to the pause menu
     almanacFromPause = screen === 'paused'
@@ -528,7 +606,8 @@ document.addEventListener('click', (e) => {
   } else if (what === 'resume') pause(false)
   else if (what === 'restart') {
     paused = false
-    startLevel(game?.level.id ?? pickedLevel)
+    if (mini) startMini(mini.mode, mini.n, mini.level) // (the same random level again)
+    else startLevel(game?.level.id ?? pickedLevel)
   }
 })
 
@@ -673,7 +752,7 @@ function frame(now) {
   if (g) {
     ui ??= { banners: [] }
     banners = banners.filter((b) => b.until > now)
-    const view = game ? { ...ui, banners } : { banners: [], hover: null, holding: null }
+    const view = game ? { ...ui, banners: banners.filter((b) => !b.from || b.from <= now) } : { banners: [], hover: null, holding: null }
     drawGamePixel(ctx, g, view)
   }
   if (screen === 'almanac') drawAlmanacArt(now / 1000)

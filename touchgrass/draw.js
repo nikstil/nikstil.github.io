@@ -925,7 +925,8 @@ function drawHolding(ctx, g, ui, L, ps) {
   const hv = ui.hover
   if (h.zid) {
     const zs = (L.th * 1.12) / 120
-    if (hv?.inside && !g.whyNotScroller(h.index, hv.r, hv.c)) {
+    const allowed = h.from === 'belt' ? !g.whyNotZombieAt(h.zid, hv?.r, hv?.c) : !g.whyNotScroller(h.index, hv?.r, hv?.c)
+    if (hv?.inside && allowed) {
       ctx.save()
       ctx.globalAlpha = 0.45
       ctx.translate(L.x0 + (hv.c + 0.6) * L.tw, L.y0 + (hv.r + 1) * L.th - L.th * 0.12)
@@ -960,7 +961,7 @@ function drawHolding(ctx, g, ui, L, ps) {
     ctx.translate(ui.mouse.x, ui.mouse.y + 20)
     ctx.scale(ps * 0.8, ps * 0.8)
     if (h.id.startsWith('bowl')) drawShot(ctx, { kind: 'roll', boom: h.id === 'bowlBoom', big: h.id === 'bowlBig' }, 0)
-    else drawPlant(ctx, h.id, { imitated: h.imitated }, g.t)
+    else drawPlant(ctx, h.id, h.imitated ? { imitated: true, def: PLANT_BY_ID[h.id], timer: 0 } : null, g.t)
     ctx.restore()
     return
   }
@@ -1060,6 +1061,8 @@ export function drawPacket(ctx, id, x, y, w, h, { cost = null, ready = 1, afford
 }
 
 function drawBank(ctx, g, ui) {
+  // nothing to pick from (the zombie side's vase levels): no bank
+  if (g.level.noSun && !g.belt && !g.zseeds?.length && !ui.shovel) return
   const n = g.belt ? 10 : Math.max(6, g.zseeds?.length ?? g.seeds.length)
   const width = BANK.seedX + n * (BANK.seedW + BANK.seedGap) + (ui.shovel ? BANK.shovelW + 16 : 8)
   rr(ctx, BANK.x, BANK.y, width, BANK.h, 10, '#6b4423', INK, 3)
@@ -1080,7 +1083,7 @@ function drawBank(ctx, g, ui) {
   }
   ctx.restore()
   // the sun counter (no sun on belt levels)
-  if (!g.belt) {
+  if (!g.belt && !g.level.noSun) {
     rr(ctx, BANK.x + 6, BANK.y + 6, BANK.sunW, BANK.h - 12, 8, '#f6eccb', '#8a6a2a', 2)
     ctx.save()
     ctx.translate(BANK.x + 6 + BANK.sunW / 2, BANK.y + 32)
@@ -1108,7 +1111,7 @@ function drawBank(ctx, g, ui) {
     g.belt.items.forEach((it, i) => {
       const r = beltRect(i, it)
       if (r.x > x1) return
-      drawPacket(ctx, it.id, r.x, r.y, r.w, r.h, { selected: ui.holding?.from === 'belt' && ui.holding.index === i, t: g.t })
+      drawPacket(ctx, it.id, r.x, r.y, r.w, r.h, { selected: ui.holding?.from === 'belt' && ui.holding.index === i, t: g.t, zombie: !!it.zombie })
     })
   } else if (g.zseeds) {
     g.zseeds.forEach((s, i) => {
@@ -1147,7 +1150,9 @@ function drawProgress(ctx, g) {
   ctx.textAlign = 'right'
   if (g.routers) {
     const n = g.routers.filter((rt) => rt.eaten).length
-    const text = `BRAINS ${n}/${g.routers.length}`
+    // (on the zombie belt, how many zombies are still to come)
+    const left = g.belt?.zombie ? ` · ${g.belt.left + g.belt.items.length} LEFT` : ''
+    const text = `BRAINS ${n}/${g.routers.length}${left}`
     ctx.strokeText(text, W - 12, y + 12)
     ctx.fillText(text, W - 12, y + 12)
     return
