@@ -273,6 +273,18 @@ export function drawGame(ctx, g, ui) {
     ctx.fillStyle = 'rgba(160,220,255,.75)'
     ctx.fillRect(x, L.y0 + r * L.th + L.th * 0.55, L.x0 + 9 * L.tw + 30 - x, L.th * 0.4)
   }
+  // Coconut Bowling: you can only bowl from behind the red line
+  if (g.special === 'bowling') {
+    ctx.save()
+    ctx.strokeStyle = '#e8322b'
+    ctx.lineWidth = 4
+    ctx.setLineDash([14, 8])
+    ctx.beginPath()
+    ctx.moveTo(L.x0 + 3 * L.tw, L.y0 - 4)
+    ctx.lineTo(L.x0 + 3 * L.tw, L.y0 + g.rows * L.th + 4)
+    ctx.stroke()
+    ctx.restore()
+  }
   for (const rk of g.rakes ?? []) {
     if (rk.used) continue
     ctx.save()
@@ -933,6 +945,12 @@ function drawBanners(ctx, g, ui) {
   for (const b of text.slice(-2)) {
     ctx.save()
     ctx.font = `bold ${b.size}px Impact, 'Arial Black', sans-serif`
+    // long messages shrink to fit the screen
+    const width = ctx.measureText(b.text).width
+    if (width > W - 60) {
+      b.size = Math.floor((b.size * (W - 60)) / width)
+      ctx.font = `bold ${b.size}px Impact, 'Arial Black', sans-serif`
+    }
     ctx.textAlign = 'center'
     ctx.lineWidth = 7
     ctx.strokeStyle = INK

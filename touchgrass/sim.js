@@ -279,7 +279,9 @@ export function createGame(levelId, opts = {}) {
     }
     if (g.whyNot(item.id, r, c)) return false
     g.belt.items.splice(i, 1)
-    placeFromSeed(item.id, r, c, false)
+    const p = placeFromSeed(item.id, r, c, false)
+    // Mushrooms off the belt come ready to work, even in daylight.
+    if (p) p.asleep = false
     return true
   }
   function placeFromSeed(id, r, c, imitated) {
