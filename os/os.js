@@ -52,7 +52,7 @@
     grass: { title: 'LAWN OF THE DEAD', icon: 'grass', width: 760, init: initGrass },
     phone: { title: 'BRAINS FIRST', icon: 'phone', width: 760, init: initPhone },
     loggle: { title: 'LOGGLE', icon: 'loggle', width: 480, init: initLoggle },
-    browser: { title: 'nikBrowser', icon: 'browser', width: 900, init: initBrowser },
+    browser: { title: 'BobbyBrowser', icon: 'browser', width: 900, init: initBrowser },
     mobile: { title: 'LigmaPhone', icon: 'mobile', width: 400, init: initMobile },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
@@ -563,7 +563,7 @@
   /** How many panels an app of this shape (width / height) needs. */
   const foldsFor = (aspect) => (!aspect || aspect <= 0.75 ? 1 : aspect <= 1.45 ? 2 : 3)
   const PHONE_APPS = [
-    { id: 'browser', label: 'Browser' },
+    { id: 'browser', label: 'BobbyBrowser' },
     { id: 'doom', label: 'DOOMSCROLL.EXE', aspect: 16 / 10 },
     { id: 'grass', label: 'LAWN OF THE DEAD', aspect: 960 / 672 },
     { id: 'phone', label: 'BRAINS FIRST', aspect: 960 / 672 },
@@ -586,26 +586,42 @@
       $('.mp-icon', li).addEventListener('click', () => launch(a))
       grid.append(li)
     }
-    // The window grows sideways as the phone unfolds, and back when it folds (it stays on screen).
-    function fit(panels, aspect) {
+    // Turned sideways (⟲), the phone is landscape: every app gets the wide screen, so nothing unfolds.
+    let landscape = false
+    // The window grows sideways as the phone unfolds or turns, and back (it stays on screen).
+    // `around` keeps it centred on that point (the rotation turns it about its middle).
+    function fit(panels, aspect, around) {
       if (win.el.classList.contains('is-max') || innerWidth < 640) return
       const room = innerHeight - taskbarHeight() - 16
       const chrome = 200 // title bar, padding, bezel, status bar, app bar and nav
-      const w = panels > 1 ? Math.min(panels === 2 ? 860 : 1040, innerWidth - 16, (room - chrome) * aspect + 64) : Math.min(400, innerWidth - 16)
+      let w
+      let h
+      if (landscape) {
+        w = Math.min(1100, innerWidth - 16, (room - 70) * 2 + 40)
+        h = (w - 40) / 2 + 70
+      } else if (panels > 1) {
+        w = Math.min(panels === 2 ? 860 : 1040, innerWidth - 16, (room - chrome) * aspect + 64)
+        h = (w - 64) / aspect + chrome
+      } else {
+        w = Math.min(400, innerWidth - 16)
+        h = Math.max(420, Math.min(700, innerHeight - 160)) + 62
+      }
       const r = win.el.getBoundingClientRect()
+      const cx = around?.x ?? r.left + r.width / 2
       win.el.style.width = `${w}px`
-      win.el.style.left = `${clamp(r.left + (r.width - w) / 2, 8, innerWidth - w - 8)}px`
-      const h = panels > 1 ? (w - 64) / aspect + chrome : r.height
-      if (r.top + h > room) win.el.style.top = `${Math.max(8, room - h)}px`
+      win.el.style.left = `${clamp(cx - w / 2, 8, innerWidth - w - 8)}px`
+      if (around && h) win.el.style.top = `${clamp(around.y - h / 2, 8, room - h)}px`
+      else if (h && r.top + h > room) win.el.style.top = `${Math.max(8, room - h)}px`
     }
     const phone = $('.mp', el)
     const mpScreen = $('.mp-screen', el)
-    function unfold(panels) {
-      phone.classList.remove('unfold-2', 'unfold-3')
+    function unfold(panels, animate = true) {
+      phone.classList.remove('unfold-2', 'unfold-3', 'unfolded')
       $$('.fold-fx, .fold-crease', mpScreen).forEach((n) => n.remove())
       if (panels < 2) return
       void phone.offsetWidth // restart the animation
       phone.classList.add(`unfold-${panels}`)
+      phone.classList.toggle('unfolded', !animate) // already open: no animation
       const fx = document.createElement('div')
       fx.className = `fold-fx fold-${panels}`
       fx.setAttribute('aria-hidden', 'true')
@@ -632,13 +648,54 @@
       $('.mp-bar-title', el).textContent = $('.mp-icon-name', $(`.mp-icon[data-app="${a.id}"]`, el)).textContent
       home.hidden = true
       screen.hidden = bar.hidden = false
-      const panels = foldsFor(a.aspect)
-      el.classList.toggle('mp-land', panels > 1)
-      el.style.setProperty('--ar', a.aspect ?? '')
-      el.dataset.panels = panels
-      fit(panels, a.aspect)
-      unfold(panels)
+      layout(true)
     }
+    /** Shapes the phone for the current app and orientation (unfolding it if `animate`). */
+    function layout(animate, around) {
+      const aspect = current?.aspect
+      const panels = landscape ? 1 : foldsFor(aspect)
+      el.classList.toggle('mp-landscape', landscape)
+      el.classList.toggle('mp-land', panels > 1)
+      el.style.setProperty('--ar', aspect ?? '')
+      el.dataset.panels = panels
+      el.dataset.orient = landscape ? 'landscape' : 'portrait'
+      fit(panels, aspect, around)
+      unfold(panels, animate)
+    }
+    // ⟲: the whole window turns a quarter, the screen blacked out with the rotation symbol turning
+    // along with it, then it fades back in on the new layout.
+    const cover = $('.rot-cover', el)
+    const icon = $('.rot-icon', el)
+    let turning = false
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+    async function rotate() {
+      if (turning) return
+      turning = true
+      const quick = reducedMotion()
+      const r = win.el.getBoundingClientRect()
+      const around = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+      const turn = landscape ? '90deg' : '-90deg'
+      icon.style.rotate = '0deg'
+      cover.classList.add('on')
+      await wait(quick ? 0 : 200)
+      if (!quick) {
+        win.el.classList.add('rot-turning')
+        win.el.style.rotate = turn
+        await wait(620)
+      }
+      // The screen is black, so the swap to the new shape doesn't show: the window stops turning
+      // and takes the new layout, and the symbol keeps the angle it had.
+      win.el.classList.remove('rot-turning')
+      win.el.style.rotate = ''
+      if (!quick) icon.style.rotate = turn
+      landscape = !landscape
+      layout(false, around)
+      await wait(quick ? 0 : 160)
+      cover.classList.remove('on')
+      await wait(quick ? 0 : 260)
+      turning = false
+    }
+    $('.mp-rotate', el).addEventListener('click', rotate)
     function stop() {
       if (typeof cleanup === 'function') cleanup()
       cleanup = null
@@ -649,10 +706,7 @@
       current = null
       home.hidden = false
       screen.hidden = bar.hidden = true
-      el.classList.remove('mp-land')
-      el.dataset.panels = 1
-      fit(1)
-      unfold(1)
+      layout(false)
     }
     $('.mp-back', el).addEventListener('click', goHome)
     $('.mp-homebtn', el).addEventListener('click', goHome)
@@ -676,7 +730,7 @@
     }
   }
 
-  // ================= nikBrowser =================
+  // ================= BobbyBrowser =================
   // A small web browser: pages load in a frame, so only sites that allow being embedded show up
   // (the start page lists some that do). Its theme filter makes every page look like the theme.
   const BROWSER_TILES = [
@@ -737,7 +791,7 @@
     }
     function go(q) {
       const url = resolve(q)
-      if (!url) return msgbox('nikBrowser', 'That address can’t be opened here.', '🧭')
+      if (!url) return msgbox('BobbyBrowser', 'That address can’t be opened here.', '🧭')
       history = history.slice(0, at + 1)
       history.push(url)
       at = history.length - 1
@@ -1052,9 +1106,11 @@
   const startBtn = $('#start-btn')
   const startMenu = $('#start-menu')
   const ctxMenu = $('#ctx-menu')
+  const appMenu = $('#app-menu')
   function closeMenus() {
     startMenu.hidden = true
     ctxMenu.hidden = true
+    appMenu.hidden = true
     startBtn.setAttribute('aria-expanded', 'false')
   }
   startBtn.addEventListener('click', () => {
@@ -1080,7 +1136,7 @@
   })
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return
-    if (!startMenu.hidden || !ctxMenu.hidden) return closeMenus()
+    if (!startMenu.hidden || !ctxMenu.hidden || !appMenu.hidden) return closeMenus()
     const active = [...open.values()].find((w) => w.el.classList.contains('is-active'))
     if (active?.el.classList.contains('is-msg')) closeWin(active)
   })
@@ -1106,6 +1162,120 @@
       desktop.classList.add('is-refreshing')
     }
   })
+
+  // ================= App menus =================
+  // Right-clicking inside any app opens a menu like the desktop's: what that app can do, then the
+  // window's own Minimize / Maximize / Close. It works inside the apps' pages too (the games,
+  // LOGGLE, the phone's apps), unless the page uses right-click itself, or you're on a text field
+  // or have text selected (then it's the browser's own menu, for copy and paste).
+  const nativeMenu = (target, doc = document) =>
+    !!target?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]') || !!doc.getSelection?.()?.toString()
+  const winOf = (node) => [...open.values()].find((w) => w.el === node?.closest?.('.win'))
+  function appMenuItems(win) {
+    const el = win.el
+    const items = []
+    const add = (label, run, extra) => items.push({ label, run, ...extra })
+    const live = (sel) => {
+      const b = $(sel, el)
+      return b && !b.disabled && !b.closest('[hidden]') ? b : null
+    }
+    const click = (sel) => () => $(sel, el)?.click()
+    // The phone: its buttons.
+    if ($('.mp', el)) {
+      if (live('.mp-bar')) add('⌂  Home screen', click('.mp-homebtn'))
+      add(el.dataset.orient === 'landscape' ? '⟲  Rotate to portrait' : '⟲  Rotate to landscape', click('.mp-rotate'))
+      if (live('.mp-pop')) add('⧉  Open in its own window', click('.mp-pop'))
+    }
+    // BobbyBrowser (in a window or on the phone): its toolbar.
+    if (live('.br-bar')) {
+      add('◀  Back', click('.br-back'), { disabled: !live('.br-back') })
+      add('▶  Forward', click('.br-fwd'), { disabled: !live('.br-fwd') })
+      add('⟳  Reload', click('.br-reload'))
+      add('⌂  Start page', click('.br-home'))
+      const out = $('.br-out', el)
+      if (out && !out.hidden && out.getAttribute('href') !== '#') add('↗  Open in a new tab', () => window.open(out.href, '_blank', 'noopener'))
+    } else {
+      // Apps that are a page in a frame (the games, LOGGLE, DOOMSCROLL): reload it, or open it on its own.
+      const frame = [...el.querySelectorAll('iframe')].find((f) => !f.closest('[hidden]'))
+      if (frame) add('⟳  Reload', () => (frame.src = frame.src))
+      const page = $('.win-foot a.btn[href]', el)
+      if (page && (frame || !$('.mp', el))) add(`⛶  ${page.textContent.replace(/^\W+/, '').trim() || 'Open full page'}`, () => (page.target ? window.open(page.href, '_blank', 'noopener') : (location.href = page.href)))
+    }
+    if (live('.tr-launch')) add(`▶  ${$('.tr-launch', el).textContent.replace(/^\W+/, '').trim()}`, click('.tr-launch'))
+    if (items.length) items.push('sep')
+    const max = el.classList.contains('is-max')
+    add('_  Minimize', () => minimize(win))
+    add(max ? '❐  Restore' : '□  Maximize', () => toggleMax(win))
+    add('✕  Close', () => closeWin(win), { danger: true })
+    return items
+  }
+  function showAppMenu(win, x, y) {
+    closeMenus()
+    focusWin(win)
+    appMenu.replaceChildren()
+    const head = document.createElement('div')
+    head.className = 'ctx-head'
+    head.innerHTML = '<span aria-hidden="true"></span><b></b>'
+    setIcon($('span', head), APPS[win.id]?.icon ?? 'pc')
+    const inPhone = !$('.mp-bar', win.el)?.hidden && $('.mp-bar-title', win.el)?.textContent
+    $('b', head).textContent = $('.win-title', win.el).textContent + (inPhone ? ` · ${inPhone}` : '')
+    appMenu.append(head)
+    for (const it of appMenuItems(win)) {
+      if (it === 'sep') {
+        appMenu.append(document.createElement('hr'))
+        continue
+      }
+      const b = document.createElement('button')
+      b.className = `ctx-item${it.danger ? ' ctx-danger' : ''}`
+      b.setAttribute('role', 'menuitem')
+      b.textContent = it.label
+      b.disabled = !!it.disabled
+      b.addEventListener('click', () => {
+        closeMenus()
+        it.run()
+      })
+      appMenu.append(b)
+    }
+    appMenu.hidden = false
+    const r = appMenu.getBoundingClientRect()
+    appMenu.style.left = `${Math.max(4, Math.min(x, innerWidth - r.width - 4))}px`
+    appMenu.style.top = `${Math.max(4, Math.min(y, innerHeight - r.height - 4))}px`
+    $('.ctx-item:not(:disabled)', appMenu)?.focus({ preventScroll: true })
+  }
+  layer.addEventListener('contextmenu', (e) => {
+    const win = winOf(e.target)
+    if (!win || e.defaultPrevented || nativeMenu(e.target)) return
+    e.preventDefault()
+    showAppMenu(win, e.clientX, e.clientY)
+  })
+  // Pages in the apps' frames (same-site ones; other sites keep their own menu).
+  document.addEventListener(
+    'load',
+    (e) => {
+      const frame = e.target
+      if (frame?.tagName !== 'IFRAME' || !frame.closest('.win')) return
+      let doc
+      try {
+        doc = frame.contentDocument
+      } catch {
+        return
+      }
+      if (!doc || doc.__nkMenu) return
+      doc.__nkMenu = true
+      doc.addEventListener('contextmenu', (ev) => {
+        if (ev.defaultPrevented || nativeMenu(ev.target, doc)) return
+        const win = winOf(frame)
+        if (!win) return
+        ev.preventDefault()
+        const r = frame.getBoundingClientRect()
+        const sx = frame.clientWidth ? r.width / frame.clientWidth : 1
+        const sy = frame.clientHeight ? r.height / frame.clientHeight : 1
+        showAppMenu(win, r.left + ev.clientX * sx, r.top + ev.clientY * sy)
+      })
+      doc.addEventListener('pointerdown', () => !appMenu.hidden && closeMenus())
+    },
+    true,
+  )
 
   // ================= Taskbar =================
   const clock = $('#clock')

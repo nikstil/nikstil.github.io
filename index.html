@@ -124,6 +124,8 @@
     <button class="ctx-item" role="menuitem" data-app="pc">About nikstilOS</button>
   </div>
 
+  <div class="ctx-menu app-menu" id="app-menu" role="menu" hidden></div>
+
   <!-- New-message notification (os/online-apps.js) -->
   <button class="balloon" id="balloon" hidden><span class="balloon-title"></span><span class="balloon-text"></span></button>
 
@@ -211,7 +213,7 @@
       </form>
       <div class="br-view">
         <div class="br-start">
-          <h3 class="br-logo">nik<b>Browser</b></h3>
+          <h3 class="br-logo">Bobby<b>Browser</b></h3>
           <form class="br-search" autocomplete="off">
             <label class="sr-only" for="br-q">Search Wikipedia</label>
             <input id="br-q" class="br-q" type="search" placeholder="Search Wikipedia…">
@@ -276,7 +278,9 @@
           <nav class="mp-nav">
             <button type="button" class="mp-back" aria-label="Back" title="Back">◀</button>
             <button type="button" class="mp-homebtn" aria-label="Home" title="Home">●</button>
+            <button type="button" class="mp-rotate" aria-label="Rotate" title="Rotate (landscape / portrait)">⟲</button>
           </nav>
+          <div class="rot-cover" aria-hidden="true"><span class="rot-icon"><svg viewBox="0 0 48 48" width="52" height="52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="10" width="16" height="28" rx="3"/><path d="M22 34h4"/><path d="M7 21A17 17 0 0 1 17 6"/><path d="M17 2v5h-5"/><path d="M41 27A17 17 0 0 1 31 42"/><path d="M31 46v-5h5"/></svg></span></div>
         </div>
       </div>
     </div>

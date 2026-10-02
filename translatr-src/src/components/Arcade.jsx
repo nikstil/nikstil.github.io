@@ -97,11 +97,19 @@ function Phone({ app }) {
   const shown = launching ?? app
   const info = ALL.find((g) => g.id === shown)
   const App = owned ? APPS[app] : null
-  const panels = owned && shown !== 'menu' ? foldsFor(info?.aspect) : 1
+  const ref = useRef(null)
+  // ⟲ turns it sideways: in landscape every app gets the wide screen, so nothing unfolds.
+  const [landscape, setLandscape] = useState(false)
+  const [skipFold, setSkipFold] = useState(false) // just turned back upright: already open
+  useEffect(() => setSkipFold(false), [shown])
+  const panels = owned && shown !== 'menu' && !landscape ? foldsFor(info?.aspect) : 1
+  const rot = useRotation(ref, () => {
+    setLandscape((l) => !l)
+    setSkipFold(true)
+  })
 
   // Esc pockets the phone from its home screen, when you're in it (games have a back button, and
   // some use Esc to pause; the rest of the page keeps its own Esc).
-  const ref = useRef(null)
   useEffect(() => {
     if (app !== 'menu') return
     const onKey = (e) => e.key === 'Escape' && ref.current?.contains(document.activeElement) && close(true)
@@ -129,8 +137,9 @@ function Phone({ app }) {
   return (
     <aside
       ref={ref}
-      className={`phone ${settled ? 'phone-settled' : ''} ${panels > 1 ? `phone-land unfold-${panels}` : ''}`}
-      style={panels > 1 ? { '--ar': info.aspect } : undefined}
+      className={`phone ${settled ? 'phone-settled' : ''} ${landscape ? 'phone-landscape' : ''} ${panels > 1 ? `phone-land unfold-${panels}` : ''} ${skipFold ? 'unfolded' : ''}`}
+      style={{ ...(panels > 1 ? { '--ar': info.aspect } : {}), ...rot.style }}
+      data-orient={landscape ? 'landscape' : 'portrait'}
       aria-label={info ? `${info.name} (LigmaPhone™)` : 'LigmaPhone™'}
       data-app={owned ? shown : 'locked'}
       data-panels={panels}
@@ -146,12 +155,20 @@ function Phone({ app }) {
           </div>
         )}
         <div className="phone-app">{screen}</div>
+        <div className={`rot-cover ${rot.dark ? 'on' : ''}`} aria-hidden="true">
+          <span className="rot-icon" style={{ rotate: rot.iconTurn }}>
+            <RotateIcon />
+          </span>
+        </div>
         <nav className="phone-nav">
           <button onClick={() => close(app === 'menu')} aria-label={App ? 'Back' : 'Put the phone away'} title={App ? 'Back' : 'Put the phone away'}>
             ◀
           </button>
           <button onClick={() => open('menu')} aria-label="Home" title="Home">
             ●
+          </button>
+          <button onClick={() => rot.start(landscape)} aria-label="Rotate" title="Rotate (landscape / portrait)" data-rotate>
+            ⟲
           </button>
           <button onClick={() => close(true)} aria-label="Put the phone away" title="Put the phone away (TRANSLATR™ resumes)">
             ✕
@@ -160,6 +177,64 @@ function Phone({ app }) {
       </div>
     </aside>
   )
+}
+
+function RotateIcon() {
+  return (
+    <svg viewBox="0 0 48 48" width="52" height="52" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="16" y="10" width="16" height="28" rx="3" />
+      <path d="M22 34h4" />
+      <path d="M7 21A17 17 0 0 1 17 6" />
+      <path d="M17 2v5h-5" />
+      <path d="M41 27A17 17 0 0 1 31 42" />
+      <path d="M31 46v-5h5" />
+    </svg>
+  )
+}
+
+const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+/** Where the phone's middle ends up for an orientation (see .phone and .phone-landscape). */
+function restingCentre(toLandscape) {
+  const vw = document.documentElement.clientWidth
+  const vh = window.innerHeight
+  if (toLandscape) {
+    const w = Math.min(vw - 16, 1000, (vh - 64) * 2)
+    return { x: vw / 2, y: vh - 52 - w / 4 }
+  }
+  const w = Math.min(380, vw - 16)
+  const h = Math.min(780, vh - 64)
+  return { x: vw - (vw <= 480 ? 8 : 12) - w / 2, y: vh - 52 - h / 2 }
+}
+/**
+ * ⟲: the screen blacks out, the whole phone turns a quarter (gliding to where it will rest) with
+ * the rotation symbol turning along, it takes its new shape under the black, then fades back in.
+ */
+function useRotation(ref, swap) {
+  const [state, setState] = useState({ dark: false, style: {}, iconTurn: '0deg' })
+  const busy = useRef(false)
+  const start = async (landscape) => {
+    if (busy.current || !ref.current) return
+    busy.current = true
+    const quick = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const turn = landscape ? '90deg' : '-90deg'
+    const r = ref.current.getBoundingClientRect()
+    const to = restingCentre(!landscape)
+    const glide = `translate(${to.x - (r.left + r.width / 2)}px, ${to.y - (r.top + r.height / 2)}px) rotate(${turn})`
+    setState({ dark: true, style: {}, iconTurn: '0deg' })
+    await wait(quick ? 0 : 200)
+    if (!quick) {
+      setState({ dark: true, style: { transform: glide, transition: 'transform 0.6s cubic-bezier(.45, .05, .25, 1)' }, iconTurn: '0deg' })
+      await wait(620)
+    }
+    // Under the black: stop turning, take the new shape; the symbol keeps the angle it had.
+    swap()
+    setState({ dark: true, style: {}, iconTurn: quick ? '0deg' : turn })
+    await wait(quick ? 0 : 160)
+    setState((s) => ({ ...s, dark: false }))
+    await wait(quick ? 0 : 260)
+    busy.current = false
+  }
+  return { ...state, start }
 }
 
 /** Not bought yet: the lock screen sells you the phone you're looking at. */

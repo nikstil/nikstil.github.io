@@ -53,8 +53,8 @@
       "hidden": false
     },
     "browser": {
-      "label": "Web Browser",
-      "title": "nikBrowser",
+      "label": "BobbyBrowser",
+      "title": "BobbyBrowser",
       "hidden": false
     },
     "mobile": {

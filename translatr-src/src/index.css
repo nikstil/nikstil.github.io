@@ -1467,7 +1467,7 @@ html.shooter-open .harvester { display: none; }
 /* Too narrow to sit beside the game (see arcadeInset in lib/dock.js): it covers the screen, so it
    goes over the FOMO popups and the AFK banner too (toasts and dialogs still show on top). */
 @media (max-width: 1019px) { .phone { z-index: 386; } }
-@media (max-width: 480px) { .phone:not(.phone-land) { right: 8px; width: calc(100vw - 16px); border-radius: 32px; } }
+@media (max-width: 480px) { .phone:not(.phone-land, .phone-landscape) { right: 8px; width: calc(100vw - 16px); border-radius: 32px; } }
 .phone-screen { position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 34px; color: var(--color-ink); background: linear-gradient(160deg, #f3ecff, #dfe9ff 45%, #ffe8f1); }
 .phone-land .phone-screen { border-radius: 26px; }
 .phone-status { position: relative; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; height: 30px; padding: 0 22px; font: 600 12px/1 system-ui, sans-serif; }
@@ -1847,3 +1847,27 @@ html.rogue-fried { filter: saturate(2.4) contrast(1.6) hue-rotate(-8deg); }
 .unfold-2 :is(.phone-notch, .mp-notch), .unfold-3 :is(.phone-notch, .mp-notch) { left: calc(100% - 100% / (2 * var(--n))); top: 7px; width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 3px #1d1f25; }
 /* The Z Fold's camera sits off to the side of its right panel (by the status icons), not centred. */
 .unfold-2 :is(.phone-notch, .mp-notch) { left: auto; right: 104px; translate: 0 0; }
+
+/* ---- Rotating the phone (⟲): the screen blacks out, a rotation symbol turns with it, then the
+   new layout fades in. The turn itself is the `rotate` property on the whole phone/window. ---- */
+.rot-cover { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; color: #fff; background: #000; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.26s ease, visibility 0s linear 0.26s; }
+.rot-cover.on { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.18s ease; }
+.rot-icon { display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; background: rgb(255 255 255 / 0.1); box-shadow: 0 0 0 1px rgb(255 255 255 / 0.15); }
+.rot-cover.on .rot-icon svg { animation: rot-nudge 0.6s ease-in-out 0.2s both; }
+@keyframes rot-nudge { 50% { transform: scale(1.15); } }
+.rot-turning { transition: rotate 0.6s cubic-bezier(.45, .05, .25, 1) !important; }
+.unfolded, .unfolded .fold-fx { animation: none !important; }
+.unfolded .fold-fx { display: none; }
+@media (prefers-reduced-motion: reduce) { .rot-cover.on .rot-icon svg { animation: none; } }
+/* Landscape: the phone on its side, centred above the taskbar. Every app gets the wide screen,
+   the buttons move to a column on the right and the camera to the left edge. */
+.phone-landscape { right: 50%; translate: 50% 0; width: min(calc(100vw - 16px), 1000px, calc((100dvh - 64px) * 2)); height: auto; aspect-ratio: 2 / 1; border-radius: 40px; }
+.phone-landscape .phone-screen { display: grid; grid-template: auto auto 1fr / 1fr auto; padding-left: 28px; border-radius: 30px; }
+.phone-landscape :is(.phone-status, .phone-appbar, .phone-app) { grid-column: 1; }
+.phone-landscape .phone-status { position: static; grid-row: 1; }
+.phone-landscape .phone-appbar { grid-row: 2; }
+.phone-landscape .phone-app { grid-row: 3; min-height: 0; }
+.phone-landscape .phone-notch { left: 8px; top: 50%; width: 18px; height: 84px; translate: 0 -50%; }
+.phone-landscape .phone-nav { grid-column: 2; grid-row: 1 / -1; flex-direction: column; justify-content: center; gap: 24px; padding: 12px 8px; }
+.phone-landscape .phone-nav button { width: 32px; height: 40px; }
+.phone-landscape .phone-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
