@@ -334,7 +334,7 @@ export const MAIL = [
     body: [
       'Remember Minesweeper, Solitaire and Snake? We do. We added a checkout.',
       'Mine$weeper: every mine is an upsell. Pay-Per-Card Solitaire: the first three cards are free. Wallet Snake: insert coin, eat money, and we keep 30%.',
-      'Winnings go straight to your wallet. Fees too, the other way. Find it all on the TRANSLATR™ Phone (Start menu → Phone). The phone is sold separately. Everything is sold separately.',
+      'Winnings go straight to your wallet. Fees too, the other way. Find it all on the LigmaPhone™ (Start menu → LigmaPhone). The phone is sold separately. Everything is sold separately.',
     ],
     actions: [{ label: '📱 Open the Phone', do: 'open:arcade' }],
   },

@@ -1439,7 +1439,7 @@ html.shooter-open .harvester { display: none; }
 .shooter-key:active { background: #444; }
 .shooter-fire { min-width: 96px; min-height: 96px; border-radius: 50%; color: #fff; background: radial-gradient(circle at 50% 35%, #ff6a5a, #b3261e 70%); border-color: #5a0000; }
 
-/* ---- The TRANSLATR™ Phone (components/Arcade.jsx and components/arcade/) ---- */
+/* ---- The LigmaPhone™ (components/Arcade.jsx and components/arcade/) ---- */
 .phone {
   position: fixed;
   right: 12px;
@@ -1453,29 +1453,29 @@ html.shooter-open .harvester { display: none; }
   box-shadow: inset 0 0 0 2px #5b5f69, inset 0 0 0 4px #0a0a0c, 0 24px 60px -10px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(0 0 0 / 0.6);
   animation: phone-in 0.32s cubic-bezier(.2, .8, .2, 1) both;
 }
+.phone-settled:not(.unfold-2, .unfold-3) { animation: none; }
 @keyframes phone-in { from { transform: translateY(110%) rotate(4deg); } }
 /* The nikstil.com games turn it sideways (the game pauses, so it can cover the page). */
 .phone-land {
   --land-h: min(calc(100dvh - 64px), 720px);
   right: 50%;
   translate: 50% 0;
-  width: min(calc(100vw - 16px), calc((var(--land-h) - 20px - 62px) * 960 / 672 + 20px));
+  width: min(calc(100vw - 16px), calc((var(--land-h) - 20px - 62px) * var(--ar, 1.43) + 20px));
   height: auto;
   border-radius: 36px;
-  animation-name: phone-turn;
 }
-@keyframes phone-turn { from { transform: rotate(-90deg) scale(0.5); opacity: 0; } }
 /* Too narrow to sit beside the game (see arcadeInset in lib/dock.js): it covers the screen, so it
    goes over the FOMO popups and the AFK banner too (toasts and dialogs still show on top). */
 @media (max-width: 1019px) { .phone { z-index: 386; } }
 @media (max-width: 480px) { .phone:not(.phone-land) { right: 8px; width: calc(100vw - 16px); border-radius: 32px; } }
-.phone-screen { display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 34px; color: var(--color-ink); background: linear-gradient(160deg, #f3ecff, #dfe9ff 45%, #ffe8f1); }
+.phone-screen { position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 34px; color: var(--color-ink); background: linear-gradient(160deg, #f3ecff, #dfe9ff 45%, #ffe8f1); }
 .phone-land .phone-screen { border-radius: 26px; }
 .phone-status { position: relative; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; height: 30px; padding: 0 22px; font: 600 12px/1 system-ui, sans-serif; }
 .phone-notch { position: absolute; left: 50%; top: 6px; width: 96px; height: 20px; translate: -50% 0; border-radius: 12px; background: #0b0b0d; }
 .phone-appbar { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 4px 14px 6px; font: 700 13px/1.2 system-ui, sans-serif; border-bottom: 1px solid rgb(0 0 0 / 0.08); }
 .phone-app { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
-.phone-land .phone-app { flex: none; aspect-ratio: 960 / 672; }
+.phone-land .phone-app { flex: none; aspect-ratio: var(--ar, 1.43); }
+.phone-splash { display: grid; flex: 1; place-items: center; font-size: 5rem; background: #000; }
 .phone-nav { display: flex; justify-content: space-around; flex-shrink: 0; padding: 4px 24px 8px; }
 .phone-nav button { width: 52px; height: 28px; border-radius: 14px; font: 14px/1 system-ui, sans-serif; color: rgb(0 0 0 / 0.55); }
 .phone-nav button:hover { background: rgb(0 0 0 / 0.07); color: #000; }
@@ -1483,6 +1483,39 @@ html.shooter-open .harvester { display: none; }
 .phone-embed { background: #2c6b2f; }
 .phone .arcade-body { color: #000; font: 13px/1.35 Tahoma, "MS Sans Serif", "Segoe UI", Arial, sans-serif; background: #c0c0c0; }
 .phone .doom-app { background: linear-gradient(180deg, rgb(244 248 252), rgb(230 238 247)); }
+/* ---- The fold: apps wider than the phone open it like a Z Fold (2 panels) or a trifold (3) ----
+   .unfold-2 or unfold-3 goes on the phone's body: it starts one panel wide (the rest folded behind the hinge)
+   and opens to the right. .fold-fx (inside the screen) draws the folded panels swinging out with
+   the screen still off, then the screen lights up. The hinges stay as faint creases. */
+.unfold-2 { --n: 2; --fold-ms: 0.9s; animation: unfold-2 var(--fold-ms) cubic-bezier(.45, .05, .25, 1) both; }
+.unfold-3 { --n: 3; --fold-ms: 1.3s; animation: unfold-3 var(--fold-ms) linear both; }
+@keyframes unfold-2 { from { clip-path: inset(0 50% 0 0 round 36px); } to { clip-path: inset(0 0 0 0 round 36px); } }
+@keyframes unfold-3 {
+  0% { clip-path: inset(0 66.67% 0 0 round 36px); animation-timing-function: cubic-bezier(.45, .05, .25, 1); }
+  50% { clip-path: inset(0 33.33% 0 0 round 36px); animation-timing-function: cubic-bezier(.45, .05, .25, 1); }
+  100% { clip-path: inset(0 0 0 0 round 36px); }
+}
+.fold-fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; perspective: 1400px; animation: fold-light var(--fold-ms) ease both; }
+.fold-fx::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 30%, #1c1e24, #0a0b0d 70%); }
+.fold-flap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(100% * var(--i) / var(--n));
+  width: calc(100% / var(--n));
+  transform-origin: left center;
+  background: linear-gradient(90deg, #2a2c33, #43464f 35%, #1b1c21);
+  box-shadow: inset 2px 0 0 rgb(255 255 255 / 0.1), -10px 0 28px rgb(0 0 0 / 0.55);
+  animation: flap-open var(--fold-ms) cubic-bezier(.45, .05, .25, 1) both;
+}
+.fold-3 .fold-flap { animation-duration: calc(var(--fold-ms) / 2); animation-delay: calc((var(--i) - 1) * var(--fold-ms) / 2); }
+@keyframes flap-open { from { transform: rotateY(-180deg); } to { transform: rotateY(0deg); } }
+@keyframes fold-light { 0%, 78% { opacity: 1; } 100% { opacity: 0; } }
+.fold-crease { position: absolute; top: 0; bottom: 0; z-index: 4; width: 8px; translate: -50% 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgb(0 0 0 / 0.06), rgb(255 255 255 / 0.1), rgb(0 0 0 / 0.06), transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .unfold-2, .unfold-3 { animation: none; }
+  .fold-fx { display: none; }
+}
 /* Home screen */
 .phone-home { flex: 1; overflow-y: auto; padding: 8px 14px 14px; }
 .phone-widget { display: grid; gap: 2px; padding: 12px 14px; border-radius: 20px; background: rgb(255 255 255 / 0.6); box-shadow: 0 6px 18px -8px rgb(40 20 90 / 0.35); }

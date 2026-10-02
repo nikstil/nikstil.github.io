@@ -1,11 +1,11 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGameStore } from '../store/useGameStore'
-import { ARCADE_GAMES, PHONE_APPS } from '../data/arcade'
+import { ARCADE_GAMES, PHONE_APPS, foldsFor } from '../data/arcade'
 import { PREMIUM_ITEMS } from '../data/gameData'
 import { money } from '../lib/format'
 
-// The TRANSLATR™ Phone (Start menu → Phone, or the 📱 on the taskbar): a smartphone docked to the
+// The LigmaPhone™ (Start menu → Phone, or the 📱 on the taskbar): a smartphone docked to the
 // bottom right of the screen, sold as a microtransaction. Its home screen holds DoomFeed™, a
 // browser and the Arcade, whose minigames are played right on it (DOOMSCROLL.EXE still goes full
 // screen, and the nikstil.com games turn the phone sideways). Each app is its own chunk, loaded
@@ -51,12 +51,53 @@ function StatusBar() {
   )
 }
 
+const UNFOLD_MS = { 2: 900, 3: 1300 }
+
+/** The unfolding: the folded-over panels swing open, screen off, then the screen lights up. */
+function FoldFx({ panels }) {
+  return (
+    <div className={`fold-fx fold-${panels}`} aria-hidden="true">
+      {Array.from({ length: panels - 1 }, (_, i) => (
+        <i key={i} className="fold-flap" style={{ '--i': i + 1 }} />
+      ))}
+    </div>
+  )
+}
+/** The hinges stay visible (faintly) once it's open. */
+function Creases({ panels }) {
+  return Array.from({ length: panels - 1 }, (_, i) => <i key={i} className="fold-crease" style={{ left: `${((i + 1) * 100) / panels}%` }} aria-hidden="true" />)
+}
+
 function Phone({ app }) {
   const close = useGameStore((s) => s.closeArcade)
-  const open = useGameStore((s) => s.openArcade)
+  const openApp = useGameStore((s) => s.openArcade)
   const owned = useGameStore((s) => !!s.premium?.smartphone)
-  const info = ALL.find((g) => g.id === app)
+  // DOOMSCROLL.EXE is too wide even for the trifold: the phone unfolds all the way, then the game
+  // takes the whole screen.
+  const [launching, setLaunching] = useState(null)
+  const open = (id) => {
+    if (id !== 'shooter') return openApp(id)
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return openApp(id)
+    setLaunching(id)
+  }
+  useEffect(() => {
+    if (!launching) return
+    const t = setTimeout(() => {
+      setLaunching(null)
+      openApp(launching)
+    }, UNFOLD_MS[3] + 250)
+    return () => clearTimeout(t)
+  }, [launching, openApp])
+  // The slide-in plays once; after that only the unfolding animates.
+  const [settled, setSettled] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), 400)
+    return () => clearTimeout(t)
+  }, [])
+  const shown = launching ?? app
+  const info = ALL.find((g) => g.id === shown)
   const App = owned ? APPS[app] : null
+  const panels = owned && shown !== 'menu' ? foldsFor(info?.aspect) : 1
 
   // Esc pockets the phone from its home screen, when you're in it (games have a back button, and
   // some use Esc to pause; the rest of the page keeps its own Esc).
@@ -69,8 +110,9 @@ function Phone({ app }) {
   }, [app, close])
 
   let screen
-  if (!owned) screen = <LockScreen />
-  else if (!App) screen = <HomeScreen />
+  if (launching) screen = <div className="phone-splash">{info?.icon}</div>
+  else if (!owned) screen = <LockScreen />
+  else if (!App) screen = <HomeScreen open={open} />
   else
     screen = (
       <Suspense fallback={<div className="p-6 text-center">Loading… (buffering an ad)</div>}>
@@ -85,10 +127,19 @@ function Phone({ app }) {
     )
 
   return (
-    <aside ref={ref} className={`phone ${info?.landscape && owned ? 'phone-land' : ''}`} aria-label={info ? `${info.name} (Phone)` : 'TRANSLATR™ Phone'} data-app={owned ? app : 'locked'}>
+    <aside
+      ref={ref}
+      className={`phone ${settled ? 'phone-settled' : ''} ${panels > 1 ? `phone-land unfold-${panels}` : ''}`}
+      style={panels > 1 ? { '--ar': info.aspect } : undefined}
+      aria-label={info ? `${info.name} (LigmaPhone™)` : 'LigmaPhone™'}
+      data-app={owned ? shown : 'locked'}
+      data-panels={panels}
+    >
       <div className="phone-screen">
+        {panels > 1 && <FoldFx key={shown} panels={panels} />}
+        {panels > 1 && <Creases panels={panels} />}
         <StatusBar />
-        {App && (
+        {(App || launching) && (
           <div className="phone-appbar">
             <span aria-hidden="true">{info?.icon}</span>
             <span className="min-w-0 flex-1 truncate">{info?.name}</span>
@@ -123,7 +174,7 @@ function LockScreen() {
       </div>
       <h2>This phone is not activated</h2>
       <p>
-        The TRANSLATR™ Phone has the Arcade, DoomFeed™ and a browser. You can see it. You can’t use it. That’s what the {PHONE.price} is for.
+        The LigmaPhone™ has the Arcade, DoomFeed™ and a browser. You can see it. You can’t use it. That’s what the {PHONE.price} is for.
       </p>
       <button className="phone-buy" onClick={buy} disabled={!!checkout}>
         {checkout?.itemId === 'smartphone' ? 'Processing…' : `Buy for ${PHONE.price}`}
@@ -134,10 +185,9 @@ function LockScreen() {
 }
 
 /** The home screen: a wallet widget, then an icon for every app and game. */
-function HomeScreen() {
+function HomeScreen({ open }) {
   const stats = useGameStore((s) => s.stats)
   const wallet = useGameStore((s) => s.money)
-  const open = useGameStore((s) => s.openArcade)
   const best = progress(stats)
   return (
     <div className="phone-home">

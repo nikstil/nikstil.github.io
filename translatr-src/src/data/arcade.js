@@ -1,22 +1,28 @@
-// The Arcade (on the TRANSLATR™ Phone): DOOMSCROLL.EXE and the classics, monetized. Prices and prizes are
+// The Arcade (on the LigmaPhone™): DOOMSCROLL.EXE and the classics, monetized. Prices and prizes are
 // in clicks (see getArcadePrice in lib/economy.js): $10 each, ×5 per Prestige.
 
 export const ARCADE_GAMES = [
-  { id: 'shooter', icon: '👹', name: 'DOOMSCROLL.EXE', blurb: 'A 1993 shooter. Three episodes, a final boss, co-op. Every hit is an unskippable ad.' },
+  { id: 'shooter', icon: '👹', name: 'DOOMSCROLL.EXE', blurb: 'A 1993 shooter. Three episodes, a final boss, co-op. Every hit is an unskippable ad.', aspect: 16 / 10 },
   { id: 'mines', icon: '💣', name: 'Mine$weeper', blurb: 'Every mine is an upsell. Continuing costs extra.' },
   { id: 'solitaire', icon: '🃏', name: 'Pay-Per-Card Solitaire', blurb: 'Klondike, except every card you draw costs money. Undo is Premium.' },
   { id: 'snake', icon: '🐍', name: 'Wallet Snake', blurb: 'Insert coin. Eat money. The platform keeps 30%.' },
   { id: 'loggle', icon: '🟩', name: 'LOGGLE', blurb: 'The daily name puzzle. Twelve letters, six guesses, a new name every day.' },
-  { id: 'grass', icon: '🌱', name: 'LAWN OF THE DEAD', blurb: 'Plant a garden, hold off the zombies. 50 levels of pixel-art lawn defence, from nikstil.com.', src: '/touchgrass/?embed', landscape: true },
-  { id: 'brains', icon: '🧠', name: 'BRAINS FIRST', blurb: 'The other side of the lawn: you’re the zombies. Puzzles, endless and mini-games, from nikstil.com.', src: '/touchphone/?embed', landscape: true },
+  { id: 'grass', icon: '🌱', name: 'LAWN OF THE DEAD', blurb: 'Plant a garden, hold off the zombies. 50 levels of pixel-art lawn defence, from nikstil.com.', src: '/touchgrass/?embed', aspect: 960 / 672 },
+  { id: 'brains', icon: '🧠', name: 'BRAINS FIRST', blurb: 'The other side of the lawn: you’re the zombies. Puzzles, endless and mini-games, from nikstil.com.', src: '/touchphone/?embed', aspect: 960 / 672 },
 ]
 
-// The TRANSLATR™ Phone's own apps (the Arcade's games sit beside them on the home screen).
+// The LigmaPhone™'s own apps (the Arcade's games sit beside them on the home screen).
 // Apps that leave TRANSLATR™ running are listed in PHONE_LIVE_APPS (store/useGameStore.js).
 export const PHONE_APPS = [
   { id: 'doom', icon: '🔥', name: 'DoomFeed™', blurb: 'The endless feed. Now in your pocket, where it can reach you anywhere.' },
   { id: 'browser', icon: '🌐', name: 'Browser', blurb: 'The internet, or the parts of it that agree to load in a frame.' },
 ]
+
+/**
+ * How many panels the LigmaPhone™ unfolds into for an app of this shape (width / height): portrait
+ * apps fit the phone; wider ones open it like a Z Fold (two panels), wider still like a trifold.
+ */
+export const foldsFor = (aspect) => (!aspect || aspect <= 0.75 ? 1 : aspect <= 1.45 ? 2 : 3)
 
 // The browser's start page.
 export const BOOKMARKS = [

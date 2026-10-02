@@ -37,7 +37,7 @@ function DoomStats() {
   )
 }
 
-/** DoomFeed™ as an app on the TRANSLATR™ Phone: the same endless feed, full screen. */
+/** DoomFeed™ as an app on the LigmaPhone™: the same endless feed, full screen. */
 export function DoomFeedApp() {
   const touchGrass = useGameStore((s) => s.touchGrass)
   const grassStreak = useGameStore((s) => s.grassStreak)

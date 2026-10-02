@@ -1541,11 +1541,11 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .win:is(:fullscreen, .is-max) .win-client:has(.doom-win, .grass-win, .loggle-win) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .win:is(:fullscreen, .is-max) .win-body:is(.doom-win, .grass-win, .loggle-win) { flex: 1; aspect-ratio: auto; height: auto; min-height: 0; }
 
-/* ---- nikPhone: the games and the browser, on a phone in a window ---- */
+/* ---- LigmaPhone: the games and the browser, on a phone in a window ---- */
 .mobile-win { display: grid; place-items: center; padding: 10px; background: transparent; }
 .mp { width: 100%; max-width: 380px; height: min(700px, calc(100dvh - 160px)); min-height: 420px; padding: 10px; border-radius: 42px; background: linear-gradient(145deg, #3a3d44, #121317 60%); box-shadow: inset 0 0 0 2px #5b5f69, inset 0 0 0 4px #0a0a0c, 0 14px 34px -12px rgb(0 0 0 / 0.6); }
 .mp-land .mp { max-width: none; height: auto; min-height: 0; border-radius: 34px; }
-.mp-screen { display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 32px; color: #1b1b24; background: linear-gradient(160deg, #f3ecff, #dfe9ff 45%, #ffe8f1); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.mp-screen { position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 32px; color: #1b1b24; background: linear-gradient(160deg, #f3ecff, #dfe9ff 45%, #ffe8f1); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
 .mp-land .mp-screen { border-radius: 24px; }
 .mp-status { position: relative; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; height: 28px; padding: 0 22px; font-size: 12px; font-weight: 600; }
 .mp-notch { position: absolute; left: 50%; top: 6px; width: 92px; height: 18px; translate: -50% 0; border-radius: 12px; background: #0b0b0d; }
@@ -1565,7 +1565,7 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .mp-icon:active .mp-icon-art { transform: scale(0.94); }
 .mp-icon-name { max-width: 100%; font-size: 11px; line-height: 1.15; text-align: center; overflow-wrap: anywhere; }
 .mp-app { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; background: #fff; }
-.mp-land .mp-app { flex: none; aspect-ratio: 960 / 672; }
+.mp-land .mp-app { flex: none; aspect-ratio: var(--ar, 1.43); }
 .mp-app > .win-foot { display: none; }
 .mp-app > .win-body { flex: 1; min-height: 0; width: 100%; height: auto; aspect-ratio: auto; margin: 0; padding: 0; border: 0; border-radius: 0; }
 .mp-app iframe { width: 100%; height: 100%; border: 0; }
@@ -1577,4 +1577,38 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .win:is(:fullscreen, .is-max) .mobile-win { flex: 1; min-height: 0; }
 .win:is(:fullscreen, .is-max) .mp { height: 100%; }
 .win:is(:fullscreen, .is-max) .mobile-win { container-type: size; }
-.win.mp-land:is(:fullscreen, .is-max) .mp { width: min(100cqw, calc((100cqh - 116px) * 960 / 672 + 20px)); height: auto; }
+.win.mp-land:is(:fullscreen, .is-max) .mp { width: min(100cqw, calc((100cqh - 116px) * var(--ar, 1.43) + 20px)); height: auto; }
+
+/* ---- The fold: apps wider than the phone open it like a Z Fold (2 panels) or a trifold (3) ----
+   .unfold-2 or unfold-3 goes on the phone's body: it starts one panel wide (the rest folded behind the hinge)
+   and opens to the right. .fold-fx (inside the screen) draws the folded panels swinging out with
+   the screen still off, then the screen lights up. The hinges stay as faint creases. */
+.unfold-2 { --n: 2; --fold-ms: 0.9s; animation: unfold-2 var(--fold-ms) cubic-bezier(.45, .05, .25, 1) both; }
+.unfold-3 { --n: 3; --fold-ms: 1.3s; animation: unfold-3 var(--fold-ms) linear both; }
+@keyframes unfold-2 { from { clip-path: inset(0 50% 0 0 round 36px); } to { clip-path: inset(0 0 0 0 round 36px); } }
+@keyframes unfold-3 {
+  0% { clip-path: inset(0 66.67% 0 0 round 36px); animation-timing-function: cubic-bezier(.45, .05, .25, 1); }
+  50% { clip-path: inset(0 33.33% 0 0 round 36px); animation-timing-function: cubic-bezier(.45, .05, .25, 1); }
+  100% { clip-path: inset(0 0 0 0 round 36px); }
+}
+.fold-fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; perspective: 1400px; animation: fold-light var(--fold-ms) ease both; }
+.fold-fx::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 30%, #1c1e24, #0a0b0d 70%); }
+.fold-flap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(100% * var(--i) / var(--n));
+  width: calc(100% / var(--n));
+  transform-origin: left center;
+  background: linear-gradient(90deg, #2a2c33, #43464f 35%, #1b1c21);
+  box-shadow: inset 2px 0 0 rgb(255 255 255 / 0.1), -10px 0 28px rgb(0 0 0 / 0.55);
+  animation: flap-open var(--fold-ms) cubic-bezier(.45, .05, .25, 1) both;
+}
+.fold-3 .fold-flap { animation-duration: calc(var(--fold-ms) / 2); animation-delay: calc((var(--i) - 1) * var(--fold-ms) / 2); }
+@keyframes flap-open { from { transform: rotateY(-180deg); } to { transform: rotateY(0deg); } }
+@keyframes fold-light { 0%, 78% { opacity: 1; } 100% { opacity: 0; } }
+.fold-crease { position: absolute; top: 0; bottom: 0; z-index: 4; width: 8px; translate: -50% 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgb(0 0 0 / 0.06), rgb(255 255 255 / 0.1), rgb(0 0 0 / 0.06), transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .unfold-2, .unfold-3 { animation: none; }
+  .fold-fx { display: none; }
+}

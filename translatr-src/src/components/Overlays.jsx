@@ -297,7 +297,7 @@ function StartMenu() {
             {item('🗗', 'Restore all', s.restoreAllWindows, 'Bring back everything you minimized')}
             {item('↺', 'Reset window layout', s.resetLayout, 'Windows and the cat back home')}
             {item('🏁', `Endings (${endingsFound}/${ENDINGS.length})`, s.openEndings, 'Eight ways out. Some are worse.')}
-            {item('📱', 'Phone', () => s.openArcade(), s.premium?.smartphone ? 'The Arcade, DoomFeed™ and a browser, in your pocket' : 'TRANSLATR™ Phone: the Arcade, DoomFeed™, a browser. $1,099.99')}
+            {item('📱', 'LigmaPhone', () => s.openArcade(), s.premium?.smartphone ? 'The Arcade, DoomFeed™ and a browser, in your pocket' : 'LigmaPhone™: the Arcade, DoomFeed™, a browser. $1,099.99')}
             {item('🎁', 'Unwrapped', s.openUnwrapped, 'Your year, in 79 uncomfortable stats')}
             {inDaily
               ? item('↩', 'Leave the Daily Challenge', s.leaveDaily, 'Back to your parked game')
@@ -439,16 +439,16 @@ function WidgetToggle({ id, icon, label, fidget = false }) {
   )
 }
 
-/** The TRANSLATR™ Phone's taskbar button (where DoomFeed™'s used to be): opens or pockets it. */
+/** The LigmaPhone™'s taskbar button (where DoomFeed™'s used to be): opens or pockets it. */
 function PhoneToggle() {
   const open = useGameStore((s) => !!s.arcade)
   const owned = useGameStore((s) => !!s.premium?.smartphone)
   return (
     <button
       className={`task-btn text-xl ${open ? 'task-btn-on' : ''}`}
-      title={open ? 'Put the phone away' : owned ? 'Take out your phone' : 'TRANSLATR™ Phone (not owned)'}
+      title={open ? 'Put the phone away' : owned ? 'Take out your phone' : 'LigmaPhone™ (not owned)'}
       aria-pressed={open}
-      aria-label="Phone"
+      aria-label="LigmaPhone"
       data-phone-toggle
       onClick={() => (open ? useGameStore.getState().closeArcade(true) : useGameStore.getState().openArcade())}
     >
