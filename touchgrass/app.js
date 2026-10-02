@@ -3,7 +3,7 @@
 
 import { LEVELS, LEVEL_BY_ID, PLANTS, PLANT_BY_ID, PLANT_ORDER, ZOMBIES, ZOMBIE_BY_ID, AREAS, SHOP, POTS_FROM, nextLevelId } from './data.js'
 import { createGame } from './sim.js'
-import { W, H, PIXEL, drawGamePixel, pixelCanvas, toLawn, seedRect, shovelRect, beltRect, drawPacket, drawPlantCard, drawZombieCard } from './draw.js'
+import { W, H, SPRITE_PIXEL, drawGamePixel, pixelCanvas, toLawn, seedRect, shovelRect, beltRect, drawPacket, drawPlantCard, drawZombieCard } from './draw.js'
 import { playSfx, setMusic, setSound, setVolume, getVolume, unlockAudio } from './audio.js'
 import { drawTitleScene } from './scene.js'
 
@@ -168,7 +168,7 @@ function packetCanvas(id, opts = {}) {
   const c = document.createElement('canvas')
   c.width = 116
   c.height = 152
-  pixelCanvas(c, 2 * PIXEL, (ctx) => {
+  pixelCanvas(c, 2 * SPRITE_PIXEL, (ctx) => {
     ctx.scale(2, 2)
     drawPacket(ctx, id, 1, 1, 56, 74, { cost: PLANT_BY_ID[id]?.cost ?? null, ...opts })
   })
@@ -224,7 +224,7 @@ function renderPicker() {
     c.width = 160
     c.height = 200
     c.title = ZOMBIE_BY_ID[z].name
-    pixelCanvas(c, 4, (ctx) => {
+    pixelCanvas(c, 2, (ctx) => {
       ctx.scale(2, 2)
       drawZombieCard(ctx, z, 40, 92, 0.62)
     })
@@ -327,7 +327,7 @@ function finish(won, e) {
     const p = PLANT_BY_ID[level.unlock]
     title = `New plant: ${p.name}`
     copy = `${p.desc} (${p.cost} sun)`
-    pixelCanvas($('#won-art'), 4, (x) => drawPlantCard(x, level.unlock, 100, 140, 1.4, 0))
+    pixelCanvas($('#won-art'), 1, (x) => drawPlantCard(x, level.unlock, 100, 140, 1.4, 0))
   } else if (reward === 'trophy') {
     title = 'You beat the Rotbot!'
     copy = 'The lawn is quiet. The house is safe. Your brains are still yours. Go and water something.'
@@ -562,7 +562,7 @@ function renderAlmanac() {
     c.width = 108
     c.height = 108
     if (known)
-      pixelCanvas(c, 4, (cx) => {
+      pixelCanvas(c, 2, (cx) => {
         cx.scale(2, 2)
         if (almTab === 'plants') drawPlantCard(cx, it.id, 27, 50, 0.5)
         else drawZombieCard(cx, it.id, 30, 52, 0.36)
@@ -605,7 +605,7 @@ function renderAlmanac() {
 // The Almanac's big picture, animated while it's open.
 function drawAlmanacArt(t) {
   const c = $('#alm-art')
-  pixelCanvas(c, 4, (x) => {
+  pixelCanvas(c, 1, (x) => {
     if (almTab === 'plants') drawPlantCard(x, almSel, 110, 170, 1.4, t)
     else drawZombieCard(x, almSel, 120, 186, almSel === 'gigachad' ? 0.62 : 1.1, t)
   })
