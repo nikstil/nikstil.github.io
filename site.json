@@ -42,6 +42,11 @@
       "title": "TOUCHGRASS.EXE",
       "hidden": false
     },
+    "phone": {
+      "label": "TOUCHPHONE.EXE",
+      "title": "TOUCHPHONE.EXE",
+      "hidden": false
+    },
     "loggle": {
       "label": "LOGGLE",
       "title": "LOGGLE",

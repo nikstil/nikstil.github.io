@@ -27,7 +27,8 @@ const WEIGHTS = {
 }
 
 export function createGame(levelId, opts = {}) {
-  const level = LEVEL_BY_ID[levelId]
+  // opts.level: a level from outside the Adventure (TOUCHPHONE's reverse puzzles).
+  const level = opts.level ?? LEVEL_BY_ID[levelId]
   if (!level) throw new Error(`No level ${levelId}`)
   const area = AREAS[level.area]
   const rand = opts.rand ?? Math.random
@@ -36,6 +37,9 @@ export function createGame(levelId, opts = {}) {
   const owned = new Set(opts.owned ?? []) // shop purchases: 'poolbot', 'roofbot', 'rake', 'plant:quad', …
   const special = level.special ?? null
   const R = area.rows
+  // Reverse (TOUCHPHONE.EXE): the garden is planted already and you send the Scrollers, to eat
+  // the Wi-Fi router at the end of every row. Sun comes from Sun Daisies they eat.
+  const reverse = special === 'reverse'
 
   let nextId = 1
   const g = {
@@ -88,7 +92,7 @@ export function createGame(levelId, opts = {}) {
     const water = g.isWater(r)
     const kind = area.roof ? (owned.has('roofbot') ? 'roof' : null) : water ? (owned.has('poolbot') ? 'pool' : null) : 'mower'
     const allowed = !g.sod || g.sod.includes(r)
-    if (kind && allowed && special !== 'bowling' && special !== 'whack') g.mowers.push({ row: r, x: -0.45, state: 'ready', kind })
+    if (kind && allowed && special !== 'bowling' && special !== 'whack' && !reverse) g.mowers.push({ row: r, x: -0.45, state: 'ready', kind })
   }
   if (owned.has('rake') && !special) {
     const r = pick(lanesFor.filter((l) => !g.isWater(l)))
@@ -121,8 +125,27 @@ export function createGame(levelId, opts = {}) {
     for (let c = 4; c < 9; c++) for (let r = 0; r < R; r++) g.vases.push({ row: r, col: c, ...contents[i++ % contents.length], leaf: false })
     for (const v of g.vases) v.leaf = !!v.plant && rand() < 0.35 // some vases show a leaf: a plant's inside
   }
+  // Reverse: the plants are in already ("r,c": plant id), and the seeds are Scrollers.
+  if (reverse) {
+    for (const [at, id] of Object.entries(level.garden)) {
+      const [r, c] = at.split(',').map(Number)
+      const def = PLANT_BY_ID[id]
+      // What a plant stands on goes in first (a pot under a plant on the roof, a pumpkin over it).
+      if (area.roof && !def.base) addPlant('pot', r, c, { free: true })
+      const p = addPlant(id, r, c, { free: true })
+      if (def.kind === 'mine') {
+        // already armed: it's been waiting for you
+        p.armed = true
+        p.timer = 0
+      }
+      if (level.shells?.includes(at)) addPlant('bunker', r, c, { free: true })
+    }
+    g.routers = Array.from({ length: R }, (_, r) => ({ row: r, eaten: false, at: 0 }))
+    g.line = level.line
+    g.zseeds = level.scrollers.map((z) => ({ ...z, readyAt: 0 }))
+  }
   // Seeds: what you picked (or, on conveyor levels, nothing: the belt brings them).
-  if (!g.belt && special !== 'whack' && special !== 'vase') {
+  if (!g.belt && special !== 'whack' && special !== 'vase' && !reverse) {
     for (const s of opts.seeds ?? level.plants ?? ['pea']) {
       const id = typeof s === 'string' ? s : s.id
       const imitated = typeof s === 'object' && !!s.imitated
@@ -181,6 +204,8 @@ export function createGame(levelId, opts = {}) {
     for (const row of g.cells) for (const ce of row) for (const k of ['base', 'main', 'shell', 'coffee']) if (ce[k] === p) ce[k] = null
     g.plants = g.plants.filter((x) => x !== p)
     if (how === 'eaten') sfx('gulp')
+    // Reverse: an eaten Sun Daisy spills 150 sun (that's your money: three big ones).
+    if (reverse && how === 'eaten' && p.def.kind === 'sun') for (let i = 0; i < 3 * (p.def.count ?? 1); i++) dropSun(p.col + 0.15 + i * 0.25, p.row, 50)
     if (how === 'smashed') g.fx.push({ kind: 'smash', x: p.col + 0.5, y: p.row, t: g.t, life: 0.6 })
   }
 
@@ -307,6 +332,31 @@ export function createGame(levelId, opts = {}) {
     removePlant(p, 'quiet')
     sfx('shovel')
     return true
+  }
+
+  /** Reverse: why Scroller seed `i` can't go at row r, column c (or null if it can). */
+  g.whyNotScroller = (i, r, c) => {
+    const s = g.zseeds?.[i]
+    if (!s || !g.rowOk(r) || c >= COLS) return 'off'
+    if (c < 0 || (c < g.line && !ZOMBIE_BY_ID[s.id].bungee)) return 'line'
+    if (g.sun < s.cost) return 'sun'
+    if (g.t < s.readyAt) return 'charging'
+    if (g.isWater(r) && !ZOMBIE_BY_ID[s.id].water) return 'water'
+    return null
+  }
+  /** Reverse: sends Scroller seed `i` onto the lawn at row r, column c. */
+  g.placeScroller = (i, r, c) => {
+    if (g.phase !== 'play' || g.whyNotScroller(i, r, c)) return null
+    const s = g.zseeds[i]
+    g.sun -= s.cost
+    s.readyAt = g.t + (s.recharge ?? 0)
+    // A Bungee Thief drops onto any square (past the line or not) and takes the plant in it.
+    const z = ZOMBIE_BY_ID[s.id].bungee
+      ? spawn(s.id, r, c + 0.5, { bungee: 'aim', bungeeMode: 'steal', col: c, aimUntil: g.t + 0.6, state: 'bungee' })
+      : spawn(s.id, r, c + 0.6)
+    g.stats.planted++
+    sfx('plant')
+    return z
   }
 
   // ================= Drops: sun, coins, the reward =================
@@ -810,7 +860,7 @@ export function createGame(levelId, opts = {}) {
       g.introLeft -= dt
       if (g.introLeft <= 0) {
         g.phase = 'play'
-        if (!opts.skipIntro) banner('PLANT!', 'go', 0.9)
+        if (!opts.skipIntro) banner(reverse ? 'SCROLL!' : 'PLANT!', 'go', 0.9)
       }
       return
     }
@@ -955,6 +1005,7 @@ export function createGame(levelId, opts = {}) {
         return
       }
       case 'sun': {
+        if (reverse) return // in reverse they hold on to it until they're eaten
         p.timer -= dt
         if (p.timer > 0) return
         const grown = def.grow && g.t - p.born >= def.grow
@@ -1950,6 +2001,24 @@ export function createGame(levelId, opts = {}) {
   }
   function reachHouse(z) {
     if (z.x > 0.15 || z.hypno || z.dir > 0) return
+    if (reverse) {
+      // It got to the router: the row's Wi-Fi is yours, and the Scroller logs on (leaves).
+      const rt = g.routers[z.row]
+      if (rt && !rt.eaten) {
+        rt.eaten = true
+        rt.at = g.t
+        g.lastKill = { x: 0.6, y: z.row }
+        sfx('gulp')
+        banner(`ROW ${z.row + 1}: CONNECTED`, 'info', 1.4)
+        event('router', { row: z.row })
+      }
+      if (z.x < -0.3) {
+        z.gone = true
+        z.dying = 'left'
+        z.diedAt = g.t
+      }
+      return
+    }
     const m = g.mowers.find((m) => m.row === z.row && m.state === 'ready')
     if (m && !(z.balloon > 0)) {
       m.state = 'running'
@@ -2016,7 +2085,21 @@ export function createGame(levelId, opts = {}) {
     if (g.drops.some((d) => d.kind === 'reward')) return
     const alive = g.zombies.filter((z) => !gone(z) && !z.hypno)
     let done = false
-    if (special === 'vase') done = g.vases.length === 0 && alive.length === 0 && !g.belt.items.length
+    if (reverse) {
+      if (g.routers.every((rt) => rt.eaten)) done = true
+      else {
+        // Lost: nobody left on the lawn, no sun left to pick up, and nothing you can afford.
+        const cheapest = Math.min(...g.zseeds.map((s) => s.cost))
+        const sunLying = g.drops.some((d) => d.kind === 'sun' && !d.collected)
+        const busy = alive.some((z) => z.dir < 0 || z.bungee)
+        if (!busy && !sunLying && g.sun < cheapest) {
+          g.phase = 'lost'
+          sfx('lose')
+          event('lost', { zombie: null })
+        }
+        return
+      }
+    } else if (special === 'vase') done = g.vases.length === 0 && alive.length === 0 && !g.belt.items.length
     else if (special === 'boss') done = false
     else done = g.waves.finalSpawned && g.waves.index >= W && alive.length === 0
     if (!done) return

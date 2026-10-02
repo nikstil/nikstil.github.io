@@ -1,0 +1,31 @@
+/* TOUCHPHONE.EXE: TOUCHGRASS.EXE's frame (touchgrass/style.css), turned to the dark side. */
+:root { --ink: #1f1830; --paper: #efe8ff; }
+body { background: radial-gradient(ellipse at 50% 20%, #8f7bd6, #4a3a86 55%, #1f1830); }
+.bar { background: linear-gradient(#4a3a86, #2e2358); color: #f4efff; }
+.overlay.title {
+  /* the same back yard, at night, lit by a phone screen */
+  background:
+    radial-gradient(circle at 78% 30%, rgba(120, 200, 255, .55), transparent 22%),
+    linear-gradient(transparent 62%, rgba(0, 0, 0, .2) 62.5%, transparent 63%),
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(20, 10, 40, .35) 34px 36px) 0 52% / 100% 12% no-repeat,
+    linear-gradient(#1b1440 0%, #3a2a6c 30%, #5a4a8a 50%, #2f5a2a 62%, #1f4a1e 100%);
+  color: #f4efff;
+}
+.logo span { color: #7fd0ff; }
+.logo small { color: #ff7ad9; }
+.tag { color: #f4efff; }
+.title-buttons .btn.go { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .08) 0 3px, transparent 3px 9px), linear-gradient(#9a7ae8, #6a4ac4); }
+.wallet { color: #ffe14a; }
+.panel { background: rgba(26, 18, 50, .82); }
+.puzzles { display: grid; grid-template-columns: repeat(3, minmax(0, 220px)); gap: 10px; }
+.puzzle { display: grid; gap: 2px; padding: 10px; border: 2px solid var(--ink); border-radius: 10px; background: var(--paper); color: var(--ink); text-align: left; }
+.puzzle b { font-size: 15px; }
+.puzzle small { font-size: 11px; opacity: .8; }
+.puzzle.done { background: #c9f0b0; }
+.puzzle:disabled { opacity: .4; cursor: not-allowed; }
+.help { color: #f4efff; }
+.rotate-hint { color: #f4efff; }
+html.embed body { background: #1f1830; }
+@media (max-width: 640px) {
+  .puzzles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
