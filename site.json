@@ -57,6 +57,11 @@
       "title": "nikBrowser",
       "hidden": false
     },
+    "mobile": {
+      "label": "nikPhone",
+      "title": "nikPhone",
+      "hidden": false
+    },
     "leaderboard": {
       "label": "Leaderboards",
       "title": "Leaderboards",

@@ -131,7 +131,7 @@ function Reader({ m, onBack }) {
   const run = (action) => {
     const [kind, arg] = action.split(':')
     if (kind === 'focus') return focusWindow(arg, restoreWindow, useGameStore.getState().layout.minimized.includes(arg))
-    if (kind === 'open') return { unwrapped: openUnwrapped, endings: openEndings, trophies: openTrophies, settings: openSettings, shooter: useGameStore.getState().openShooter, arcade: () => useGameStore.getState().openArcade() }[arg]?.()
+    if (kind === 'open') return { unwrapped: openUnwrapped, endings: openEndings, trophies: openTrophies, settings: openSettings, shooter: () => useGameStore.getState().openArcade('shooter'), arcade: () => useGameStore.getState().openArcade() }[arg]?.()
     mailAction(m.key, action)
   }
 

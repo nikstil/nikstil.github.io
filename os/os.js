@@ -23,16 +23,16 @@
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐' },
-    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐' },
-    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱' },
+    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱' },
+    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲' },
   }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
@@ -53,6 +53,7 @@
     phone: { title: 'BRAINS FIRST', icon: 'phone', width: 760, init: initPhone },
     loggle: { title: 'LOGGLE', icon: 'loggle', width: 480, init: initLoggle },
     browser: { title: 'nikBrowser', icon: 'browser', width: 900, init: initBrowser },
+    mobile: { title: 'nikPhone', icon: 'mobile', width: 400, init: initMobile },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
     messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
@@ -553,6 +554,89 @@
   /** DOOMSCROLL.EXE runs in the window (the page at /doomscroll/, loaded only once it's opened). */
   function initDoom(el) {
     $('.doom-frame', el).src = '/doomscroll/?embed'
+  }
+
+  // ================= nikPhone =================
+  // A smartphone in a window: the games and the browser live on its home screen (not the desktop).
+  // Each opens on the phone's screen (the games turn it sideways); ⧉ pops one out into a window.
+  const PHONE_APPS = [
+    { id: 'browser', label: 'Browser' },
+    { id: 'doom', label: 'DOOMSCROLL.EXE', land: true },
+    { id: 'grass', label: 'LAWN OF THE DEAD', land: true },
+    { id: 'phone', label: 'BRAINS FIRST', land: true },
+    { id: 'loggle', label: 'LOGGLE' },
+  ]
+  function initMobile(el, win) {
+    const grid = $('.mp-grid', el)
+    const home = $('.mp-home', el)
+    const screen = $('.mp-app', el)
+    const bar = $('.mp-bar', el)
+    let current = null
+    let cleanup = null
+    for (const a of PHONE_APPS) {
+      if (site.apps?.[a.id]?.hidden === true) continue
+      const li = document.createElement('li')
+      li.innerHTML = `<button type="button" class="mp-icon"><span class="mp-icon-art" aria-hidden="true"></span><span class="mp-icon-name"></span></button>`
+      setIcon($('.mp-icon-art', li), a.id)
+      $('.mp-icon-name', li).textContent = text(site.apps?.[a.id]?.label) || a.label
+      $('.mp-icon', li).dataset.app = a.id
+      $('.mp-icon', li).addEventListener('click', () => launch(a))
+      grid.append(li)
+    }
+    // The window grows sideways for the games, and back for the rest (it stays on screen).
+    function fit(land) {
+      if (win.el.classList.contains('is-max') || innerWidth < 640) return
+      const w = Math.min(land ? 860 : 400, innerWidth - 16)
+      const r = win.el.getBoundingClientRect()
+      win.el.style.width = `${w}px`
+      win.el.style.left = `${clamp(r.left + (r.width - w) / 2, 8, innerWidth - w - 8)}px`
+    }
+    function launch(a) {
+      stop()
+      const content = document.getElementById(`app-${a.id}`).content.cloneNode(true)
+      screen.replaceChildren(content)
+      cleanup = APPS[a.id].init?.(screen, win)
+      current = a
+      setIcon($('.mp-bar-icon', el), a.id)
+      $('.mp-bar-title', el).textContent = $('.mp-icon-name', $(`.mp-icon[data-app="${a.id}"]`, el)).textContent
+      home.hidden = true
+      screen.hidden = bar.hidden = false
+      el.classList.toggle('mp-land', !!a.land)
+      fit(a.land)
+    }
+    function stop() {
+      if (typeof cleanup === 'function') cleanup()
+      cleanup = null
+      screen.replaceChildren()
+    }
+    function goHome() {
+      stop()
+      current = null
+      home.hidden = false
+      screen.hidden = bar.hidden = true
+      el.classList.remove('mp-land')
+      fit(false)
+    }
+    $('.mp-back', el).addEventListener('click', goHome)
+    $('.mp-homebtn', el).addEventListener('click', goHome)
+    $('.mp-pop', el).addEventListener('click', () => {
+      const id = current?.id
+      goHome()
+      if (id) openApp(id)
+    })
+    const clock = () => {
+      const now = new Date()
+      const time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      $('.mp-clock', el).textContent = time
+      $('.mp-big-clock', el).textContent = time
+      $('.mp-date', el).textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
+    }
+    clock()
+    const tick = setInterval(clock, 15_000)
+    return () => {
+      clearInterval(tick)
+      stop()
+    }
   }
 
   // ================= nikBrowser =================
@@ -1155,7 +1239,8 @@
       if (!s || typeof s !== 'object') continue
       if (text(s.title)) app.title = s.title
       if (text(s.label)) {
-        $(`.desk-icon[data-app="${id}"] .di-label`).textContent = s.label
+        const label = $(`.desk-icon[data-app="${id}"] .di-label`)
+        if (label) label.textContent = s.label
         $(`.sm-item[data-app="${id}"] .sm-label`)?.replaceChildren(s.label)
       }
       if (s.hidden === true) $$(`.desk-icon[data-app="${id}"], .sm-item[data-app="${id}"]`).forEach((el) => (el.closest('li').hidden = true))

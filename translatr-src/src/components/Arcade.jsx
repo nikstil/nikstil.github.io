@@ -1,70 +1,175 @@
-import { Suspense, lazy, useEffect, useRef } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGameStore } from '../store/useGameStore'
-import { ARCADE_GAMES } from '../data/arcade'
+import { ARCADE_GAMES, PHONE_APPS } from '../data/arcade'
+import { PREMIUM_ITEMS } from '../data/gameData'
 import { money } from '../lib/format'
 
-// The Arcade (Start menu): a Windows-98-style sidebar docked to the right of the screen, with a
-// launcher and the minigames played right inside it (DOOMSCROLL.EXE still goes full screen).
-// Each game is its own chunk, loaded when you open it. The main game pauses while one is played.
-// The page and the docked widgets make room for it on wide screens (see arcadeInset in lib/dock.js).
-const GAMES = {
+// The TRANSLATR™ Phone (Start menu → Phone, or the 📱 on the taskbar): a smartphone docked to the
+// bottom right of the screen, sold as a microtransaction. Its home screen holds DoomFeed™, a
+// browser and the Arcade, whose minigames are played right on it (DOOMSCROLL.EXE still goes full
+// screen, and the nikstil.com games turn the phone sideways). Each app is its own chunk, loaded
+// when you open it. The main game pauses while a game is played (see PHONE_LIVE_APPS).
+// The page makes room for it on wide screens (see arcadeInset in lib/dock.js).
+const APPS = {
+  doom: lazy(() => import('./DoomFeed').then((m) => ({ default: m.DoomFeedApp }))),
+  browser: lazy(() => import('./arcade/Browser')),
   mines: lazy(() => import('./arcade/Minesweeper')),
   solitaire: lazy(() => import('./arcade/Solitaire')),
   snake: lazy(() => import('./arcade/Snake')),
   grass: lazy(() => import('./arcade/TouchGrass')),
+  brains: lazy(() => import('./arcade/TouchGrass')),
   loggle: lazy(() => import('./arcade/Loggle')),
 }
+const PHONE = PREMIUM_ITEMS.find((p) => p.id === 'smartphone')
+const ALL = [...PHONE_APPS, ...ARCADE_GAMES]
+// The Arcade's own games keep their Windows 98 look; the phone's apps fill the screen.
+const WIN98 = new Set(['mines', 'solitaire', 'snake', 'loggle'])
 
 export default function Arcade() {
   const arcade = useGameStore((s) => s.arcade)
   if (!arcade) return null
-  return createPortal(<ArcadeSidebar game={arcade} />, document.body)
+  return createPortal(<Phone app={arcade} />, document.body)
 }
 
-function ArcadeSidebar({ game }) {
-  const close = useGameStore((s) => s.closeArcade)
-  const wallet = useGameStore((s) => s.money)
-  const info = ARCADE_GAMES.find((g) => g.id === game)
-  const Game = GAMES[game]
+/** The status bar's clock, battery (it drains while you look at it) and signal. */
+function StatusBar() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 10_000)
+    return () => clearInterval(id)
+  }, [])
+  const battery = 100 - (Math.floor(now.getTime() / 60_000) % 97)
+  return (
+    <div className="phone-status" aria-hidden="true">
+      <span>{now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+      <span className="phone-notch" />
+      <span>
+        📶 {battery}%{battery < 20 ? '🪫' : '🔋'}
+      </span>
+    </div>
+  )
+}
 
-  // Esc closes the sidebar from its menu, when you're in it (games have a back button, and some use
-  // Esc to pause; the rest of the page keeps its own Esc).
+function Phone({ app }) {
+  const close = useGameStore((s) => s.closeArcade)
+  const open = useGameStore((s) => s.openArcade)
+  const owned = useGameStore((s) => !!s.premium?.smartphone)
+  const info = ALL.find((g) => g.id === app)
+  const App = owned ? APPS[app] : null
+
+  // Esc pockets the phone from its home screen, when you're in it (games have a back button, and
+  // some use Esc to pause; the rest of the page keeps its own Esc).
   const ref = useRef(null)
   useEffect(() => {
-    if (game !== 'menu') return
+    if (app !== 'menu') return
     const onKey = (e) => e.key === 'Escape' && ref.current?.contains(document.activeElement) && close(true)
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [game, close])
+  }, [app, close])
+
+  let screen
+  if (!owned) screen = <LockScreen />
+  else if (!App) screen = <HomeScreen />
+  else
+    screen = (
+      <Suspense fallback={<div className="p-6 text-center">Loading… (buffering an ad)</div>}>
+        {WIN98.has(app) ? (
+          <div className="arcade-body">
+            <App />
+          </div>
+        ) : (
+          <App game={info} />
+        )}
+      </Suspense>
+    )
 
   return (
-    <aside ref={ref} className="arcade-sidebar" aria-label={info ? `${info.name} (Arcade)` : 'Arcade'}>
-      <div className="arcade-title">
-        <span aria-hidden="true">{info?.icon ?? '🕹️'}</span>
-        <span className="min-w-0 flex-1 truncate">{info ? info.name : 'TRANSLATR™ Arcade'}</span>
-        <button className="arcade-x" onClick={() => close(true)} aria-label="Close the Arcade" title="Close the Arcade">
-          ✕
-        </button>
-      </div>
-      <div className="arcade-body">
-        {Game ? (
-          <Suspense fallback={<div className="p-6 text-center">Loading… (buffering an ad)</div>}>
-            <Game />
-          </Suspense>
-        ) : (
-          <ArcadeMenu />
+    <aside ref={ref} className={`phone ${info?.landscape && owned ? 'phone-land' : ''}`} aria-label={info ? `${info.name} (Phone)` : 'TRANSLATR™ Phone'} data-app={owned ? app : 'locked'}>
+      <div className="phone-screen">
+        <StatusBar />
+        {App && (
+          <div className="phone-appbar">
+            <span aria-hidden="true">{info?.icon}</span>
+            <span className="min-w-0 flex-1 truncate">{info?.name}</span>
+          </div>
         )}
-      </div>
-      <div className="arcade-status">
-        <span className="arcade-field">Wallet: {money(wallet)}</span>
-        {info && (
-          <button className="arcade-btn arcade-btn-sm ml-auto" onClick={() => close()}>
-            ◀ Arcade
+        <div className="phone-app">{screen}</div>
+        <nav className="phone-nav">
+          <button onClick={() => close(app === 'menu')} aria-label={App ? 'Back' : 'Put the phone away'} title={App ? 'Back' : 'Put the phone away'}>
+            ◀
           </button>
-        )}
+          <button onClick={() => open('menu')} aria-label="Home" title="Home">
+            ●
+          </button>
+          <button onClick={() => close(true)} aria-label="Put the phone away" title="Put the phone away (TRANSLATR™ resumes)">
+            ✕
+          </button>
+        </nav>
       </div>
     </aside>
+  )
+}
+
+/** Not bought yet: the lock screen sells you the phone you're looking at. */
+function LockScreen() {
+  const checkout = useGameStore((s) => s.checkout)
+  const buy = () => useGameStore.getState().startCheckout('smartphone')
+  return (
+    <div className="phone-lock">
+      <div className="phone-lock-clock">{new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
+      <div className="phone-lock-icon" aria-hidden="true">
+        🔒
+      </div>
+      <h2>This phone is not activated</h2>
+      <p>
+        The TRANSLATR™ Phone has the Arcade, DoomFeed™ and a browser. You can see it. You can’t use it. That’s what the {PHONE.price} is for.
+      </p>
+      <button className="phone-buy" onClick={buy} disabled={!!checkout}>
+        {checkout?.itemId === 'smartphone' ? 'Processing…' : `Buy for ${PHONE.price}`}
+      </button>
+      <p className="phone-fine">One-time purchase. Counts as a microtransaction. No charger in the box.</p>
+    </div>
+  )
+}
+
+/** The home screen: a wallet widget, then an icon for every app and game. */
+function HomeScreen() {
+  const stats = useGameStore((s) => s.stats)
+  const wallet = useGameStore((s) => s.money)
+  const open = useGameStore((s) => s.openArcade)
+  const best = progress(stats)
+  return (
+    <div className="phone-home">
+      <div className="phone-widget">
+        <span className="phone-widget-label">Wallet</span>
+        <b>{money(wallet)}</b>
+        <span className="phone-widget-label">⏱ {Math.floor((stats.doomSeconds ?? 0) / 60)} min on DoomFeed™</span>
+      </div>
+      <p className="phone-section">Apps</p>
+      <div className="phone-grid">
+        {PHONE_APPS.map((g) => (
+          <AppIcon key={g.id} app={g} onOpen={() => open(g.id)} />
+        ))}
+      </div>
+      <p className="phone-section">Arcade</p>
+      <div className="phone-grid">
+        {ARCADE_GAMES.map((g) => (
+          <AppIcon key={g.id} app={g} note={best[g.id]} onOpen={() => open(g.id)} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AppIcon({ app, note, onOpen }) {
+  return (
+    <button className="phone-icon" onClick={onOpen} title={`${app.blurb}${note ? `\n${note}` : ''}`} data-app-id={app.id}>
+      <span className="phone-icon-art" aria-hidden="true">
+        {app.icon}
+      </span>
+      <span className="phone-icon-name">{app.name}</span>
+    </button>
   )
 }
 
@@ -89,37 +194,15 @@ function loggleProgress(stats) {
   return stats.loggleWins ? `Today’s is waiting · ${stats.loggleWins} solved${streak}` : 'Today’s is waiting'
 }
 
-/** The game picker, with a best score (or some progress) for each. */
-function ArcadeMenu() {
-  const stats = useGameStore((s) => s.stats)
-  const open = useGameStore((s) => s.openArcade)
-  const best = {
+/** A best score (or some progress) for each Arcade game. */
+function progress(stats) {
+  return {
     shooter: stats.shooterWins ? `Beaten ${stats.shooterWins}×` : stats.shooterLevel ? `Reached ${stats.shooterLevel >= 15 ? 'the final boss' : `E${1 + Math.floor(stats.shooterLevel / 5)}M${(stats.shooterLevel % 5) + 1}`}` : 'Not played',
     mines: stats.minesWins ? `${stats.minesWins} cleared · best ${stats.minesBestTime}s` : stats.minesPlays ? `${stats.minesPlays} played, 0 cleared` : 'Not played',
     solitaire: stats.solitaireWins ? `${stats.solitaireWins} won · ${stats.solitaireDraws ?? 0} paid draws` : stats.solitairePlays ? `${stats.solitairePlays} dealt, 0 won` : 'Not played',
     snake: stats.snakeBest ? `Best: ${stats.snakeBest} bills in one game` : 'Not played',
     grass: touchGrassProgress(),
+    brains: 'Saves on nikstil.com',
     loggle: loggleProgress(stats),
   }
-  return (
-    <div className="p-2">
-      <p className="mb-3 text-[0.8125rem]">
-        Six classics, lovingly monetized. Winnings go straight to your wallet. So do the fees, in the other direction. TRANSLATR™ pauses while you play.
-      </p>
-      <div className="grid gap-2">
-        {ARCADE_GAMES.map((g) => (
-          <button key={g.id} className="arcade-game" onClick={() => open(g.id)}>
-            <span className="arcade-game-icon" aria-hidden="true">
-              {g.icon}
-            </span>
-            <span className="min-w-0 text-left">
-              <span className="block font-bold">{g.name}</span>
-              <span className="block text-[0.75rem] leading-snug">{g.blurb}</span>
-              <span className="mt-1 block text-[0.6875rem] text-[#404040]">{best[g.id]}</span>
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
 }

@@ -64,11 +64,7 @@
       <li><button class="desk-icon" data-app="translatr"><span class="di-img" data-icon="translatr" aria-hidden="true">🌐</span><span class="di-label">TRANSLATR™</span></button></li>
       <li><button class="desk-icon" data-app="gif"><span class="di-img" data-icon="gif" aria-hidden="true">🎞️</span><span class="di-label">The GIF</span></button></li>
       <li><button class="desk-icon" data-app="themes"><span class="di-img" data-icon="themes" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
-      <li><button class="desk-icon" data-app="browser"><span class="di-img" data-icon="browser" aria-hidden="true">🧭</span><span class="di-label">Web Browser</span></button></li>
-      <li><button class="desk-icon" data-app="doom"><span class="di-img" data-icon="doom" aria-hidden="true">👹</span><span class="di-label">DOOMSCROLL.EXE</span></button></li>
-      <li><button class="desk-icon" data-app="grass"><span class="di-img" data-icon="grass" aria-hidden="true">🌱</span><span class="di-label">LAWN OF THE DEAD</span></button></li>
-      <li><button class="desk-icon" data-app="phone"><span class="di-img" data-icon="phone" aria-hidden="true">🧠</span><span class="di-label">BRAINS FIRST</span></button></li>
-      <li><button class="desk-icon" data-app="loggle"><span class="di-img" data-icon="loggle" aria-hidden="true">🟩</span><span class="di-label">LOGGLE</span></button></li>
+      <li><button class="desk-icon" data-app="mobile"><span class="di-img" data-icon="mobile" aria-hidden="true">📱</span><span class="di-label">nikPhone</span></button></li>
       <li><button class="desk-icon" data-app="bin"><span class="di-img" data-icon="bin" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
       <li data-online="leaderboard" hidden><button class="desk-icon" data-app="leaderboard"><span class="di-img" data-icon="leaderboard" aria-hidden="true">🏆</span><span class="di-label">Leaderboards</span></button></li>
       <li data-online="messenger" hidden><button class="desk-icon" data-app="messenger"><span class="di-img" data-icon="messenger" aria-hidden="true">💬</span><span class="di-label">Messenger</span></button></li>
@@ -99,11 +95,7 @@
         <ul class="sm-list">
           <li><button class="sm-item" role="menuitem" data-app="translatr"><span data-icon="translatr" aria-hidden="true">🌐</span> <span class="sm-label">TRANSLATR™</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> <span class="sm-label">The GIF</span></button></li>
-          <li><button class="sm-item" role="menuitem" data-app="browser"><span data-icon="browser" aria-hidden="true">🧭</span> <span class="sm-label">Web Browser</span></button></li>
-          <li><button class="sm-item" role="menuitem" data-app="doom"><span data-icon="doom" aria-hidden="true">👹</span> <span class="sm-label">DOOMSCROLL.EXE</span></button></li>
-          <li><button class="sm-item" role="menuitem" data-app="grass"><span data-icon="grass" aria-hidden="true">🌱</span> <span class="sm-label">LAWN OF THE DEAD</span></button></li>
-          <li><button class="sm-item" role="menuitem" data-app="phone"><span data-icon="phone" aria-hidden="true">🧠</span> <span class="sm-label">BRAINS FIRST</span></button></li>
-          <li><button class="sm-item" role="menuitem" data-app="loggle"><span data-icon="loggle" aria-hidden="true">🟩</span> <span class="sm-label">LOGGLE</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="mobile"><span data-icon="mobile" aria-hidden="true">📱</span> <span class="sm-label">nikPhone</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">This PC</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
           <li data-online="leaderboard" hidden><button class="sm-item" role="menuitem" data-app="leaderboard"><span data-icon="leaderboard" aria-hidden="true">🏆</span> <span class="sm-label">Leaderboards</span></button></li>
@@ -264,6 +256,29 @@
     <div class="win-foot">
       <span class="status muted">A new name every day</span>
       <a class="btn" href="/loggle/" target="_blank" rel="noopener">⛶ Full page</a>
+    </div>
+  </template>
+
+  <template id="app-mobile">
+    <div class="win-body mobile-win">
+      <div class="mp">
+        <div class="mp-screen">
+          <div class="mp-status" aria-hidden="true"><span class="mp-clock"></span><span class="mp-notch"></span><span>📶 🔋</span></div>
+          <div class="mp-bar" hidden>
+            <span class="mp-bar-icon" aria-hidden="true"></span><span class="mp-bar-title"></span>
+            <button type="button" class="mp-pop" title="Open in its own window" aria-label="Open in its own window">⧉</button>
+          </div>
+          <div class="mp-home">
+            <p class="mp-hello"><span class="mp-big-clock"></span><span class="mp-date"></span></p>
+            <ul class="mp-grid"></ul>
+          </div>
+          <div class="mp-app" hidden></div>
+          <nav class="mp-nav">
+            <button type="button" class="mp-back" aria-label="Back" title="Back">◀</button>
+            <button type="button" class="mp-homebtn" aria-label="Home" title="Home">●</button>
+          </nav>
+        </div>
+      </div>
     </div>
   </template>
 

@@ -12,11 +12,11 @@ export const isHorizontalEdge = (edge) => edge === 'top' || edge === 'bottom'
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi))
 
-// The Arcade is a sidebar docked to the right of the screen. On screens with room to spare the
-// page and the docked widgets move over for it; on narrower ones it covers the screen instead.
-export const ARCADE_WIDTH = 420
+// The TRANSLATR™ Phone (the Arcade) sits at the bottom right of the screen. On screens with room
+// to spare the page and the docked widgets move over for it; on narrower ones it covers the screen.
+export const ARCADE_WIDTH = 404 // the phone, its 12px margin and a gap
 const ARCADE_MIN_BESIDE = 600 // px of game that must still fit beside it
-/** How much of the right edge the open Arcade sidebar takes away from the page (0 if it overlays). */
+/** How much of the right edge the open phone takes away from the page (0 if it overlays). */
 export const arcadeInset = (vp, open) => (open && vp.w - ARCADE_WIDTH >= ARCADE_MIN_BESIDE ? ARCADE_WIDTH : 0)
 /** The page's vertical scrollbar: fixed things (the sidebar) sit left of it, but vp.w includes it. */
 export const scrollbarWidth = () => (typeof document === 'undefined' ? 0 : Math.max(0, window.innerWidth - document.documentElement.clientWidth))

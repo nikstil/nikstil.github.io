@@ -10,7 +10,6 @@ import TosModal from './components/TosModal'
 import FomoFeed from './components/FomoFeed'
 import { BigModal, DebugPanel, ResetScreen, Taskbar, Toasts } from './components/Overlays'
 import Wallpaper from './components/Wallpaper'
-import DoomFeed, { DOOM_WIDTH } from './components/DoomFeed'
 import WindowGrid from './components/WindowGrid'
 import { Snail } from './components/Toys'
 import Nas from './components/Nas'
@@ -44,7 +43,7 @@ const ControlPanel = lazy(() => import('./components/ControlPanel'))
 const Shooter = lazy(() => import('./components/Shooter'))
 const Arcade = lazy(() => import('./components/Arcade'))
 
-const MIN_CONTENT_WIDTH = 800 // only reserve room for a side-docked DoomFeed™ if the game still fits beside it
+const MIN_CONTENT_WIDTH = 800 // only reserve room for the side-docked cat if the game still fits beside it
 const CAT_ROOM = 304 // the cat's card (288px) and its 8px gap, and a little air
 
 /**
@@ -107,27 +106,20 @@ export default function App() {
     }
   }, [])
 
-  const doom = useGameStore((s) => s.layout.doom)
   const cat = useGameStore((s) => s.layout.cat)
   const nasRoom = useGameStore((s) => (ownsExpansion(s, 'nas') && !s.nasUi?.open ? NAS_PEEK_W : 0))
   const arcadeOpen = useGameStore((s) => !!s.arcade)
   const vp = useViewport()
 
-  // A side-docked DoomFeed™ and the Arcade sidebar behave like Windows AppBars: the page makes room.
+  // The phone behaves like a Windows AppBar: the page makes room.
   const arcadeRoom = arcadeInset(vp, arcadeOpen)
-  // DoomFeed™ and the cat docked to a side get a column of their own while the game still fits
-  // beside them. Where one doesn't fit it starts minimized to the taskbar instead of covering the
-  // game (open it from there to look at it). Minimized, they take no room at all.
+  // The cat docked to a side gets a column of its own while the game still fits beside it. Where it
+  // doesn't fit it starts minimized to the taskbar instead of covering the game (open it from there
+  // to look at it). Minimized, it takes no room at all. (DoomFeed™ lives on the phone now.)
   const side = (w) => w.edge === 'left' || w.edge === 'right'
-  const doomFits = vp.w - arcadeRoom - DOOM_WIDTH >= MIN_CONTENT_WIDTH
-  const doomRoom = side(doom) && !doom.collapsed && doomFits ? DOOM_WIDTH : 0
-  const catFits = vp.w - arcadeRoom - (cat.edge === doom.edge ? 0 : doomRoom) - CAT_ROOM >= MIN_CONTENT_WIDTH
+  const catFits = vp.w - arcadeRoom - CAT_ROOM >= MIN_CONTENT_WIDTH
   const catRoom = side(cat) && !cat.collapsed && catFits ? CAT_ROOM + nasRoom : 0
-  const room = (edge) => Math.max(doom.edge === edge ? doomRoom : 0, cat.edge === edge ? catRoom : 0)
-  useEffect(() => {
-    const { layout, setDock } = useGameStore.getState()
-    if (!doomFits && side(layout.doom) && !layout.doom.collapsed) setDock('doom', { collapsed: true })
-  }, [doomFits, doom.edge])
+  const room = (edge) => (cat.edge === edge ? catRoom : 0)
   useEffect(() => {
     const { layout, setDock } = useGameStore.getState()
     if (!catFits && side(layout.cat) && !layout.cat.collapsed) setDock('cat', { collapsed: true })
@@ -155,7 +147,6 @@ export default function App() {
         </div>
       </div>
 
-      <DoomFeed />
       <Cat />
       <Snail />
       <Nas />
