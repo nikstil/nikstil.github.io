@@ -67,7 +67,7 @@
       grass: { label: 'LAWN OF THE DEAD', title: 'LAWN OF THE DEAD', hidden: false },
       phone: { label: 'BRAINS FIRST', title: 'BRAINS FIRST', hidden: false },
       loggle: { label: 'LOGGLE', title: 'LOGGLE', hidden: false },
-      browser: { label: 'Web Browser', title: 'nikBrowser', hidden: false },
+      browser: { label: 'BobbyBrowser', title: 'BobbyBrowser', hidden: false },
       mobile: { label: 'LigmaPhone', title: 'LigmaPhone', hidden: false },
       leaderboard: { label: 'Leaderboards', title: 'Leaderboards', hidden: false },
       messenger: { label: 'Messenger', title: 'nikstil Messenger', hidden: false },

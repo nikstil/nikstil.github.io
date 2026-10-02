@@ -1198,7 +1198,7 @@ html[data-theme="glass"] .balloon { border: 0; border-radius: 18px; background: 
 .win-body.loggle-win { flex: none; padding: 0; overflow: hidden; height: min(640px, calc(100dvh - 160px)); }
 .loggle-frame { display: block; width: 100%; height: 100%; border: 0; }
 
-/* ================= nikBrowser ================= */
+/* ================= BobbyBrowser ================= */
 .win-body.br { flex: none; display: flex; flex-direction: column; height: min(560px, calc(100dvh - var(--taskbar-h) - 120px)); padding: 0; overflow: hidden; }
 .win.is-max .win-body.br { flex: 1; height: auto; }
 .win.is-max .win-client:has(.br) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -1646,3 +1646,11 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .mp-landscape :is(.mp-home, .mp-app) { grid-row: 3; min-height: 0; }
 .mp-landscape .mp-nav { grid-column: 2; grid-row: 1 / -1; flex-direction: column; justify-content: center; gap: 28px; padding: 12px 8px; }
 .mp-landscape .mp-nav button { width: 32px; height: 44px; }
+
+/* ---- App menus (right-click in any app): the desktop menu's look, with the app's name on top ---- */
+.app-menu { z-index: 400; }
+.ctx-head { display: flex; align-items: center; gap: 7px; margin-bottom: 2px; padding: 4px 10px 5px 8px; font-size: 12px; border-bottom: 1px solid rgb(0 0 0 / 0.12); opacity: 0.85; }
+.ctx-head b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+.app-menu .ctx-item { text-align: left; padding-left: 12px; white-space: pre; }
+.ctx-item:disabled { opacity: 0.4; pointer-events: none; }
+.ctx-item.ctx-danger:hover { color: #fff; background: linear-gradient(#e0533b, #c8331c); border-color: #a3260f; }
