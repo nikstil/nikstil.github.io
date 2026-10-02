@@ -351,7 +351,7 @@ function frame(now) {
   } else acc = 0
   if (game && (game.phase === 'won' || game.phase === 'lost')) game.update(dt)
   if (!game) {
-    drawTitleScene(ctx, now / 1000, { night: true, title: ['BRAINS', 'FIRST'], sub: 'NO QUESTIONS ASKED' })
+    drawTitleScene(ctx, now / 1000, { night: true, title: ['BRAINS', 'FIRST'] })
     return
   }
   const g = game ?? titleScene(now)

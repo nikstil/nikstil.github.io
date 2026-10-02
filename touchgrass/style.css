@@ -457,6 +457,8 @@ body { font: 20px/1.15 var(--pixel-body); }
 .lvl:hover:not(:disabled) { color: #2f9a1e; transform: translateY(-2px); }
 .lvl.done { background: linear-gradient(#a8d88a, #6aa84a); }
 .lvl.special { background: linear-gradient(#e8b8d8, #b88aa8); }
+.lvl.skip { background: linear-gradient(#ffe36b, #d9a820); }
+.lvl.skip::after { content: "»"; margin-left: .3em; }
 .chosen { background: linear-gradient(#8a5a30, #6b4423); border: 4px solid #2a1608; box-shadow: inset 0 4px 0 rgba(0, 0, 0, .3), 0 4px 0 #2a1608; }
 .seed-grid, .preview, .alm-grid { background: rgba(42, 22, 8, .4); border: 3px solid rgba(42, 22, 8, .7); box-shadow: inset 0 4px 8px rgba(0, 0, 0, .35); }
 .seed { transition: transform .1s; }

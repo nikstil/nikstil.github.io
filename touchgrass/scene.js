@@ -125,7 +125,7 @@ function lawn(ctx, P) {
 }
 
 /** The big tree on the left, with the sign hanging off its branch. */
-function tree(ctx, P, t, night, title, sub) {
+function tree(ctx, P, t, night, title) {
   // trunk and roots
   ctx.beginPath()
   ctx.moveTo(-40, H)
@@ -171,7 +171,6 @@ function tree(ctx, P, t, night, title, sub) {
     for (const nx of [-w / 2 + 12, w / 2 - 12]) circle(ctx, nx, y + 12, 4, '#9aa3ad', INK, 2)
   }
   plank(40, 440, 132, '#b07a46')
-  plank(180, 460, 50, '#a06c3c')
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.font = PIXEL_FONT(48)
@@ -182,11 +181,6 @@ function tree(ctx, P, t, night, title, sub) {
     ctx.strokeText(ln, 0, 78 + i * 54)
     ctx.fillText(ln, 0, 78 + i * 54)
   })
-  ctx.font = PIXEL_FONT(16)
-  ctx.lineWidth = 6
-  ctx.fillStyle = '#ffe36b'
-  ctx.strokeText(sub, 0, 206)
-  ctx.fillText(sub, 0, 206)
   ctx.restore()
 }
 
@@ -281,7 +275,7 @@ function walker(ctx, t, night) {
   }
 }
 
-/** Draws the whole title screen as pixel art. o: { night, title: [line, line], sub } */
+/** Draws the whole title screen as pixel art. o: { night, title: [line, line] } */
 export function drawTitleScene(target, t, o) {
   const P = o.night ? NIGHT : DAY
   pixelRender(
@@ -296,7 +290,7 @@ export function drawTitleScene(target, t, o) {
       walker(ctx, t, o.night)
       lawn(ctx, P)
       grave(ctx, P, t, o.night)
-      tree(ctx, P, t, o.night, o.title, o.sub)
+      tree(ctx, P, t, o.night, o.title)
       foreground(ctx, P, t)
     },
     'title',
