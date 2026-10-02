@@ -1,23 +1,16 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import Docked from './Docked'
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/useGameStore'
 import { AUTHORS, makeDoomPosts } from '../data/doomfeed'
 import { PREMIUM_ITEMS } from '../data/gameData'
-import { isHorizontalEdge, SNAIL_LANE, TASKBAR_H } from '../lib/dock'
 import { sfx } from '../lib/audio/engine'
 import { liteGraphics } from '../lib/settings'
-import { dockOrigin, useCollapseAnimation } from '../lib/hooks'
 
-export const DOOM_WIDTH = 312 // vertical bar width (the page reserves this much room on wide screens)
 const AUTOPLAY_PX_PER_SEC = 26
 const BATCH = 8
 const MAX_POSTS = 72 // older posts are trimmed (with scroll compensation) so the DOM stays small forever
 const TRIM = 24
 const LOAD_AHEAD_PX = 600
 const PX_TO_METERS = 0.0254 / 96
-
-// Square off the corners that touch the screen edge (all round while floating).
-const RADIUS = { left: '0 10px 10px 0', right: '10px 0 0 10px', top: '0 0 10px 10px', bottom: '10px 10px 0 0', float: '10px' }
 
 const compact = (n) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, '')}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1).replace(/\.0$/, '')}K` : String(n)
@@ -29,59 +22,6 @@ const fmtTime = (sec) => {
   return `${h ? `${h}:` : ''}${mm}:${String(s).padStart(2, '0')}`
 }
 const fmtDist = (m) => (m < 1000 ? `${m.toFixed(m < 10 ? 2 : 1)} m` : `${(m / 1000).toFixed(2)} km`)
-
-/** Size for a given edge: a tall bar on the sides, a wide strip on top/bottom, a card when floating. */
-function doomSize(collapsed) {
-  return (edge, vp) => {
-    const horizontal = isHorizontalEdge(edge)
-    const areaH = vp.h - TASKBAR_H - SNAIL_LANE
-    if (edge === 'float') {
-      if (collapsed) return { w: 176, h: 36 }
-      return { w: Math.min(DOOM_WIDTH, vp.w - 12), h: Math.max(260, Math.min(Math.round(areaH * 0.72), 640)) }
-    }
-    if (collapsed) return horizontal ? { w: 176, h: 36 } : { w: 36, h: 176 }
-    if (horizontal) return { w: Math.min(900, vp.w - 16), h: Math.min(300, areaH - 16) }
-    return { w: Math.min(DOOM_WIDTH, vp.w - 12), h: Math.max(280, Math.min(Math.round(areaH * 0.84), 800)) }
-  }
-}
-
-/**
- * DoomFeed™: an endless, auto-scrolling feed. Drag it by its title bar and leave it anywhere;
- * it docks to a screen edge only when dropped close to one.
- */
-export default function DoomFeed() {
-  const dock = useGameStore((s) => s.layout.doom)
-  // Minimizing plays first (the feed shrinks into its edge), then the tab takes its place.
-  const root = useRef(null)
-  const collapsed = useCollapseAnimation(dock.collapsed, root, dockOrigin(dock))
-  const sizeFor = useMemo(() => doomSize(collapsed), [collapsed])
-  // Minimized, it lives in the taskbar (its 🔥 button) rather than as a tab over the game.
-  if (collapsed) return null
-  return (
-    <Docked id="doom" sizeFor={sizeFor} gap={0} z={56} floating>
-      {({ handleProps, edge }) =>
-        collapsed ? <CollapsedTab rootRef={root} handleProps={handleProps} edge={edge} /> : <FeedWindow rootRef={root} handleProps={handleProps} edge={edge} />
-      }
-    </Docked>
-  )
-}
-
-function CollapsedTab({ rootRef, handleProps, edge }) {
-  const setDock = useGameStore((s) => s.setDock)
-  const vertical = edge === 'left' || edge === 'right'
-  return (
-    <button
-      ref={rootRef}
-      {...handleProps}
-      onClick={() => setDock('doom', { collapsed: false })}
-      title="Open DoomFeed™ (drag to move)"
-      className="doom-tab h-full w-full"
-      style={{ ...handleProps.style, borderRadius: RADIUS[edge] }}
-    >
-      <span style={vertical ? { writingMode: 'vertical-rl', transform: edge === 'left' ? 'rotate(180deg)' : undefined } : undefined}>🔥 DoomFeed™</span>
-    </button>
-  )
-}
 
 /** Time wasted, distance scrolled, dopamine. Ticks every second, so it re-renders alone. */
 function DoomStats() {
@@ -97,66 +37,45 @@ function DoomStats() {
   )
 }
 
-function FeedWindow({ rootRef, handleProps, edge }) {
-  const horizontal = isHorizontalEdge(edge)
-  const setDock = useGameStore((s) => s.setDock)
-  const toast = useGameStore((s) => s.toast)
+/** DoomFeed™ as an app on the TRANSLATR™ Phone: the same endless feed, full screen. */
+export function DoomFeedApp() {
   const touchGrass = useGameStore((s) => s.touchGrass)
   const grassStreak = useGameStore((s) => s.grassStreak)
   const [tab, setTab] = useState('foryou')
   const [autoplay, setAutoplay] = useState(true)
-
   return (
-    <section ref={rootRef} className="aero-window h-full" style={{ '--accent': '#e0663a', borderRadius: RADIUS[edge] }}>
-      <header {...handleProps} className="aero-titlebar select-none" title="Drag anywhere · drop near a screen edge to dock">
-        <span className="doom-grip" aria-hidden="true">⠿</span>
-        <span className="text-base">🔥</span>
-        <h2 className="aero-title min-w-0 flex-1">DoomFeed™ — For You</h2>
-        <div className="caption-btns shrink-0" data-no-drag>
-          <button className="caption-btn" title={autoplay ? 'Pause autoplay' : 'Resume autoplay'} onClick={() => setAutoplay((a) => !a)}>
-            {autoplay ? '❚❚' : '▶'}
-          </button>
-          <button className="caption-btn" title="Minimize" onClick={() => setDock('doom', { collapsed: true })}>
-            ▁
-          </button>
-          <button className="caption-btn close" title="Close" onClick={() => toast('DoomFeed™ cannot be closed. Only minimized. Like your attention span.', 'info')}>
-            ✕
-          </button>
-        </div>
-      </header>
-
-      <div className="aero-client flex min-h-0 flex-col overflow-hidden">
-        <div className="flex items-center gap-1 border-b border-ink/10 px-2 py-1.5">
-          <button className={`doom-tab-btn ${tab === 'foryou' ? 'active' : ''}`} onClick={() => setTab('foryou')}>
-            For You
-          </button>
-          <button className={`doom-tab-btn ${tab === 'following' ? 'active' : ''}`} onClick={() => setTab('following')}>
-            Following (0)
-          </button>
-          <button data-grass className="btn btn-sm ml-auto whitespace-nowrap" onClick={touchGrass} title="Go outside">
-            🌱 Touch grass{grassStreak >= 5 && <span className="font-mono text-[0.625rem] text-toxic"> ×{grassStreak}</span>}
-          </button>
-        </div>
-        <DoomStats />
-        {tab === 'foryou' ? (
-          <Feed key={horizontal ? 'h' : 'v'} horizontal={horizontal} autoplay={autoplay} />
-        ) : (
-          <div className="grid flex-1 place-items-center p-4 text-center text-[0.8125rem] text-ink/60">
+    <div className="doom-app flex h-full min-h-0 flex-col text-ink" style={{ '--accent': '#e0663a' }}>
+      <div className="flex items-center gap-1 border-b border-ink/10 px-2 py-1.5">
+        <button className={`doom-tab-btn ${tab === 'foryou' ? 'active' : ''}`} onClick={() => setTab('foryou')}>
+          For You
+        </button>
+        <button className={`doom-tab-btn ${tab === 'following' ? 'active' : ''}`} onClick={() => setTab('following')}>
+          Following (0)
+        </button>
+        <button className="doom-tab-btn" title={autoplay ? 'Pause autoplay' : 'Resume autoplay'} onClick={() => setAutoplay((a) => !a)}>
+          {autoplay ? '❚❚' : '▶'}
+        </button>
+        <button data-grass className="btn btn-sm ml-auto whitespace-nowrap" onClick={touchGrass} title="Go outside">
+          🌱 Touch grass{grassStreak >= 5 && <span className="font-mono text-[0.625rem] text-toxic"> ×{grassStreak}</span>}
+        </button>
+      </div>
+      <DoomStats />
+      {tab === 'foryou' ? (
+        <Feed horizontal={false} autoplay={autoplay} />
+      ) : (
+        <div className="grid flex-1 place-items-center p-4 text-center text-[0.8125rem] text-ink/60">
+          <div>
+            <div className="mb-2 text-3xl">🫥</div>
+            You follow 0 accounts. 0 accounts follow you.
             <div>
-              <div className="mb-2 text-3xl">🫥</div>
-              You follow 0 accounts. 0 accounts follow you.
-              <br />
-              The algorithm has decided this is for the best.
-              <div>
-                <button className="btn btn-sm mt-3" onClick={() => setTab('foryou')}>
-                  Back to For You
-                </button>
-              </div>
+              <button className="btn btn-sm mt-3" onClick={() => setTab('foryou')}>
+                Back to For You
+              </button>
             </div>
           </div>
-        )}
-      </div>
-    </section>
+        </div>
+      )}
+    </div>
   )
 }
 

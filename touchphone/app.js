@@ -61,10 +61,12 @@ function toggleMute() {
 }
 $('#mute').addEventListener('click', toggleMute)
 showMute()
+// Full screen: the whole page, with the game as big as fits and its shape kept (style.css, .is-fs)
 $('#full').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen()
-  else $('#view').requestFullscreen?.().catch(() => {})
+  else document.documentElement.requestFullscreen?.().catch(() => {})
 })
+document.addEventListener('fullscreenchange', () => document.documentElement.classList.toggle('is-fs', !!document.fullscreenElement))
 $('#full').hidden = !document.documentElement.requestFullscreen
 
 // ================= Screens =================

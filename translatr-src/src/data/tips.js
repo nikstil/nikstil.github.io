@@ -60,7 +60,7 @@ export const TIPS = [
   'Tip: 99.5% of Cardboard Boxes contain trash. Platinum Boxes: only 90%. That’s called progress.',
   'Tip: The Dev IRS has never lost an audit. It has also never been audited.',
   'Tip: The interface speaks Pirate now. Control Panel → Display → Language. Arr.',
-  'Tip: There is an Arcade in the Start menu. Nobody knows who put it there.',
+  'Tip: The Arcade, DoomFeed™ and a browser all live on the TRANSLATR™ Phone. The phone lives in the Premium Store.',
   'Tip: DOOMSCROLL.EXE has five levels. The sixth is your inbox.',
   'Tip: Premium Latin™ has exactly one grammar rule. We charge $10 a word for it.',
   'Tip: Every theme is a different decade. The ads are the same in all of them.',

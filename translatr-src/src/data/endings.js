@@ -52,7 +52,7 @@ export const ENDINGS = [
     icon: '👹',
     title: 'Knee-Deep in the Ads',
     how: 'Beat all three episodes of DOOMSCROLL.EXE, then its final boss, The Shareholders.',
-    hint: 'There’s a 1993-style shooter in the Arcade (Start menu). Fifteen levels, then a boss that only the Ban Hammer can hurt. Every hit costs you five unskippable seconds.',
+    hint: 'There’s a 1993-style shooter on the TRANSLATR™ Phone (Start menu, sold separately). Fifteen levels, then a boss that only the Ban Hammer can hurt. Every hit costs you five unskippable seconds.',
     color: '#b3261e',
   },
   {

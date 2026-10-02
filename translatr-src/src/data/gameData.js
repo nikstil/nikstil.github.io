@@ -588,6 +588,15 @@ export const PREMIUM_ITEMS = [
     tag: 'COSMETIC',
   },
   {
+    id: 'smartphone',
+    name: 'TRANSLATR™ Phone',
+    price: '$1,099.99',
+    emoji: '📱',
+    desc: 'A whole smartphone, in a window. Comes with the Arcade, DoomFeed™, a browser and 0 GB of storage. The charger is sold separately (it isn’t sold).',
+    oneTime: true,
+    tag: 'DEVICE',
+  },
+  {
     id: 'forge_dlc',
     name: 'Ye Olde Forge (Expansion)',
     price: '$14.99',

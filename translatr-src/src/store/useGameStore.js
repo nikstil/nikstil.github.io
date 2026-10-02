@@ -232,6 +232,8 @@ function rogueStart(s, now) {
 }
 
 /** "$9.99/wk" → 999 (for the fake-spend counter). */
+// Phone apps that leave TRANSLATR™ running (the games pause it).
+export const PHONE_LIVE_APPS = ['menu', 'doom', 'browser']
 const priceCents = (price) => Math.round(parseFloat(String(price).replace(/[^\d.]/g, '')) * 100) || 0
 const randBetween = (a, b) => a + Math.random() * (b - a)
 
@@ -894,9 +896,9 @@ function stepMail(st, now, fx) {
 }
 
 /** Unlocks any newly-earned achievements and feeds the one-at-a-time popup queue. */
-/** Time spent with DoomFeed™ open (the "time wasted" counter). */
+/** Time spent with DoomFeed™ open on the phone (the "time wasted" counter). */
 function stepDoom(st, dt) {
-  if (!st.layout.doom || st.layout.doom.collapsed || dt <= 0) return null
+  if (st.arcade !== 'doom' || dt <= 0) return null
   return { stats: { ...st.stats, doomSeconds: (st.stats.doomSeconds ?? 0) + dt } }
 }
 
@@ -1006,7 +1008,7 @@ export const useGameStore = create(
       tick: (now = Date.now()) => {
         const s = get()
         // Paused: restarting, on the title screen, while an ending plays or while a minigame is open.
-        if (s.resetting || !s.mode || s.over || s.shooterOpen || (s.arcade && s.arcade !== 'menu')) return
+        if (s.resetting || !s.mode || s.over || s.shooterOpen || (s.arcade && !PHONE_LIVE_APPS.includes(s.arcade))) return
         const dt = Math.min(2, Math.max(0, (now - s.lastTickAt) / 1000)) // capped so a background tab can't insta-kill the cat
         const patch = { clock: now, lastTickAt: now }
         const fx = []
@@ -2188,9 +2190,14 @@ export const useGameStore = create(
       noteShooter: (counts) =>
         set((s) => ({ stats: { ...s.stats, ...Object.fromEntries(Object.entries(counts).map(([k, n]) => [k, (s.stats[k] ?? 0) + n])) } })),
       // ================= The Arcade =================
-      /** Opens the Arcade's menu, or one of its games ('mines' | 'solitaire' | 'snake'). */
+      /**
+       * Opens the TRANSLATR™ Phone on its home screen, or on one of its apps ('doom' | 'browser' |
+       * 'mines' | 'shooter' | …). Without the phone (a microtransaction), the home screen is its
+       * lock screen with a Buy button, and nothing else opens.
+       */
       openArcade: (game = 'menu') => {
         const s = get()
+        if (!s.premium?.smartphone) game = 'menu'
         if (game === 'shooter') return s.openShooter()
         const first = game !== 'menu' && !(s.stats.arcadePlayed ?? []).includes(game)
         set({

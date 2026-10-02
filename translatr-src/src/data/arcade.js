@@ -1,4 +1,4 @@
-// The Arcade (Start menu): DOOMSCROLL.EXE and three classics, monetized. Prices and prizes are
+// The Arcade (on the TRANSLATR™ Phone): DOOMSCROLL.EXE and the classics, monetized. Prices and prizes are
 // in clicks (see getArcadePrice in lib/economy.js): $10 each, ×5 per Prestige.
 
 export const ARCADE_GAMES = [
@@ -7,7 +7,29 @@ export const ARCADE_GAMES = [
   { id: 'solitaire', icon: '🃏', name: 'Pay-Per-Card Solitaire', blurb: 'Klondike, except every card you draw costs money. Undo is Premium.' },
   { id: 'snake', icon: '🐍', name: 'Wallet Snake', blurb: 'Insert coin. Eat money. The platform keeps 30%.' },
   { id: 'loggle', icon: '🟩', name: 'LOGGLE', blurb: 'The daily name puzzle. Twelve letters, six guesses, a new name every day.' },
-  { id: 'grass', icon: '🌱', name: 'LAWN OF THE DEAD', blurb: 'Plant a garden, hold off the zombies. 50 levels of pixel-art lawn defence, from nikstil.com.' },
+  { id: 'grass', icon: '🌱', name: 'LAWN OF THE DEAD', blurb: 'Plant a garden, hold off the zombies. 50 levels of pixel-art lawn defence, from nikstil.com.', src: '/touchgrass/?embed', landscape: true },
+  { id: 'brains', icon: '🧠', name: 'BRAINS FIRST', blurb: 'The other side of the lawn: you’re the zombies. Puzzles, endless and mini-games, from nikstil.com.', src: '/touchphone/?embed', landscape: true },
+]
+
+// The TRANSLATR™ Phone's own apps (the Arcade's games sit beside them on the home screen).
+// Apps that leave TRANSLATR™ running are listed in PHONE_LIVE_APPS (store/useGameStore.js).
+export const PHONE_APPS = [
+  { id: 'doom', icon: '🔥', name: 'DoomFeed™', blurb: 'The endless feed. Now in your pocket, where it can reach you anywhere.' },
+  { id: 'browser', icon: '🌐', name: 'Browser', blurb: 'The internet, or the parts of it that agree to load in a frame.' },
+]
+
+// The browser's start page.
+export const BOOKMARKS = [
+  { icon: '👹', name: 'DOOMSCROLL.EXE', url: '/doomscroll/' },
+  { icon: '🌱', name: 'LAWN OF THE DEAD', url: '/touchgrass/' },
+  { icon: '🧠', name: 'BRAINS FIRST', url: '/touchphone/' },
+  { icon: '🟩', name: 'LOGGLE', url: '/loggle/' },
+  { icon: '🎞️', name: 'The GIF', url: '/gif/' },
+  { icon: '📚', name: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
+  { icon: '🎲', name: 'Random article', url: 'https://en.m.wikipedia.org/wiki/Special:Random' },
+  { icon: '🗺️', name: 'Maps', url: 'https://www.openstreetmap.org/export/embed.html?bbox=-0.25%2C51.45%2C0.05%2C51.56&layer=mapnik' },
+  { icon: '📼', name: 'A very normal video', url: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ' },
+  { icon: '🕹️', name: 'Old web search', url: 'https://wiby.me/' },
 ]
 
 export const MINES = {

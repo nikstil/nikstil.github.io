@@ -1533,3 +1533,48 @@ html.embed-app :is(.desk-icons, .taskbar, #boot, .start-menu, .ctx-menu, #balloo
 html.embed-app .win.is-embedded { inset: 0 !important; width: auto !important; border: 0; border-radius: 0; box-shadow: none; }
 html.embed-app .win.is-embedded > .win-bar { display: none; }
 .win-foot-choices { flex-wrap: wrap; }
+
+/* Game windows maximized (or full screen): the game area fills the window instead of keeping its
+   own shape (which made it taller than the screen and cut the bottom off); each game fits itself
+   inside, letterboxed. */
+.win:is(:fullscreen, .is-max):has(.doom-win, .grass-win, .loggle-win) { display: flex; flex-direction: column; }
+.win:is(:fullscreen, .is-max) .win-client:has(.doom-win, .grass-win, .loggle-win) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.win:is(:fullscreen, .is-max) .win-body:is(.doom-win, .grass-win, .loggle-win) { flex: 1; aspect-ratio: auto; height: auto; min-height: 0; }
+
+/* ---- nikPhone: the games and the browser, on a phone in a window ---- */
+.mobile-win { display: grid; place-items: center; padding: 10px; background: transparent; }
+.mp { width: 100%; max-width: 380px; height: min(700px, calc(100dvh - 160px)); min-height: 420px; padding: 10px; border-radius: 42px; background: linear-gradient(145deg, #3a3d44, #121317 60%); box-shadow: inset 0 0 0 2px #5b5f69, inset 0 0 0 4px #0a0a0c, 0 14px 34px -12px rgb(0 0 0 / 0.6); }
+.mp-land .mp { max-width: none; height: auto; min-height: 0; border-radius: 34px; }
+.mp-screen { display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 32px; color: #1b1b24; background: linear-gradient(160deg, #f3ecff, #dfe9ff 45%, #ffe8f1); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.mp-land .mp-screen { border-radius: 24px; }
+.mp-status { position: relative; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; height: 28px; padding: 0 22px; font-size: 12px; font-weight: 600; }
+.mp-notch { position: absolute; left: 50%; top: 6px; width: 92px; height: 18px; translate: -50% 0; border-radius: 12px; background: #0b0b0d; }
+.mp-bar { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 2px 10px 6px 16px; font-size: 13px; font-weight: 700; border-bottom: 1px solid rgb(0 0 0 / 0.08); }
+.mp-bar[hidden], .mp-home[hidden], .mp-app[hidden] { display: none; }
+.mp-bar-title { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mp-pop { width: 30px; height: 26px; border-radius: 13px; font-size: 15px; color: inherit; background: transparent; border: 0; cursor: pointer; }
+.mp-pop:hover, .mp-nav button:hover { background: rgb(0 0 0 / 0.08); }
+.mp-home { flex: 1; overflow-y: auto; padding: 12px 16px; }
+.mp-hello { display: grid; justify-items: center; margin: 18px 0 26px; }
+.mp-big-clock { font-size: 3.4rem; font-weight: 200; line-height: 1; }
+.mp-date { margin-top: 6px; font-size: 0.8rem; opacity: 0.65; }
+.mp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 6px; margin: 0; padding: 0; list-style: none; }
+.mp-icon { display: grid; justify-items: center; gap: 5px; width: 100%; padding: 2px; color: inherit; background: none; border: 0; cursor: pointer; font: inherit; }
+.mp-icon-art { display: grid; place-items: center; width: 56px; height: 56px; font-size: 30px; border-radius: 16px; background: linear-gradient(160deg, #fff, #e6e0ff); box-shadow: 0 4px 10px -4px rgb(40 20 90 / 0.45), inset 0 -2px 0 rgb(0 0 0 / 0.06); transition: transform 0.15s; }
+.mp-icon:hover .mp-icon-art { transform: translateY(-2px) scale(1.05); }
+.mp-icon:active .mp-icon-art { transform: scale(0.94); }
+.mp-icon-name { max-width: 100%; font-size: 11px; line-height: 1.15; text-align: center; overflow-wrap: anywhere; }
+.mp-app { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; background: #fff; }
+.mp-land .mp-app { flex: none; aspect-ratio: 960 / 672; }
+.mp-app > .win-foot { display: none; }
+.mp-app > .win-body { flex: 1; min-height: 0; width: 100%; height: auto; aspect-ratio: auto; margin: 0; padding: 0; border: 0; border-radius: 0; }
+.mp-app iframe { width: 100%; height: 100%; border: 0; }
+.mp-nav { display: flex; justify-content: center; gap: 48px; flex-shrink: 0; padding: 4px 24px 8px; }
+.mp-nav button { width: 52px; height: 26px; border-radius: 13px; font-size: 14px; color: rgb(0 0 0 / 0.55); background: transparent; border: 0; cursor: pointer; }
+/* Maximized or full screen, the phone fills the window. */
+.win:is(:fullscreen, .is-max):has(.mobile-win) { display: flex; flex-direction: column; }
+.win:is(:fullscreen, .is-max) .win-client:has(.mobile-win) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.win:is(:fullscreen, .is-max) .mobile-win { flex: 1; min-height: 0; }
+.win:is(:fullscreen, .is-max) .mp { height: 100%; }
+.win:is(:fullscreen, .is-max) .mobile-win { container-type: size; }
+.win.mp-land:is(:fullscreen, .is-max) .mp { width: min(100cqw, calc((100cqh - 116px) * 960 / 672 + 20px)); height: auto; }
