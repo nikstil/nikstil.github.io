@@ -586,26 +586,42 @@
       $('.mp-icon', li).addEventListener('click', () => launch(a))
       grid.append(li)
     }
-    // The window grows sideways as the phone unfolds, and back when it folds (it stays on screen).
-    function fit(panels, aspect) {
+    // Turned sideways (⟲), the phone is landscape: every app gets the wide screen, so nothing unfolds.
+    let landscape = false
+    // The window grows sideways as the phone unfolds or turns, and back (it stays on screen).
+    // `around` keeps it centred on that point (the rotation turns it about its middle).
+    function fit(panels, aspect, around) {
       if (win.el.classList.contains('is-max') || innerWidth < 640) return
       const room = innerHeight - taskbarHeight() - 16
       const chrome = 200 // title bar, padding, bezel, status bar, app bar and nav
-      const w = panels > 1 ? Math.min(panels === 2 ? 860 : 1040, innerWidth - 16, (room - chrome) * aspect + 64) : Math.min(400, innerWidth - 16)
+      let w
+      let h
+      if (landscape) {
+        w = Math.min(1100, innerWidth - 16, (room - 70) * 2 + 40)
+        h = (w - 40) / 2 + 70
+      } else if (panels > 1) {
+        w = Math.min(panels === 2 ? 860 : 1040, innerWidth - 16, (room - chrome) * aspect + 64)
+        h = (w - 64) / aspect + chrome
+      } else {
+        w = Math.min(400, innerWidth - 16)
+        h = Math.max(420, Math.min(700, innerHeight - 160)) + 62
+      }
       const r = win.el.getBoundingClientRect()
+      const cx = around?.x ?? r.left + r.width / 2
       win.el.style.width = `${w}px`
-      win.el.style.left = `${clamp(r.left + (r.width - w) / 2, 8, innerWidth - w - 8)}px`
-      const h = panels > 1 ? (w - 64) / aspect + chrome : r.height
-      if (r.top + h > room) win.el.style.top = `${Math.max(8, room - h)}px`
+      win.el.style.left = `${clamp(cx - w / 2, 8, innerWidth - w - 8)}px`
+      if (around && h) win.el.style.top = `${clamp(around.y - h / 2, 8, room - h)}px`
+      else if (h && r.top + h > room) win.el.style.top = `${Math.max(8, room - h)}px`
     }
     const phone = $('.mp', el)
     const mpScreen = $('.mp-screen', el)
-    function unfold(panels) {
-      phone.classList.remove('unfold-2', 'unfold-3')
+    function unfold(panels, animate = true) {
+      phone.classList.remove('unfold-2', 'unfold-3', 'unfolded')
       $$('.fold-fx, .fold-crease', mpScreen).forEach((n) => n.remove())
       if (panels < 2) return
       void phone.offsetWidth // restart the animation
       phone.classList.add(`unfold-${panels}`)
+      phone.classList.toggle('unfolded', !animate) // already open: no animation
       const fx = document.createElement('div')
       fx.className = `fold-fx fold-${panels}`
       fx.setAttribute('aria-hidden', 'true')
@@ -632,13 +648,54 @@
       $('.mp-bar-title', el).textContent = $('.mp-icon-name', $(`.mp-icon[data-app="${a.id}"]`, el)).textContent
       home.hidden = true
       screen.hidden = bar.hidden = false
-      const panels = foldsFor(a.aspect)
-      el.classList.toggle('mp-land', panels > 1)
-      el.style.setProperty('--ar', a.aspect ?? '')
-      el.dataset.panels = panels
-      fit(panels, a.aspect)
-      unfold(panels)
+      layout(true)
     }
+    /** Shapes the phone for the current app and orientation (unfolding it if `animate`). */
+    function layout(animate, around) {
+      const aspect = current?.aspect
+      const panels = landscape ? 1 : foldsFor(aspect)
+      el.classList.toggle('mp-landscape', landscape)
+      el.classList.toggle('mp-land', panels > 1)
+      el.style.setProperty('--ar', aspect ?? '')
+      el.dataset.panels = panels
+      el.dataset.orient = landscape ? 'landscape' : 'portrait'
+      fit(panels, aspect, around)
+      unfold(panels, animate)
+    }
+    // ⟲: the whole window turns a quarter, the screen blacked out with the rotation symbol turning
+    // along with it, then it fades back in on the new layout.
+    const cover = $('.rot-cover', el)
+    const icon = $('.rot-icon', el)
+    let turning = false
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+    async function rotate() {
+      if (turning) return
+      turning = true
+      const quick = reducedMotion()
+      const r = win.el.getBoundingClientRect()
+      const around = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+      const turn = landscape ? '90deg' : '-90deg'
+      icon.style.rotate = '0deg'
+      cover.classList.add('on')
+      await wait(quick ? 0 : 200)
+      if (!quick) {
+        win.el.classList.add('rot-turning')
+        win.el.style.rotate = turn
+        await wait(620)
+      }
+      // The screen is black, so the swap to the new shape doesn't show: the window stops turning
+      // and takes the new layout, and the symbol keeps the angle it had.
+      win.el.classList.remove('rot-turning')
+      win.el.style.rotate = ''
+      if (!quick) icon.style.rotate = turn
+      landscape = !landscape
+      layout(false, around)
+      await wait(quick ? 0 : 160)
+      cover.classList.remove('on')
+      await wait(quick ? 0 : 260)
+      turning = false
+    }
+    $('.mp-rotate', el).addEventListener('click', rotate)
     function stop() {
       if (typeof cleanup === 'function') cleanup()
       cleanup = null
@@ -649,10 +706,7 @@
       current = null
       home.hidden = false
       screen.hidden = bar.hidden = true
-      el.classList.remove('mp-land')
-      el.dataset.panels = 1
-      fit(1)
-      unfold(1)
+      layout(false)
     }
     $('.mp-back', el).addEventListener('click', goHome)
     $('.mp-homebtn', el).addEventListener('click', goHome)

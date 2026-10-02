@@ -1617,3 +1617,32 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .unfold-2 :is(.phone-notch, .mp-notch), .unfold-3 :is(.phone-notch, .mp-notch) { left: calc(100% - 100% / (2 * var(--n))); top: 7px; width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 3px #1d1f25; }
 /* The Z Fold's camera sits off to the side of its right panel (by the status icons), not centred. */
 .unfold-2 :is(.phone-notch, .mp-notch) { left: auto; right: 104px; translate: 0 0; }
+
+/* ---- Rotating the phone (⟲): the screen blacks out, a rotation symbol turns with it, then the
+   new layout fades in. The turn itself is the `rotate` property on the whole phone/window. ---- */
+.rot-cover { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; color: #fff; background: #000; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.26s ease, visibility 0s linear 0.26s; }
+.rot-cover.on { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.18s ease; }
+.rot-icon { display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; background: rgb(255 255 255 / 0.1); box-shadow: 0 0 0 1px rgb(255 255 255 / 0.15); }
+.rot-cover.on .rot-icon svg { animation: rot-nudge 0.6s ease-in-out 0.2s both; }
+@keyframes rot-nudge { 50% { transform: scale(1.15); } }
+.rot-turning { transition: rotate 0.6s cubic-bezier(.45, .05, .25, 1) !important; }
+.unfolded, .unfolded .fold-fx { animation: none !important; }
+.unfolded .fold-fx { display: none; }
+@media (prefers-reduced-motion: reduce) { .rot-cover.on .rot-icon svg { animation: none; } }
+/* Landscape: the phone on its side. Every app gets the wide screen; the camera moves to the left. */
+.mp-landscape .mp { max-width: none; width: 100%; height: auto; min-height: 0; aspect-ratio: 2 / 1; border-radius: 40px; }
+.mp-landscape .mp-screen { padding-left: 28px; border-radius: 30px; }
+.mp-landscape .mp-status { position: static; }
+.mp-landscape .mp-notch { left: 8px; top: 50%; width: 18px; height: 84px; translate: 0 -50%; }
+.mp-landscape .mp-hello { margin: 4px 0 12px; }
+.mp-landscape .mp-big-clock { font-size: 2.4rem; }
+.mp-landscape .mp-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.win.mp-landscape:is(:fullscreen, .is-max) .mp { width: min(100cqw, calc(100cqh * 2)); height: auto; }
+/* Sideways, the buttons move to a column on the right, so apps keep the height. */
+.mp-landscape .mp-screen { display: grid; grid-template: auto auto 1fr / 1fr auto; }
+.mp-landscape :is(.mp-status, .mp-bar, .mp-home, .mp-app) { grid-column: 1; }
+.mp-landscape .mp-status { grid-row: 1; }
+.mp-landscape .mp-bar { grid-row: 2; padding-block: 0 4px; }
+.mp-landscape :is(.mp-home, .mp-app) { grid-row: 3; min-height: 0; }
+.mp-landscape .mp-nav { grid-column: 2; grid-row: 1 / -1; flex-direction: column; justify-content: center; gap: 28px; padding: 12px 8px; }
+.mp-landscape .mp-nav button { width: 32px; height: 44px; }
