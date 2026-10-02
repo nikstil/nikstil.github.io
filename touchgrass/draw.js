@@ -36,6 +36,11 @@ export function beltRect(i, item) {
 }
 
 // ================= Backgrounds =================
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16)
+  const f = (v) => Math.max(0, Math.min(255, Math.round(v + (k < 0 ? v * k : (255 - v) * k))))
+  return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`
+}
 const bgCache = new Map()
 function background(g) {
   const key = `${g.level.area}:${g.rows}:${(g.sod ?? []).join('')}:${g.special}`
@@ -102,23 +107,26 @@ function paintBackground(ctx, g) {
         for (let i = 0; i < 6; i++) ctx.fillRect(x + ((i * 37) % L.tw), y + ((i * 53) % L.th), 6, 3)
         continue
       }
-      const even = (r + col) % 2 === 0
-      ctx.fillStyle = night ? (even ? '#1f4a33' : '#24563b') : even ? '#5cc46a' : '#6fd27b'
+      // the classic striped lawn: columns alternate light and dark, rows shift a little
+      const lightCol = col % 2 === 0
+      const base = night ? (lightCol ? '#2f6a3c' : '#275a33') : lightCol ? '#7bc743' : '#5fae32'
+      ctx.fillStyle = r % 2 ? shade(base, -0.06) : base
       ctx.fillRect(x, y, L.tw, L.th)
-      // mowing stripes
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(x, y, L.tw, L.th)
-      ctx.clip()
-      ctx.strokeStyle = night ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.12)'
-      ctx.lineWidth = 8
-      for (let k = -L.th; k < L.tw; k += 22) {
+      // grass texture: little blades in lighter and darker greens
+      for (let i = 0; i < 26; i++) {
+        const seed = (r * 131 + col * 71 + i * 37) % 997
+        const bx = x + ((seed * 13) % L.tw)
+        const by = y + ((seed * 29) % Math.floor(L.th))
+        ctx.strokeStyle = i % 3 ? (night ? 'rgba(10,30,15,.35)' : 'rgba(40,90,20,.35)') : night ? 'rgba(120,180,130,.18)' : 'rgba(210,255,150,.35)'
+        ctx.lineWidth = 1.5
         ctx.beginPath()
-        ctx.moveTo(x + k, y + L.th)
-        ctx.lineTo(x + k + L.th, y)
+        ctx.moveTo(bx, by + 5)
+        ctx.lineTo(bx + ((seed % 5) - 2), by)
         ctx.stroke()
       }
-      ctx.restore()
+      // soft shading at the tile edges
+      ctx.fillStyle = 'rgba(0,0,0,.05)'
+      ctx.fillRect(x, y + L.th - 4, L.tw, 4)
       // a daisy now and then
       if ((r * 7 + col * 13) % 9 === 0) {
         circle(ctx, x + 14 + ((col * 31) % 50), y + L.th - 16, 3, night ? '#9aa' : '#fff', null)
@@ -166,12 +174,12 @@ function paintBackground(ctx, g) {
 function paintHouse(ctx, g, L) {
   const night = g.area.night
   // a pastel house wall with a door, and the Wi-Fi router everyone's after
-  ctx.fillStyle = night ? '#4a4060' : '#f7d6e0'
+  ctx.fillStyle = night ? '#4a4a5a' : '#efe3c4'
   ctx.fillRect(0, L.y0 - 30, L.x0 - 34, H)
-  ctx.fillStyle = night ? '#3a3050' : '#eec4d2'
+  ctx.fillStyle = night ? '#3a3a4a' : '#d9c9a0'
   for (let y = L.y0 - 30; y < H; y += 18) ctx.fillRect(0, y, L.x0 - 34, 2)
-  // porch
-  ctx.fillStyle = night ? '#5a4a3a' : '#c8a070'
+  // a stone porch
+  ctx.fillStyle = night ? '#4a4a4a' : '#b9b2a2'
   ctx.fillRect(L.x0 - 34, L.y0 - 30, 30, H)
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
@@ -850,8 +858,23 @@ export function drawPacket(ctx, id, x, y, w, h, { cost = null, ready = 1, afford
 function drawBank(ctx, g, ui) {
   const n = g.belt ? 10 : Math.max(6, g.seeds.length)
   const width = BANK.seedX + n * (BANK.seedW + BANK.seedGap) + (ui.shovel ? BANK.shovelW + 16 : 8)
-  rr(ctx, BANK.x, BANK.y, width, BANK.h, 10, '#7a5230', INK, 3)
-  rr(ctx, BANK.x + 4, BANK.y + 4, width - 8, BANK.h - 8, 8, '#93663c', null)
+  rr(ctx, BANK.x, BANK.y, width, BANK.h, 10, '#6b4423', INK, 3)
+  rr(ctx, BANK.x + 4, BANK.y + 4, width - 8, BANK.h - 8, 8, '#8a5a30', null)
+  // wood grain
+  ctx.save()
+  ctx.beginPath()
+  ctx.roundRect(BANK.x + 4, BANK.y + 4, width - 8, BANK.h - 8, 8)
+  ctx.clip()
+  ctx.strokeStyle = 'rgba(60,30,10,.25)'
+  ctx.lineWidth = 2
+  for (let i = 0; i < 7; i++) {
+    const yy = BANK.y + 10 + i * 11
+    ctx.beginPath()
+    ctx.moveTo(BANK.x, yy)
+    for (let x = BANK.x; x < BANK.x + width; x += 40) ctx.quadraticCurveTo(x + 20, yy + ((i + x / 40) % 2 ? 3 : -3), x + 40, yy)
+    ctx.stroke()
+  }
+  ctx.restore()
   // the sun counter (no sun on belt levels)
   if (!g.belt) {
     rr(ctx, BANK.x + 6, BANK.y + 6, BANK.sunW, BANK.h - 12, 8, '#f6eccb', '#8a6a2a', 2)
@@ -938,7 +961,7 @@ function drawBanners(ctx, g, ui) {
   const text = []
   if (g.phase === 'intro') {
     const k = g.introLeft
-    text.push({ text: k > 1.7 ? 'READY…' : k > 0.8 ? 'SET…' : 'PLANT!', kind: k > 0.8 ? 'info' : 'go', size: 54 })
+    text.push({ text: k > 1.7 ? 'READY…' : k > 0.8 ? 'SET…' : 'PLANT!', kind: 'huge', size: k > 0.8 ? 54 : 66 })
   }
   for (const b of ui.banners ?? []) text.push({ ...b, size: b.kind === 'final' ? 64 : b.kind === 'huge' ? 30 : 40 })
   let y = H / 2 - 10
@@ -954,7 +977,7 @@ function drawBanners(ctx, g, ui) {
     ctx.textAlign = 'center'
     ctx.lineWidth = 7
     ctx.strokeStyle = INK
-    ctx.fillStyle = b.kind === 'huge' || b.kind === 'final' ? '#ff4040' : b.kind === 'go' ? '#ffe14a' : '#fff'
+    ctx.fillStyle = b.kind === 'huge' || b.kind === 'final' ? '#e8261b' : b.kind === 'go' ? '#ffe14a' : '#fff'
     ctx.strokeText(b.text, W / 2, y)
     ctx.fillText(b.text, W / 2, y)
     ctx.restore()

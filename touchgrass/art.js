@@ -1,44 +1,72 @@
-// TOUCHGRASS.EXE: the art. Every plant and Scroller is drawn with canvas paths: flat colours,
-// a thick dark outline, little dot eyes. Nothing is an image file.
+// TOUCHGRASS.EXE: the art. Every plant and Scroller is drawn with canvas paths in a soft-shaded
+// cartoon style. Nothing is an image file.
 //
 // Plants are drawn standing on (0, 0), the middle of the bottom of their tile, about 80 units
 // tall; Scrollers stand on (0, 0) facing left, about 120 units tall. The caller scales.
 
-export const INK = '#22301e'
+export const INK = '#2a2620'
 const TAU = Math.PI * 2
 
 // ================= Little helpers =================
-function path(ctx, fill, stroke = INK, width = 3) {
+// The look: soft cartoon shading (a light top-left, a darker bottom-right) and outlines in a
+// dark shade of each colour rather than flat black.
+function rgb(hex) {
+  if (typeof hex !== 'string' || hex[0] !== '#') return null
+  let h = hex.slice(1)
+  if (h.length === 3 || h.length === 4) h = [...h].map((c) => c + c).join('')
+  const n = parseInt(h.slice(0, 6), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+function mix(hex, to, k) {
+  const c = rgb(hex)
+  if (!c) return hex
+  const t = to === 'white' ? [255, 255, 255] : [20, 16, 12]
+  return `rgb(${c.map((v, i) => Math.round(v + (t[i] - v) * k)).join(',')})`
+}
+export const darken = (hex, k = 0.45) => mix(hex, 'black', k)
+export const lighten = (hex, k = 0.35) => mix(hex, 'white', k)
+function path(ctx, fill, stroke = INK, width = 3, box = null) {
   if (fill) {
-    ctx.fillStyle = fill
+    if (box && rgb(fill)) {
+      const [x, y, w, h] = box
+      const g = ctx.createRadialGradient(x + w * 0.35, y + h * 0.28, Math.min(w, h) * 0.05, x + w * 0.45, y + h * 0.45, Math.max(w, h) * 0.75)
+      g.addColorStop(0, lighten(fill, 0.38))
+      g.addColorStop(0.55, fill)
+      g.addColorStop(1, darken(fill, 0.22))
+      ctx.fillStyle = g
+    } else ctx.fillStyle = fill
     ctx.fill()
   }
   if (stroke) {
-    ctx.lineWidth = width
-    ctx.strokeStyle = stroke
+    ctx.lineWidth = width * 0.72
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = stroke === INK && rgb(fill) ? darken(fill, 0.62) : stroke
     ctx.stroke()
   }
 }
 export function circle(ctx, x, y, r, fill, stroke = INK, width = 3) {
   ctx.beginPath()
   ctx.arc(x, y, r, 0, TAU)
-  path(ctx, fill, stroke, width)
+  path(ctx, fill, stroke, width, r > 3 ? [x - r, y - r, 2 * r, 2 * r] : null)
 }
 function ellipse(ctx, x, y, rx, ry, fill, stroke = INK, width = 3, rot = 0) {
   ctx.beginPath()
   ctx.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot, 0, TAU)
-  path(ctx, fill, stroke, width)
+  path(ctx, fill, stroke, width, rx > 3 ? [x - rx, y - ry, 2 * rx, 2 * ry] : null)
 }
 export function rr(ctx, x, y, w, h, r, fill, stroke = INK, width = 3) {
   ctx.beginPath()
   ctx.roundRect(x, y, w, h, r)
-  path(ctx, fill, stroke, width)
+  path(ctx, fill, stroke, width, w > 6 && h > 6 ? [x, y, w, h] : null)
 }
 function poly(ctx, pts, fill, stroke = INK, width = 3) {
   ctx.beginPath()
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
   ctx.closePath()
-  path(ctx, fill, stroke, width)
+  const xs = pts.map((p) => p[0])
+  const ys = pts.map((p) => p[1])
+  const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)]
+  path(ctx, fill, stroke, width, box[2] > 6 && box[3] > 6 ? box : null)
 }
 function line(ctx, pts, stroke = INK, width = 3) {
   ctx.beginPath()
@@ -81,9 +109,17 @@ function face(ctx, x, y, s = 1, mood = 'happy', look = 0) {
       [11, 0],
     ], INK, 2.4)
   } else {
-    for (const ex of [-6, 6]) {
-      circle(ctx, ex + look, 0, 3.6, INK, null)
-      circle(ctx, ex + look + 1.2, -1.3, 1.2, '#fff', null)
+    // big cartoon eyes: white, with a pupil and a shine
+    for (const ex of [-6.5, 6.5]) {
+      ctx.beginPath()
+      ctx.ellipse(ex + look * 0.5, -1, 4.6, 5.6, 0, 0, TAU)
+      ctx.fillStyle = '#fff'
+      ctx.fill()
+      ctx.lineWidth = 1.4
+      ctx.strokeStyle = 'rgba(40,30,20,.55)'
+      ctx.stroke()
+      circle(ctx, ex + look + 1.2, 0, 2.6, '#1c1a16', null)
+      circle(ctx, ex + look + 1.9, -1.1, 0.9, '#fff', null)
     }
     if (mood === 'angry') {
       line(ctx, [
@@ -1022,8 +1058,8 @@ function lobber(ctx, t, a, color, ammo, big = false) {
 }
 
 // ================= Scrollers =================
-const SKIN = '#c7c2d6'
-const SKIN_DARK = '#9e98b3'
+const SKIN = '#b9c4b0'
+const SKIN_DARK = '#8d9a86'
 /**
  * A Scroller: a hunched person staring at a phone. o: { shirt, pants, hat(ctx), front(ctx),
  * back(ctx), eat, walk (0..1 cycle), noPhone, scale, bodyless (legs hidden) }
@@ -2016,21 +2052,26 @@ export function drawMower(ctx, kind, t, running) {
     circle(ctx, 0, -28, 6, '#ff4d4d', INK, 2)
     return
   }
-  // a robo-mower: a round robot with a blade skirt
-  ellipse(ctx, 0, -8, 30, 10, '#9aa3ad')
-  if (running) for (let i = 0; i < 8; i++) {
-    const ang = t * 30 + i
-    line(ctx, [
-      [Math.cos(ang) * 26, -8 + Math.sin(ang) * 6],
-      [Math.cos(ang) * 32, -8 + Math.sin(ang) * 8],
-    ], '#e8e2d6', 2)
+  // a red push mower
+  const shake = running ? Math.sin(t * 60) * 1.2 : 0
+  ctx.save()
+  ctx.translate(0, shake)
+  line(ctx, [
+    [-14, -22],
+    [-34, -52],
+  ], '#5a5a5a', 4)
+  line(ctx, [
+    [-40, -52],
+    [-28, -52],
+  ], '#2a2a2a', 6)
+  rr(ctx, -22, -28, 46, 20, 8, '#d8322a')
+  rr(ctx, -14, -36, 26, 10, 4, '#e84a3a')
+  rr(ctx, -6, -42, 10, 8, 2, '#3a3a3a')
+  for (const wx of [-14, 16]) {
+    circle(ctx, wx, -6, 8, '#2a2a2a')
+    circle(ctx, wx, -6, 3, '#c9ced6', null)
   }
-  ctx.beginPath()
-  ctx.ellipse(0, -14, 24, 16, 0, Math.PI, 0)
-  ctx.closePath()
-  path(ctx, '#3fd17a')
-  circle(ctx, -8, -20, 3, running ? '#ff4d4d' : '#22252e', null)
-  circle(ctx, 4, -20, 3, running ? '#ff4d4d' : '#22252e', null)
+  ctx.restore()
 }
 export function drawRake(ctx) {
   line(ctx, [
