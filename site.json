@@ -37,6 +37,11 @@
       "title": "DOOMSCROLL.EXE",
       "hidden": false
     },
+    "grass": {
+      "label": "TOUCHGRASS.EXE",
+      "title": "TOUCHGRASS.EXE",
+      "hidden": false
+    },
     "browser": {
       "label": "Web Browser",
       "title": "nikBrowser",
