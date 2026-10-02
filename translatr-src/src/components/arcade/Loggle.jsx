@@ -149,7 +149,7 @@ export default function Loggle() {
   return (
     <div className="loggle">
       <p className="loggle-intro">
-        Today’s name is <b>Robert Loggia</b> or <b>Lobert Boggia</b>. One of them. 50/50, new every day. Solve it: <b>{money(price(LOGGLE.prize))}</b>
+        Today’s name, in six guesses. Solve it: <b>{money(price(LOGGLE.prize))}</b>
       </p>
       <div className="loggle-board" role="grid" aria-label="LOGGLE board">
         {rows.map((word, r) => {
