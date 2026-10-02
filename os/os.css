@@ -1615,3 +1615,5 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 /* Unfolded, the front camera is a punch-hole at the top of the last panel to open (the one that
    was folded away, like a real foldable's inner screen), never on a hinge. */
 .unfold-2 :is(.phone-notch, .mp-notch), .unfold-3 :is(.phone-notch, .mp-notch) { left: calc(100% - 100% / (2 * var(--n))); top: 7px; width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 3px #1d1f25; }
+/* The Z Fold's camera sits off to the side of its right panel (by the status icons), not centred. */
+.unfold-2 :is(.phone-notch, .mp-notch) { left: auto; right: 104px; translate: 0 0; }
