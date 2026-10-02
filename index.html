@@ -67,6 +67,7 @@
       <li><button class="desk-icon" data-app="browser"><span class="di-img" data-icon="browser" aria-hidden="true">🧭</span><span class="di-label">Web Browser</span></button></li>
       <li><button class="desk-icon" data-app="doom"><span class="di-img" data-icon="doom" aria-hidden="true">👹</span><span class="di-label">DOOMSCROLL.EXE</span></button></li>
       <li><button class="desk-icon" data-app="grass"><span class="di-img" data-icon="grass" aria-hidden="true">🌱</span><span class="di-label">TOUCHGRASS.EXE</span></button></li>
+      <li><button class="desk-icon" data-app="phone"><span class="di-img" data-icon="phone" aria-hidden="true">📱</span><span class="di-label">TOUCHPHONE.EXE</span></button></li>
       <li><button class="desk-icon" data-app="loggle"><span class="di-img" data-icon="loggle" aria-hidden="true">🟩</span><span class="di-label">LOGGLE</span></button></li>
       <li><button class="desk-icon" data-app="bin"><span class="di-img" data-icon="bin" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
       <li data-online="leaderboard" hidden><button class="desk-icon" data-app="leaderboard"><span class="di-img" data-icon="leaderboard" aria-hidden="true">🏆</span><span class="di-label">Leaderboards</span></button></li>
@@ -101,6 +102,7 @@
           <li><button class="sm-item" role="menuitem" data-app="browser"><span data-icon="browser" aria-hidden="true">🧭</span> <span class="sm-label">Web Browser</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="doom"><span data-icon="doom" aria-hidden="true">👹</span> <span class="sm-label">DOOMSCROLL.EXE</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="grass"><span data-icon="grass" aria-hidden="true">🌱</span> <span class="sm-label">TOUCHGRASS.EXE</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="phone"><span data-icon="phone" aria-hidden="true">📱</span> <span class="sm-label">TOUCHPHONE.EXE</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="loggle"><span data-icon="loggle" aria-hidden="true">🟩</span> <span class="sm-label">LOGGLE</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">This PC</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
@@ -249,10 +251,18 @@
     </div>
   </template>
 
+  <template id="app-phone">
+    <div class="win-body grass-win phone-win"><iframe class="phone-frame grass-frame" title="TOUCHPHONE.EXE" allow="fullscreen; autoplay"></iframe></div>
+    <div class="win-foot">
+      <span class="status muted">You’re the Scrollers · get to every router · Esc pauses</span>
+      <a class="btn" href="/touchphone/" target="_blank" rel="noopener">⛶ Full page</a>
+    </div>
+  </template>
+
   <template id="app-loggle">
     <div class="win-body loggle-win"><iframe class="loggle-frame" title="LOGGLE"></iframe></div>
     <div class="win-foot">
-      <span class="status muted">Robert Loggia or Lobert Boggia · new every day</span>
+      <span class="status muted">A new name every day</span>
       <a class="btn" href="/loggle/" target="_blank" rel="noopener">⛶ Full page</a>
     </div>
   </template>

@@ -293,6 +293,18 @@ export function drawGame(ctx, g, ui) {
     ctx.stroke()
     ctx.restore()
   }
+  // Reverse (TOUCHPHONE): Scrollers go in to the right of the red line
+  if (g.special === 'reverse') {
+    ctx.save()
+    ctx.strokeStyle = '#e8322b'
+    ctx.lineWidth = 4
+    ctx.setLineDash([14, 8])
+    ctx.beginPath()
+    ctx.moveTo(L.x0 + g.line * L.tw, L.y0 - 4)
+    ctx.lineTo(L.x0 + g.line * L.tw, L.y0 + g.rows * L.th + 4)
+    ctx.stroke()
+    ctx.restore()
+  }
   for (const rk of g.rakes ?? []) {
     if (rk.used) continue
     ctx.save()
@@ -365,6 +377,14 @@ export function drawGame(ctx, g, ui) {
     // Scrollers in this row, back to front
     const zsRow = g.zombies.filter((z) => z.row === r && !z.gone).sort((a, b) => b.x - a.x)
     for (const z of zsRow) drawZ(ctx, g, z, L, zs, t)
+    // Reverse: the Wi-Fi router at the end of the row
+    if (g.routers?.[r]) {
+      ctx.save()
+      ctx.translate(L.x0 - 0.42 * L.tw, rowY)
+      ctx.scale(ps, ps)
+      drawRouter(ctx, g.routers[r], t)
+      ctx.restore()
+    }
     // mowers
     for (const m of g.mowers) if (m.row === r && m.state !== 'used') {
       ctx.save()
@@ -737,10 +757,66 @@ function drawFog(ctx, g, L) {
   ctx.globalAlpha = 1
 }
 
+/** A home Wi-Fi router (TOUCHPHONE): blinking until a Scroller gets to it, then very much offline. */
+export function drawRouter(ctx, rt, t) {
+  const eaten = rt?.eaten
+  ctx.save()
+  if (eaten) ctx.rotate(-0.25)
+  // antennas
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 5
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(-18, -26)
+  ctx.lineTo(eaten ? -34 : -24, -64)
+  ctx.moveTo(18, -26)
+  ctx.lineTo(eaten ? 30 : 24, eaten ? -48 : -64)
+  ctx.stroke()
+  rr(ctx, -32, -30, 64, 28, 7, eaten ? '#6d6f75' : '#f2f2f4')
+  rr(ctx, -32, -12, 64, 10, 4, eaten ? '#55575c' : '#cfd2d8', null)
+  for (let i = 0; i < 4; i++) {
+    const on = !eaten && Math.floor(t * 3 + i * 1.7) % 3 !== 0
+    circle(ctx, -18 + i * 12, -20, 3.2, eaten ? '#3a3a3a' : on ? '#3fe05a' : '#1d7a2c', null)
+  }
+  if (!eaten) {
+    // signal arcs
+    ctx.strokeStyle = `rgba(60,160,255,${0.5 + 0.4 * Math.sin(t * 4)})`
+    ctx.lineWidth = 4
+    for (let k = 1; k <= 3; k++) {
+      ctx.beginPath()
+      ctx.arc(0, -64, k * 9, -Math.PI * 0.75, -Math.PI * 0.25)
+      ctx.stroke()
+    }
+  } else {
+    ctx.fillStyle = '#e8322b'
+    ctx.font = 'bold 26px Verdana, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('✕', 0, -40)
+  }
+  ctx.restore()
+}
+
 function drawHolding(ctx, g, ui, L, ps) {
   const h = ui.holding
   if (!h || !ui.mouse) return
   const hv = ui.hover
+  if (h.zid) {
+    const zs = (L.th * 1.12) / 120
+    if (hv?.inside && !g.whyNotScroller(h.index, hv.r, hv.c)) {
+      ctx.save()
+      ctx.globalAlpha = 0.45
+      ctx.translate(L.x0 + (hv.c + 0.6) * L.tw, L.y0 + (hv.r + 1) * L.th - L.th * 0.12)
+      ctx.scale(zs, zs)
+      drawZombie(ctx, h.zid, null, g.t)
+      ctx.restore()
+    }
+    ctx.save()
+    ctx.translate(ui.mouse.x, ui.mouse.y + 30)
+    ctx.scale(zs * 0.7, zs * 0.7)
+    drawZombie(ctx, h.zid, null, g.t)
+    ctx.restore()
+    return
+  }
   if (h.id) {
     if (hv?.inside) {
       const ok = h.id.startsWith('bowl') ? hv.c <= 2 : !g.whyNot(h.id, hv.r, hv.c)
@@ -816,19 +892,24 @@ export function drawShovelIcon(ctx) {
 }
 
 // ================= The seed bank =================
-export function drawPacket(ctx, id, x, y, w, h, { cost = null, ready = 1, affordable = true, selected = false, imitated = false, t = 0 } = {}) {
+export function drawPacket(ctx, id, x, y, w, h, { cost = null, ready = 1, affordable = true, selected = false, imitated = false, t = 0, zombie = false } = {}) {
   ctx.save()
   ctx.translate(x, y + (selected ? -4 : 0))
   rr(ctx, 0, 0, w, h, 6, imitated ? '#d6d6d6' : '#f6eccb', '#8a6a2a', 2.5)
-  rr(ctx, 4, 4, w - 8, h - (cost != null ? 24 : 8), 4, imitated ? '#bfc3c8' : '#bfe39a', null)
+  rr(ctx, 4, 4, w - 8, h - (cost != null ? 24 : 8), 4, zombie ? '#c9b8de' : imitated ? '#bfc3c8' : '#bfe39a', null)
   ctx.save()
   ctx.beginPath()
   ctx.rect(4, 4, w - 8, h - (cost != null ? 24 : 8))
   ctx.clip()
   ctx.translate(w / 2, h - (cost != null ? 24 : 8) + 2)
-  const s = id.startsWith('bowl') ? 0.5 : 0.48
+  const s = zombie ? 0.5 : id.startsWith('bowl') ? 0.5 : 0.48
   ctx.scale(s, s)
-  if (id.startsWith('bowl')) {
+  if (zombie) {
+    // just the head and shoulders fit on a packet
+    ctx.translate(0, 62)
+    if (id === 'gigachad') ctx.scale(0.55, 0.55) // he doesn't fit otherwise
+    drawZombie(ctx, id, null, t)
+  } else if (id.startsWith('bowl')) {
     ctx.translate(0, -30)
     drawShot(ctx, { kind: 'roll', boom: id === 'bowlBoom', big: false }, 0)
   } else drawPlant(ctx, id, imitated ? { imitated: true } : null, t)
@@ -856,7 +937,7 @@ export function drawPacket(ctx, id, x, y, w, h, { cost = null, ready = 1, afford
 }
 
 function drawBank(ctx, g, ui) {
-  const n = g.belt ? 10 : Math.max(6, g.seeds.length)
+  const n = g.belt ? 10 : Math.max(6, g.zseeds?.length ?? g.seeds.length)
   const width = BANK.seedX + n * (BANK.seedW + BANK.seedGap) + (ui.shovel ? BANK.shovelW + 16 : 8)
   rr(ctx, BANK.x, BANK.y, width, BANK.h, 10, '#6b4423', INK, 3)
   rr(ctx, BANK.x + 4, BANK.y + 4, width - 8, BANK.h - 8, 8, '#8a5a30', null)
@@ -906,6 +987,12 @@ function drawBank(ctx, g, ui) {
       if (r.x > x1) return
       drawPacket(ctx, it.id, r.x, r.y, r.w, r.h, { selected: ui.holding?.from === 'belt' && ui.holding.index === i, t: g.t })
     })
+  } else if (g.zseeds) {
+    g.zseeds.forEach((s, i) => {
+      const r = seedRect(i)
+      const ready = s.readyAt <= g.t ? 1 : 1 - (s.readyAt - g.t) / (s.recharge || 1)
+      drawPacket(ctx, s.id, r.x, r.y, r.w, r.h, { cost: s.cost, ready, affordable: g.sun >= s.cost, selected: ui.holding?.zid && ui.holding.index === i, t: g.t, zombie: true })
+    })
   } else {
     g.seeds.forEach((s, i) => {
       const def = PLANT_BY_ID[s.id]
@@ -935,9 +1022,18 @@ function drawProgress(ctx, g) {
   ctx.strokeStyle = INK
   ctx.lineWidth = 3
   ctx.textAlign = 'right'
-  const label = `Level ${g.level.id}`
+  const label = g.level.label ?? `Level ${g.level.id}`
   ctx.strokeText(label, x - 10, y + 12)
   ctx.fillText(label, x - 10, y + 12)
+  if (g.routers) {
+    const n = g.routers.filter((rt) => rt.eaten).length
+    const text = `📶 Routers: ${n} / ${g.routers.length}`
+    ctx.textAlign = 'left'
+    ctx.font = 'bold 16px Verdana, sans-serif'
+    ctx.strokeText(text, x, y + 12)
+    ctx.fillText(text, x, y + 12)
+    return
+  }
   if (!g.waves.total && !g.vases.length && !g.boss) return
   rr(ctx, x, y, w, 16, 8, '#3a3a3a', INK, 2)
   const k = g.progress()
@@ -961,7 +1057,7 @@ function drawBanners(ctx, g, ui) {
   const text = []
   if (g.phase === 'intro') {
     const k = g.introLeft
-    text.push({ text: k > 1.7 ? 'READY…' : k > 0.8 ? 'SET…' : 'PLANT!', kind: 'huge', size: k > 0.8 ? 54 : 66 })
+    text.push({ text: k > 1.7 ? 'READY…' : k > 0.8 ? 'SET…' : g.special === 'reverse' ? 'SCROLL!' : 'PLANT!', kind: 'huge', size: k > 0.8 ? 54 : 66 })
   }
   for (const b of ui.banners ?? []) text.push({ ...b, size: b.kind === 'final' ? 64 : b.kind === 'huge' ? 30 : 40 })
   let y = H / 2 - 10

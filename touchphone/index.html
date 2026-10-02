@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOUCHPHONE.EXE · nikstil.com</title>
+  <meta name="description" content="TOUCHPHONE.EXE: you're the Scrollers now. Break into the garden and get to the Wi-Fi. 9 puzzles and an endless mode, from TRANSLATR™.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="nikstil.com">
+  <meta property="og:url" content="https://nikstil.com/touchphone/">
+  <meta property="og:title" content="TOUCHPHONE.EXE">
+  <meta property="og:description" content="You're the Scrollers now. The garden's planted, the Wi-Fi's behind it. 9 puzzles and an endless mode.">
+  <meta property="og:image" content="https://nikstil.com/touchgrass/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TOUCHPHONE.EXE">
+  <meta name="twitter:description" content="You're the Scrollers now. The garden's planted, the Wi-Fi's behind it. 9 puzzles and an endless mode.">
+  <meta name="twitter:image" content="https://nikstil.com/touchgrass/og-image.png">
+  <meta name="theme-color" content="#3a2a5c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%233a2a5c'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E📱%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/touchgrass/style.css">
+  <link rel="stylesheet" href="/touchphone/style.css">
+  <script type="module" src="/touchphone/app.js"></script>
+</head>
+<body>
+  <main class="frame" id="frame">
+    <header class="bar">
+      <span class="bar-name">TOUCHPHONE.EXE</span>
+      <span class="bar-sub" id="bar-sub">You’re the Scrollers now</span>
+      <button class="bar-btn" id="mute" title="Sound on/off (M)" aria-label="Sound on/off">🔊</button>
+      <button class="bar-btn" id="full" title="Full screen" aria-label="Full screen">⛶</button>
+      <a class="bar-btn home-link" href="/" title="Back to nikstil.com">nikstil.com</a>
+    </header>
+
+    <div class="view" id="view">
+      <canvas id="screen" class="screen" width="960" height="620" aria-label="TOUCHPHONE game screen"></canvas>
+      <button class="menu-btn" id="menu-btn" hidden>Menu</button>
+
+      <section class="overlay title" id="title">
+        <h1 class="logo">TOUCH<span>PHONE</span><small>.EXE</small></h1>
+        <p class="tag">The garden’s planted. The Wi-Fi’s behind it. You’re the Scrollers now.</p>
+        <div class="title-buttons">
+          <button class="btn big go" data-do="next"><b id="next-label">Puzzles</b><small id="next-sub">Puzzle 1</small></button>
+          <button class="btn" data-do="levels">🧩 Pick a puzzle</button>
+          <button class="btn" data-do="endless" id="endless-btn">♾️ Phone Addiction</button>
+        </div>
+        <p class="wallet" id="record"></p>
+        <p class="fine">The other side of TOUCHGRASS.EXE. Gameplay borrowed from a lawn-defence classic’s “play the zombies” puzzles. Everything you can see is new.</p>
+      </section>
+
+      <section class="overlay panel" id="levels" hidden>
+        <h2>Pick a puzzle</h2>
+        <div class="puzzles" id="puzzle-list"></div>
+        <div class="row"><button class="btn" data-do="title">← Back</button></div>
+      </section>
+
+      <section class="overlay panel" id="paused" hidden>
+        <h2>Paused</h2>
+        <div class="row col">
+          <button class="btn go" data-do="resume">▶ Back to the lawn</button>
+          <button class="btn" data-do="restart">↻ Restart</button>
+          <button class="btn" data-do="title">Main menu</button>
+        </div>
+        <p class="fine">Esc or Space pauses. 1–8 pick a Scroller, right-click or Esc lets go.</p>
+      </section>
+
+      <section class="overlay lost" id="lost" hidden>
+        <h2 class="big">THE GARDEN HELD. NO WI-FI FOR YOU.</h2>
+        <p class="copy" id="lost-copy"></p>
+        <div class="row">
+          <button class="btn go" data-do="restart">↻ Try again</button>
+          <button class="btn" data-do="title">Main menu</button>
+        </div>
+      </section>
+
+      <section class="overlay panel" id="won" hidden>
+        <p class="kicker" id="won-kicker"></p>
+        <h2 id="won-title"></h2>
+        <p class="copy" id="won-copy"></p>
+        <div class="row" id="won-buttons"></div>
+      </section>
+    </div>
+    <p class="rotate-hint">📱↻ Turn your phone sideways for a bigger lawn.</p>
+    <p class="help">Pick a Scroller at the top, then a square right of the red line. Get one to the router at the end of every row. Eaten Sun Daisies drop sun: click it.</p>
+  </main>
+</body>
+</html>
