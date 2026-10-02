@@ -12,6 +12,7 @@ const GAMES = {
   mines: lazy(() => import('./arcade/Minesweeper')),
   solitaire: lazy(() => import('./arcade/Solitaire')),
   snake: lazy(() => import('./arcade/Snake')),
+  grass: lazy(() => import('./arcade/TouchGrass')),
 }
 
 export default function Arcade() {
@@ -66,6 +67,17 @@ function ArcadeSidebar({ game }) {
   )
 }
 
+/** How far you've got in TOUCHGRASS.EXE (it saves on its own, on nikstil.com). */
+function touchGrassProgress() {
+  try {
+    const s = JSON.parse(localStorage.getItem('touchgrass-save') ?? 'null')
+    if (!s?.beaten?.length) return 'Not played'
+    return s.next ? `Up to level ${s.next}` : 'Beaten. The Algorithm logged off.'
+  } catch {
+    return 'Not played'
+  }
+}
+
 /** The game picker, with a best score (or some progress) for each. */
 function ArcadeMenu() {
   const stats = useGameStore((s) => s.stats)
@@ -75,11 +87,12 @@ function ArcadeMenu() {
     mines: stats.minesWins ? `${stats.minesWins} cleared · best ${stats.minesBestTime}s` : stats.minesPlays ? `${stats.minesPlays} played, 0 cleared` : 'Not played',
     solitaire: stats.solitaireWins ? `${stats.solitaireWins} won · ${stats.solitaireDraws ?? 0} paid draws` : stats.solitairePlays ? `${stats.solitairePlays} dealt, 0 won` : 'Not played',
     snake: stats.snakeBest ? `Best: ${stats.snakeBest} bills in one game` : 'Not played',
+    grass: touchGrassProgress(),
   }
   return (
     <div className="p-2">
       <p className="mb-3 text-[0.8125rem]">
-        Four classics, lovingly monetized. Winnings go straight to your wallet. So do the fees, in the other direction. TRANSLATR™ pauses while you play.
+        Five classics, lovingly monetized. Winnings go straight to your wallet. So do the fees, in the other direction. TRANSLATR™ pauses while you play.
       </p>
       <div className="grid gap-2">
         {ARCADE_GAMES.map((g) => (

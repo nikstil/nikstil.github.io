@@ -85,7 +85,7 @@ export const ACHIEVEMENTS = [
   { id: 'solitaire_win', icon: '🃏', title: 'Pay-Per-Win', desc: 'Win a game of Pay-Per-Card Solitaire.', check: (s) => stat(s, 'solitaireWins') >= 1 },
   { id: 'card_whale', icon: '🐋', title: 'Card Whale', desc: 'Pay for 100 cards in Solitaire.', check: (s) => stat(s, 'solitaireDraws') >= 100 },
   { id: 'hungry_wallet', icon: '🐍', title: 'Hungry Hungry Wallet', desc: 'Eat 20 bills in one game of Wallet Snake.', check: (s) => stat(s, 'snakeBest') >= 20 },
-  { id: 'arcade_rat', icon: '🕹️', title: 'Arcade Rat', desc: 'Play every game in the Arcade.', check: (s) => ['mines', 'solitaire', 'snake'].every((g) => (s.stats.arcadePlayed ?? []).includes(g)) && stat(s, 'shooterRuns') >= 1 },
+  { id: 'arcade_rat', icon: '🕹️', title: 'Arcade Rat', desc: 'Play every game in the Arcade.', check: (s) => ['mines', 'solitaire', 'snake', 'grass'].every((g) => (s.stats.arcadePlayed ?? []).includes(g)) && stat(s, 'shooterRuns') >= 1 },
   { id: 'unskippable', icon: '📺', title: 'Unskippable', desc: 'Watch 10 ads in DOOMSCROLL.EXE (by getting hit).', check: (s) => stat(s, 'shooterAds') >= 10 },
   { id: 'ending_deleted', icon: '🗑️', title: 'Account Deleted', desc: 'Find the off switch. Use it.', check: (s) => ending(s, 'deleted') },
   { id: 'rogue_win', icon: '🎲', title: 'Run Cleared', desc: 'Win a Roguelike run: reach the ending it asks for.', check: (s) => (s.records?.rogue?.wins ?? 0) >= 1 },

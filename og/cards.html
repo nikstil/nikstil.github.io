@@ -37,6 +37,18 @@
   .shot .bar i { margin-left: auto; width: 40px; height: 16px; border-radius: 3px; background: linear-gradient(#e98b70, #c1391a); }
   .shot img { display: block; width: 100%; }
 
+  /* TOUCHGRASS */
+  .grass { background: radial-gradient(ellipse at 30% 10%, #e9ffd0 0, #8fd36a 45%, #2c6b2f 100%); }
+  .grass-logo { position: absolute; left: 56px; top: 44px; font: 900 62px/1 Impact, "Arial Black", sans-serif; color: #fff; -webkit-text-stroke: 4px #22301e; paint-order: stroke fill; text-shadow: 0 7px 0 #22301e; }
+  .grass-logo span { color: #8be04a; }
+  .grass-logo small { font-size: .4em; color: #ffe14a; }
+  .grass-tag { position: absolute; left: 60px; top: 136px; width: 470px; font-size: 25px; font-weight: 700; color: #12300f; }
+  .grass-list { position: absolute; left: 60px; top: 240px; width: 470px; gap: 14px; }
+  .grass-list li { font-size: 25px; color: #12300f; font-weight: 600; }
+  .grass-list li::before { background: radial-gradient(circle at 35% 30%, #c8f59a, #3f9a3a); }
+  .grass-shot { position: absolute; right: 44px; top: 130px; width: 590px; border: 5px solid #22301e; border-radius: 14px; box-shadow: 0 22px 50px rgb(0 40 0 / .45); transform: rotate(1.5deg); }
+  .grass .foot { left: 60px; bottom: 40px; color: #fff; text-shadow: 0 2px 6px rgb(0 40 0 / .6); }
+
   /* DOOMSCROLL */
   .doom { color: #f2d6c9; background: radial-gradient(ellipse at 70% 30%, #4a0b08 0, #1a0302 55%, #080000 100%); }
   .doom .logo { position: absolute; left: 60px; top: 48px; font: 900 64px/0.95 Impact, "Arial Black", sans-serif; letter-spacing: 0.02em; color: #e8261b; text-shadow: 0 4px 0 #5a0700, 0 0 30px rgb(255 40 20 / 0.45); }
@@ -58,8 +70,8 @@
         <ul>
           <li><b>TRANSLATR™</b>, the world’s most monetized translator</li>
           <li><b>DOOMSCROLL.EXE</b>, a 1993 shooter about pop-ups</li>
-          <li>Messenger, leaderboards, pixel-art profile pictures</li>
-          <li>Ten themes, from Windows XP to Liquid Glass</li>
+          <li><b>TOUCHGRASS.EXE</b>, your lawn vs. phone zombies</li>
+          <li>Messenger, leaderboards, ten themes</li>
         </ul>
       </div>
     </div>
@@ -98,6 +110,19 @@
     </ul>
     <img class="screen" data-src="doom.png" alt="">
     <div class="foot">Play free at nikstil.com/doomscroll</div>
+  </section>
+
+  <!-- TOUCHGRASS -->
+  <section class="card grass" id="grass">
+    <div class="grass-logo">TOUCH<span>GRASS</span><small>.EXE</small></div>
+    <div class="grass-tag">Your lawn vs. the Scrollers: phone zombies after your Wi-Fi.</div>
+    <img class="grass-shot" data-src="grass.png" alt="">
+    <ul class="grass-list">
+      <li>48 plants · 26 Scrollers · 50 levels</li>
+      <li>Day, night, pool, fog and the roof</li>
+      <li>A final boss: The Algorithm</li>
+    </ul>
+    <div class="foot">Play free at nikstil.com/touchgrass</div>
   </section>
 
   <script>

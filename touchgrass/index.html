@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOUCHGRASS.EXE · nikstil.com</title>
+  <meta name="description" content="TOUCHGRASS.EXE: plant a garden, hold off the Scrollers. 48 plants, 26 phone-zombies, 50 levels, from TRANSLATR™.">
+  <!-- Link previews. The image comes from og/render.mjs. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="nikstil.com">
+  <meta property="og:url" content="https://nikstil.com/touchgrass/">
+  <meta property="og:title" content="TOUCHGRASS.EXE">
+  <meta property="og:description" content="Your lawn vs. the Scrollers: phone zombies after your Wi-Fi. 48 plants, 26 Scrollers, 50 levels.">
+  <meta property="og:image" content="https://nikstil.com/touchgrass/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TOUCHGRASS.EXE: a lawn of plants holding off phone zombies">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TOUCHGRASS.EXE">
+  <meta name="twitter:description" content="Your lawn vs. the Scrollers: phone zombies after your Wi-Fi. 48 plants, 26 Scrollers, 50 levels.">
+  <meta name="twitter:image" content="https://nikstil.com/touchgrass/og-image.png">
+  <meta name="theme-color" content="#2c6b2f">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%232c6b2f'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E🌱%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/touchgrass/style.css">
+  <script type="module" src="/touchgrass/app.js"></script>
+</head>
+<body>
+  <main class="frame" id="frame">
+    <header class="bar">
+      <span class="bar-name">TOUCHGRASS.EXE</span>
+      <span class="bar-sub" id="bar-sub">Your lawn vs. the Scrollers</span>
+      <button class="bar-btn" id="mute" title="Sound on/off (M)" aria-label="Sound on/off">🔊</button>
+      <button class="bar-btn" id="full" title="Full screen" aria-label="Full screen">⛶</button>
+      <a class="bar-btn home-link" href="/" title="Back to nikstil.com">nikstil.com</a>
+    </header>
+
+    <div class="view" id="view">
+      <canvas id="screen" class="screen" width="960" height="620" aria-label="TOUCHGRASS game screen"></canvas>
+      <button class="menu-btn" id="menu-btn" hidden>Menu</button>
+
+      <section class="overlay title" id="title">
+        <h1 class="logo">TOUCH<span>GRASS</span><small>.EXE</small></h1>
+        <p class="tag">The Scrollers want your Wi-Fi password. Your garden says no.</p>
+        <div class="title-buttons">
+          <button class="btn big go" data-do="adventure"><b id="adv-label">Adventure</b><small id="adv-sub">Level 1-1</small></button>
+          <button class="btn" data-do="levels">🗺️ Levels</button>
+          <button class="btn" data-do="almanac" id="almanac-btn">📖 Almanac</button>
+          <button class="btn" data-do="shop" id="shop-btn">🏷️ Gary’s Garage Sale</button>
+        </div>
+        <p class="wallet" id="wallet"></p>
+        <p class="fine">Gameplay faithfully borrowed from a lawn-defense classic. Everything you can see is new.</p>
+      </section>
+
+      <section class="overlay panel" id="levels" hidden>
+        <h2>Pick a level</h2>
+        <div class="areas" id="area-list"></div>
+        <div class="row"><button class="btn" data-do="title">← Back</button></div>
+      </section>
+
+      <section class="overlay panel" id="picker" hidden>
+        <h2 id="picker-title">Choose your plants</h2>
+        <div class="picker">
+          <div>
+            <div class="chosen" id="chosen"></div>
+            <div class="seed-grid" id="seed-grid"></div>
+          </div>
+          <aside class="preview">
+            <h3>Scrollers on their way</h3>
+            <div class="preview-list" id="preview-list"></div>
+          </aside>
+        </div>
+        <div class="row">
+          <button class="btn" data-do="title">← Back</button>
+          <button class="btn go" data-do="rock" id="rock">Let’s grow!</button>
+        </div>
+      </section>
+
+      <section class="overlay panel" id="paused" hidden>
+        <h2>Paused</h2>
+        <div class="row col">
+          <button class="btn go" data-do="resume">▶ Back to the lawn</button>
+          <button class="btn" data-do="restart">↻ Restart level</button>
+          <button class="btn" data-do="title">Main menu</button>
+        </div>
+        <p class="fine">Esc or Space pauses. 1–0 pick seeds, S the shovel, right-click or Esc lets go.</p>
+      </section>
+
+      <section class="overlay lost" id="lost" hidden>
+        <h2 class="big">THE SCROLLERS GOT YOUR WI-FI PASSWORD!</h2>
+        <p class="copy" id="lost-copy"></p>
+        <div class="row">
+          <button class="btn go" data-do="restart">↻ Try again</button>
+          <button class="btn" data-do="title">Main menu</button>
+        </div>
+      </section>
+
+      <section class="overlay panel" id="won" hidden>
+        <p class="kicker" id="won-kicker"></p>
+        <h2 id="won-title"></h2>
+        <canvas class="won-art" id="won-art" width="200" height="160"></canvas>
+        <p class="copy" id="won-copy"></p>
+        <div class="row" id="won-buttons"></div>
+      </section>
+
+      <section class="overlay panel" id="almanac" hidden>
+        <div class="tabs">
+          <button class="tab" data-tab="plants" aria-selected="true">🌱 Plants</button>
+          <button class="tab" data-tab="zombies" aria-selected="false">📱 Scrollers</button>
+        </div>
+        <div class="almanac">
+          <div class="alm-grid" id="alm-grid"></div>
+          <article class="alm-card" id="alm-card">
+            <canvas id="alm-art" width="220" height="200"></canvas>
+            <h3 id="alm-name"></h3>
+            <p id="alm-desc"></p>
+            <dl id="alm-stats"></dl>
+            <p class="flavor" id="alm-flavor"></p>
+          </article>
+        </div>
+        <div class="row"><button class="btn" data-do="title">← Back</button></div>
+      </section>
+
+      <section class="overlay panel" id="shop" hidden>
+        <h2>Gary’s Garage Sale</h2>
+        <p class="copy">“Everything must go. Except me. I live here.” · You have <b id="shop-coins"></b></p>
+        <div class="shop-list" id="shop-list"></div>
+        <div class="row"><button class="btn" data-do="title">← Back</button></div>
+      </section>
+    </div>
+    <p class="rotate-hint">📱↻ Turn your phone sideways for a bigger lawn.</p>
+    <p class="help">Click the sun. Click a seed, then a tile, to plant it. Don’t let a single Scroller reach the house.</p>
+  </main>
+</body>
+</html>

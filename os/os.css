@@ -1192,6 +1192,8 @@ html[data-theme="glass"] .balloon { border: 0; border-radius: 18px; background: 
 /* ================= DOOMSCROLL.EXE (the game page, in a window) ================= */
 .win-body.doom-win { flex: none; padding: 0; overflow: hidden; aspect-ratio: 16 / 10; background: #000; }
 .doom-frame { display: block; width: 100%; height: 100%; border: 0; }
+.win-body.grass-win { flex: none; padding: 0; overflow: hidden; aspect-ratio: 960 / 704; background: #2c6b2f; }
+.grass-frame { display: block; width: 100%; height: 100%; border: 0; }
 
 /* ================= nikBrowser ================= */
 .win-body.br { flex: none; display: flex; flex-direction: column; height: min(560px, calc(100dvh - var(--taskbar-h) - 120px)); padding: 0; overflow: hidden; }
