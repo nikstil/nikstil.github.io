@@ -259,3 +259,242 @@ body { font: 20px/1.15 var(--pixel-body); }
 .alm-card h3, .shop-item b, .puzzle b { font-size: 11px; line-height: 1.5; }
 .alm-grid button { font-family: var(--pixel-body); font-size: 14px; }
 .help, .rotate-hint { font-size: 16px; }
+
+
+/* ================= Dynamic UI =================
+   Menus with some weight to them: the title screen is a pixel-art yard (scene.js) with the menu
+   carved into a gravestone, the pause menu is a tombstone, and the other screens are wooden
+   boards, stone tiles and paper, all with bevels, shadows and a bit of wobble. */
+.view { container-type: size; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* --- stone slabs: the main buttons --- */
+.slab, .btn {
+  --stone: #9a9ea8;
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: .3em;
+  padding: .8em .7em .7em;
+  font: 1.9cqw/1.2 var(--pixel);
+  color: #23252b;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, .35);
+  background:
+    radial-gradient(circle at 18% 30%, rgba(255, 255, 255, .14) 0 2px, transparent 3px) 0 0 / 19px 15px,
+    radial-gradient(circle at 70% 64%, rgba(0, 0, 0, .14) 0 2px, transparent 3px) 0 0 / 23px 17px,
+    linear-gradient(170deg, color-mix(in srgb, var(--stone) 85%, white), var(--stone) 45%, color-mix(in srgb, var(--stone) 75%, black));
+  border: 4px solid #26282e;
+  box-shadow: inset 0 4px 0 rgba(255, 255, 255, .3), inset 0 -6px 0 rgba(0, 0, 0, .28), inset 4px 0 0 rgba(255, 255, 255, .12), 0 6px 0 #26282e, 0 10px 16px rgba(0, 0, 0, .4);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform .12s, color .12s, text-shadow .12s;
+  cursor: pointer;
+}
+.slab:hover:not(:disabled), .btn:hover:not(:disabled) { color: #2f9a1e; text-shadow: 0 0 6px rgba(140, 255, 100, .7), 0 2px 0 rgba(255, 255, 255, .35); transform: rotate(var(--tilt, 0deg)) translateY(-2px); background-color: transparent; }
+.slab:active:not(:disabled), .btn:active:not(:disabled) { transform: rotate(var(--tilt, 0deg)) translateY(4px); box-shadow: inset 0 4px 0 rgba(255, 255, 255, .3), inset 0 -6px 0 rgba(0, 0, 0, .28), 0 2px 0 #26282e, 0 4px 8px rgba(0, 0, 0, .4); }
+.slab:disabled, .btn:disabled { --stone: #74787f; color: #4a4c52; text-shadow: none; cursor: not-allowed; opacity: 1; filter: none; }
+.slab:disabled::after { content: ""; position: absolute; inset: 40% -4px auto; height: 6px; background: repeating-linear-gradient(90deg, #5a5d63 0 10px, #3a3c42 10px 14px); box-shadow: 0 2px 0 #26282e; }
+.slab small, .btn small { font: .62em/1.2 var(--pixel); color: #3a3c42; text-shadow: none; }
+.btn.go, .slab.back { color: #1f6a12; }
+.btn { font-size: max(10px, 1.35cqw); padding: .7em 1em .6em; }
+.btn.big { font-size: max(11px, 1.7cqw); }
+
+/* --- the title screen --- */
+.overlay.title { display: block; padding: 0; background: none; backdrop-filter: none; overflow: hidden; }
+.overlay.title > * { position: absolute; }
+.title-buttons { left: 60.6%; top: 25.5%; width: 32.6%; display: grid; grid-template-columns: 1fr; gap: 2.6cqh; }
+.title-buttons .slab { font-size: max(9px, 2.2cqw); }
+.title-buttons .slab:nth-child(1) { --tilt: -1deg; }
+.title-buttons .slab:nth-child(2) { --tilt: .8deg; }
+.title-buttons .slab:nth-child(3) { --tilt: -.6deg; }
+.title-buttons .slab:nth-child(4) { --tilt: 1.2deg; }
+.title-buttons .slab.hero { font-size: max(11px, 2.9cqw); padding: 1em .6em .8em; }
+.title-buttons .slab::before, .title-buttons .slab::after { content: none; }
+.overlay.title .wallet { left: 2%; bottom: 3%; padding: .5em .9em; font: max(9px, 1.3cqw) var(--pixel); color: #ffe36b; background: linear-gradient(#b07a46, #8a5a30); border: 3px solid #2a1608; box-shadow: inset 0 3px 0 rgba(255, 255, 255, .2), 0 4px 0 #2a1608; transform: rotate(-2deg); }
+.overlay.title .wallet:empty { display: none; }
+.overlay.title .fine { display: none; }
+
+/* --- the pause menu: a tombstone --- */
+.overlay.tomb { background: rgba(10, 14, 10, .45); backdrop-filter: blur(2px); }
+.tombstone {
+  position: relative;
+  display: grid;
+  gap: 1.6cqh;
+  justify-items: stretch;
+  width: min(58cqw, 460px);
+  padding: 9cqh 5cqw 3.5cqh;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .1) 0 2px, transparent 3px) 0 0 / 21px 17px,
+    radial-gradient(circle at 70% 60%, rgba(0, 0, 0, .12) 0 3px, transparent 4px) 0 0 / 27px 19px,
+    linear-gradient(100deg, #8a8e98, #6e727c 60%, #50535b);
+  border: 5px solid #1d1f24;
+  border-radius: 48% 48% 10px 10px / 26% 26% 10px 10px !important;
+  box-shadow: inset 0 8px 0 rgba(255, 255, 255, .18), inset -10px 0 0 rgba(0, 0, 0, .2), 0 10px 0 #1d1f24, 0 20px 40px rgba(0, 0, 0, .6);
+  animation: tomb-in .25s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+@keyframes tomb-in { from { transform: translateY(30%) scale(.8); opacity: 0; } }
+.tombstone::before {
+  /* a little pixel skull on top */
+  content: "";
+  position: absolute;
+  left: calc(50% - 22px);
+  top: 1.5cqh;
+  width: 4px;
+  height: 4px;
+  box-shadow:
+    8px 0px 0 var(--skull, #e9e4d4),
+    12px 0px 0 var(--skull, #e9e4d4),
+    16px 0px 0 var(--skull, #e9e4d4),
+    20px 0px 0 var(--skull, #e9e4d4),
+    24px 0px 0 var(--skull, #e9e4d4),
+    28px 0px 0 var(--skull, #e9e4d4),
+    32px 0px 0 var(--skull, #e9e4d4),
+    4px 4px 0 var(--skull, #e9e4d4),
+    8px 4px 0 var(--skull, #e9e4d4),
+    12px 4px 0 var(--skull, #e9e4d4),
+    16px 4px 0 var(--skull, #e9e4d4),
+    20px 4px 0 var(--skull, #e9e4d4),
+    24px 4px 0 var(--skull, #e9e4d4),
+    28px 4px 0 var(--skull, #e9e4d4),
+    32px 4px 0 var(--skull, #e9e4d4),
+    36px 4px 0 var(--skull, #e9e4d4),
+    0px 8px 0 var(--skull, #e9e4d4),
+    4px 8px 0 var(--skull, #e9e4d4),
+    8px 8px 0 var(--skull, #e9e4d4),
+    12px 8px 0 var(--skull, #e9e4d4),
+    16px 8px 0 var(--skull, #e9e4d4),
+    20px 8px 0 var(--skull, #e9e4d4),
+    24px 8px 0 var(--skull, #e9e4d4),
+    28px 8px 0 var(--skull, #e9e4d4),
+    32px 8px 0 var(--skull, #e9e4d4),
+    36px 8px 0 var(--skull, #e9e4d4),
+    40px 8px 0 var(--skull, #e9e4d4),
+    0px 12px 0 var(--skull, #e9e4d4),
+    4px 12px 0 var(--skull, #e9e4d4),
+    16px 12px 0 var(--skull, #e9e4d4),
+    20px 12px 0 var(--skull, #e9e4d4),
+    24px 12px 0 var(--skull, #e9e4d4),
+    36px 12px 0 var(--skull, #e9e4d4),
+    40px 12px 0 var(--skull, #e9e4d4),
+    0px 16px 0 var(--skull, #e9e4d4),
+    4px 16px 0 var(--skull, #e9e4d4),
+    16px 16px 0 var(--skull, #e9e4d4),
+    20px 16px 0 var(--skull, #e9e4d4),
+    24px 16px 0 var(--skull, #e9e4d4),
+    36px 16px 0 var(--skull, #e9e4d4),
+    40px 16px 0 var(--skull, #e9e4d4),
+    0px 20px 0 var(--skull, #e9e4d4),
+    4px 20px 0 var(--skull, #e9e4d4),
+    8px 20px 0 var(--skull, #e9e4d4),
+    12px 20px 0 var(--skull, #e9e4d4),
+    16px 20px 0 var(--skull, #e9e4d4),
+    24px 20px 0 var(--skull, #e9e4d4),
+    28px 20px 0 var(--skull, #e9e4d4),
+    32px 20px 0 var(--skull, #e9e4d4),
+    36px 20px 0 var(--skull, #e9e4d4),
+    40px 20px 0 var(--skull, #e9e4d4),
+    4px 24px 0 var(--skull, #e9e4d4),
+    8px 24px 0 var(--skull, #e9e4d4),
+    12px 24px 0 var(--skull, #e9e4d4),
+    16px 24px 0 var(--skull, #e9e4d4),
+    20px 24px 0 var(--skull, #e9e4d4),
+    24px 24px 0 var(--skull, #e9e4d4),
+    28px 24px 0 var(--skull, #e9e4d4),
+    32px 24px 0 var(--skull, #e9e4d4),
+    36px 24px 0 var(--skull, #e9e4d4),
+    8px 28px 0 var(--skull, #e9e4d4),
+    16px 28px 0 var(--skull, #e9e4d4),
+    24px 28px 0 var(--skull, #e9e4d4),
+    32px 28px 0 var(--skull, #e9e4d4),
+    8px 32px 0 var(--skull, #e9e4d4),
+    12px 32px 0 var(--skull, #e9e4d4),
+    16px 32px 0 var(--skull, #e9e4d4),
+    20px 32px 0 var(--skull, #e9e4d4),
+    24px 32px 0 var(--skull, #e9e4d4),
+    28px 32px 0 var(--skull, #e9e4d4),
+    32px 32px 0 var(--skull, #e9e4d4);
+}
+.tombstone h2 { font: max(14px, 3.6cqw)/1 var(--pixel); color: #3a3d44; text-shadow: 0 2px 0 rgba(255, 255, 255, .25), 0 -2px 0 rgba(0, 0, 0, .4); letter-spacing: .1em; margin-bottom: .5cqh; }
+.vol { display: grid; grid-template-columns: 9.5em 1fr; align-items: center; gap: 1em; font: max(9px, 1.5cqw) var(--pixel); color: #e9e4d4; text-shadow: 0 2px 0 #1d1f24; }
+.vol span { text-align: right; }
+.vol input { -webkit-appearance: none; appearance: none; height: 10px; background: #2a2c32; border: 2px solid #1d1f24; box-shadow: inset 0 2px 0 rgba(0, 0, 0, .5), 0 2px 0 rgba(255, 255, 255, .15); cursor: pointer; }
+.vol input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 26px; background: linear-gradient(#e9e4d4, #b9b3a0); border: 3px solid #1d1f24; box-shadow: 0 3px 0 #1d1f24; }
+.vol input::-moz-range-thumb { width: 14px; height: 22px; background: linear-gradient(#e9e4d4, #b9b3a0); border: 3px solid #1d1f24; border-radius: 0; }
+.tombstone .slab.small { font-size: max(9px, 1.55cqw); padding: .6em; --stone: #7e828c; color: #8de06a; text-shadow: 0 2px 0 #1d1f24; }
+.tombstone .slab.small:hover { color: #c6ff9a; }
+.tombstone .slab.back { margin-top: 1cqh; font-size: max(12px, 2.8cqw); padding: .9em .6em .8em; --stone: #8a8e98; color: #4fd12e; text-shadow: 0 3px 0 #1d1f24, 0 0 8px rgba(80, 220, 50, .5); }
+.tombstone .fine { font-size: max(12px, 1.6cqw); color: #c9c4b4; text-shadow: 0 1px 0 #1d1f24; }
+
+/* --- wooden boards: levels, the seed picker, the shop, the results --- */
+.overlay.panel {
+  inset: 3.5% 4%;
+  padding: 2.5% 3%;
+  color: #fff7e0;
+  background:
+    radial-gradient(circle at 14px 14px, #c9ced6 0 4px, #3a3c42 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 14px) 14px, #c9ced6 0 4px, #3a3c42 5px, transparent 6px),
+    radial-gradient(circle at 14px calc(100% - 14px), #c9ced6 0 4px, #3a3c42 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #c9ced6 0 4px, #3a3c42 5px, transparent 6px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .22) 0 3px, transparent 3px 46px),
+    repeating-linear-gradient(90deg, rgba(60, 30, 10, .08) 0 2px, transparent 2px 23px),
+    linear-gradient(#9a6a3c, #7a4e28);
+  border: 6px solid #2a1608;
+  box-shadow: inset 0 6px 0 rgba(255, 220, 160, .25), inset 0 -8px 0 rgba(0, 0, 0, .3), 0 8px 0 #2a1608, 0 16px 40px rgba(0, 0, 0, .55);
+  backdrop-filter: none;
+  animation: board-in .22s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+/* boards whose contents are taller than they are scroll, from the top */
+.overlay.panel { justify-content: safe center; gap: 1.4cqh; }
+.areas { gap: 1.2cqh; }
+.area { grid-template-columns: 21% 1fr; padding: .8cqh 1cqw; gap: 1cqw; }
+.area b { font-size: max(8px, 1.15cqw); line-height: 1.5; }
+.area-levels { gap: .6cqw; }
+.lvl { min-width: 0; padding: .55em .45em .45em; font-size: max(8px, 1.15cqw); }
+@keyframes board-in { from { transform: translateY(-12%) rotate(-1deg); opacity: 0; } }
+.overlay.panel h2 { font: max(14px, 3cqw)/1.3 var(--pixel); color: #ffe36b; text-shadow: 3px 3px 0 #2a1608, -2px -2px 0 #2a1608, 2px -2px 0 #2a1608, -2px 2px 0 #2a1608; }
+.area { background: rgba(42, 22, 8, .35); border: 3px solid rgba(42, 22, 8, .6); box-shadow: inset 0 3px 0 rgba(0, 0, 0, .25); }
+.area b { color: #ffe36b; text-shadow: 2px 2px 0 #2a1608; }
+.lvl { font: max(9px, 1.3cqw) var(--pixel); color: #23252b; padding: .65em .5em .5em; border: 3px solid #26282e; background: linear-gradient(#b4b8c0, #868a94); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .3), 0 4px 0 #26282e; }
+.lvl:hover:not(:disabled) { color: #2f9a1e; transform: translateY(-2px); }
+.lvl.done { background: linear-gradient(#a8d88a, #6aa84a); }
+.lvl.special { background: linear-gradient(#e8b8d8, #b88aa8); }
+.chosen { background: linear-gradient(#8a5a30, #6b4423); border: 4px solid #2a1608; box-shadow: inset 0 4px 0 rgba(0, 0, 0, .3), 0 4px 0 #2a1608; }
+.seed-grid, .preview, .alm-grid { background: rgba(42, 22, 8, .4); border: 3px solid rgba(42, 22, 8, .7); box-shadow: inset 0 4px 8px rgba(0, 0, 0, .35); }
+.seed { transition: transform .1s; }
+.seed:hover:not(:disabled) { transform: translateY(-3px) rotate(-2deg); }
+.shop-item { background: linear-gradient(#f6eccb, #e5d6ac); border: 3px solid #2a1608; box-shadow: inset 0 3px 0 rgba(255, 255, 255, .5), 0 4px 0 #2a1608; transform: rotate(var(--tilt, 0deg)); }
+.shop-item:nth-child(3n + 1) { --tilt: -.8deg; }
+.shop-item:nth-child(3n + 2) { --tilt: .6deg; }
+.overlay.panel .copy, .overlay.panel .kicker { text-shadow: 2px 2px 0 #2a1608; }
+
+/* --- the Almanac: an old book --- */
+#almanac { background:
+    linear-gradient(90deg, transparent 49.6%, rgba(60, 30, 10, .35) 50%, transparent 50.4%),
+    repeating-linear-gradient(0deg, rgba(120, 90, 50, .12) 0 2px, transparent 2px 26px),
+    linear-gradient(#f3e6c4, #e2cf9e);
+  border-color: #4a2a14;
+  color: #3a2410;
+}
+#almanac .alm-grid { background: rgba(120, 80, 40, .14); border-color: rgba(74, 42, 20, .5); }
+#almanac .alm-grid button { color: #3a2410; background: rgba(255, 255, 255, .35); }
+#almanac .alm-card { background: rgba(255, 252, 240, .7); border: 3px solid #4a2a14; box-shadow: 4px 4px 0 rgba(74, 42, 20, .5); }
+.tab { font: max(9px, 1.3cqw) var(--pixel); background: linear-gradient(#c49a5c, #9a6a3c); color: #2a1608; border: 3px solid #4a2a14; }
+.tab[aria-selected="true"] { background: linear-gradient(#f6eccb, #e5d6ac); transform: translateY(2px); }
+
+/* --- losing: the screen goes dark and the words shake in --- */
+.overlay.lost { background: radial-gradient(circle, rgba(60, 10, 10, .55), rgba(10, 0, 0, .85)); }
+.overlay.lost .big { color: #ff4a3a; animation: shake-in .5s both; }
+@keyframes shake-in { 0% { transform: scale(2.2); opacity: 0; } 60% { transform: scale(.95); opacity: 1; } 70% { transform: translateX(-6px); } 80% { transform: translateX(6px); } 100% { transform: none; } }
+
+/* --- the in-game Menu button: a little slab --- */
+.menu-btn { font: max(9px, 1.4cqw) var(--pixel); padding: .55em .9em .45em; color: #4fd12e; text-shadow: 0 2px 0 #1d1f24; border: 3px solid #26282e; background: linear-gradient(170deg, #a3a7b0, #7d818b); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .3), 0 4px 0 #26282e; }
+.menu-btn:hover { color: #9dff6a; }
+
+/* --- the frame around the game: a wooden header --- */
+.bar { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .15) 0 2px, transparent 2px 11px), linear-gradient(#9a6a3c, #6b4423); border: 3px solid #2a1608; box-shadow: inset 0 3px 0 rgba(255, 220, 160, .25), 4px 4px 0 #2a1608; }
+.view { border: 4px solid #2a1608; box-shadow: 0 0 0 4px #6b4423, 0 0 0 7px #2a1608, 0 18px 50px rgba(0, 20, 0, .5); }
+
+@media (max-width: 640px) and (orientation: portrait) {
+  .overlay.title { position: absolute; z-index: auto; padding: 0; }
+  .overlay.tomb, .overlay.panel { position: fixed; inset: 0; }
+  .tombstone { width: min(92vw, 420px); }
+}

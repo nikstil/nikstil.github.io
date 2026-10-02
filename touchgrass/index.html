@@ -41,13 +41,13 @@
       <button class="menu-btn" id="menu-btn" hidden>Menu</button>
 
       <section class="overlay title" id="title">
-        <h1 class="logo">LAWN <span>OF THE</span> DEAD</h1>
-        <p class="tag">The zombies want your brains. Your garden says no.</p>
+        <h1 class="logo sr-only">LAWN OF THE DEAD</h1>
+        <p class="tag sr-only">The zombies want your brains. Your garden says no.</p>
         <div class="title-buttons">
-          <button class="btn big go" data-do="adventure"><b id="adv-label">Adventure</b><small id="adv-sub">Level 1-1</small></button>
-          <button class="btn" data-do="levels">🗺️ Levels</button>
-          <button class="btn" data-do="almanac" id="almanac-btn">📖 Almanac</button>
-          <button class="btn" data-do="shop" id="shop-btn">🏷️ Gary’s Garage Sale</button>
+          <button class="slab hero" data-do="adventure"><b id="adv-label">Adventure</b><small id="adv-sub">Level 1-1</small></button>
+          <button class="slab" data-do="levels">Levels</button>
+          <button class="slab" data-do="almanac" id="almanac-btn">Almanac</button>
+          <button class="slab" data-do="shop" id="shop-btn">Garage Sale</button>
         </div>
         <p class="wallet" id="wallet"></p>
         <p class="fine">Gameplay faithfully borrowed from a lawn-defense classic. Everything you can see is new.</p>
@@ -77,14 +77,17 @@
         </div>
       </section>
 
-      <section class="overlay panel" id="paused" hidden>
-        <h2>Paused</h2>
-        <div class="row col">
-          <button class="btn go" data-do="resume">▶ Back to the lawn</button>
-          <button class="btn" data-do="restart">↻ Restart level</button>
-          <button class="btn" data-do="title">Main menu</button>
+      <section class="overlay tomb" id="paused" hidden>
+        <div class="tombstone">
+          <h2>Menu</h2>
+          <label class="vol"><span>Music</span><input type="range" id="vol-music" min="0" max="100" aria-label="Music volume"></label>
+          <label class="vol"><span>Sound FX</span><input type="range" id="vol-sfx" min="0" max="100" aria-label="Sound effects volume"></label>
+          <button class="slab small" data-do="almanac" id="pause-almanac">View Almanac</button>
+          <button class="slab small" data-do="restart">Restart Level</button>
+          <button class="slab small" data-do="title">Main Menu</button>
+          <button class="slab back" data-do="resume">Back to the Lawn</button>
+          <p class="fine">Esc or Space pauses · 1–0 pick seeds · S the shovel</p>
         </div>
-        <p class="fine">Esc or Space pauses. 1–0 pick seeds, S the shovel, right-click or Esc lets go.</p>
       </section>
 
       <section class="overlay lost" id="lost" hidden>

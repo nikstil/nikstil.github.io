@@ -11,6 +11,14 @@ let noiseBuf = null
 let sfxOn = true
 let musicOn = true
 const MUSIC_VOL = 0.42
+// the pause menu's sliders, 0..1 (kept between visits)
+const VOLUME_KEY = 'touchgrass-volume'
+let vol = { music: 0.8, sfx: 0.8 }
+try {
+  vol = { ...vol, ...JSON.parse(localStorage.getItem(VOLUME_KEY) ?? '{}') }
+} catch {}
+const musicLevel = () => (musicOn ? MUSIC_VOL * vol.music * 1.25 : 0)
+const sfxLevel = () => (sfxOn ? vol.sfx * 1.25 : 0)
 
 function ensure() {
   if (ac) {
@@ -26,9 +34,10 @@ function ensure() {
   master.gain.value = 0.6
   master.connect(ac.destination)
   sfxBus = ac.createGain()
+  sfxBus.gain.value = sfxLevel()
   sfxBus.connect(master)
   musicBus = ac.createGain()
-  musicBus.gain.value = musicOn ? MUSIC_VOL : 0
+  musicBus.gain.value = musicLevel()
   musicBus.connect(master)
   // a little room for the band: a short, soft reverb under the music
   const verb = ac.createConvolver()
@@ -501,11 +510,23 @@ function schedule() {
 }
 export function setSound({ sfx, music }) {
   if (sfx != null) sfxOn = sfx
-  if (music != null) {
-    musicOn = music
-    if (musicBus) musicBus.gain.value = music ? MUSIC_VOL : 0
-  }
+  if (music != null) musicOn = music
+  applyLevels()
 }
+function applyLevels() {
+  if (musicBus) musicBus.gain.value = musicLevel()
+  if (sfxBus) sfxBus.gain.value = sfxLevel()
+}
+/** The volume sliders: music and sfx from 0 to 1. */
+export function setVolume({ music, sfx }) {
+  if (music != null) vol.music = Math.max(0, Math.min(1, music))
+  if (sfx != null) vol.sfx = Math.max(0, Math.min(1, sfx))
+  try {
+    localStorage.setItem(VOLUME_KEY, JSON.stringify(vol))
+  } catch {}
+  applyLevels()
+}
+export const getVolume = () => ({ ...vol })
 export function unlockAudio() {
   ensure()
 }

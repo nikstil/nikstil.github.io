@@ -4,7 +4,8 @@
 import { LEVELS, LEVEL_BY_ID, PLANTS, PLANT_BY_ID, PLANT_ORDER, ZOMBIES, ZOMBIE_BY_ID, AREAS, SHOP, POTS_FROM, nextLevelId } from './data.js'
 import { createGame } from './sim.js'
 import { W, H, PIXEL, drawGamePixel, pixelCanvas, toLawn, seedRect, shovelRect, beltRect, drawPacket, drawPlantCard, drawZombieCard } from './draw.js'
-import { playSfx, setMusic, setSound, unlockAudio } from './audio.js'
+import { playSfx, setMusic, setSound, setVolume, getVolume, unlockAudio } from './audio.js'
+import { drawTitleScene } from './scene.js'
 
 const $ = (sel) => document.querySelector(sel)
 const $$ = (sel) => [...document.querySelectorAll(sel)]
@@ -88,6 +89,7 @@ function show(name) {
   }
   if (name === 'levels') renderLevels()
   if (name === 'almanac') renderAlmanac()
+  if (name === 'paused') $('#pause-almanac').hidden = !almanacOpen()
   if (name === 'shop') renderShop()
   const lv = name === 'picker' ? LEVEL_BY_ID[pickedLevel] : game?.level
   $('#bar-sub').textContent = lv && name !== 'title' ? `${AREAS[lv.area].name} · Level ${lv.id}${lv.title ? ` · ${lv.title}` : ''}` : 'Your lawn vs. the dead'
@@ -473,7 +475,20 @@ document.addEventListener('keydown', (e) => {
   }
 })
 
+// ================= Volume (the pause menu's sliders) =================
+{
+  const v = getVolume()
+  const music = document.querySelector('#vol-music')
+  const sfx = document.querySelector('#vol-sfx')
+  music.value = Math.round(v.music * 100)
+  sfx.value = Math.round(v.sfx * 100)
+  music.addEventListener('input', () => setVolume({ music: music.value / 100 }))
+  sfx.addEventListener('input', () => setVolume({ sfx: sfx.value / 100 }))
+  sfx.addEventListener('change', () => playSfx('sun'))
+}
+
 // ================= Buttons =================
+let almanacFromPause = false
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-do]')
   if (!b) return
@@ -481,9 +496,16 @@ document.addEventListener('click', (e) => {
   const what = b.dataset.do
   if (what === 'adventure') startLevel(save.next ?? '5-10')
   else if (what === 'levels') show('levels')
-  else if (what === 'almanac') show('almanac')
+  else if (what === 'almanac') {
+    // from the pause menu, the Almanac's Back goes back to the pause menu
+    almanacFromPause = screen === 'paused'
+    show('almanac')
+  }
   else if (what === 'shop') show('shop')
-  else if (what === 'title') {
+  else if (what === 'title' && screen === 'almanac' && almanacFromPause) {
+    almanacFromPause = false
+    show('paused')
+  } else if (what === 'title') {
     paused = false
     show('title')
   } else if (what === 'resume') pause(false)
@@ -625,6 +647,11 @@ function frame(now) {
   } else acc = 0
   if (game && game.phase !== 'intro' && (game.phase === 'won' || game.phase === 'lost')) game.update(dt)
   // draw
+  // the title screen is its own little scene
+  if (!game) {
+    drawTitleScene(ctx, now / 1000, { night: false, title: ['LAWN OF', 'THE DEAD'], sub: 'KEEP OFF THE LAWN!' })
+    return
+  }
   const g = game ?? titleScene(now)
   if (g) {
     ui ??= { banners: [] }

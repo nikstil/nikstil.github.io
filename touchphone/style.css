@@ -1,27 +1,18 @@
 /* BRAINS FIRST: LAWN OF THE DEAD's frame (touchgrass/style.css), turned to the dark side. */
 :root { --ink: #1f1830; --paper: #efe8ff; }
 body { background: radial-gradient(ellipse at 50% 20%, #8f7bd6, #4a3a86 55%, #1f1830); }
-.bar { background: linear-gradient(#4a3a86, #2e2358); color: #f4efff; }
-.overlay.title {
-  /* the same back yard, at night, under a full moon */
-  background:
-    radial-gradient(circle at 78% 30%, rgba(120, 200, 255, .55), transparent 22%),
-    linear-gradient(transparent 62%, rgba(0, 0, 0, .2) 62.5%, transparent 63%),
-    repeating-linear-gradient(90deg, transparent 0 34px, rgba(20, 10, 40, .35) 34px 36px) 0 52% / 100% 12% no-repeat,
-    linear-gradient(#1b1440 0%, #3a2a6c 30%, #5a4a8a 50%, #2f5a2a 62%, #1f4a1e 100%);
-  color: #f4efff;
-}
+.bar { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .18) 0 2px, transparent 2px 11px), linear-gradient(#5a4a96, #2e2358); color: #f4efff; border-color: #140e24; box-shadow: inset 0 3px 0 rgba(200, 180, 255, .25), 4px 4px 0 #140e24; }
+.view { border-color: #140e24; box-shadow: 0 0 0 4px #3a2a6c, 0 0 0 7px #140e24, 0 18px 50px rgba(10, 0, 30, .6); }
 .logo span { color: #7fd0ff; }
 .logo small { color: #ff7ad9; }
 .tag { color: #f4efff; }
-.title-buttons .btn.go { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .08) 0 3px, transparent 3px 9px), linear-gradient(#9a7ae8, #6a4ac4); }
 .wallet { color: #ffe14a; }
-.panel { background: rgba(26, 18, 50, .82); }
 .puzzles { display: grid; grid-template-columns: repeat(3, minmax(0, 220px)); gap: 10px; }
-.puzzle { display: grid; gap: 2px; padding: 10px; border: 2px solid var(--ink); border-radius: 10px; background: var(--paper); color: var(--ink); text-align: left; }
-.puzzle b { font-size: 15px; }
-.puzzle small { font-size: 11px; opacity: .8; }
-.puzzle.done { background: #c9f0b0; }
+.puzzle { display: grid; gap: 4px; padding: 10px; border: 3px solid #26282e; background: linear-gradient(#b4b8c0, #868a94); color: #23252b; text-align: left; box-shadow: inset 0 3px 0 rgba(255, 255, 255, .3), 0 4px 0 #26282e; cursor: pointer; }
+.puzzle:hover:not(:disabled) { transform: translateY(-2px); }
+.puzzle b { font: max(9px, 1.3cqw)/1.4 var(--pixel); }
+.puzzle small { font-size: 16px; opacity: .85; }
+.puzzle.done { background: linear-gradient(#a8d88a, #6aa84a); }
 .puzzle:disabled { opacity: .4; cursor: not-allowed; }
 .help { color: #f4efff; }
 .rotate-hint { color: #f4efff; }
