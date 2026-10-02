@@ -255,6 +255,8 @@ function paintRoof(ctx, g, L) {
 // Text is held back while drawing and written straight onto the small picture afterwards, in the
 // pixel font at its real 8px size (numbers in a tiny 3×5 font where 8px won't fit), so it stays sharp.
 export const PIXEL = 3
+/** Plants, zombies and everything that moves are drawn three times finer than the scenery. */
+export const SPRITE_PIXEL = 1
 const buffers = new Map()
 function buffer(key, w, h) {
   let b = buffers.get(key)
@@ -298,9 +300,14 @@ export function pixelRender(target, w, h, factor, draw, key = 'main') {
   target.drawImage(lo, 0, 0, lo.width * factor, lo.height * factor)
   target.restore()
 }
-/** Draws the game onto ctx (already scaled to the 960×620 space) as pixel art. */
+/**
+ * Draws the game onto ctx (already scaled to the 960×620 space) as pixel art: the scenery in
+ * chunky PIXEL blocks, then everything on it (plants, zombies, shots, the seed bank) three times
+ * finer, so they're easy to make out.
+ */
 export function drawGamePixel(ctx, g, ui) {
-  pixelRender(ctx, W, H, PIXEL, (c) => drawGame(c, g, ui), 'game')
+  pixelRender(ctx, W, H, PIXEL, (c) => c.drawImage(background(g), 0, 0), 'game-scenery')
+  pixelRender(ctx, W, H, SPRITE_PIXEL, (c) => drawGame(c, g, { ...ui, noScenery: true }), 'game-sprites')
 }
 
 // A 3×5 font for numbers (and $, /, ×) that won't fit at 8px.
@@ -314,29 +321,31 @@ function pixelText(lc, t) {
   const px = size * t.scale // its size on the small picture
   lc.save()
   lc.globalAlpha = t.alpha
-  const mini = px < 7 && /^[\d$/× -]+$/.test(t.text)
+  const mini = px < 20 && /^[\d$/× -]+$/.test(t.text)
   if (mini) {
-    // the tiny font: 4px per character, with a 1px dark outline
-    const w = t.text.length * 4 - 1
+    // numbers: the tiny 3×5 font, in whole-pixel steps (1× on the scenery, bigger on the sprites)
+    const k = Math.max(1, Math.round(px / 6))
+    const w = (t.text.length * 4 - 1) * k
     let x = Math.round(t.align === 'center' ? t.x - w / 2 : t.align === 'right' || t.align === 'end' ? t.x - w : t.x)
-    const y = Math.round(t.base === 'middle' ? t.y - 2.5 : t.base === 'top' ? t.y : t.y - 5)
+    const y = Math.round(t.base === 'middle' ? t.y - 2.5 * k : t.base === 'top' ? t.y : t.y - 5 * k)
     if (t.kind === 'stroke') return lc.restore()
+    lc.fillStyle = typeof t.fill === 'string' ? t.fill : '#000'
     for (const ch of t.text) {
       const bits = MINI[ch] ?? MINI[' ']
-      for (let i = 0; i < 15; i++) if (bits[i] === '1') {
-        lc.fillStyle = typeof t.fill === 'string' ? t.fill : '#000'
-        lc.fillRect(x + (i % 3), y + Math.floor(i / 3), 1, 1)
-      }
-      x += 4
+      for (let i = 0; i < 15; i++) if (bits[i] === '1') lc.fillRect(x + (i % 3) * k, y + Math.floor(i / 3) * k, k, k)
+      x += 4 * k
     }
     return lc.restore()
   }
   // the pixel font at a whole multiple of its 8px design size: 16 for big text, else 8
-  let fs = px >= 14 ? 16 : 8
+  // (on the fine sprite layer, any multiple of 8 that's closest)
+  let fs = px >= 14 ? Math.max(16, Math.round(px / 8) * 8) : 8
   const room = lc.canvas.width - 8
   lc.font = `${fs}px 'Press Start 2P', monospace`
-  if (fs > 8 && lc.measureText(t.text).width > room) {
-    fs = 8
+  // too long: smaller, a step at a time (not below 16 on the fine layer: it wraps instead)
+  const smallest = lc.canvas.width >= W ? 16 : 8
+  while (fs > smallest && lc.measureText(t.text).width > room) {
+    fs -= 8
     lc.font = `${fs}px 'Press Start 2P', monospace`
   }
   // still too long: wrap it onto more lines
@@ -377,7 +386,7 @@ export function pixelCanvas(c, factor, draw) {
 export function drawGame(ctx, g, ui) {
   const L = layout(g)
   const t = g.t
-  ctx.drawImage(background(g), 0, 0)
+  if (!ui.noScenery) ctx.drawImage(background(g), 0, 0)
 
   // ground details: craters, slush, ladders, rakes
   for (const cr of g.craters) {
@@ -1180,7 +1189,7 @@ function drawBanners(ctx, g, ui) {
     const width = ctx.measureText(b.text).width
     if (width > W - 60) {
       // (in steps of 8, so the pixel font stays sharp)
-      b.size = Math.max(8, Math.floor((b.size * (W - 60)) / width / 8) * 8)
+      b.size = Math.max(16, Math.floor((b.size * (W - 60)) / width / 8) * 8) // (the pixel layer wraps what still won't fit)
       ctx.font = PIXEL_FONT(b.size)
     }
     ctx.textAlign = 'center'
