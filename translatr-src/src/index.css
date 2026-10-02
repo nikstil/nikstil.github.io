@@ -1729,3 +1729,29 @@ html.rogue-fried { filter: saturate(2.4) contrast(1.6) hue-rotate(-8deg); }
 @keyframes fly-wing { to { transform: scaleY(0.4); } }
 .fly-block { position: fixed; z-index: 180; display: grid; place-items: end center; padding-bottom: 10px; border-radius: 10px; background: rgb(40 30 20 / 0.18); box-shadow: inset 0 0 0 2px rgb(90 60 30 / 0.35); cursor: not-allowed; }
 .fly-block-label { padding: 3px 9px; border-radius: 999px; font: 600 11px/1.3 system-ui, sans-serif; color: #fff; background: rgb(30 20 10 / 0.75); }
+
+/* LOGGLE */
+.loggle { display: grid; gap: 10px; justify-items: center; }
+.loggle-intro { margin: 0; font-size: 12px; text-align: center; }
+.loggle-board { display: grid; gap: 4px; --tile: min(28px, calc((100cqi - 56px) / 12.4)); }
+.loggle-row { display: flex; gap: 3px; }
+.loggle-row.is-shaking { animation: loggle-shake 0.4s; }
+.loggle-tile { display: grid; place-items: center; width: var(--tile); height: calc(var(--tile) * 1.15); font: 700 calc(var(--tile) * 0.62)/1 Tahoma, Arial, sans-serif; color: #000; background: #fff; border: 2px solid; border-color: #808080 #fff #fff #808080; }
+.loggle-tile.is-split { margin-left: calc(var(--tile) * 0.4); }
+.loggle-tile.is-typed { border-color: #000; }
+.loggle-tile.is-hit, .loggle-tile.is-near, .loggle-tile.is-miss { color: #fff; border-color: transparent; animation: loggle-flip 0.35s both; }
+.loggle-tile.is-hit { background: #2e8b3a; }
+.loggle-tile.is-near { background: #c9a227; }
+.loggle-tile.is-miss { background: #5a5a5a; }
+.loggle-keys { display: grid; gap: 4px; width: 100%; }
+.loggle-keyrow { display: flex; gap: 3px; justify-content: center; }
+.loggle-key { flex: 0 1 34px; min-width: 0; height: 40px; padding: 0; font: 700 13px/1 Tahoma, Arial, sans-serif; color: #000; background: #dcdcdc; border: 2px solid; border-color: #fff #404040 #404040 #fff; }
+.loggle-key:active { border-color: #404040 #fff #fff #404040; }
+.loggle-key.is-wide { flex-basis: 56px; font-size: 11px; }
+.loggle-key.is-hit { color: #fff; background: #2e8b3a; }
+.loggle-key.is-near { color: #fff; background: #c9a227; }
+.loggle-key.is-miss { color: #fff; background: #5a5a5a; }
+.loggle-end { display: grid; gap: 6px; justify-items: center; text-align: center; }
+@keyframes loggle-flip { from { transform: rotateX(90deg); } }
+@keyframes loggle-shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@media (prefers-reduced-motion: reduce) { .loggle-tile, .loggle-row.is-shaking { animation: none !important; } }

@@ -13,6 +13,7 @@ const GAMES = {
   solitaire: lazy(() => import('./arcade/Solitaire')),
   snake: lazy(() => import('./arcade/Snake')),
   grass: lazy(() => import('./arcade/TouchGrass')),
+  loggle: lazy(() => import('./arcade/Loggle')),
 }
 
 export default function Arcade() {
@@ -78,6 +79,16 @@ function touchGrassProgress() {
   }
 }
 
+/** Whether today's LOGGLE is done, and your streak. */
+function loggleProgress(stats) {
+  const d = new Date()
+  const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const streak = stats.loggleStreak ? ` · streak ${stats.loggleStreak}` : ''
+  if (stats.loggleLastWin === day) return `Solved today${streak}`
+  if (stats.loggleDay === day && stats.loggleBoard?.guesses?.length >= 6 + (stats.loggleBoard.extra ?? 0)) return 'Missed today. Somehow.'
+  return stats.loggleWins ? `Today’s is waiting · ${stats.loggleWins} solved${streak}` : 'Today’s is waiting'
+}
+
 /** The game picker, with a best score (or some progress) for each. */
 function ArcadeMenu() {
   const stats = useGameStore((s) => s.stats)
@@ -88,11 +99,12 @@ function ArcadeMenu() {
     solitaire: stats.solitaireWins ? `${stats.solitaireWins} won · ${stats.solitaireDraws ?? 0} paid draws` : stats.solitairePlays ? `${stats.solitairePlays} dealt, 0 won` : 'Not played',
     snake: stats.snakeBest ? `Best: ${stats.snakeBest} bills in one game` : 'Not played',
     grass: touchGrassProgress(),
+    loggle: loggleProgress(stats),
   }
   return (
     <div className="p-2">
       <p className="mb-3 text-[0.8125rem]">
-        Five classics, lovingly monetized. Winnings go straight to your wallet. So do the fees, in the other direction. TRANSLATR™ pauses while you play.
+        Six classics, lovingly monetized. Winnings go straight to your wallet. So do the fees, in the other direction. TRANSLATR™ pauses while you play.
       </p>
       <div className="grid gap-2">
         {ARCADE_GAMES.map((g) => (
