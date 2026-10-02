@@ -42,6 +42,11 @@
       "title": "TOUCHGRASS.EXE",
       "hidden": false
     },
+    "loggle": {
+      "label": "LOGGLE",
+      "title": "LOGGLE",
+      "hidden": false
+    },
     "browser": {
       "label": "Web Browser",
       "title": "nikBrowser",
