@@ -68,7 +68,7 @@
       phone: { label: 'BRAINS FIRST', title: 'BRAINS FIRST', hidden: false },
       loggle: { label: 'LOGGLE', title: 'LOGGLE', hidden: false },
       browser: { label: 'Web Browser', title: 'nikBrowser', hidden: false },
-      mobile: { label: 'nikPhone', title: 'nikPhone', hidden: false },
+      mobile: { label: 'LigmaPhone', title: 'LigmaPhone', hidden: false },
       leaderboard: { label: 'Leaderboards', title: 'Leaderboards', hidden: false },
       messenger: { label: 'Messenger', title: 'nikstil Messenger', hidden: false },
       account: { label: 'Account', title: 'Account', hidden: false },

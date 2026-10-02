@@ -53,7 +53,7 @@
     phone: { title: 'BRAINS FIRST', icon: 'phone', width: 760, init: initPhone },
     loggle: { title: 'LOGGLE', icon: 'loggle', width: 480, init: initLoggle },
     browser: { title: 'nikBrowser', icon: 'browser', width: 900, init: initBrowser },
-    mobile: { title: 'nikPhone', icon: 'mobile', width: 400, init: initMobile },
+    mobile: { title: 'LigmaPhone', icon: 'mobile', width: 400, init: initMobile },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
     messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
@@ -556,14 +556,17 @@
     $('.doom-frame', el).src = '/doomscroll/?embed'
   }
 
-  // ================= nikPhone =================
+  // ================= LigmaPhone =================
   // A smartphone in a window: the games and the browser live on its home screen (not the desktop).
-  // Each opens on the phone's screen (the games turn it sideways); ⧉ pops one out into a window.
+  // Each opens on the phone's screen; ⧉ pops one out into a window. Apps wider than the phone
+  // unfold it like a Z Fold (two panels), or like a trifold (three) when they're wider still.
+  /** How many panels an app of this shape (width / height) needs. */
+  const foldsFor = (aspect) => (!aspect || aspect <= 0.75 ? 1 : aspect <= 1.45 ? 2 : 3)
   const PHONE_APPS = [
     { id: 'browser', label: 'Browser' },
-    { id: 'doom', label: 'DOOMSCROLL.EXE', land: true },
-    { id: 'grass', label: 'LAWN OF THE DEAD', land: true },
-    { id: 'phone', label: 'BRAINS FIRST', land: true },
+    { id: 'doom', label: 'DOOMSCROLL.EXE', aspect: 16 / 10 },
+    { id: 'grass', label: 'LAWN OF THE DEAD', aspect: 960 / 672 },
+    { id: 'phone', label: 'BRAINS FIRST', aspect: 960 / 672 },
     { id: 'loggle', label: 'LOGGLE' },
   ]
   function initMobile(el, win) {
@@ -583,13 +586,41 @@
       $('.mp-icon', li).addEventListener('click', () => launch(a))
       grid.append(li)
     }
-    // The window grows sideways for the games, and back for the rest (it stays on screen).
-    function fit(land) {
+    // The window grows sideways as the phone unfolds, and back when it folds (it stays on screen).
+    function fit(panels, aspect) {
       if (win.el.classList.contains('is-max') || innerWidth < 640) return
-      const w = Math.min(land ? 860 : 400, innerWidth - 16)
+      const room = innerHeight - taskbarHeight() - 16
+      const chrome = 200 // title bar, padding, bezel, status bar, app bar and nav
+      const w = panels > 1 ? Math.min(panels === 2 ? 860 : 1040, innerWidth - 16, (room - chrome) * aspect + 64) : Math.min(400, innerWidth - 16)
       const r = win.el.getBoundingClientRect()
       win.el.style.width = `${w}px`
       win.el.style.left = `${clamp(r.left + (r.width - w) / 2, 8, innerWidth - w - 8)}px`
+      const h = panels > 1 ? (w - 64) / aspect + chrome : r.height
+      if (r.top + h > room) win.el.style.top = `${Math.max(8, room - h)}px`
+    }
+    const phone = $('.mp', el)
+    const mpScreen = $('.mp-screen', el)
+    function unfold(panels) {
+      phone.classList.remove('unfold-2', 'unfold-3')
+      $$('.fold-fx, .fold-crease', mpScreen).forEach((n) => n.remove())
+      if (panels < 2) return
+      void phone.offsetWidth // restart the animation
+      phone.classList.add(`unfold-${panels}`)
+      const fx = document.createElement('div')
+      fx.className = `fold-fx fold-${panels}`
+      fx.setAttribute('aria-hidden', 'true')
+      for (let i = 1; i < panels; i++) {
+        const flap = document.createElement('i')
+        flap.className = 'fold-flap'
+        flap.style.setProperty('--i', i)
+        fx.append(flap)
+        const crease = document.createElement('i')
+        crease.className = 'fold-crease'
+        crease.style.left = `${(i * 100) / panels}%`
+        crease.setAttribute('aria-hidden', 'true')
+        mpScreen.append(crease)
+      }
+      mpScreen.append(fx)
     }
     function launch(a) {
       stop()
@@ -601,8 +632,12 @@
       $('.mp-bar-title', el).textContent = $('.mp-icon-name', $(`.mp-icon[data-app="${a.id}"]`, el)).textContent
       home.hidden = true
       screen.hidden = bar.hidden = false
-      el.classList.toggle('mp-land', !!a.land)
-      fit(a.land)
+      const panels = foldsFor(a.aspect)
+      el.classList.toggle('mp-land', panels > 1)
+      el.style.setProperty('--ar', a.aspect ?? '')
+      el.dataset.panels = panels
+      fit(panels, a.aspect)
+      unfold(panels)
     }
     function stop() {
       if (typeof cleanup === 'function') cleanup()
@@ -615,7 +650,9 @@
       home.hidden = false
       screen.hidden = bar.hidden = true
       el.classList.remove('mp-land')
-      fit(false)
+      el.dataset.panels = 1
+      fit(1)
+      unfold(1)
     }
     $('.mp-back', el).addEventListener('click', goHome)
     $('.mp-homebtn', el).addEventListener('click', goHome)

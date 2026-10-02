@@ -12,7 +12,7 @@ export const isHorizontalEdge = (edge) => edge === 'top' || edge === 'bottom'
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi))
 
-// The TRANSLATR™ Phone (the Arcade) sits at the bottom right of the screen. On screens with room
+// The LigmaPhone™ (the Arcade) sits at the bottom right of the screen. On screens with room
 // to spare the page and the docked widgets move over for it; on narrower ones it covers the screen.
 export const ARCADE_WIDTH = 404 // the phone, its 12px margin and a gap
 const ARCADE_MIN_BESIDE = 600 // px of game that must still fit beside it

@@ -2191,7 +2191,7 @@ export const useGameStore = create(
         set((s) => ({ stats: { ...s.stats, ...Object.fromEntries(Object.entries(counts).map(([k, n]) => [k, (s.stats[k] ?? 0) + n])) } })),
       // ================= The Arcade =================
       /**
-       * Opens the TRANSLATR™ Phone on its home screen, or on one of its apps ('doom' | 'browser' |
+       * Opens the LigmaPhone™ on its home screen, or on one of its apps ('doom' | 'browser' |
        * 'mines' | 'shooter' | …). Without the phone (a microtransaction), the home screen is its
        * lock screen with a Buy button, and nothing else opens.
        */
