@@ -68,7 +68,7 @@ function ArcadeSidebar({ game }) {
   )
 }
 
-/** How far you've got in TOUCHGRASS.EXE (it saves on its own, on nikstil.com). */
+/** How far you've got in LAWN OF THE DEAD (it saves on its own, on nikstil.com). */
 function touchGrassProgress() {
   try {
     const s = JSON.parse(localStorage.getItem('touchgrass-save') ?? 'null')

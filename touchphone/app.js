@@ -1,10 +1,10 @@
-// TOUCHPHONE.EXE on nikstil.com: TOUCHGRASS.EXE the other way round. The garden is planted already;
-// you send the Scrollers. It runs on TOUCHGRASS's engine (touchgrass/sim.js in 'reverse' mode),
+// BRAINS FIRST on nikstil.com: LAWN OF THE DEAD the other way round. The garden is planted already;
+// you send the zombies. It runs on LAWN OF THE DEAD's engine (touchgrass/sim.js in 'reverse' mode),
 // drawing and sound; this file has the menus, saving, input and the loop.
 
 import { ZOMBIE_BY_ID } from '/touchgrass/data.js'
 import { createGame } from '/touchgrass/sim.js'
-import { W, H, drawGame, toLawn, seedRect } from '/touchgrass/draw.js'
+import { W, H, drawGamePixel, toLawn, seedRect } from '/touchgrass/draw.js'
 import { playSfx, setMusic, setSound, unlockAudio } from '/touchgrass/audio.js'
 import { PUZZLES, asLevel, endless } from '/touchphone/levels.js'
 
@@ -82,7 +82,7 @@ function show(name) {
     renderTitle()
   }
   if (name === 'levels') renderLevels()
-  $('#bar-sub').textContent = game && name !== 'title' ? game.level.label + (current?.puzzle ? ` · ${game.level.title}` : '') : 'You’re the Scrollers now'
+  $('#bar-sub').textContent = game && name !== 'title' ? game.level.label + (current?.puzzle ? ` · ${game.level.title}` : '') : 'You’re the zombies now'
 }
 
 function renderTitle() {
@@ -91,7 +91,7 @@ function renderTitle() {
   $('#next-sub').textContent = nx ? `Puzzle ${nx.id} · ${nx.name}` : 'Play any of them again, or go endless'
   $('#endless-btn').disabled = !endlessOpen()
   $('#endless-btn').title = endlessOpen() ? '' : `Solve all ${PUZZLES.length} puzzles first`
-  $('#record').textContent = save.best ? `♾️ Phone Addiction record: ${save.best} garden${save.best === 1 ? '' : 's'}` : `🧩 ${save.beaten.length} / ${PUZZLES.length} puzzles solved`
+  $('#record').textContent = save.best ? `♾️ Endless record: ${save.best} garden${save.best === 1 ? '' : 's'}` : `🧩 ${save.beaten.length} / ${PUZZLES.length} puzzles solved`
 }
 
 function renderLevels() {
@@ -101,7 +101,7 @@ function renderLevels() {
     const b = document.createElement('button')
     b.className = `puzzle${save.beaten.includes(p.id) ? ' done' : ''}`
     b.disabled = !open(p)
-    b.innerHTML = `<b>${p.id}. ${p.name}</b><small>${p.area === 'night' ? '🌙 Night' : '☀️ Day'} · ${p.scrollers.length} Scrollers${save.beaten.includes(p.id) ? ' · ✓ solved' : ''}</small>`
+    b.innerHTML = `<b>${p.id}. ${p.name}</b><small>${p.area === 'night' ? '🌙 Night' : '☀️ Day'} · ${p.scrollers.length} zombies${save.beaten.includes(p.id) ? ' · ✓ solved' : ''}</small>`
     b.addEventListener('click', () => startPuzzle(p))
     list.append(b)
   }
@@ -161,8 +161,8 @@ function finish(won) {
       const cleared = current.endless
       if (cleared > save.best) save.best = cleared
       store()
-      $('#lost-copy').textContent = `You cleared ${cleared} garden${cleared === 1 ? '' : 's'} (${routers}/5 routers on this one). Record: ${save.best}.`
-    } else $('#lost-copy').textContent = `You got ${routers} of 5 routers. Out of Scrollers and out of sun. The plants are insufferable about it.`
+      $('#lost-copy').textContent = `You cleared ${cleared} garden${cleared === 1 ? '' : 's'} (${routers}/5 brains on this one). Record: ${save.best}.`
+    } else $('#lost-copy').textContent = `You got ${routers} of 5 brains. Out of zombies and out of sun. The plants are insufferable about it.`
     show('lost')
     return
   }
@@ -179,8 +179,8 @@ function finish(won) {
     const n = current.endless + 1
     if (n > save.best) save.best = n
     store()
-    $('#won-kicker').textContent = `Phone Addiction · garden ${n}`
-    $('#won-title').textContent = 'All five routers. Connected.'
+    $('#won-kicker').textContent = `Endless · garden ${n}`
+    $('#won-title').textContent = 'All five brains. Delicious.'
     $('#won-copy').textContent = `You keep your ${game.sun} sun for the next garden. Record: ${save.best}.`
     const sun = game.sun
     button('Next garden →', true, () => startEndless(n, sun))
@@ -194,12 +194,12 @@ function finish(won) {
   store()
   const nx = PUZZLES.find((x) => x.id === p.id + 1)
   $('#won-kicker').textContent = `Puzzle ${p.id} solved${first ? '' : ' (again)'}`
-  $('#won-title').textContent = 'All five routers. Connected.'
+  $('#won-title').textContent = 'All five brains. Delicious.'
   $('#won-copy').textContent = nx
-    ? 'The garden is offline. The plants are reading a book, sadly.'
-    : `That’s every puzzle. Phone Addiction is open: endless gardens, and your sun carries over.`
+    ? 'The garden is overrun. The plants are filing a complaint.'
+    : `That’s every puzzle. Endless is open: one garden after another, and your sun carries over.`
   if (nx) button(`Next: ${nx.name} →`, true, () => startPuzzle(nx))
-  else button('♾️ Phone Addiction', true, () => startEndless())
+  else button('♾️ Endless', true, () => startEndless())
   button('Main menu', false, () => show('title'))
   show('won')
 }
@@ -262,7 +262,7 @@ function click(p) {
     }
     return
   }
-  // Sun (also while holding a Scroller)
+  // Sun (also while holding a zombie)
   if (g.collectAt(lawn.x, lawn.y)) return
   const h = ui.holding
   if (h && lawn.inside) {
@@ -340,9 +340,9 @@ function frame(now) {
   const g = game ?? titleScene(now)
   banners = banners.filter((b) => b.until > now)
   const view = game ? { ...ui, banners: banners.filter((b) => !b.from || b.from <= now) } : { banners: [], hover: null, holding: null }
-  drawGame(ctx, g, view)
+  drawGamePixel(ctx, g, view)
 }
-/** Behind the title screen: a planted garden with Scrollers lined up at the red line. */
+/** Behind the title screen: a planted garden with zombies lined up at the red line. */
 function titleScene(now) {
   if (!showcase) {
     showcase = createGame(null, { level: asLevel(PUZZLES[6]), skipIntro: true })
@@ -362,6 +362,7 @@ function titleScene(now) {
 }
 requestAnimationFrame(frame)
 show('title')
+document.fonts?.load("16px 'Press Start 2P'").catch(() => {})
 
 // For tests and the curious.
 window.tp = {

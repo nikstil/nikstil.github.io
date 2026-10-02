@@ -1,14 +1,14 @@
 // TOUCHGRASS.EXE: the game itself, with no drawing and no DOM (draw.js draws it, app.js runs it).
 //
 // The lawn is `rows` × 9 tiles. x runs from 0 (the house) to 9 (the street) in tiles; a plant in
-// column c sits at c + 0.5. Scrollers walk in from x ≈ 10. Time is in seconds.
+// column c sits at c + 0.5. zombies walk in from x ≈ 10. Time is in seconds.
 // createGame(levelId, opts) → game; game.update(dt) runs it; the rest of the game.* functions
 // are what the player can do. Things worth a sound or a banner go into game.events.
 
 import { PLANT_BY_ID, ZOMBIE_BY_ID, LEVEL_BY_ID, AREAS, COIN_VALUES } from './data.js'
 
 export const COLS = 9
-const BITE = 100 // health a Scroller chews off a plant per second
+const BITE = 100 // health a zombie chews off a plant per second
 const PEA_SPEED = 4.2
 const STAR_SPEED = 4.2
 const SKY_SUN_EVERY = [8, 11]
@@ -27,7 +27,7 @@ const WEIGHTS = {
 }
 
 export function createGame(levelId, opts = {}) {
-  // opts.level: a level from outside the Adventure (TOUCHPHONE's reverse puzzles).
+  // opts.level: a level from outside the Adventure (the zombie-side puzzles).
   const level = opts.level ?? LEVEL_BY_ID[levelId]
   if (!level) throw new Error(`No level ${levelId}`)
   const area = AREAS[level.area]
@@ -37,8 +37,8 @@ export function createGame(levelId, opts = {}) {
   const owned = new Set(opts.owned ?? []) // shop purchases: 'poolbot', 'roofbot', 'rake', 'plant:quad', …
   const special = level.special ?? null
   const R = area.rows
-  // Reverse (TOUCHPHONE.EXE): the garden is planted already and you send the Scrollers, to eat
-  // the Wi-Fi router at the end of every row. Sun comes from Sun Daisies they eat.
+  // Reverse (the zombie side): the garden is planted already and you send the zombies, to eat
+  // the brain at the end of every row. Sun comes from Sun Daisies they eat.
   const reverse = special === 'reverse'
 
   let nextId = 1
@@ -116,7 +116,7 @@ export function createGame(levelId, opts = {}) {
   if (special === 'boss') for (let r = 0; r < R; r++) for (let c = 0; c < 3; c++) addPlant('pot', r, c, { free: true })
   // Conveyor-belt levels.
   if (level.conveyor || special === 'bowling' || special === 'vase') g.belt = { items: [], timer: 1.5, cap: 10 }
-  // Vase Smasher: a wall of vases to break, half plants, half Scrollers.
+  // Vase Smasher: a wall of vases to break, half plants, half zombies.
   if (special === 'vase') {
     const plants = ['pea', 'double', 'frost', 'pom', 'coco', 'gulp', 'mine', 'ghost', 'zucchini', 'pea', 'double', 'pom']
     const zs = ['scroller', 'scroller', 'beanie', 'beanie', 'vr', 'cryptobro', 'selfie', 'scroller', 'beanie', 'vr', 'scroller', 'beanie', 'selfie']
@@ -125,7 +125,7 @@ export function createGame(levelId, opts = {}) {
     for (let c = 4; c < 9; c++) for (let r = 0; r < R; r++) g.vases.push({ row: r, col: c, ...contents[i++ % contents.length], leaf: false })
     for (const v of g.vases) v.leaf = !!v.plant && rand() < 0.35 // some vases show a leaf: a plant's inside
   }
-  // Reverse: the plants are in already ("r,c": plant id), and the seeds are Scrollers.
+  // Reverse: the plants are in already ("r,c": plant id), and the seeds are zombies.
   if (reverse) {
     for (const [at, id] of Object.entries(level.garden)) {
       const [r, c] = at.split(',').map(Number)
@@ -216,7 +216,7 @@ export function createGame(levelId, opts = {}) {
     if (p.hp <= 0) removePlant(p, how ?? 'eaten')
   }
 
-  /** The plant a Scroller at this cell chews on first: the shell, then the plant, then what it stands on. */
+  /** The plant a zombie at this cell chews on first: the shell, then the plant, then what it stands on. */
   function eatable(r, c) {
     const ce = cell(r, c)
     if (!ce) return null
@@ -334,7 +334,7 @@ export function createGame(levelId, opts = {}) {
     return true
   }
 
-  /** Reverse: why Scroller seed `i` can't go at row r, column c (or null if it can). */
+  /** Reverse: why zombie seed `i` can't go at row r, column c (or null if it can). */
   g.whyNotScroller = (i, r, c) => {
     const s = g.zseeds?.[i]
     if (!s || !g.rowOk(r) || c >= COLS) return 'off'
@@ -344,7 +344,7 @@ export function createGame(levelId, opts = {}) {
     if (g.isWater(r) && !ZOMBIE_BY_ID[s.id].water) return 'water'
     return null
   }
-  /** Reverse: sends Scroller seed `i` onto the lawn at row r, column c. */
+  /** Reverse: sends zombie seed `i` onto the lawn at row r, column c. */
   g.placeScroller = (i, r, c) => {
     if (g.phase !== 'play' || g.whyNotScroller(i, r, c)) return null
     const s = g.zseeds[i]
@@ -401,7 +401,7 @@ export function createGame(levelId, opts = {}) {
     }
   }
 
-  // ================= Scrollers =================
+  // ================= zombies =================
   function spawn(type, row, x, extra = {}) {
     const def = ZOMBIE_BY_ID[type]
     const tiny = special === 'tiny'
@@ -458,7 +458,7 @@ export function createGame(levelId, opts = {}) {
     return z
   }
 
-  /** How much of a Scroller is left, armour included (waves move on when it drops low). */
+  /** How much of a zombie is left, armour included (waves move on when it drops low). */
   const totalHp = (z) => Math.max(0, z.hp) + (z.helmet?.hp ?? 0) + (z.shield?.hp ?? 0)
 
   function kill(z, cause = 'shot') {
@@ -482,7 +482,7 @@ export function createGame(levelId, opts = {}) {
   const gone = (z) => z.dying || z.gone
 
   /**
-   * Damage to a Scroller. how: 'front' (a shot from the front: the shield takes it), 'back',
+   * Damage to a zombie. how: 'front' (a shot from the front: the shield takes it), 'back',
    * 'lob' (over the shield), 'fume' (through the shield), 'boom' (an explosion: everything, in
    * order), 'pure'.
    */
@@ -508,7 +508,7 @@ export function createGame(levelId, opts = {}) {
       if (z.shield.hp <= 0) loseItem(z, 'shield')
       return
     }
-    // A helmet takes the hit first; what's left over goes through to the Scroller.
+    // A helmet takes the hit first; what's left over goes through to the zombie.
     if (z.helmet) {
       const take = Math.min(amount, z.helmet.hp)
       z.helmet.hp -= take
@@ -538,7 +538,7 @@ export function createGame(levelId, opts = {}) {
   const factor = (z) => (g.t < z.slowUntil ? 0.5 : 1)
   const stuck = (z) => g.t < z.frozenUntil || g.t < z.stunUntil
 
-  /** Scrollers plants can aim at in a row. */
+  /** zombies plants can aim at in a row. */
   function targetable(z, { flying = false, under = false } = {}) {
     if (gone(z) || z.hypno || z.boss) return false
     if (z.underground && !under) return false
@@ -633,7 +633,7 @@ export function createGame(levelId, opts = {}) {
       }
       spawned.push(spawn(type, row, x))
     })
-    // The final wave: every gravestone lets a Scroller out.
+    // The final wave: every gravestone lets a zombie out.
     if (n === W) {
       for (const gr of g.graves) {
         const type = pick(level.zombies.filter((t) => LAND_BASIC.has(t) || t === 'boomer'))
@@ -657,7 +657,7 @@ export function createGame(levelId, opts = {}) {
       const due = g.t >= w.nextAt || (w.index > 0 && waveWeak())
       if (due) {
         w.hugeAt = g.t + HUGE_WARNING
-        banner(next === W ? 'A huge wave of Scrollers is approaching! (final wave)' : 'A huge wave of Scrollers is approaching!', 'huge', 4)
+        banner(next === W ? 'A big wave of zombies is coming! (final wave)' : 'A big wave of zombies is coming!', 'huge', 4)
         sfx('warning')
       }
       return
@@ -681,7 +681,7 @@ export function createGame(levelId, opts = {}) {
   }
   g.progress = () => (W ? Math.min(1, g.waves.index / W) : g.vases.length ? 1 - g.vases.length / 25 : g.boss ? 1 - g.boss.hp / g.boss.maxHp : 0)
 
-  // Whack-a-Scroller: Scrollers climb out of gravestones that pop up all over the lawn.
+  // Whack-a-Zombie: zombies climb out of gravestones that pop up all over the lawn.
   function riseFromGrave(type) {
     let gr = g.graves.length && rand() < 0.6 ? pick(g.graves) : null
     if (!gr) {
@@ -697,7 +697,7 @@ export function createGame(levelId, opts = {}) {
     gr ??= g.graves[0]
     return spawn(type, gr.row, gr.col + 0.6, { state: 'rising', risingUntil: g.t + 1.2 })
   }
-  /** Hit what's under the mallet (Whack-a-Scroller). */
+  /** Hit what's under the mallet (Whack-a-Zombie). */
   g.whack = (x, y) => {
     if (special !== 'whack' || g.phase !== 'play') return null
     const z = g.zombies.find((z) => !gone(z) && Math.round(y) === z.row && Math.abs(z.x - x) < 0.45)
@@ -728,7 +728,7 @@ export function createGame(levelId, opts = {}) {
     for (const rd of riders) rd.riders = riders
     return riders
   }
-  /** A Bungee Thief drops in: 'steal' takes a plant, 'deliver' drops off a Scroller. */
+  /** A Bungee Thief drops in: 'steal' takes a plant, 'deliver' drops off a zombie. */
   function dropBungee(mode, cargo = null, at = null) {
     let row
     let col
@@ -790,7 +790,7 @@ export function createGame(levelId, opts = {}) {
     if (b.timer > 0) return
     switch (b.state) {
       case 'enter':
-        banner('The Algorithm has entered the chat.', 'huge', 3)
+        banner('The Rotbot stomps onto the roof!', 'huge', 3)
         b.state = 'idle'
         b.timer = 3
         break
@@ -803,7 +803,7 @@ export function createGame(levelId, opts = {}) {
           b.head = true
           b.ballKind = rand() < 0.5 ? 'fire' : 'ice'
           b.ballRow = pick(lanesFor)
-          banner(b.ballKind === 'fire' ? 'The Algorithm is overheating… (a Frostcap would put that out)' : 'The Algorithm is going cold… (a Ghost Pepper would melt that)', 'info', 3)
+          banner(b.ballKind === 'fire' ? 'The Rotbot is warming up a fireball… (a Frostcap would put that out)' : 'The Rotbot is charging an iceball… (a Ghost Pepper would melt that)', 'info', 3)
         }
         break
       }
@@ -860,7 +860,7 @@ export function createGame(levelId, opts = {}) {
       g.introLeft -= dt
       if (g.introLeft <= 0) {
         g.phase = 'play'
-        if (!opts.skipIntro) banner(reverse ? 'SCROLL!' : 'PLANT!', 'go', 0.9)
+        if (!opts.skipIntro) banner(reverse ? 'BRAINS!' : 'PLANT!', 'go', 0.9)
       }
       return
     }
@@ -1042,7 +1042,7 @@ export function createGame(levelId, opts = {}) {
           g.boss.ball = null
           g.boss.state = 'idle'
           g.boss.timer = 10
-          banner('Fireball: put out. The Algorithm is stunned!', 'go', 2)
+          banner('Fireball: put out. The Rotbot is stunned!', 'go', 2)
           g.boss.head = true
           setTimeoutGame(6, () => g.boss && (g.boss.head = false))
         }
@@ -1194,7 +1194,7 @@ export function createGame(levelId, opts = {}) {
       case 'star': {
         p.timer -= dt
         if (p.timer > 0) return
-        // Any Scroller on a line it can shoot along?
+        // Any zombie on a line it can shoot along?
         const any = g.zombies.some((z) => targetable(z) && (z.row === r || (z.x > cx && Math.abs(z.x - cx) * 0.577 + 0.6 > Math.abs(z.row - r)) || Math.abs(z.x - cx) < 0.6))
         if (!any) return
         const dirs = [
@@ -1391,7 +1391,7 @@ export function createGame(levelId, opts = {}) {
         g.boss.state = 'idle'
         g.boss.timer = 10
         g.boss.head = true
-        banner('Iceball: melted. The Algorithm is stunned!', 'go', 2)
+        banner('Iceball: melted. The Rotbot is stunned!', 'go', 2)
         setTimeoutGame(6, () => g.boss && (g.boss.head = false))
       }
     }
@@ -1448,7 +1448,7 @@ export function createGame(levelId, opts = {}) {
         }
       }
     }
-    // Hit the first Scroller it reaches.
+    // Hit the first zombie it reaches.
     let hit = null
     for (const z of g.zombies) {
       if (z.row !== s.row) continue
@@ -1624,7 +1624,7 @@ export function createGame(levelId, opts = {}) {
     sfx('thud')
   }
 
-  // ---------- Scrollers ----------
+  // ---------- zombies ----------
   function stepZombie(z, dt) {
     if (z.dying) return
     if (z.boss) return
@@ -1691,7 +1691,7 @@ export function createGame(levelId, opts = {}) {
       }
       return
     }
-    // The catapult stops to fling phones while it has plants to aim at.
+    // The catapult stops to fling rocks while it has plants to aim at.
     if (z.def.catapult && z.ammo > 0 && z.x <= 7.2) {
       const targets = []
       for (let c = 0; c < Math.floor(z.x); c++) if (eatable(z.row, c)) targets.push(c)
@@ -1765,7 +1765,7 @@ export function createGame(levelId, opts = {}) {
       z.speed = 0.21
     }
 
-    // ---- What's in front: a plant, a hypnotised Scroller, or the house ----
+    // ---- What's in front: a plant, a hypnotised zombie, or the house ----
     const dir = z.hypno ? 1 : z.dir
     if (z.hypno) {
       const foe = g.zombies.find((o) => o !== z && !gone(o) && !o.hypno && o.row === z.row && o.x >= z.x - 0.1 && o.x - z.x < 0.7 && !o.underground && !(o.balloon > 0) && !o.bungee)
@@ -2002,14 +2002,14 @@ export function createGame(levelId, opts = {}) {
   function reachHouse(z) {
     if (z.x > 0.15 || z.hypno || z.dir > 0) return
     if (reverse) {
-      // It got to the router: the row's Wi-Fi is yours, and the Scroller logs on (leaves).
+      // It got to the brain: the row is done, and the zombie wanders off with it.
       const rt = g.routers[z.row]
       if (rt && !rt.eaten) {
         rt.eaten = true
         rt.at = g.t
         g.lastKill = { x: 0.6, y: z.row }
         sfx('gulp')
-        banner(`ROW ${z.row + 1}: CONNECTED`, 'info', 1.4)
+        banner(`ROW ${z.row + 1}: BRAINS!`, 'info', 1.4)
         event('router', { row: z.row })
       }
       if (z.x < -0.3) {

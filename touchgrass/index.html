@@ -3,44 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOUCHGRASS.EXE · nikstil.com</title>
-  <meta name="description" content="TOUCHGRASS.EXE: plant a garden, hold off the Scrollers. 48 plants, 26 phone-zombies, 50 levels, from TRANSLATR™.">
+  <title>LAWN OF THE DEAD · nikstil.com</title>
+  <meta name="description" content="LAWN OF THE DEAD: plant a garden, hold off the zombies. 48 plants, 26 zombies, 50 levels, in pixel art.">
   <!-- Link previews. The image comes from og/render.mjs. -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="nikstil.com">
   <meta property="og:url" content="https://nikstil.com/touchgrass/">
-  <meta property="og:title" content="TOUCHGRASS.EXE">
-  <meta property="og:description" content="Your lawn vs. the Scrollers: phone zombies after your Wi-Fi. 48 plants, 26 Scrollers, 50 levels.">
+  <meta property="og:title" content="LAWN OF THE DEAD">
+  <meta property="og:description" content="Plant a garden, hold off the zombies. 48 plants, 26 zombies, 50 levels, in pixel art.">
   <meta property="og:image" content="https://nikstil.com/touchgrass/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="TOUCHGRASS.EXE: a lawn of plants holding off phone zombies">
+  <meta property="og:image:alt" content="LAWN OF THE DEAD: a pixel-art lawn of plants holding off zombies">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="TOUCHGRASS.EXE">
-  <meta name="twitter:description" content="Your lawn vs. the Scrollers: phone zombies after your Wi-Fi. 48 plants, 26 Scrollers, 50 levels.">
+  <meta name="twitter:title" content="LAWN OF THE DEAD">
+  <meta name="twitter:description" content="Plant a garden, hold off the zombies. 48 plants, 26 zombies, 50 levels, in pixel art.">
   <meta name="twitter:image" content="https://nikstil.com/touchgrass/og-image.png">
   <meta name="theme-color" content="#2c6b2f">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%232c6b2f'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E🌱%3C/text%3E%3C/svg%3E">
+  <link rel="preload" href="/touchgrass/fonts/press-start-2p.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/touchgrass/fonts/fonts.css">
   <link rel="stylesheet" href="/touchgrass/style.css">
   <script type="module" src="/touchgrass/app.js"></script>
 </head>
 <body>
   <main class="frame" id="frame">
     <header class="bar">
-      <span class="bar-name">TOUCHGRASS.EXE</span>
-      <span class="bar-sub" id="bar-sub">Your lawn vs. the Scrollers</span>
+      <span class="bar-name">LAWN OF THE DEAD</span>
+      <span class="bar-sub" id="bar-sub">Your lawn vs. the dead</span>
       <button class="bar-btn" id="mute" title="Sound on/off (M)" aria-label="Sound on/off">🔊</button>
       <button class="bar-btn" id="full" title="Full screen" aria-label="Full screen">⛶</button>
       <a class="bar-btn home-link" href="/" title="Back to nikstil.com">nikstil.com</a>
     </header>
 
     <div class="view" id="view">
-      <canvas id="screen" class="screen" width="960" height="620" aria-label="TOUCHGRASS game screen"></canvas>
+      <canvas id="screen" class="screen" width="960" height="620" aria-label="LAWN OF THE DEAD game screen"></canvas>
       <button class="menu-btn" id="menu-btn" hidden>Menu</button>
 
       <section class="overlay title" id="title">
-        <h1 class="logo">TOUCH<span>GRASS</span><small>.EXE</small></h1>
-        <p class="tag">The Scrollers want your Wi-Fi password. Your garden says no.</p>
+        <h1 class="logo">LAWN <span>OF THE</span> DEAD</h1>
+        <p class="tag">The zombies want your brains. Your garden says no.</p>
         <div class="title-buttons">
           <button class="btn big go" data-do="adventure"><b id="adv-label">Adventure</b><small id="adv-sub">Level 1-1</small></button>
           <button class="btn" data-do="levels">🗺️ Levels</button>
@@ -65,7 +67,7 @@
             <div class="seed-grid" id="seed-grid"></div>
           </div>
           <aside class="preview">
-            <h3>Scrollers on their way</h3>
+            <h3>Zombies on their way</h3>
             <div class="preview-list" id="preview-list"></div>
           </aside>
         </div>
@@ -86,7 +88,7 @@
       </section>
 
       <section class="overlay lost" id="lost" hidden>
-        <h2 class="big">THE SCROLLERS GOT YOUR WI-FI PASSWORD!</h2>
+        <h2 class="big">THE ZOMBIES GOT INTO YOUR HOUSE!</h2>
         <p class="copy" id="lost-copy"></p>
         <div class="row">
           <button class="btn go" data-do="restart">↻ Try again</button>
@@ -105,7 +107,7 @@
       <section class="overlay panel" id="almanac" hidden>
         <div class="tabs">
           <button class="tab" data-tab="plants" aria-selected="true">🌱 Plants</button>
-          <button class="tab" data-tab="zombies" aria-selected="false">📱 Scrollers</button>
+          <button class="tab" data-tab="zombies" aria-selected="false">🧟 Zombies</button>
         </div>
         <div class="almanac">
           <div class="alm-grid" id="alm-grid"></div>
@@ -128,7 +130,7 @@
       </section>
     </div>
     <p class="rotate-hint">📱↻ Turn your phone sideways for a bigger lawn.</p>
-    <p class="help">Click the sun. Click a seed, then a tile, to plant it. Don’t let a single Scroller reach the house.</p>
+    <p class="help">Click the sun. Click a seed, then a tile, to plant it. Don’t let a single zombie reach the house.</p>
   </main>
 </body>
 </html>

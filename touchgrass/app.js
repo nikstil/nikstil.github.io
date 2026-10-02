@@ -1,9 +1,9 @@
-// TOUCHGRASS.EXE on nikstil.com: menus, the seed picker, the Almanac, Gary’s Garage Sale, saving,
+// LAWN OF THE DEAD on nikstil.com: menus, the seed picker, the Almanac, Gary’s Garage Sale, saving,
 // input, and the loop that runs the game (sim.js) and draws it (draw.js).
 
 import { LEVELS, LEVEL_BY_ID, PLANTS, PLANT_BY_ID, PLANT_ORDER, ZOMBIES, ZOMBIE_BY_ID, AREAS, SHOP, POTS_FROM, nextLevelId } from './data.js'
 import { createGame } from './sim.js'
-import { W, H, drawGame, toLawn, seedRect, shovelRect, beltRect, drawPacket, drawPlantCard, drawZombieCard } from './draw.js'
+import { W, H, PIXEL, drawGamePixel, pixelCanvas, toLawn, seedRect, shovelRect, beltRect, drawPacket, drawPlantCard, drawZombieCard } from './draw.js'
 import { playSfx, setMusic, setSound, unlockAudio } from './audio.js'
 
 const $ = (sel) => document.querySelector(sel)
@@ -90,7 +90,7 @@ function show(name) {
   if (name === 'almanac') renderAlmanac()
   if (name === 'shop') renderShop()
   const lv = name === 'picker' ? LEVEL_BY_ID[pickedLevel] : game?.level
-  $('#bar-sub').textContent = lv && name !== 'title' ? `${AREAS[lv.area].name} · Level ${lv.id}${lv.title ? ` · ${lv.title}` : ''}` : 'Your lawn vs. the Scrollers'
+  $('#bar-sub').textContent = lv && name !== 'title' ? `${AREAS[lv.area].name} · Level ${lv.id}${lv.title ? ` · ${lv.title}` : ''}` : 'Your lawn vs. the dead'
 }
 
 function renderTitle() {
@@ -150,9 +150,10 @@ function packetCanvas(id, opts = {}) {
   const c = document.createElement('canvas')
   c.width = 116
   c.height = 152
-  const ctx = c.getContext('2d')
-  ctx.scale(2, 2)
-  drawPacket(ctx, id, 1, 1, 56, 74, { cost: PLANT_BY_ID[id]?.cost ?? null, ...opts })
+  pixelCanvas(c, 2 * PIXEL, (ctx) => {
+    ctx.scale(2, 2)
+    drawPacket(ctx, id, 1, 1, 56, 74, { cost: PLANT_BY_ID[id]?.cost ?? null, ...opts })
+  })
   return c
 }
 function renderPicker() {
@@ -205,9 +206,10 @@ function renderPicker() {
     c.width = 160
     c.height = 200
     c.title = ZOMBIE_BY_ID[z].name
-    const ctx = c.getContext('2d')
-    ctx.scale(2, 2)
-    drawZombieCard(ctx, z, 40, 92, 0.62)
+    pixelCanvas(c, 4, (ctx) => {
+      ctx.scale(2, 2)
+      drawZombieCard(ctx, z, 40, 92, 0.62)
+    })
     prev.append(c)
   }
   $('#rock').disabled = chosen.length === 0
@@ -263,15 +265,15 @@ function onEvents() {
 }
 
 const NOTES = {
-  '1-9': 'A note from Gary next door: “The Scrollers are coming at night now. They’ve got ring lights. Use mushrooms. Mushrooms don’t care about ring lights.”',
+  '1-9': 'A note from Gary next door: “They come at night too, you know. Use mushrooms. Mushrooms like the dark. So do zombies, but less politely.”',
   '2-8': 'Gary: “They’re dancing now. Choreographed. On YOUR lawn. Use a Mushroom Cloud. I mean it.”',
-  '2-9': 'Gary: “They’ve figured out you have a pool. I don’t know how. You didn’t post about it, did you?”',
-  '3-8': 'Gary: “Jet skis. In a residential pool. I’m calling the HOA.”',
-  '3-9': 'Gary: “Fog’s rolling in tonight. You’ll want lanterns. I lent mine to a Scroller. Long story.”',
-  '4-8': 'Gary: “Pogo sticks. Streamers. Same people, honestly.”',
-  '4-9': 'Gary: “They’re going for the roof next. The router’s up there now. I moved it for better signal. My bad.”',
-  '5-8': 'Gary: “There’s something big coming. It knows what you want before you do. Bring pots.”',
-  '5-9': 'Gary: “That’s it. The Algorithm itself is coming for your Wi-Fi. I’ll be in my car.”',
+  '2-9': 'Gary: “They’ve figured out you have a pool. Zombies can’t swim. They’re going to try anyway.”',
+  '3-8': 'Gary: “Jet skis. In a residential pool. I’m calling someone. I don’t know who.”',
+  '3-9': 'Gary: “Fog’s rolling in tonight. You’ll want lanterns. I lent mine to a zombie. Long story.”',
+  '4-8': 'Gary: “Pogo sticks. Where are they getting pogo sticks?”',
+  '4-9': 'Gary: “They’re going for the roof next. Bring pots. Lots of pots.”',
+  '5-8': 'Gary: “There’s something big coming. Something with rivets. Bring pots.”',
+  '5-9': 'Gary: “That’s it. The Rotbot itself is coming for your brains. I’ll be in my car.”',
 }
 function finish(won, e) {
   if (!game) return
@@ -292,7 +294,7 @@ function finish(won, e) {
   }
   store()
   if (!won) {
-    $('#lost-copy').textContent = `A ${ZOMBIE_BY_ID[e.zombie]?.name ?? 'Scroller'} made it to the router. ${earned ? `You keep the $${earned} you picked up.` : ''}`
+    $('#lost-copy').textContent = `A ${ZOMBIE_BY_ID[e.zombie]?.name ?? 'zombie'} made it into the house. ${earned ? `You keep the $${earned} you picked up.` : ''}`
     show('lost')
     return
   }
@@ -306,10 +308,10 @@ function finish(won, e) {
     const p = PLANT_BY_ID[level.unlock]
     title = `New plant: ${p.name}`
     copy = `${p.desc} (${p.cost} sun)`
-    drawPlantCard(art, level.unlock, 100, 140, 1.4, 0)
+    pixelCanvas($('#won-art'), 4, (x) => drawPlantCard(x, level.unlock, 100, 140, 1.4, 0))
   } else if (reward === 'trophy') {
-    title = 'You beat The Algorithm!'
-    copy = 'Your Wi-Fi is safe. The Scrollers have logged off. Go outside. Touch some grass. You’ve earned it.'
+    title = 'You beat the Rotbot!'
+    copy = 'The lawn is quiet. The house is safe. Your brains are still yours. Go and water something.'
   } else if (bag) {
     title = 'A bag of money'
     copy = `$${bag} for playing it again.`
@@ -318,7 +320,7 @@ function finish(won, e) {
   }
   const extras = []
   if (first && level.reward === 'shovel') extras.push('You also found a shovel: dig up plants you don’t want (S).')
-  if (first && level.reward === 'almanac') extras.push('You found the Almanac: everything about every plant and Scroller, on the title screen.')
+  if (first && level.reward === 'almanac') extras.push('You found the Almanac: everything about every plant and zombie, on the title screen.')
   if (first && level.reward === 'shop') extras.push('Gary has opened a Garage Sale next door. Spend your coins on more seed slots and upgrade plants.')
   if (first && NOTES[level.id]) extras.push(NOTES[level.id])
   $('#won-title').textContent = title
@@ -520,12 +522,12 @@ function renderAlmanac() {
     const c = document.createElement('canvas')
     c.width = 108
     c.height = 108
-    const cx = c.getContext('2d')
-    cx.scale(2, 2)
-    if (known) {
-      if (almTab === 'plants') drawPlantCard(cx, it.id, 27, 50, 0.5)
-      else drawZombieCard(cx, it.id, 30, 52, 0.36)
-    }
+    if (known)
+      pixelCanvas(c, 4, (cx) => {
+        cx.scale(2, 2)
+        if (almTab === 'plants') drawPlantCard(cx, it.id, 27, 50, 0.5)
+        else drawZombieCard(cx, it.id, 30, 52, 0.36)
+      })
     b.append(c, known ? it.name : '???')
     b.addEventListener('click', () => {
       almSel = it.id
@@ -564,11 +566,10 @@ function renderAlmanac() {
 // The Almanac's big picture, animated while it's open.
 function drawAlmanacArt(t) {
   const c = $('#alm-art')
-  const x = c.getContext('2d')
-  x.setTransform(1, 0, 0, 1, 0, 0)
-  x.clearRect(0, 0, c.width, c.height)
-  if (almTab === 'plants') drawPlantCard(x, almSel, 110, 170, 1.4, t)
-  else drawZombieCard(x, almSel, 120, 186, almSel === 'gigachad' ? 0.62 : 1.1, t)
+  pixelCanvas(c, 4, (x) => {
+    if (almTab === 'plants') drawPlantCard(x, almSel, 110, 170, 1.4, t)
+    else drawZombieCard(x, almSel, 120, 186, almSel === 'gigachad' ? 0.62 : 1.1, t)
+  })
 }
 
 // ================= Gary’s Garage Sale =================
@@ -629,11 +630,11 @@ function frame(now) {
     ui ??= { banners: [] }
     banners = banners.filter((b) => b.until > now)
     const view = game ? { ...ui, banners } : { banners: [], hover: null, holding: null }
-    drawGame(ctx, g, view)
+    drawGamePixel(ctx, g, view)
   }
   if (screen === 'almanac') drawAlmanacArt(now / 1000)
 }
-/** Behind the title screen: a lawn with a few plants and Scrollers, just idling. */
+/** Behind the title screen: a lawn with a few plants and zombies, just idling. */
 function titleScene(now) {
   if (!showcase) {
     showcase = createGame('1-4', { skipIntro: true })
@@ -667,6 +668,7 @@ function titleScene(now) {
 }
 requestAnimationFrame(frame)
 show('title')
+document.fonts?.load("16px 'Press Start 2P'").then(() => screen === 'picker' && renderPicker()).catch(() => {})
 
 // For tests and the curious.
 window.tg = {
