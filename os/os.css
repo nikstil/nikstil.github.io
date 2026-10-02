@@ -1533,3 +1533,10 @@ html.embed-app :is(.desk-icons, .taskbar, #boot, .start-menu, .ctx-menu, #balloo
 html.embed-app .win.is-embedded { inset: 0 !important; width: auto !important; border: 0; border-radius: 0; box-shadow: none; }
 html.embed-app .win.is-embedded > .win-bar { display: none; }
 .win-foot-choices { flex-wrap: wrap; }
+
+/* Game windows maximized (or full screen): the game area fills the window instead of keeping its
+   own shape (which made it taller than the screen and cut the bottom off); each game fits itself
+   inside, letterboxed. */
+.win:is(:fullscreen, .is-max):has(.doom-win, .grass-win, .loggle-win) { display: flex; flex-direction: column; }
+.win:is(:fullscreen, .is-max) .win-client:has(.doom-win, .grass-win, .loggle-win) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.win:is(:fullscreen, .is-max) .win-body:is(.doom-win, .grass-win, .loggle-win) { flex: 1; aspect-ratio: auto; height: auto; min-height: 0; }

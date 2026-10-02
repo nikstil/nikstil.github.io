@@ -515,3 +515,8 @@ body { font: 20px/1.15 var(--pixel-body); }
 .title-buttons:has(> :nth-child(5)) { top: 22.5%; gap: 1.5cqh; }
 .title-buttons:has(> :nth-child(5)) .slab { padding-block: .65em .55em; }
 .title-buttons:has(> :nth-child(5)) .slab.hero { padding-block: .8em .65em; }
+
+/* Full screen (the ⛶ button): just the game, as big as the screen allows, shape kept */
+html.is-fs body { --pad: 0px; padding: 0; background: #000; }
+html.is-fs .frame { width: min(100vw, calc((100dvh - 44px) * 960 / 620)); margin: 0 auto; gap: 4px; }
+html.is-fs .help, html.is-fs .rotate-hint, html.is-fs .bar .home-link { display: none; }
