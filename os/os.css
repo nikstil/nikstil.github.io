@@ -1191,6 +1191,8 @@ html[data-theme="glass"] .balloon { border: 0; border-radius: 18px; background: 
 
 /* ================= DOOMSCROLL.EXE (the game page, in a window) ================= */
 .win-body.doom-win { flex: none; padding: 0; overflow: hidden; aspect-ratio: 16 / 10; background: #000; }
+.win-body.strife-win { flex: none; padding: 0; overflow: hidden; aspect-ratio: 16 / 9; background: #0f1216; }
+.strife-frame { display: block; width: 100%; height: 100%; border: 0; }
 .doom-frame { display: block; width: 100%; height: 100%; border: 0; }
 .win-body.grass-win { flex: none; padding: 0; overflow: hidden; aspect-ratio: 960 / 704; background: #2c6b2f; }
 .win-body.phone-win { background: #1f1830; }
@@ -1537,9 +1539,9 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 /* Game windows maximized (or full screen): the game area fills the window instead of keeping its
    own shape (which made it taller than the screen and cut the bottom off); each game fits itself
    inside, letterboxed. */
-.win:is(:fullscreen, .is-max):has(.doom-win, .grass-win, .loggle-win) { display: flex; flex-direction: column; }
-.win:is(:fullscreen, .is-max) .win-client:has(.doom-win, .grass-win, .loggle-win) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.win:is(:fullscreen, .is-max) .win-body:is(.doom-win, .grass-win, .loggle-win) { flex: 1; aspect-ratio: auto; height: auto; min-height: 0; }
+.win:is(:fullscreen, .is-max):has(.doom-win, .grass-win, .loggle-win, .strife-win) { display: flex; flex-direction: column; }
+.win:is(:fullscreen, .is-max) .win-client:has(.doom-win, .grass-win, .loggle-win, .strife-win) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.win:is(:fullscreen, .is-max) .win-body:is(.doom-win, .grass-win, .loggle-win, .strife-win) { flex: 1; aspect-ratio: auto; height: auto; min-height: 0; }
 
 /* ---- LigmaPhone: the games and the browser, on a phone in a window ---- */
 .mobile-win { display: grid; place-items: center; padding: 10px; background: transparent; }

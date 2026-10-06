@@ -8,6 +8,7 @@ export const ARCADE_GAMES = [
   { id: 'snake', icon: '🐍', name: 'Wallet Snake', blurb: 'Insert coin. Eat money. The platform keeps 30%.' },
   { id: 'loggle', icon: '🟩', name: 'LOGGLE', blurb: 'The daily name puzzle. Twelve letters, six guesses, a new name every day.' },
   { id: 'grass', icon: '🌱', name: 'LAWN OF THE DEAD', blurb: 'Plant a garden, hold off the zombies. 50 levels of pixel-art lawn defence, from nikstil.com.', src: '/touchgrass/?embed', aspect: 960 / 672 },
+  { id: 'strife', icon: '💣', name: 'COUNTER-STRIFE', blurb: '5v5 bomb defusal against bots, on Dust 2 and Mirage. From nikstil.com.', src: '/strife/?embed', aspect: 16 / 9 },
   { id: 'brains', icon: '🧠', name: 'BRAINS FIRST', blurb: 'The other side of the lawn: you’re the zombies. Puzzles, endless and mini-games, from nikstil.com.', src: '/touchphone/?embed', aspect: 960 / 672 },
 ]
 
@@ -30,6 +31,7 @@ export const BOOKMARKS = [
   { icon: '🌱', name: 'LAWN OF THE DEAD', url: '/touchgrass/' },
   { icon: '🧠', name: 'BRAINS FIRST', url: '/touchphone/' },
   { icon: '🟩', name: 'LOGGLE', url: '/loggle/' },
+  { icon: '💣', name: 'COUNTER-STRIFE', url: '/strife/' },
   { icon: '🎞️', name: 'The GIF', url: '/gif/' },
   { icon: '📚', name: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
   { icon: '🎲', name: 'Random article', url: 'https://en.m.wikipedia.org/wiki/Special:Random' },

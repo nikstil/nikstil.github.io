@@ -4,7 +4,7 @@
 //   node og/render.mjs                   # needs Playwright (npm i -g playwright)
 //
 // Writes og-image.png (nikstil.com), touchgrass/og-image.png, translatr-src/public/og-image.png (copied into translatr/ by
-// `npm run build:site`, and here straight away) and doomscroll/og-image.png.
+// `npm run build:site`, and here straight away), doomscroll/og-image.png and strife/og-image.png.
 import { createRequire } from 'node:module'
 import { copyFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -22,7 +22,8 @@ const base = process.argv[2] ?? 'http://127.0.0.1:8080'
 const shots = join(root, 'og', 'shots')
 mkdirSync(shots, { recursive: true })
 
-const browser = await chromium.launch()
+// (WebGL for COUNTER-STRIFE: software rendering works everywhere)
+const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
 const noOnline = (ctx) => ctx.route('**/site.json', (r) => r.fulfill({ contentType: 'application/json', body: '{}' }))
 
 // TRANSLATR™, a few seconds into a speedrun
@@ -82,8 +83,39 @@ const noOnline = (ctx) => ctx.route('**/site.json', (r) => r.fulfill({ contentTy
   await page.locator('#screen').screenshot({ path: join(shots, 'grass.png') })
   await ctx.close()
 }
+// COUNTER-STRIFE, holding A ramp as the Terrorists come up long
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } })
+  await ctx.addInitScript(() => localStorage.setItem('strife-settings', JSON.stringify({ quality: 'high', team: 'CT', map: 'dust2', size: 5 })))
+  const page = await ctx.newPage()
+  await page.goto(`${base}/strife/`)
+  await page.waitForTimeout(2500)
+  await page.click('[data-do="play"]')
+  await page.waitForTimeout(2500)
+  await page.evaluate(() => {
+    const g = window.strife.game
+    const me = g.player
+    me.money = 16000
+    g.buy(me, 'm4')
+    g.buy(me, 'vesthelm')
+    g.buy(me, 'smoke')
+    g.phase = 'live'
+    g.phaseEnd = g.time + 71
+    const at = (a, x, z, yaw) => Object.assign(a, { pos: { x, y: g.world.floorAt(x, z), z }, vel: { x: 0, y: 0, z: 0 }, yaw, pitch: 0 })
+    at(me, 87.5, 31.2, Math.PI + 0.06)
+    window.strife.look.yaw = me.yaw
+    window.strife.look.pitch = -0.04
+    const ts = g.actors.filter((a) => a.team === 'T')
+    ;[[88.5, 47], [85.5, 52], [90.5, 57]].forEach(([x, z], k) => at(ts[k], x, z, 0))
+    for (const a of g.actors) if (a.isBot) a.brain.update = () => ({ yaw: a.yaw, pitch: a.pitch })
+    g.actors.filter((a) => a.team === 'CT' && a !== me).forEach((a, k) => at(a, 70 + k * 2, 12, 0))
+  })
+  await page.waitForTimeout(1500)
+  await page.locator('#game').screenshot({ path: join(shots, 'strife.png') })
+  await ctx.close()
+}
 // The cards
-const out = { os: join(root, 'og-image.png'), translatr: join(root, 'translatr-src', 'public', 'og-image.png'), doom: join(root, 'doomscroll', 'og-image.png'), grass: join(root, 'touchgrass', 'og-image.png') }
+const out = { os: join(root, 'og-image.png'), translatr: join(root, 'translatr-src', 'public', 'og-image.png'), doom: join(root, 'doomscroll', 'og-image.png'), grass: join(root, 'touchgrass', 'og-image.png'), strife: join(root, 'strife', 'og-image.png') }
 const ctx = await browser.newContext({ viewport: { width: 1200, height: 630 } })
 const page = await ctx.newPage()
 for (const [card, file] of Object.entries(out)) {

@@ -19,6 +19,7 @@ const APPS = {
   snake: lazy(() => import('./arcade/Snake')),
   grass: lazy(() => import('./arcade/TouchGrass')),
   brains: lazy(() => import('./arcade/TouchGrass')),
+  strife: lazy(() => import('./arcade/TouchGrass')),
   loggle: lazy(() => import('./arcade/Loggle')),
 }
 const PHONE = PREMIUM_ITEMS.find((p) => p.id === 'smartphone')
@@ -309,6 +310,16 @@ function touchGrassProgress() {
   }
 }
 
+/** Your COUNTER-STRIFE record (it keeps its own, on nikstil.com). */
+function strifeRecord() {
+  try {
+    const r = JSON.parse(localStorage.getItem('strife-record') ?? 'null')
+    return r && r.wins + r.losses ? `${r.wins} won, ${r.losses} lost · ${r.kills} kills` : 'Not played'
+  } catch {
+    return 'Not played'
+  }
+}
+
 /** Whether today's LOGGLE is done, and your streak. */
 function loggleProgress(stats) {
   const d = new Date()
@@ -328,6 +339,7 @@ function progress(stats) {
     snake: stats.snakeBest ? `Best: ${stats.snakeBest} bills in one game` : 'Not played',
     grass: touchGrassProgress(),
     brains: 'Saves on nikstil.com',
+    strife: strifeRecord(),
     loggle: loggleProgress(stats),
   }
 }
