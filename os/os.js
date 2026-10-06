@@ -23,16 +23,16 @@
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱' },
-    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱' },
-    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣' },
+    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯' },
+    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨' },
   }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
@@ -54,6 +54,7 @@
     loggle: { title: 'LOGGLE', icon: 'loggle', width: 480, init: initLoggle },
     browser: { title: 'BobbyBrowser', icon: 'browser', width: 900, init: initBrowser },
     mobile: { title: 'LigmaPhone', icon: 'mobile', width: 400, init: initMobile },
+    strife: { title: 'COUNTER-STRIFE', icon: 'strife', width: 900, init: initStrife },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
     messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
@@ -551,6 +552,11 @@
     $('.loggle-frame', el).src = '/loggle/?embed'
   }
 
+  /** COUNTER-STRIFE, 5v5 bomb defusal against bots (the page at /strife/). */
+  function initStrife(el) {
+    $('.strife-frame', el).src = '/strife/?embed'
+  }
+
   /** DOOMSCROLL.EXE runs in the window (the page at /doomscroll/, loaded only once it's opened). */
   function initDoom(el) {
     $('.doom-frame', el).src = '/doomscroll/?embed'
@@ -568,6 +574,7 @@
     { id: 'grass', label: 'LAWN OF THE DEAD', aspect: 960 / 672 },
     { id: 'phone', label: 'BRAINS FIRST', aspect: 960 / 672 },
     { id: 'loggle', label: 'LOGGLE' },
+    { id: 'strife', label: 'COUNTER-STRIFE', aspect: 16 / 9 },
   ]
   function initMobile(el, win) {
     const grid = $('.mp-grid', el)
@@ -739,6 +746,7 @@
     { icon: '🌱', name: 'LAWN OF THE DEAD', url: '/touchgrass/' },
     { icon: '🧠', name: 'BRAINS FIRST', url: '/touchphone/' },
     { icon: '🟩', name: 'LOGGLE', url: '/loggle/' },
+    { icon: '💣', name: 'COUNTER-STRIFE', url: '/strife/' },
     { icon: '🎞️', name: 'The GIF', url: '/gif/' },
     { icon: '📚', name: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
     { icon: '🎲', name: 'Random article', url: 'https://en.m.wikipedia.org/wiki/Special:Random' },

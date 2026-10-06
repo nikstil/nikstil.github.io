@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>COUNTER-STRIFE · nikstil.com</title>
+  <meta name="description" content="COUNTER-STRIFE: 5v5 bomb defusal against bots, in your browser. Dust 2 and Mirage, buy menu, recoil, smokes, flashes and the bomb.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="nikstil.com">
+  <meta property="og:url" content="https://nikstil.com/strife/">
+  <meta property="og:title" content="COUNTER-STRIFE">
+  <meta property="og:description" content="5v5 bomb defusal against bots, in your browser. Dust 2 and Mirage. Plant it, or defuse it.">
+  <meta property="og:image" content="https://nikstil.com/strife/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="COUNTER-STRIFE: a tactical shooter on Dust 2 and Mirage">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="COUNTER-STRIFE">
+  <meta name="twitter:description" content="5v5 bomb defusal against bots, in your browser. Dust 2 and Mirage. Plant it, or defuse it.">
+  <meta name="twitter:image" content="https://nikstil.com/strife/og-image.png">
+  <meta name="theme-color" content="#0f1216">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%230f1216'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E💣%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/strife/style.css">
+  <script type="module" src="/strife/app.js"></script>
+</head>
+<body>
+  <main class="game" id="game">
+    <div class="stage" id="stage"></div>
+
+    <!-- ===== HUD ===== -->
+    <div class="hud" id="hud" hidden>
+      <div class="radar-wrap">
+        <canvas class="radar" id="radar" width="200" height="200" aria-label="Radar"></canvas>
+        <div class="place" id="place"></div>
+      </div>
+
+      <div class="topbar">
+        <div class="team-alive t" id="alive-t"></div>
+        <div class="score t"><span id="score-t">0</span></div>
+        <div class="clock" id="clock">1:55</div>
+        <div class="score ct"><span id="score-ct">0</span></div>
+        <div class="team-alive ct" id="alive-ct"></div>
+      </div>
+
+      <ol class="killfeed" id="killfeed" aria-live="polite"></ol>
+
+      <div class="crosshair" id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+      <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
+      <div class="scope" id="scope" hidden><i class="h"></i><i class="v"></i></div>
+      <div class="damage" id="damage"></div>
+      <div class="flashbang" id="flashbang"></div>
+
+      <div class="center-msg" id="center-msg"></div>
+      <div class="hint" id="hint"></div>
+      <div class="progress" id="progress" hidden><span>Planting…</span><div class="bar"><i id="progress-bar"></i></div></div>
+
+      <div class="bottom-left">
+        <div class="money" id="money">$800</div>
+        <div class="vitals">
+          <div class="vital"><span class="ico">✚</span><b id="hp">100</b></div>
+          <div class="vital"><span class="ico">⛨</span><b id="armor">0</b></div>
+          <div class="kit" id="kit" hidden title="Defuse kit">✂</div>
+          <div class="bomb-carry" id="bomb-carry" hidden title="You have the bomb">💣</div>
+        </div>
+      </div>
+      <div class="bottom-right">
+        <div class="nades" id="nades"></div>
+        <div class="weapon-name" id="weapon-name">Pistol</div>
+        <div class="ammo"><b id="clip">20</b><span id="reserve">/ 120</span></div>
+      </div>
+
+      <div class="spectate" id="spectate" hidden></div>
+      <div class="banner" id="banner" hidden><b id="banner-title"></b><span id="banner-sub"></span><em id="banner-mvp"></em></div>
+    </div>
+
+    <!-- ===== Buy menu ===== -->
+    <section class="panel buy" id="buy" hidden aria-label="Buy menu">
+      <header><h2>Buy</h2><span class="buy-money" id="buy-money">$800</span><span class="buy-time" id="buy-time"></span><button class="x" data-do="close-buy" aria-label="Close">✕</button></header>
+      <div class="buy-cats" id="buy-cats"></div>
+      <p class="buy-note" id="buy-note">Press B to close · number keys pick a category, then an item</p>
+    </section>
+
+    <!-- ===== Scoreboard ===== -->
+    <section class="panel scoreboard" id="scoreboard" hidden aria-label="Scoreboard">
+      <div class="sb-team ct"><h3>Counter-Terrorists <b id="sb-ct-score">0</b></h3><table id="sb-ct"></table></div>
+      <div class="sb-team t"><h3>Terrorists <b id="sb-t-score">0</b></h3><table id="sb-t"></table></div>
+      <p class="sb-foot" id="sb-foot"></p>
+    </section>
+
+    <!-- ===== Touch controls ===== -->
+    <div class="touch" id="touch" hidden>
+      <div class="stick" id="stick"><i id="stick-knob"></i></div>
+      <div class="look" id="look"></div>
+      <button class="tb fire" data-t="fire">FIRE</button>
+      <button class="tb jump" data-t="jump">⤒</button>
+      <button class="tb crouch" data-t="crouch">⤓</button>
+      <button class="tb reload" data-t="reload">R</button>
+      <button class="tb use" data-t="use">E</button>
+      <button class="tb alt" data-t="alt">◎</button>
+      <button class="tb swap" data-t="swap">⇄</button>
+      <button class="tb nade" data-t="nade">●</button>
+      <button class="tb buy-btn" data-t="buy">$</button>
+      <button class="tb score-btn" data-t="score">☰</button>
+      <button class="tb pause-btn" data-t="pause">❚❚</button>
+    </div>
+
+    <!-- ===== Menus ===== -->
+    <section class="menu main-menu" id="menu">
+      <div class="menu-side">
+        <h1 class="logo">COUNTER<span>-</span>STRIFE</h1>
+        <p class="tag">5v5 bomb defusal against bots</p>
+        <div class="menu-section">
+          <h2>Map</h2>
+          <div class="maps" id="maps"></div>
+        </div>
+        <div class="menu-section row-2">
+          <div>
+            <h2>Side</h2>
+            <div class="seg" id="seg-team">
+              <button data-v="T">Terrorists</button><button data-v="CT">Counter-Terrorists</button><button data-v="auto">Auto</button>
+            </div>
+          </div>
+          <div>
+            <h2>Bots</h2>
+            <div class="seg" id="seg-diff">
+              <button data-v="0">Easy</button><button data-v="1">Normal</button><button data-v="2">Hard</button><button data-v="3">Expert</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-section row-2">
+          <div>
+            <h2>Match</h2>
+            <div class="seg" id="seg-length">
+              <button data-v="5">Quick (first to 5)</button><button data-v="9">Short (first to 9)</button><button data-v="13">Long (first to 13)</button>
+            </div>
+          </div>
+          <div>
+            <h2>Teams</h2>
+            <div class="seg" id="seg-size">
+              <button data-v="1">1v1</button><button data-v="3">3v3</button><button data-v="5">5v5</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-buttons">
+          <button class="go" data-do="play">▶ Play</button>
+          <button class="ghost" data-do="practice" title="Walk the map with no bots">Walk the map</button>
+          <button class="ghost" data-do="settings">Settings</button>
+          <button class="ghost" data-do="controls">Controls</button>
+        </div>
+        <p class="record" id="record"></p>
+        <p class="fine">Fan-made, unofficial: recreations of two classic bomb-defusal maps, built from scratch. Every model, texture and sound is new.</p>
+      </div>
+    </section>
+
+    <section class="menu pause-menu" id="pause" hidden>
+      <div class="menu-card">
+        <h2>Paused</h2>
+        <button class="go" data-do="resume">Resume</button>
+        <button class="ghost" data-do="settings">Settings</button>
+        <button class="ghost" data-do="controls">Controls</button>
+        <button class="ghost danger" data-do="quit">Leave match</button>
+      </div>
+    </section>
+
+    <section class="menu settings" id="settings" hidden>
+      <div class="menu-card wide">
+        <h2>Settings</h2>
+        <label class="setting"><span>Mouse sensitivity</span><input type="range" id="set-sens" min="0.2" max="6" step="0.05"><output id="out-sens"></output></label>
+        <label class="setting"><span>Field of view</span><input type="range" id="set-fov" min="60" max="100" step="1"><output id="out-fov"></output></label>
+        <label class="setting"><span>Volume</span><input type="range" id="set-vol" min="0" max="100" step="1"><output id="out-vol"></output></label>
+        <label class="setting"><span>Graphics</span>
+          <select id="set-quality"><option value="low">Low (fast)</option><option value="medium">Medium</option><option value="high">High (shadows)</option></select>
+        </label>
+        <label class="setting"><span>Crosshair colour</span>
+          <select id="set-cross"><option value="#4dff6a">Green</option><option value="#ffffff">White</option><option value="#29e5ff">Cyan</option><option value="#ffe14d">Yellow</option><option value="#ff4d6d">Pink</option></select>
+        </label>
+        <label class="setting check"><input type="checkbox" id="set-invert"><span>Invert mouse</span></label>
+        <button class="go" data-do="back">Done</button>
+      </div>
+    </section>
+
+    <section class="menu controls" id="controls" hidden>
+      <div class="menu-card wide">
+        <h2>Controls</h2>
+        <dl class="keys">
+          <dt>W A S D</dt><dd>Move</dd>
+          <dt>Mouse</dt><dd>Aim (click the game to grab the mouse)</dd>
+          <dt>Left click</dt><dd>Shoot · throw · plant (with the bomb out)</dd>
+          <dt>Right click</dt><dd>Scope (AWP) · heavy stab · lob a grenade</dd>
+          <dt>Shift</dt><dd>Walk (silent)</dd>
+          <dt>Ctrl / C</dt><dd>Crouch (crouch in the air to reach high boxes)</dd>
+          <dt>Space</dt><dd>Jump</dd>
+          <dt>R</dt><dd>Reload</dd>
+          <dt>1 2 3 4 5</dt><dd>Rifle · pistol · knife · grenades · bomb</dd>
+          <dt>Q</dt><dd>Last weapon</dd>
+          <dt>E</dt><dd>Hold to plant / defuse · pick up a gun</dd>
+          <dt>G</dt><dd>Drop your gun (or the bomb)</dd>
+          <dt>B</dt><dd>Buy menu (in spawn, early in the round)</dd>
+          <dt>Tab</dt><dd>Scoreboard</dd>
+          <dt>M</dt><dd>Sound on / off</dd>
+          <dt>Esc</dt><dd>Pause</dd>
+        </dl>
+        <button class="go" data-do="back">Got it</button>
+      </div>
+    </section>
+
+    <section class="menu over" id="over" hidden>
+      <div class="menu-card wide">
+        <h2 id="over-title">Victory</h2>
+        <p class="over-score" id="over-score"></p>
+        <div class="over-board" id="over-board"></div>
+        <div class="menu-buttons">
+          <button class="go" data-do="again">Play again</button>
+          <button class="ghost" data-do="quit">Main menu</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="loading" id="loading" hidden><span>Loading…</span></div>
+    <a class="home-link" href="/" title="Back to nikstil.com">nikstil.com</a>
+    <p class="nogl" id="nogl" hidden>COUNTER-STRIFE needs WebGL, which this browser has switched off.</p>
+  </main>
+</body>
+</html>

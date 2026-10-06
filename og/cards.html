@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- The link-preview images (1200×630) for nikstil.com, TRANSLATR™ and DOOMSCROLL.EXE.
-     og/render.mjs opens this with ?card=os|translatr|doom and screenshots of the real pages in
+     og/render.mjs opens this with ?card=os|translatr|doom|grass|strife and screenshots of the real pages in
      og/shots/ (it takes them itself), then saves the PNGs where each page's og:image points. -->
 <html lang="en">
 <head>
@@ -57,6 +57,16 @@
   .doom li { font-size: 26px; color: #f4ded4; }
   .doom li::before { background: #e8261b; border-radius: 2px; top: 10px; }
   .doom .foot { left: 62px; bottom: 44px; color: #ffcf6b; text-shadow: none; font-size: 28px; }
+  /* COUNTER-STRIFE */
+  .strife { color: #e9edf2; background: radial-gradient(ellipse at 75% 20%, #3a2f1c 0, #15181d 55%, #0b0d10 100%); }
+  .strife .logo { position: absolute; left: 60px; top: 50px; font: italic 900 60px/1 "Segoe UI", "Arial Black", sans-serif; color: #fff; text-shadow: 0 4px 0 #000, 0 0 30px rgb(227 172 72 / 0.35); }
+  .strife .logo span { color: #e3ac48; }
+  .strife .tag { position: absolute; left: 62px; top: 124px; font: 700 20px/1.2 "Segoe UI", sans-serif; letter-spacing: 0.14em; color: #b9c2cc; }
+  .strife ul { position: absolute; left: 62px; top: 196px; width: 440px; gap: 18px; }
+  .strife li { font-size: 25px; color: #e9edf2; }
+  .strife li::before { background: #e3ac48; border-radius: 2px; top: 10px; }
+  .strife .foot { left: 62px; bottom: 44px; color: #ffd06a; text-shadow: none; font-size: 28px; }
+  .strife .screen { position: absolute; right: 44px; top: 120px; width: 620px; border-radius: 8px; box-shadow: 0 0 0 2px #2a2f36, 0 22px 60px rgb(0 0 0 / 0.7), 0 0 60px rgb(227 172 72 / 0.18); }
   .doom .screen { position: absolute; right: 50px; top: 150px; width: 580px; border: 4px solid #5c1a12; border-radius: 6px; box-shadow: 0 0 0 2px #200403, 0 20px 60px rgb(0 0 0 / 0.7), 0 0 60px rgb(232 38 27 / 0.25); image-rendering: pixelated; }
 </style>
 </head>
@@ -123,6 +133,19 @@
       <li>Plus BRAINS FIRST: play the zombies</li>
     </ul>
     <div class="foot">Play free at nikstil.com/touchgrass</div>
+  </section>
+
+  <!-- COUNTER-STRIFE -->
+  <section class="card strife" id="strife">
+    <div class="logo">COUNTER<span>-</span>STRIFE</div>
+    <div class="tag">5V5 BOMB DEFUSAL AGAINST BOTS</div>
+    <ul>
+      <li>Dust 2 and Mirage, rebuilt from scratch</li>
+      <li>Buy menu, recoil, smokes, flashes and the bomb</li>
+      <li>Bots that hold angles, rotate and retake</li>
+    </ul>
+    <img class="screen" data-src="strife.png" alt="">
+    <div class="foot">Play free at nikstil.com/strife</div>
   </section>
 
   <script>

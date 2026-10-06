@@ -52,6 +52,11 @@
       "title": "LOGGLE",
       "hidden": false
     },
+    "strife": {
+      "label": "COUNTER-STRIFE",
+      "title": "COUNTER-STRIFE",
+      "hidden": false
+    },
     "browser": {
       "label": "BobbyBrowser",
       "title": "BobbyBrowser",
