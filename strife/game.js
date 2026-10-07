@@ -166,10 +166,10 @@ export class Game {
     const order = [...this.actors].sort(() => Math.random() - 0.5)
     for (const a of order) {
       const pts = this.map.spawns[a.team]
-      const [sx, sz] = pts[spawnIdx[a.team]++ % pts.length]
+      const [sx, sz, sy] = pts[spawnIdx[a.team]++ % pts.length]
       a.pos.x = sx + 0.5
       a.pos.z = sz + 0.5
-      a.pos.y = w.floorAt(a.pos.x, a.pos.z)
+      a.pos.y = w.floorAt(a.pos.x, a.pos.z, sy == null ? 50 : sy + 1)
       a.vel.x = a.vel.y = a.vel.z = 0
       // face the map's middle
       a.yaw = Math.atan2(-(this.map.w / 2 - a.pos.x), -(this.map.d / 2 - a.pos.z))
@@ -261,7 +261,7 @@ export class Game {
     if (!a.alive) return false
     if (this.practice) return true
     if (this.phase !== 'freeze' && !(this.phase === 'live' && this.time - this.roundStart < this.rules.freeze + this.rules.buyTime)) return false
-    return this.world.inRect(this.map.buy[a.team], a.pos.x, a.pos.z)
+    return this.world.inRect(this.map.buy[a.team], a.pos.x, a.pos.z, a.pos.y)
   }
   /** Buys an item for `a`. Returns '' or why not. */
   buy(a, id) {
@@ -535,7 +535,7 @@ export class Game {
       victim.inv.bomb = false
       this.bomb.state = 'dropped'
       this.bomb.carrier = null
-      this.bomb.pos = { x: victim.pos.x, y: this.world.groundUnder(victim.pos.x, victim.pos.z, 0.1), z: victim.pos.z }
+      this.bomb.pos = { x: victim.pos.x, y: this.world.groundUnder(victim.pos.x, victim.pos.z, 0.1, victim.pos.y + 0.5), z: victim.pos.z }
       this.emit('bombDropped', { pos: this.bomb.pos })
     }
     victim.inv.grenades = []
@@ -553,7 +553,7 @@ export class Game {
     const off = thrown ? 1.4 : 0.2
     const x = a.pos.x + d.x * off
     const z = a.pos.z + d.z * off
-    const drop = { id: s.id, clip: s.clip, reserve: s.reserve, pos: { x, y: this.world.groundUnder(x, z, 0.1), z }, yaw: Math.random() * 6.28, at: this.time }
+    const drop = { id: s.id, clip: s.clip, reserve: s.reserve, pos: { x, y: this.world.groundUnder(x, z, 0.1, a.pos.y + 0.5), z }, yaw: Math.random() * 6.28, at: this.time }
     this.drops.push(drop)
     this.emit('drop', drop)
     if (a.active === slot) this.switchTo(a, a.inv.primary ? 'primary' : a.inv.pistol ? 'pistol' : 'knife', true)
@@ -702,7 +702,7 @@ export class Game {
 
   // ================= The bomb =================
   inSite(a) {
-    for (const [k, rr] of Object.entries(this.map.sites)) if (this.world.inRect(rr, a.pos.x, a.pos.z)) return k
+    for (const [k, rr] of Object.entries(this.map.sites)) if (this.world.inRect(rr, a.pos.x, a.pos.z, a.pos.y)) return k
     return null
   }
   /** Hold to plant (Ts with the bomb, on a site) or to defuse (CTs at the bomb). */
@@ -894,7 +894,7 @@ export class Game {
     if (a.onGround) a.airTuck = false
     if (landed) {
       if (landed > 6) this.sound('land', a.pos, { who: a, range: 18 })
-      if (landed > 11) this.damage(a, null, (landed - 11) * 9, 1, 'legs', 'fall', null, null)
+      if (landed > 14.5) this.damage(a, null, (landed - 14.5) * 9, 1, 'legs', 'fall', null, null)
     }
     // Footsteps: running makes noise, walking and crouching don't.
     const hs = Math.hypot(v.x, v.z)
@@ -1029,14 +1029,14 @@ export class Game {
         this.bomb.carrier = null
         const x = a.pos.x + d.x * 1.3
         const z = a.pos.z + d.z * 1.3
-        this.bomb.pos = { x, y: this.world.groundUnder(x, z, 0.1), z }
+        this.bomb.pos = { x, y: this.world.groundUnder(x, z, 0.1, a.pos.y + 0.5), z }
         this.bomb.dropAt = this.time
         this.emit('bombDropped', { pos: this.bomb.pos })
         this.switchTo(a, a.inv.primary ? 'primary' : 'pistol', true)
       } else if (a.active === 'primary' || a.active === 'pistol') this.dropWeapon(a, a.active, true)
     }
     if (cmd.pickup) {
-      const d = this.drops.find((d) => Math.hypot(a.pos.x - d.pos.x, a.pos.z - d.pos.z) < 1.6)
+      const d = this.drops.find((d) => Math.hypot(a.pos.x - d.pos.x, a.pos.z - d.pos.z) < 1.6 && Math.abs(a.pos.y - d.pos.y) < 1.5)
       if (d) this.pickUp(a, d)
     }
     this.moveActor(a, cmd, dt)

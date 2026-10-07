@@ -100,6 +100,7 @@ let mode = 'menu' // 'menu' (a bot match plays behind it) | 'play'
 let paused = false
 let watched = null // whose eyes we're looking through
 let radarImg = null
+let radarLow = null
 const look = { yaw: 0, pitch: 0 }
 let camY = null
 let orbit = 0
@@ -201,6 +202,7 @@ function start({ demo = false, practice = false } = {}) {
   view.load(game)
   resize()
   radarImg = radarImage(map)
+  radarLow = map.radarSplit != null ? radarImage(map, true) : null
   mode = demo ? 'menu' : 'play'
   watched = game.player
   if (game.player) {
@@ -828,7 +830,7 @@ function updateHud(dt) {
       setText('money', m)
     }
   }
-  setText('place', w ? g.world.calloutAt(w.pos.x, w.pos.z) : '')
+  setText('place', w ? g.world.calloutAt(w.pos.x, w.pos.z, w.pos.y) : '')
   // hints and progress
   let hint = ''
   let prog = null
@@ -915,7 +917,8 @@ function drawRadar() {
   g.scale(scale, scale)
   g.translate(-me.pos.x, -me.pos.z)
   g.globalAlpha = 0.9
-  g.drawImage(radarImg, 0, 0, radarImg.width / 8, radarImg.height / 8)
+  const rimg = radarLow && me.pos.y < game.map.radarSplit ? radarLow : radarImg
+  g.drawImage(rimg, 0, 0, rimg.width / 8, rimg.height / 8)
   g.globalAlpha = 1
   const now = game.time
   const myTeam = me.team

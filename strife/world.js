@@ -1,54 +1,77 @@
-// The world as the game sees it: the map's height grid, moving bodies through it, tracing
-// bullets and sight lines, and finding paths for the bots. No rendering here (see render.js).
+// The world as the game sees it: the map's columns of solid spans, moving bodies through them,
+// tracing bullets and sight lines, and finding paths for the bots (on every floor: Nuke's B site
+// is right under A). No rendering here (see render.js).
 
-import { WALL_H } from './maps.js'
+import { WALL_H, INF, MAXS } from './maps.js'
 
 export const GRAVITY = 20
 export const STEP = 0.55 // the highest stair you walk up without jumping
-const SOLID = 1e6
+const S = MAXS
+const CLEAR = 1.85 // headroom a bot needs to walk somewhere
 
 export class World {
   constructor(map) {
     this.map = map
     this.w = map.w
     this.d = map.d
-    this.floor = map.floor
-    this.ceil = map.ceil
+    this.sb = map.sb
+    this.st = map.st
+    this.sc = map.sc
     this.smokes = [] // { x, y, z, r, until } (set by the game: smoke blocks sight)
+    this.fires = [] // { x, y, z, r, until } (molotovs)
     this.buildCallouts()
     this.buildNav()
   }
 
-  /** Floor height of a cell (outside the map is solid). */
-  fl(ix, iz) {
-    if (ix < 0 || iz < 0 || ix >= this.w || iz >= this.d) return SOLID
-    return this.floor[iz * this.w + ix]
+  inside(ix, iz) {
+    return ix >= 0 && iz >= 0 && ix < this.w && iz < this.d
   }
-  cl(ix, iz) {
-    if (ix < 0 || iz < 0 || ix >= this.w || iz >= this.d) return -SOLID
-    return this.ceil[iz * this.w + ix]
+  /** The top of the highest solid at or below y in a cell (what you'd stand on). */
+  floorBelow(ix, iz, y) {
+    if (!this.inside(ix, iz)) return -INF
+    const i = (iz * this.w + ix) * S
+    let best = -INF
+    for (let k = 0; k < this.sc[iz * this.w + ix]; k++) {
+      const t = this.st[i + k]
+      if (t <= y && t > best) best = t
+    }
+    return best
   }
-  floorAt(x, z) {
-    return this.fl(Math.floor(x), Math.floor(z))
+  /** The bottom of the lowest solid at or above y in a cell (the ceiling). */
+  ceilAbove(ix, iz, y) {
+    if (!this.inside(ix, iz)) return -INF
+    const i = (iz * this.w + ix) * S
+    let best = INF
+    for (let k = 0; k < this.sc[iz * this.w + ix]; k++) {
+      const b = this.sb[i + k]
+      if (b >= y && b < best) best = b
+    }
+    return best
   }
-  /** The highest floor under a round footprint (what you stand on). */
-  groundUnder(x, z, r) {
-    let h = -SOLID
-    for (let iz = Math.floor(z - r); iz <= Math.floor(z + r); iz++) for (let ix = Math.floor(x - r); ix <= Math.floor(x + r); ix++) h = Math.max(h, this.fl(ix, iz))
+  /** The ground at a point: the highest floor at or below y (default: anything you could stand on). */
+  floorAt(x, z, y = 50) {
+    return this.floorBelow(Math.floor(x), Math.floor(z), y)
+  }
+  /** The highest floor under a round footprint, reachable from height y. */
+  groundUnder(x, z, r, y = 50) {
+    let h = -INF
+    for (let iz = Math.floor(z - r); iz <= Math.floor(z + r); iz++) for (let ix = Math.floor(x - r); ix <= Math.floor(x + r); ix++) h = Math.max(h, this.floorBelow(ix, iz, y))
     return h
   }
-  ceilOver(x, z, r) {
-    let c = SOLID
-    for (let iz = Math.floor(z - r); iz <= Math.floor(z + r); iz++) for (let ix = Math.floor(x - r); ix <= Math.floor(x + r); ix++) c = Math.min(c, this.cl(ix, iz))
+  ceilOver(x, z, r, y) {
+    let c = INF
+    for (let iz = Math.floor(z - r); iz <= Math.floor(z + r); iz++) for (let ix = Math.floor(x - r); ix <= Math.floor(x + r); ix++) c = Math.min(c, this.ceilAbove(ix, iz, y))
     return c
   }
 
-  /** Would a body (feet at y, radius r, height h) overlap a wall, a too-high step, or a ceiling? */
+  /** Would a body (feet at y, radius r, height h) overlap something solid it can't step onto? */
   blocked(x, y, z, r, h, step) {
     for (let iz = Math.floor(z - r); iz <= Math.floor(z + r); iz++)
       for (let ix = Math.floor(x - r); ix <= Math.floor(x + r); ix++) {
-        if (this.fl(ix, iz) > y + step + 1e-4) return true
-        if (this.cl(ix, iz) < y + h - 1e-4) return true
+        if (!this.inside(ix, iz)) return true
+        const c = iz * this.w + ix
+        const i = c * S
+        for (let k = 0; k < this.sc[c]; k++) if (this.st[i + k] > y + step + 1e-4 && this.sb[i + k] < y + h - 1e-4) return true
       }
     return false
   }
@@ -62,7 +85,6 @@ export class World {
     const p = b.pos
     const v = b.vel
     const step = b.onGround ? STEP : 0
-    // Horizontal, one axis at a time, in short hops (nothing tunnels through a wall).
     const hops = Math.max(1, Math.ceil((Math.max(Math.abs(v.x), Math.abs(v.z)) * dt) / 0.25))
     for (let k = 0; k < hops; k++) {
       const dx = (v.x * dt) / hops
@@ -87,7 +109,7 @@ export class World {
       }
     }
     // Vertical: walk up and down stairs, fall off ledges, land.
-    const ground = this.groundUnder(p.x, p.z, b.r)
+    const ground = this.groundUnder(p.x, p.z, b.r, p.y + (b.onGround ? STEP + 0.01 : 0.02))
     let landed = 0
     if (b.onGround && v.y <= 0 && ground >= p.y - 0.6 && ground <= p.y + STEP + 0.01) {
       p.y = ground
@@ -102,7 +124,7 @@ export class World {
         b.onGround = true
       } else b.onGround = false
     }
-    const top = this.ceilOver(p.x, p.z, b.r)
+    const top = this.ceilOver(p.x, p.z, b.r, p.y + 0.05)
     if (p.y + b.h > top) {
       p.y = Math.max(ground, top - b.h)
       if (v.y > 0) v.y = 0
@@ -125,21 +147,29 @@ export class World {
     let tmz = dz !== 0 ? (dz > 0 ? iz + 1 - oz : oz - iz) * tdz : Infinity
     let t0 = 0
     let axis = -1
-    for (let guard = 0; guard < 600; guard++) {
+    for (let guard = 0; guard < 800; guard++) {
       const t1 = Math.min(tmx, tmz, maxT)
-      const f = this.fl(ix, iz)
-      const c = this.cl(ix, iz)
+      const side = () => (axis === 0 ? { t: t0, nx: -sx, ny: 0, nz: 0 } : { t: t0, nx: 0, ny: 0, nz: -sz })
+      if (!this.inside(ix, iz)) return t0 > 0 ? side() : null
       const y0 = oy + dy * t0
       const y1 = oy + dy * t1
-      if (t0 > 0 && (y0 < f || y0 > c)) return axis === 0 ? { t: t0, nx: -sx, ny: 0, nz: 0 } : { t: t0, nx: 0, ny: 0, nz: -sz }
-      if (dy < 0 && y1 < f) {
-        const t = (f - oy) / dy
-        if (t >= t0 - 1e-6) return { t: Math.max(t, t0), nx: 0, ny: 1, nz: 0 }
+      const c = iz * this.w + ix
+      const base = c * S
+      let hit = null
+      for (let k = 0; k < this.sc[c]; k++) {
+        const b = this.sb[base + k]
+        const t = this.st[base + k]
+        if (t0 > 0 && y0 > b && y0 < t) return side()
+        if (dy < 0 && y0 >= t && y1 < t) {
+          const th = (t - oy) / dy
+          if (th >= t0 - 1e-6 && (!hit || th < hit.t)) hit = { t: Math.max(th, t0), nx: 0, ny: 1, nz: 0 }
+        }
+        if (dy > 0 && y0 <= b && y1 > b) {
+          const th = (b - oy) / dy
+          if (th >= t0 - 1e-6 && (!hit || th < hit.t)) hit = { t: Math.max(th, t0), nx: 0, ny: -1, nz: 0 }
+        }
       }
-      if (dy > 0 && y1 > c) {
-        const t = (c - oy) / dy
-        if (t >= t0 - 1e-6) return { t: Math.max(t, t0), nx: 0, ny: -1, nz: 0 }
-      }
+      if (hit) return hit
       if (t1 >= maxT) return null
       if (tmx < tmz) {
         ix += sx
@@ -187,83 +217,110 @@ export class World {
 
   // ================= Places =================
   buildCallouts() {
-    const { w, d } = this
-    this.callout = new Int16Array(w * d).fill(-1)
-    this.map.callouts.forEach(([, rr], k) => {
-      for (let z = rr.z0; z < rr.z1; z++) for (let x = rr.x0; x < rr.x1; x++) if (x >= 0 && z >= 0 && x < w && z < d && this.callout[z * w + x] < 0) this.callout[z * w + x] = k
-    })
+    this.callouts = this.map.callouts
   }
-  calloutAt(x, z) {
-    const ix = Math.floor(x)
-    const iz = Math.floor(z)
-    if (ix < 0 || iz < 0 || ix >= this.w || iz >= this.d) return ''
-    const k = this.callout[iz * this.w + ix]
-    return k >= 0 ? this.map.callouts[k][0] : ''
+  calloutAt(x, z, y = 0) {
+    for (const [name, rr] of this.callouts) if (this.inRect(rr, x, z, y)) return name
+    return ''
   }
-  inRect(rr, x, z) {
-    return x >= rr.x0 && x < rr.x1 && z >= rr.z0 && z < rr.z1
+  inRect(rr, x, z, y = 0) {
+    return x >= rr.x0 && x < rr.x1 && z >= rr.z0 && z < rr.z1 && y >= (rr.y0 ?? -INF) && y <= (rr.y1 ?? INF)
   }
 
   // ================= Navigation =================
+  // A node is a place to stand: a cell and one of its spans' tops (with headroom above it).
   buildNav() {
     const { w, d } = this
-    const n = w * d
+    const n = w * d * S
     this.walk = new Uint8Array(n)
+    this.navH = new Float32Array(n)
+    this.navTop = new Float32Array(n) // how high the air goes above it
     this.cost = new Float32Array(n)
-    for (let i = 0; i < n; i++) this.walk[i] = this.floor[i] < WALL_H - 0.1 && this.ceil[i] - this.floor[i] >= 1.9 ? 1 : 0
-    // Cells beside a wall or a drop cost more, so paths keep off the walls.
-    for (let z = 0; z < d; z++)
-      for (let x = 0; x < w; x++) {
-        const i = z * w + x
-        if (!this.walk[i]) continue
-        let near = 0
-        for (let oz = -1; oz <= 1; oz++)
-          for (let ox = -1; ox <= 1; ox++) {
-            const j = this.idx(x + ox, z + oz)
-            if (j < 0 || !this.walk[j] || Math.abs(this.floor[j] - this.floor[i]) > STEP) near++
-          }
-        this.cost[i] = near ? 1.6 : 0
+    for (let c = 0; c < w * d; c++) {
+      for (let k = 0; k < this.sc[c]; k++) {
+        const t = this.st[c * S + k]
+        if (t >= WALL_H - 0.1) continue
+        const above = k + 1 < this.sc[c] ? this.sb[c * S + k + 1] : INF
+        if (above - t < CLEAR) continue
+        this.walk[c * S + k] = 1
+        this.navH[c * S + k] = t
+        this.navTop[c * S + k] = above
       }
-    const g = new Float32Array(n)
-    const f = new Float32Array(n)
-    const from = new Int32Array(n)
-    const mark = new Uint32Array(n)
-    const closed = new Uint32Array(n)
-    this.astar = { g, f, from, mark, closed, gen: 0, heap: new Int32Array(n * 4), size: 0 }
+    }
+    // Places beside a wall or a drop cost more, so paths keep off the walls.
+    for (let c = 0; c < w * d; c++)
+      for (let k = 0; k < S; k++) {
+        const node = c * S + k
+        if (!this.walk[node]) continue
+        const x = c % w
+        const z = (c / w) | 0
+        let near = 0
+        for (let oz = -1; oz <= 1; oz++) for (let ox = -1; ox <= 1; ox++) if ((ox || oz) && this.stepTo(node, x + ox, z + oz) < 0) near++
+        this.cost[node] = near ? 1.6 : 0
+      }
+    this.astar = { g: new Float32Array(n), f: new Float32Array(n), from: new Int32Array(n), mark: new Uint32Array(n), closed: new Uint32Array(n), gen: 0, heap: new Int32Array(n * 4), size: 0 }
   }
-  idx(x, z) {
-    return x < 0 || z < 0 || x >= this.w || z >= this.d ? -1 : z * this.w + x
-  }
-  canStep(i, j) {
-    return j >= 0 && this.walk[j] && Math.abs(this.floor[j] - this.floor[i]) <= STEP
-  }
-  /** The walkable cell nearest a point. */
-  nearestCell(x, z) {
-    const cx = Math.floor(x)
-    const cz = Math.floor(z)
-    for (let rad = 0; rad < 12; rad++)
-      for (let oz = -rad; oz <= rad; oz++)
-        for (let ox = -rad; ox <= rad; ox++) {
-          if (Math.max(Math.abs(ox), Math.abs(oz)) !== rad) continue
-          const j = this.idx(cx + ox, cz + oz)
-          if (j >= 0 && this.walk[j]) return j
-        }
+  /** The node in cell (x, z) you can walk to from `node` (same floor, within a step), or -1. */
+  stepTo(node, x, z) {
+    if (!this.inside(x, z)) return -1
+    const h = this.navH[node]
+    const top = this.navTop[node]
+    const c = z * this.w + x
+    for (let k = 0; k < S; k++) {
+      const j = c * S + k
+      if (!this.walk[j]) continue
+      const h2 = this.navH[j]
+      if (Math.abs(h2 - h) > STEP) continue
+      if (Math.min(top, this.navTop[j]) - Math.max(h, h2) < CLEAR) continue
+      return j
+    }
     return -1
   }
-  /** A walking route between two points: a list of [x, z] corners (smoothed), or null. */
-  path(sx, sz, tx, tz) {
+  /** The standing place nearest a point (on the floor closest to height y). */
+  nearestNode(x, z, y = 50) {
+    const cx = Math.floor(x)
+    const cz = Math.floor(z)
+    for (let rad = 0; rad < 12; rad++) {
+      let best = -1
+      let bd = Infinity
+      for (let oz = -rad; oz <= rad; oz++)
+        for (let ox = -rad; ox <= rad; ox++) {
+          if (Math.max(Math.abs(ox), Math.abs(oz)) !== rad || !this.inside(cx + ox, cz + oz)) continue
+          const c = (cz + oz) * this.w + cx + ox
+          for (let k = 0; k < S; k++) {
+            const j = c * S + k
+            if (!this.walk[j]) continue
+            // prefer the floor you're on (at or just under y), then the nearest
+            const h = this.navH[j]
+            const dy = h <= y + STEP ? y - h : (h - y) * 3
+            const dd = dy + (Math.abs(ox) + Math.abs(oz)) * 0.5
+            if (dd < bd) {
+              bd = dd
+              best = j
+            }
+          }
+        }
+      if (best >= 0) return best
+    }
+    return -1
+  }
+  /** A walking route between two points: a list of [x, z, y] corners (smoothed), or null. */
+  path(sx, sz, sy, tx, tz, ty) {
     const { w } = this
-    const start = this.nearestCell(sx, sz)
-    const goal = this.nearestCell(tx, tz)
+    const start = this.nearestNode(sx, sz, sy)
+    const goal = this.nearestNode(tx, tz, ty)
     if (start < 0 || goal < 0) return null
     const A = this.astar
     const gen = ++A.gen
-    const gx = goal % w
-    const gz = (goal / w) | 0
+    const gc = (goal / S) | 0
+    const gx = gc % w
+    const gz = (gc / w) | 0
+    const gh = this.navH[goal]
     const hfun = (i) => {
-      const dx = Math.abs((i % w) - gx)
-      const dz = Math.abs(((i / w) | 0) - gz)
-      return Math.max(dx, dz) + 0.414 * Math.min(dx, dz)
+      const c = (i / S) | 0
+      const dx = Math.abs((c % w) - gx)
+      const dz = Math.abs(((c / w) | 0) - gz)
+      return Math.max(dx, dz) + 0.414 * Math.min(dx, dz) + Math.abs(this.navH[i] - gh) * 0.5
     }
     A.size = 0
     const push = (i) => {
@@ -300,7 +357,7 @@ export class World {
     push(start)
     let found = false
     let iters = 0
-    while (A.size && iters++ < 20000) {
+    while (A.size && iters++ < 30000) {
       const i = pop()
       if (A.closed[i] === gen) continue
       A.closed[i] = gen
@@ -308,14 +365,15 @@ export class World {
         found = true
         break
       }
-      const x = i % w
-      const z = (i / w) | 0
+      const c = (i / S) | 0
+      const x = c % w
+      const z = (c / w) | 0
       for (let oz = -1; oz <= 1; oz++)
         for (let ox = -1; ox <= 1; ox++) {
           if (!ox && !oz) continue
-          const j = this.idx(x + ox, z + oz)
-          if (!this.canStep(i, j) || A.closed[j] === gen) continue
-          if (ox && oz && (!this.canStep(i, this.idx(x + ox, z)) || !this.canStep(i, this.idx(x, z + oz)))) continue
+          const j = this.stepTo(i, x + ox, z + oz)
+          if (j < 0 || A.closed[j] === gen) continue
+          if (ox && oz && (this.stepTo(i, x + ox, z) < 0 || this.stepTo(i, x, z + oz) < 0)) continue
           const ng = A.g[i] + (ox && oz ? 1.414 : 1) + this.cost[j]
           if (A.mark[j] === gen && ng >= A.g[j]) continue
           A.mark[j] = gen
@@ -326,11 +384,14 @@ export class World {
         }
     }
     if (!found) return null
-    const cells = []
-    for (let i = goal; i >= 0; i = A.from[i]) cells.push(i)
-    cells.reverse()
-    // Smooth: from each corner, skip ahead to the farthest cell that can be walked to directly.
-    const pts = cells.map((i) => [(i % w) + 0.5, ((i / w) | 0) + 0.5])
+    const nodes = []
+    for (let i = goal; i >= 0; i = A.from[i]) nodes.push(i)
+    nodes.reverse()
+    const pts = nodes.map((i) => {
+      const c = (i / S) | 0
+      return [(c % w) + 0.5, ((c / w) | 0) + 0.5, this.navH[i]]
+    })
+    // Smooth: from each corner, skip ahead to the farthest point that can be walked to directly.
     const out = [pts[0]]
     let k = 0
     while (k < pts.length - 1) {
@@ -343,10 +404,10 @@ export class World {
       out.push(pts[best])
       k = best
     }
-    out[out.length - 1] = [tx, tz]
+    out[out.length - 1] = [tx, tz, pts[pts.length - 1][2]]
     return out
   }
-  /** Can a bot walk straight from a to b (no wall, no big step, room for its shoulders)? */
+  /** Can a bot walk straight from a to b (no wall, no big step or drop, room for its shoulders)? */
   walkLine(a, b) {
     const dx = b[0] - a[0]
     const dz = b[1] - a[1]
@@ -354,18 +415,20 @@ export class World {
     const n = Math.ceil(len / 0.3)
     const px = (-dz / (len || 1)) * 0.38
     const pz = (dx / (len || 1)) * 0.38
-    let prev = this.floorAt(a[0], a[1])
+    let y = a[2]
     for (let k = 1; k <= n; k++) {
       const x = a[0] + (dx * k) / n
       const z = a[1] + (dz * k) / n
+      let h = -INF
       for (const s of [0, 1, -1]) {
-        const j = this.idx(Math.floor(x + px * s), Math.floor(z + pz * s))
-        if (j < 0 || !this.walk[j]) return false
+        const ix = Math.floor(x + px * s)
+        const iz = Math.floor(z + pz * s)
+        const f = this.floorBelow(ix, iz, y + STEP)
+        if (y - f > STEP || this.ceilAbove(ix, iz, f + 0.01) - f < CLEAR || f >= WALL_H - 0.1) return false
+        if (s === 0) h = f
       }
-      const h = this.floorAt(x, z)
-      if (Math.abs(h - prev) > STEP) return false
-      prev = h
+      y = h
     }
-    return true
+    return Math.abs(y - b[2]) <= STEP
   }
 }

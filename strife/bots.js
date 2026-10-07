@@ -213,14 +213,16 @@ export class Brain {
     if (!this.goal) return { fx: 0, fz: 0, arrived: true }
     const gx = this.goal.x
     const gz = this.goal.z
-    if (Math.hypot(gx - a.pos.x, gz - a.pos.z) < (this.goal.r ?? 0.8)) return { fx: 0, fz: 0, arrived: true }
-    if (!this.path || !this.pathGoal || Math.hypot(this.pathGoal.x - gx, this.pathGoal.z - gz) > 1.5) {
-      this.path = g.world.path(a.pos.x, a.pos.z, gx, gz)
-      this.pathGoal = { x: gx, z: gz }
+    const gy = this.goal.y
+    const sameFloor = gy == null || Math.abs(g.world.floorAt(gx, gz, gy + 1) - a.pos.y) < 1.6
+    if (sameFloor && Math.hypot(gx - a.pos.x, gz - a.pos.z) < (this.goal.r ?? 0.8)) return { fx: 0, fz: 0, arrived: true }
+    if (!this.path || !this.pathGoal || this.pathGoal.y !== gy || Math.hypot(this.pathGoal.x - gx, this.pathGoal.z - gz) > 1.5) {
+      this.path = g.world.path(a.pos.x, a.pos.z, a.pos.y + 0.5, gx, gz, gy == null ? 50 : gy + 1)
+      this.pathGoal = { x: gx, z: gz, y: gy }
       this.pathIdx = 1
       if (!this.path) return { fx: 0, fz: 0, arrived: true }
     }
-    while (this.pathIdx < this.path.length - 1 && Math.hypot(this.path[this.pathIdx][0] - a.pos.x, this.path[this.pathIdx][1] - a.pos.z) < 0.7) this.pathIdx++
+    while (this.pathIdx < this.path.length - 1 && Math.hypot(this.path[this.pathIdx][0] - a.pos.x, this.path[this.pathIdx][1] - a.pos.z) < 0.7 && Math.abs((this.path[this.pathIdx][2] ?? a.pos.y) - a.pos.y) < 1.6) this.pathIdx++
     const [tx, tz] = this.path[Math.min(this.pathIdx, this.path.length - 1)]
     let fx = tx - a.pos.x
     let fz = tz - a.pos.z
@@ -252,9 +254,13 @@ export class Brain {
     }
     return { fx, fz, arrived: false, ahead: { x: tx, z: tz } }
   }
-  setGoal(x, z, r = 0.8) {
-    if (this.goal && Math.hypot(this.goal.x - x, this.goal.z - z) < 0.3) return
-    this.goal = { x, z, r }
+  setGoal(x, z, r = 0.8, y = null) {
+    if (this.goal && this.goal.y === y && Math.hypot(this.goal.x - x, this.goal.z - z) < 0.3) return
+    this.goal = { x, z, r, y }
+  }
+  /** Go to a map point [x, z, y?] (cell coordinates). */
+  goTo(p, r = 0.8) {
+    this.setGoal(p[0] + 0.5, p[1] + 0.5, r, p[2] ?? null)
   }
 
   // ================= What to do =================
@@ -269,7 +275,7 @@ export class Brain {
       // Nobody wants to be next to it when it goes.
       if (b.state === 'planted' && b.explodeAt - now < 7) {
         const away = this.escape(b.pos)
-        this.setGoal(away.x, away.z, 1.5)
+        this.setGoal(away.x, away.z, 1.5, away.y)
         this.holdLook = null
         return {}
       }
@@ -277,7 +283,7 @@ export class Brain {
         const posts = m.posts[b.site]
         const k = g.actors.filter((x) => x.team === 'T').indexOf(a) % posts.length
         const p = posts[k]
-        this.setGoal(p.at[0] + 0.5, p.at[1] + 0.5)
+        this.goTo(p.at)
         this.holdLook = { x: p.look[0], y: a.pos.y + 1.5, z: p.look[1] }
         return {}
       }
@@ -285,7 +291,7 @@ export class Brain {
         const ts = g.actors.filter((x) => x.team === 'T' && x.alive)
         const nearest = ts.sort((p, q) => dist2(p.pos, b.pos) - dist2(q.pos, b.pos))[0]
         if (nearest === a) {
-          this.setGoal(b.pos.x, b.pos.z, 0.3)
+          this.setGoal(b.pos.x, b.pos.z, 0.3, b.pos.y)
           this.holdLook = null
           return {}
         }
@@ -295,11 +301,11 @@ export class Brain {
       const late = g.roundTimeLeft < 30
       const stage = Math.max(0, pts.length - 3)
       if (this.wp < pts.length) {
-        const [x, z] = pts[this.wp]
-        if (Math.hypot(x + 0.5 - a.pos.x, z + 0.5 - a.pos.z) < 2.2) {
+        const [x, z, wy] = pts[this.wp]
+        if (Math.hypot(x + 0.5 - a.pos.x, z + 0.5 - a.pos.z) < 2.2 && (wy == null || Math.abs(a.pos.y - wy) < 1.6)) {
           if (this.wp === stage && liveFor < plan.execAt && !late && !as.lurk) {
             // wait for the go
-            this.setGoal(x + 0.5, z + 0.5, 1.2)
+            this.goTo(pts[this.wp], 1.2)
             const [nx, nz] = pts[Math.min(pts.length - 1, this.wp + 1)]
             this.holdLook = { x: nx, y: a.pos.y + 1.5, z: nz }
             return {}
@@ -311,8 +317,7 @@ export class Brain {
           }
           this.wp++
         }
-        const [tx, tz] = pts[Math.min(this.wp, pts.length - 1)]
-        this.setGoal(tx + 0.5, tz + 0.5, 1.6)
+        this.goTo(pts[Math.min(this.wp, pts.length - 1)], 1.6)
         this.holdLook = null
         return {}
       }
@@ -320,14 +325,14 @@ export class Brain {
       const site = as.lurk ? (plan.site === 'A' ? 'B' : 'A') : plan.site
       if (a.inv.bomb) {
         if (!this.plantSpot) this.plantSpot = pick(m.plant[site])
-        this.setGoal(this.plantSpot[0] + 0.5, this.plantSpot[1] + 0.5, 0.5)
+        this.goTo(this.plantSpot, 0.5)
         if (g.inSite(a) && Math.hypot(this.plantSpot[0] + 0.5 - a.pos.x, this.plantSpot[1] + 0.5 - a.pos.z) < 1.2) return { use: true }
         return {}
       }
       const posts = m.posts[site]
       const k = g.actors.filter((x) => x.team === 'T').indexOf(a) % posts.length
       const p = posts[k]
-      this.setGoal(p.at[0] + 0.5, p.at[1] + 0.5)
+      this.goTo(p.at)
       this.holdLook = { x: p.look[0], y: a.pos.y + 1.5, z: p.look[1] }
       return {}
     }
@@ -338,13 +343,13 @@ export class Brain {
       // Too late to make it (and not already on it): save yourself.
       if (b.defuser !== a && left < (a.kit ? 5.2 : 10.2) + dist / 6) {
         const away = this.escape(b.pos)
-        this.setGoal(away.x, away.z, 1.5)
+        this.setGoal(away.x, away.z, 1.5, away.y)
         this.holdLook = null
         return {}
       }
-      this.setGoal(b.pos.x, b.pos.z, 0.6)
+      this.setGoal(b.pos.x, b.pos.z, 0.6, b.pos.y)
       this.holdLook = null
-      const near = Math.hypot(b.pos.x - a.pos.x, b.pos.z - a.pos.z) < 1.5
+      const near = Math.hypot(b.pos.x - a.pos.x, b.pos.z - a.pos.z) < 1.5 && Math.abs(b.pos.y - a.pos.y) < 1.5
       const clear = !this.target && Object.values(this.seen).every((s) => now - s.at > 2.5)
       const timeLeft = b.explodeAt - now
       if (near && (clear || timeLeft < (a.kit ? 6 : 11))) return { use: true, crouch: true }
@@ -352,7 +357,7 @@ export class Brain {
     }
     const spot = this.area ? null : plan.hold[a.id]
     if (spot) {
-      this.setGoal(spot.at[0] + 0.5, spot.at[1] + 0.5)
+      this.goTo(spot.at)
       this.holdLook = { x: spot.look[0] + 0.5, y: a.pos.y + 1.5, z: spot.look[1] + 0.5 }
     }
     // Rotate when the Terrorists show up somewhere else.
@@ -363,7 +368,7 @@ export class Brain {
         this.area = hot
         const spots = m.holds[hot]
         const s = spots[a.id % spots.length]
-        this.setGoal(s.at[0] + 0.5, s.at[1] + 0.5)
+        this.goTo(s.at)
         this.holdLook = { x: s.look[0] + 0.5, y: a.pos.y + 1.5, z: s.look[1] + 0.5 }
       }
     }
@@ -381,7 +386,7 @@ export class Brain {
         best = p
       }
     }
-    return { x: best[0] + 0.5, z: best[1] + 0.5 }
+    return { x: best[0] + 0.5, z: best[1] + 0.5, y: best[2] ?? null }
   }
   /** A site the Terrorists have been seen at in the last few seconds (by any teammate). */
   hotSite() {
