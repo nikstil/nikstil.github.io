@@ -144,6 +144,7 @@
         <div class="menu-buttons">
           <button class="go" data-do="play">▶ Play</button>
           <button class="ghost" data-do="practice" title="Walk the map with no bots">Walk the map</button>
+          <button class="ghost" data-do="inventory">Inventory</button>
           <button class="ghost" data-do="settings">Settings</button>
           <button class="ghost" data-do="controls">Controls</button>
         </div>
@@ -208,10 +209,33 @@
       <div class="menu-card wide">
         <h2 id="over-title">Victory</h2>
         <p class="over-score" id="over-score"></p>
+        <p class="over-drop" id="over-drop"></p>
         <div class="over-board" id="over-board"></div>
         <div class="menu-buttons">
           <button class="go" data-do="again">Play again</button>
+          <button class="ghost" data-do="inventory">Inventory</button>
           <button class="ghost" data-do="quit">Main menu</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="menu inventory" id="inventory" hidden>
+      <div class="menu-card inv-card-wrap">
+        <header class="inv-head">
+          <h2>Inventory</h2>
+          <div class="inv-tabs"><button data-inv="tab" data-v="items">Skins</button><button data-inv="tab" data-v="cases">Cases</button></div>
+          <div class="inv-wallet"><span title="Credits: 1 per kill, 3 per round won, more for winning the match">ⓒ <b id="inv-credits">0</b></span><span title="Keys open cases">🔑 <b id="inv-keys">0</b></span><button class="ghost small" data-inv="key">Buy key (ⓒ 25)</button></div>
+          <button class="x" data-do="back" aria-label="Close">✕</button>
+        </header>
+        <p class="inv-note" id="inv-note"></p>
+        <div class="inv-body" id="inv-body"></div>
+      </div>
+      <div class="reel" id="reel" hidden>
+        <h2 id="reel-title">Opening…</h2>
+        <div class="reel-window" id="reel-window"><div class="reel-strip" id="reel-strip"></div><i class="reel-line"></i></div>
+        <div class="reel-result" id="reel-result" hidden>
+          <img alt=""><h3></h3><p></p>
+          <div class="menu-buttons"><button class="go" data-inv="reel-equip">Equip it</button><button class="ghost" data-inv="reel-close">Keep it</button></div>
         </div>
       </div>
     </section>

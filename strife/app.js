@@ -7,6 +7,8 @@ import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP } from './weapons.js'
 import { gunIcon } from './icons.js'
+import { skinMaterial } from './skins.js'
+import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch } from './inventory.js'
 import { DIFFICULTY } from './bots.js'
 import * as audio from './audio.js'
 
@@ -135,7 +137,10 @@ function hooks() {
         deathInfo = e
         record.deaths++
       }
-      if (e.attacker === game.player && e.victim.team !== game.player.team) record.kills++
+      if (e.attacker === game.player && e.victim.team !== game.player.team) {
+        record.kills++
+        if (!game.practice) rewardKill(e.weaponId)
+      }
     },
     knife({ a }) {
       if (a === watched) view?.slash()
@@ -176,6 +181,10 @@ function hooks() {
       const reasons = { elimination: winner === 'T' ? 'All Counter-Terrorists are dead' : 'All Terrorists are dead', bomb: 'The bomb exploded', defuse: 'The bomb has been defused', time: 'Time ran out: the bomb was never planted' }
       showBanner(winner, reasons[reason], mvp ? `MVP: ${mvp.name}${mvp === game.player ? ' (you!)' : ''}` : '')
       if (game.player) audio.play(winner === game.player.team ? 'win' : 'lose')
+      if (game.player && !game.practice && !over) {
+        const got = rewardRound(winner === game.player.team)
+        if (got) setTimeout(() => say(`Case drop: you received a ${got}`, 3), 1500)
+      }
       if (over) setTimeout(matchOver, 3500)
     },
     planted({ site }) {
@@ -201,9 +210,10 @@ function start({ demo = false, practice = false } = {}) {
   view?.dispose()
   const map = MAPS[settings.map]
   const team = demo ? null : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
-  game = new Game({ map, team, size: demo ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, rules: { roundsToWin: settings.length }, hooks: hooks() })
+  game = new Game({ map, team, size: demo ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
   const qq = QUALITY[settings.quality] ?? QUALITY.medium
   view = new View(renderer, { shadows: qq.shadows && renderer.shadowMap.enabled, shadowSize: qq.shadowSize })
+  view.skinMat = skinMaterial
   view.load(game)
   resize()
   radarImg = radarImage(map)
@@ -223,7 +233,7 @@ function start({ demo = false, practice = false } = {}) {
 
 // ================= Menus =================
 function show(id) {
-  for (const s of ['menu', 'pause', 'settings', 'controls', 'over']) $('#' + s).hidden = s !== id
+  for (const s of ['menu', 'pause', 'settings', 'controls', 'over', 'inventory']) $('#' + s).hidden = s !== id
   $('#hud').hidden = id === 'menu' || mode !== 'play'
   $('#touch').hidden = !coarse || mode !== 'play' || !!id
 }
@@ -343,6 +353,10 @@ document.addEventListener('click', (e) => {
   } else if (act === 'controls') {
     backTo = mode === 'play' ? 'pause' : 'menu'
     show('controls')
+  } else if (act === 'inventory') {
+    backTo = !$('#over').hidden ? 'over' : 'menu'
+    showInventory()
+    show('inventory')
   } else if (act === 'back') show(backTo)
   else if (act === 'resume') resume()
   else if (act === 'quit') {
@@ -370,6 +384,8 @@ function matchOver() {
   const won = me && game.winner === me.team
   if (me) won ? record.wins++ : record.losses++
   store.set(RKEY, record)
+  const got = me ? rewardMatch(won, me.mvps ?? 0) : ''
+  $('#over-drop').textContent = got ? `Case drop: ${got} · open it from Inventory` : ''
   $('#over-title').textContent = won ? 'Victory' : 'Defeat'
   $('#over-title').className = won ? 'win' : 'loss'
   hideBanner()
@@ -1051,6 +1067,7 @@ function frame(t) {
 // ================= Boot =================
 if (makeRenderer()) {
   buildMenu()
+  initInventory({ audio })
   syncSettings()
   start({ demo: true })
   show('menu')

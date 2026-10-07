@@ -239,3 +239,65 @@ html.touch .crosshair { --len: 6px; }
   .go { padding: 9px 20px; }
   .ghost { padding: 8px 12px; }
 }
+
+/* ===== Inventory, cases and the reel ===== */
+.over-drop { margin: 0; color: #ffd65a; font-weight: 600; text-align: center; }
+.inventory .inv-card-wrap { width: min(1080px, calc(100vw - 24px)); height: min(680px, calc(100vh - 24px)); grid-template-rows: auto auto 1fr; overflow: hidden; }
+.inv-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.inv-head h2 { margin: 0 !important; font-size: 18px !important; color: #fff !important; }
+.inv-tabs, .inv-filters { display: flex; gap: 4px; }
+.inv-tabs button, .inv-filters button { padding: 6px 12px; border: 1px solid var(--line); border-radius: 5px; background: rgba(255, 255, 255, 0.05); color: #ddd; font: 600 13px var(--font); cursor: pointer; }
+.inv-tabs button.sel, .inv-filters button.sel { background: #ffd65a; border-color: #ffd65a; color: #111; }
+.inv-wallet { display: flex; align-items: center; gap: 12px; margin-left: auto; font-size: 14px; }
+.inv-wallet b { font: 700 16px var(--font); color: #ffd65a; }
+.ghost.small { padding: 5px 10px; font-size: 12px; }
+.inv-head .x { position: static; }
+.inv-note { min-height: 0; margin: 0; color: #ff9b8a; font-size: 13px; opacity: 0; }
+.inv-note.show { animation: inv-note 3s; }
+@keyframes inv-note { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.inv-body { min-height: 0; display: grid; grid-template-rows: auto 1fr; gap: 10px; overflow: hidden; }
+.inv-split { min-height: 0; display: grid; grid-template-columns: 1fr auto; gap: 12px; overflow: hidden; }
+.inv-grid { min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); align-content: start; gap: 8px; padding-right: 4px; }
+.inv-empty { grid-column: 1 / -1; opacity: 0.7; }
+.inv-card { position: relative; display: grid; gap: 2px; padding: 6px 6px 8px; text-align: left; border: 1px solid var(--line); border-bottom: 3px solid var(--r); border-radius: 6px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), color-mix(in srgb, var(--r) 18%, transparent)); color: #eee; cursor: pointer; }
+.inv-card:hover, .inv-card.sel { border-color: var(--r); background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), color-mix(in srgb, var(--r) 30%, transparent)); }
+.inv-card img { width: 100%; height: 56px; object-fit: contain; }
+.inv-card b { font-size: 12px; line-height: 1.25; }
+.inv-card small { font-size: 11px; opacity: 0.65; }
+.inv-card em { position: absolute; top: 5px; left: 5px; padding: 1px 5px; border-radius: 3px; background: #7ce08a; color: #111; font: 700 10px var(--font); font-style: normal; }
+.inv-card .st { position: absolute; top: 5px; right: 5px; padding: 1px 4px; border-radius: 3px; background: #cf6a32; color: #fff; font: 700 10px var(--font); font-style: normal; }
+.inv-detail { width: 300px; overflow: auto; display: grid; align-content: start; gap: 6px; padding: 12px; border: 1px solid var(--r); border-radius: 8px; background: radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--r) 30%, transparent), rgba(0, 0, 0, 0.2) 70%); }
+.inv-detail img { width: 100%; height: 120px; object-fit: contain; }
+.inv-detail h3 { margin: 0; font-size: 16px; }
+.inv-detail .rar { margin: 0; color: var(--r); font-weight: 700; font-size: 13px; }
+.inv-detail dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 4px 0 8px; font-size: 13px; }
+.inv-detail dt { opacity: 0.6; }
+.inv-detail dd { margin: 0; }
+.case-grid { min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; align-content: start; }
+.case-card { display: grid; gap: 6px; align-content: start; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.case-box { height: 90px; display: grid; place-items: center; border-radius: 8px; background: linear-gradient(160deg, color-mix(in srgb, var(--c) 85%, #fff 15%), color-mix(in srgb, var(--c) 60%, #000 40%)); box-shadow: inset 0 -10px 0 rgba(0, 0, 0, 0.25), inset 0 2px 0 rgba(255, 255, 255, 0.25); }
+.case-box span { padding: 4px 10px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 4px; font: 900 18px var(--font); letter-spacing: 0.12em; text-transform: uppercase; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+.case-card h3 { margin: 0; font-size: 16px; }
+.case-n { margin: 0; font-size: 13px; opacity: 0.75; }
+.case-skins { display: grid; gap: 2px; max-height: 170px; overflow: auto; font-size: 12px; }
+.case-skins span { padding-left: 8px; border-left: 3px solid var(--r); }
+.case-skins .gold { color: #e4ae39; font-weight: 700; }
+.reel { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; justify-items: center; gap: 18px; background: rgba(6, 8, 11, 0.92); }
+.reel h2 { margin: 0; font-size: 18px !important; color: #fff !important; }
+.reel-window { position: relative; width: min(820px, calc(100vw - 32px)); height: 120px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #14181d; }
+.reel-strip { display: flex; gap: 8px; padding: 10px 0; will-change: transform; }
+.reel-card { flex: 0 0 150px; height: 98px; display: grid; grid-template-rows: 1fr auto; padding: 4px 6px; border-radius: 6px; border-bottom: 4px solid var(--r); background: linear-gradient(180deg, #2a2f36, color-mix(in srgb, var(--r) 35%, #1a1d22)); font-size: 11px; }
+.reel-card img { width: 100%; height: 60px; object-fit: contain; }
+.reel-card b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reel-card .gold-star { display: grid; place-items: center; font-size: 40px; color: #e4ae39; }
+.reel-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #ffd65a; box-shadow: 0 0 10px #ffd65a; }
+.reel-result { display: grid; justify-items: center; gap: 6px; padding: 16px 24px; border: 1px solid var(--r); border-radius: 10px; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--r) 40%, transparent), transparent 70%); animation: reel-pop 0.4s ease-out; }
+.reel-result img { width: min(400px, 80vw); height: 160px; object-fit: contain; }
+.reel-result h3 { margin: 0; font-size: 20px; }
+.reel-result p { margin: 0; color: var(--r); font-weight: 700; }
+@keyframes reel-pop { from { transform: scale(0.85); opacity: 0; } }
+@media (max-width: 700px) {
+  .inv-split { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .inv-detail { width: auto; max-height: 260px; }
+  .inv-wallet { margin-left: 0; }
+}

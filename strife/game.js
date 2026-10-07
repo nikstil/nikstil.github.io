@@ -99,6 +99,7 @@ export class Game {
     this.map = opts.map
     this.world = new World(opts.map)
     this.hooks = opts.hooks ?? {}
+    this.skinFor = opts.skinFor ?? null // (actor, weaponId) => skin descriptor or null
     this.difficulty = opts.difficulty ?? 1
     this.time = 0
     this.round = 0
@@ -133,7 +134,10 @@ export class Game {
         this.actors.push(a)
       }
     }
-    for (const a of this.actors) a.inv = { primary: null, pistol: defaultPistol(a.team), knife: { id: 'knife' }, grenades: [], bomb: false }
+    for (const a of this.actors) {
+      a.inv = { primary: null, pistol: defaultPistol(a.team), knife: { id: 'knife' }, grenades: [], bomb: false }
+      this.applySkins(a)
+    }
     this.startRound()
   }
 
@@ -181,6 +185,7 @@ export class Game {
       a.pitch = 0
       if (!a.alive) {
         a.inv = { primary: null, pistol: defaultPistol(a.team), knife: { id: 'knife' }, grenades: [], bomb: false }
+        this.applySkins(a)
         a.armor = 0
         a.helmet = false
         a.kit = false
@@ -258,6 +263,12 @@ export class Game {
     this.score = { T: this.score.CT, CT: this.score.T }
     this.lossStreak = { T: 0, CT: 0 }
     this.emit('halftime', {})
+  }
+
+  /** Puts the owner's skins on their starting pistol and knife (the app supplies skinFor). */
+  applySkins(a) {
+    if (!this.skinFor) return
+    for (const slot of ['pistol', 'knife']) if (a.inv[slot] && !a.inv[slot].skin) a.inv[slot].skin = this.skinFor(a, a.inv[slot].id)
   }
 
   // ================= Buying =================
