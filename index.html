@@ -97,7 +97,9 @@
           <li><button class="sm-item" role="menuitem" data-app="translatr"><span data-icon="translatr" aria-hidden="true">🌐</span> <span class="sm-label">TRANSLATR™</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> <span class="sm-label">The GIF</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="mobile"><span data-icon="mobile" aria-hidden="true">📱</span> <span class="sm-label">LigmaPhone</span></button></li>
-          <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">This PC</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="files"><span data-icon="files" aria-hidden="true">📁</span> <span class="sm-label">File Explorer</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="achievements"><span data-icon="achievements" aria-hidden="true">🎖️</span> <span class="sm-label">Achievements</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">About this PC</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
           <li data-online="leaderboard" hidden><button class="sm-item" role="menuitem" data-app="leaderboard"><span data-icon="leaderboard" aria-hidden="true">🏆</span> <span class="sm-label">Leaderboards</span></button></li>
           <li data-online="messenger" hidden><button class="sm-item" role="menuitem" data-app="messenger"><span data-icon="messenger" aria-hidden="true">💬</span> <span class="sm-label">Messenger</span></button></li>
@@ -121,6 +123,8 @@
     <button class="ctx-item" role="menuitem" data-action="refresh">Refresh</button>
     <button class="ctx-item" role="menuitem" data-action="fullscreen" hidden><span class="fs-label">Full screen</span></button>
     <button class="ctx-item" role="menuitem" data-action="folder">New folder</button>
+    <button class="ctx-item" role="menuitem" data-action="textfile">New text document</button>
+    <button class="ctx-item" role="menuitem" data-action="explorer">File Explorer</button>
     <hr>
     <button class="ctx-item" role="menuitem" data-app="pc">About nikstilOS</button>
   </div>
@@ -228,6 +232,11 @@
       </div>
     </div>
     <div class="win-foot"><span class="status br-status">Home</span></div>
+  </template>
+
+  <template id="app-files">
+    <div class="win-body fx"></div>
+    <div class="win-foot"><span class="status muted fx-status"></span></div>
   </template>
 
   <template id="app-achievements">

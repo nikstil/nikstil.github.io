@@ -56,6 +56,7 @@
     mobile: { title: 'LigmaPhone', icon: 'mobile', width: 400, init: initMobile },
     strife: { title: 'COUNTER-STRIFE', icon: 'strife', width: 900, init: initStrife },
     achievements: { title: 'Achievements', icon: 'achievements', width: 820, init: initAchievements },
+    files: { title: 'File Explorer', icon: 'files', width: 780, init: initFiles },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
     messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
@@ -415,6 +416,7 @@
         if (input.multiline) field.rows = 3
         field.maxLength = input.maxLength ?? 500
         field.placeholder = input.placeholder ?? ''
+        if (input.value) field.value = input.value
         field.setAttribute('aria-label', text)
         $('.msg-main', body).append(field)
       }
@@ -557,6 +559,90 @@
   function initStrife(el) {
     $('.strife-frame', el).src = '/strife/?embed'
   }
+
+  // ================= File Explorer (os/files.js) =================
+  let filesMod = null
+  const loadFiles = () => (filesMod ??= import('/os/files.js'))
+  let filesStart = null // where the next Explorer window opens
+  const osApi = {
+    openApp: (id) => openApp(id),
+    msgbox: (...a) => msgbox(...a),
+    askbox: (o) => askbox(o),
+    makeWindow: (o) => makeWindow(o),
+    showMenu: (items, x, y, title, icon) => showMenu(items, x, y, title, icon),
+  }
+  function initFiles(el, win) {
+    let cleanup = null
+    let closed = false
+    win.setTitle = (t) => ($('.win-title', win.el).textContent = t)
+    const start = filesStart
+    filesStart = null
+    loadFiles().then((m) => {
+      if (!closed) cleanup = m.initExplorer(el, win, osApi, start ? { path: start } : {})
+    })
+    return () => {
+      closed = true
+      cleanup?.()
+    }
+  }
+  /** Opens File Explorer at a path (a new window each time, like the real thing). */
+  function explore(path) {
+    filesStart = path
+    const was = open.get('files')
+    if (was) closeWin(was)
+    return openApp('files')
+  }
+  // Your Desktop folder's files and folders, as desktop icons.
+  function renderDesktopFiles(m) {
+    for (const li of $$('.desk-icons > li[data-file]')) li.remove()
+    const items = m.list(m.DESKTOP) ?? []
+    for (const it of items) {
+      const li = document.createElement('li')
+      li.dataset.file = it.name
+      li.innerHTML = `<button class="desk-icon" data-file=""><span class="di-img" aria-hidden="true"></span><span class="di-label"></span></button>`
+      const icon = $('.desk-icon', li)
+      icon.dataset.file = it.name
+      $('.di-img', li).textContent = it.icon
+      $('.di-label', li).textContent = it.name
+      $('.desk-icons').append(li)
+      wireDeskIcon(icon, () => {
+        if (it.kind === 'dir') explore(it.path)
+        else if (it.kind === 'txt' || it.kind === 'file') {
+          m.markOpened()
+          m.openNotepad(osApi, { name: it.name, text: it.node?.t ?? '', dir: m.DESKTOP })
+        }
+      })
+      icon.addEventListener('contextmenu', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        showMenu(
+          [
+            { label: 'Open', run: () => icon.dispatchEvent(new MouseEvent('dblclick')) },
+            { label: 'Rename', run: async () => {
+              const to = await askbox({ title: 'Rename', text: `New name for “${it.name}”:`, icon: '✏️', input: { value: it.name, maxLength: 80 } })
+              if (to == null) return
+              const why = m.rename(m.DESKTOP, it.name, to)
+              if (why) msgbox('Rename', why, '⚠️')
+            } },
+            { label: 'Delete', danger: true, run: async () => {
+              if (await askbox({ title: 'Delete', text: `Delete “${it.name}”?`, icon: '🗑️', ok: 'Delete' })) m.remove(m.DESKTOP, it.name)
+            } },
+          ],
+          e.clientX,
+          e.clientY,
+          it.name,
+          it.icon,
+        )
+      })
+    }
+    layoutIcons()
+  }
+  loadFiles()
+    .then((m) => {
+      renderDesktopFiles(m)
+      m.onChange(() => renderDesktopFiles(m))
+    })
+    .catch(() => {})
 
   /** The achievement hub: every game's achievements in one place (the page at /achievements/). */
   function initAchievements(el) {
@@ -921,7 +1007,7 @@
   let justDragged = 0 // (a drag ends in a click on the dragged icon: that click mustn't select or open it)
   let draggedIcons = []
   const wasDragged = (icon) => Date.now() - justDragged < 300 && draggedIcons.includes(icon)
-  const iconKey = (icon) => icon.dataset.app ?? `link:${$('.di-label', icon).textContent}`
+  const iconKey = (icon) => icon.dataset.app ?? (icon.dataset.file != null ? `file:${icon.dataset.file}` : `link:${$('.di-label', icon).textContent}`)
   const visibleIcons = () => $$('.desk-icon').filter((i) => !i.closest('li').hidden)
   const select = (icons, add = false) => $$('.desk-icon').forEach((i) => i.classList.toggle('is-selected', icons.includes(i) || (add && i.classList.contains('is-selected'))))
 
@@ -936,7 +1022,7 @@
     icon.addEventListener('dblclick', () => !coarsePointer && !wasDragged(icon) && launch())
     if (!coarsePointer) icon.addEventListener('pointerdown', (e) => startIconDrag(icon, e))
   }
-  for (const icon of $$('.desk-icon')) wireDeskIcon(icon, () => openApp(icon.dataset.app))
+  for (const icon of $$('.desk-icon')) wireDeskIcon(icon, () => (icon.dataset.app === 'pc' ? explore([]) : openApp(icon.dataset.app)))
 
   // ----- where the icons are
   const loadPositions = () => {
@@ -1169,7 +1255,17 @@
     const action = e.target.closest('[data-action]')?.dataset.action
     if (!action) return
     closeMenus()
-    if (action === 'folder') msgbox('New folder', 'Creating folders requires nikstilOS Pro. Upgrade for $4.99/month. (Kidding. There is no Pro.)', '📁')
+    if (action === 'folder' || action === 'textfile')
+      loadFiles().then(async (m) => {
+        const name = action === 'folder' ? m.newFolder(m.DESKTOP) : m.newText(m.DESKTOP)
+        if (!name) return
+        const to = await askbox({ title: action === 'folder' ? 'New folder' : 'New text document', text: 'Name:', icon: action === 'folder' ? '📁' : '📄', input: { value: name, maxLength: 80 } })
+        if (to != null && to !== name) {
+          const why = m.rename(m.DESKTOP, name, to)
+          if (why) msgbox('Rename', why, '⚠️')
+        }
+      })
+    if (action === 'explorer') explore([])
     if (action === 'sort') sortIcons()
     if (action === 'refresh') {
       desktop.classList.remove('is-refreshing')
@@ -1225,17 +1321,21 @@
     return items
   }
   function showAppMenu(win, x, y) {
-    closeMenus()
     focusWin(win)
+    const inPhone = !$('.mp-bar', win.el)?.hidden && $('.mp-bar-title', win.el)?.textContent
+    showMenu(appMenuItems(win), x, y, $('.win-title', win.el).textContent + (inPhone ? ` · ${inPhone}` : ''), APPS[win.id]?.icon ?? 'pc')
+  }
+  /** A right-click menu: items are { label, run, disabled, danger } or 'sep'. */
+  function showMenu(items, x, y, title, icon) {
+    closeMenus()
     appMenu.replaceChildren()
     const head = document.createElement('div')
     head.className = 'ctx-head'
     head.innerHTML = '<span aria-hidden="true"></span><b></b>'
-    setIcon($('span', head), APPS[win.id]?.icon ?? 'pc')
-    const inPhone = !$('.mp-bar', win.el)?.hidden && $('.mp-bar-title', win.el)?.textContent
-    $('b', head).textContent = $('.win-title', win.el).textContent + (inPhone ? ` · ${inPhone}` : '')
+    setIcon($('span', head), icon)
+    $('b', head).textContent = title
     appMenu.append(head)
-    for (const it of appMenuItems(win)) {
+    for (const it of items) {
       if (it === 'sep') {
         appMenu.append(document.createElement('hr'))
         continue

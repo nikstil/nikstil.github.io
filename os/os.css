@@ -1661,3 +1661,62 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .win:is(:fullscreen, .is-max):has(.ach-win) { display: flex; flex-direction: column; }
 .win:is(:fullscreen, .is-max) .win-client:has(.ach-win) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .win:is(:fullscreen, .is-max) .win-body.ach-win { flex: 1; height: auto; min-height: 0; }
+
+/* ===== File Explorer (os/files.js), Notepad, Photos ===== */
+.win-body.fx { display: flex; flex-direction: column; padding: 0; height: min(460px, 62vh); overflow: hidden; }
+.fx-bar { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-bottom: 1px solid rgb(0 0 0 / 0.1); }
+.fx-btn { width: 30px; height: 28px; border: 1px solid transparent; border-radius: 4px; background: none; color: inherit; font-size: 12px; }
+.fx-btn:hover:not(:disabled) { background: rgb(0 120 215 / 0.1); border-color: rgb(0 120 215 / 0.25); }
+.fx-btn:disabled { opacity: 0.35; }
+.fx-crumbs { flex: 1; min-width: 0; display: flex; align-items: center; gap: 1px; height: 28px; padding: 0 6px; overflow: hidden; border: 1px solid rgb(0 0 0 / 0.18); border-radius: 3px; background: rgb(255 255 255 / 0.85); white-space: nowrap; }
+.fx-crumbs button { padding: 2px 5px; border: 0; border-radius: 3px; background: none; color: #16222f; font-size: 12.5px; }
+.fx-crumbs button:hover { background: rgb(0 120 215 / 0.12); }
+.fx-chev { color: rgb(22 34 47 / 0.5); font-size: 12px; }
+.fx-search { width: 150px; height: 28px; padding: 0 8px; border: 1px solid rgb(0 0 0 / 0.18); border-radius: 3px; background: rgb(255 255 255 / 0.85); color: #16222f; font-size: 12.5px; }
+.fx-tools { display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-bottom: 1px solid rgb(0 0 0 / 0.08); }
+.fx-tool { padding: 4px 9px; border: 1px solid transparent; border-radius: 4px; background: none; color: inherit; font-size: 12.5px; }
+.fx-tool:hover:not(:disabled) { background: rgb(0 120 215 / 0.1); border-color: rgb(0 120 215 / 0.25); }
+.fx-tool:disabled { opacity: 0.4; }
+.fx-sep { flex: 1; }
+.fx-main { flex: 1; min-height: 0; display: grid; grid-template-columns: 170px 1fr; }
+.fx-side { overflow: auto; padding: 6px; border-right: 1px solid rgb(0 0 0 / 0.08); }
+.fx-side h4 { margin: 8px 6px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.fx-side button { display: block; width: 100%; padding: 5px 8px; border: 0; border-radius: 3px; background: none; color: inherit; font-size: 13px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-side button:hover { background: rgb(0 120 215 / 0.08); }
+.fx-side button.sel { background: rgb(0 120 215 / 0.18); }
+.fx-list { overflow: auto; padding: 8px; outline: none; }
+.fx-list.icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); align-content: start; gap: 4px; }
+.fx-list.icons .fx-row { display: grid; justify-items: center; align-content: start; gap: 2px; padding: 6px 4px; border: 1px solid transparent; border-radius: 3px; background: none; color: inherit; text-align: center; }
+.fx-list.icons .fx-row i { font-size: 34px; font-style: normal; line-height: 1.1; }
+.fx-list.icons .fx-row b { font-weight: 400; font-size: 12px; line-height: 1.25; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fx-list.icons .fx-row .t, .fx-list.icons .fx-row .s { display: none; }
+.fx-list.details .fx-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 150px 80px; align-items: center; gap: 8px; width: 100%; padding: 3px 6px; border: 1px solid transparent; border-radius: 2px; background: none; color: inherit; font-size: 12.5px; text-align: left; }
+.fx-list.details .fx-row i { font-style: normal; }
+.fx-list.details .fx-row b { font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-list.details .fx-row .t, .fx-list.details .fx-row .s { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-list.details .fx-row .s { text-align: right; }
+.fx-list.details .fx-head { grid-template-columns: minmax(0, 1fr) 150px 80px; padding-left: 36px; color: var(--muted); font-size: 11.5px; border-bottom: 1px solid rgb(0 0 0 / 0.08); border-radius: 0; }
+.fx-list .fx-row:hover { background: rgb(0 120 215 / 0.08); border-color: rgb(0 120 215 / 0.18); }
+.fx-list .fx-row.sel { background: rgb(0 120 215 / 0.2); border-color: rgb(0 120 215 / 0.4); }
+.fx-empty { grid-column: 1 / -1; margin: 20px; color: var(--muted); font-size: 13px; text-align: center; }
+.msg p { white-space: pre-line; }
+.win-body.notepad { display: flex; flex-direction: column; padding: 0; height: min(380px, 56vh); }
+.np-menu { display: flex; align-items: center; gap: 10px; padding: 4px 8px; border-bottom: 1px solid rgb(0 0 0 / 0.08); font-size: 12px; }
+.np-menu button { padding: 3px 9px; border: 1px solid transparent; border-radius: 3px; background: none; color: inherit; font-size: 12.5px; }
+.np-menu button:hover { background: rgb(0 120 215 / 0.1); border-color: rgb(0 120 215 / 0.25); }
+.np-info { color: var(--muted); }
+.np-text { flex: 1; width: 100%; padding: 8px 10px; border: 0; outline: none; resize: none; background: #fff; color: #111; font: 13.5px/1.45 var(--font-mono); white-space: pre-wrap; }
+.win-body.picview { display: grid; place-items: center; padding: 8px; background: #1b1b1b; height: min(420px, 60vh); }
+.picview img { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: auto; }
+@media (max-width: 640px) {
+  .fx-main { grid-template-columns: 1fr; }
+  .fx-side { display: none; }
+  .fx-search { width: 90px; }
+  .fx-list.details .fx-row { grid-template-columns: 22px minmax(0, 1fr) 70px; }
+  .fx-list.details .fx-row .t, .fx-list.details .fx-head span:nth-child(2) { display: none; }
+  .fx-list.details .fx-head { grid-template-columns: minmax(0, 1fr) 70px; }
+}
+.win .fx-bar .fx-search { flex: 0 0 160px; width: 160px; min-width: 0; margin: 0; }
+.win .fx-bar .fx-crumbs { flex: 1 1 auto; }
+@media (max-width: 640px) { .win .fx-bar .fx-search { flex-basis: 90px; width: 90px; } }
+.win .win-body.fx { min-height: 320px; }
