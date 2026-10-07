@@ -21,6 +21,7 @@
   <meta name="theme-color" content="#0f1216">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%230f1216'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E💣%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="/strife/style.css">
+  <script src="/online/online.js" defer></script>
   <script type="module" src="/strife/app.js"></script>
 </head>
 <body>
@@ -70,6 +71,7 @@
       </div>
 
       <div class="spectate" id="spectate" hidden></div>
+      <div class="net-badge" id="net-badge" hidden></div>
       <div class="banner" id="banner" hidden><b id="banner-title"></b><span id="banner-sub"></span><em id="banner-mvp"></em></div>
     </div>
 
@@ -143,6 +145,7 @@
         </div>
         <div class="menu-buttons">
           <button class="go" data-do="play">▶ Play</button>
+          <button class="go online-btn" data-do="online">🌐 Online</button>
           <button class="ghost" data-do="practice" title="Walk the map with no bots">Walk the map</button>
           <button class="ghost" data-do="inventory">Inventory</button>
           <button class="ghost" data-do="settings">Settings</button>
@@ -216,6 +219,26 @@
           <button class="ghost" data-do="inventory">Inventory</button>
           <button class="ghost" data-do="quit">Main menu</button>
         </div>
+      </div>
+    </section>
+
+    <section class="menu online" id="online" hidden>
+      <div class="menu-card wide">
+        <h2>Play online</h2>
+        <p class="on-where" id="on-where"></p>
+        <label class="setting"><span>Your name</span><input id="on-name" maxlength="20" autocomplete="nickname" spellcheck="false"></label>
+        <div class="on-box">
+          <h3>Host a game</h3>
+          <p>Uses the map, side and match length from the main menu. Bots fill the empty places, and a friend who joins takes a bot’s place.</p>
+          <button class="go" data-do="host">Host a game</button>
+        </div>
+        <div class="on-box">
+          <h3>Join a game</h3>
+          <div class="on-code"><input id="on-code" placeholder="CODE" maxlength="4" autocomplete="off" spellcheck="false"><button class="go" data-do="join">Join</button></div>
+          <ul class="on-rooms" id="on-rooms"></ul>
+          <p class="on-status" id="on-status" aria-live="polite"></p>
+        </div>
+        <button class="ghost" data-do="online-back">Back</button>
       </div>
     </section>
 

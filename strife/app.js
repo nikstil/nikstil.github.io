@@ -8,7 +8,8 @@ import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP } from './weapons.js'
 import { gunIcon } from './icons.js'
 import { skinMaterial } from './skins.js'
-import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch } from './inventory.js'
+import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins } from './inventory.js'
+import { openHub, NetHost, NetClient, makeCode } from './net.js'
 import { DIFFICULTY } from './bots.js'
 import * as audio from './audio.js'
 
@@ -113,6 +114,7 @@ function hooks() {
     sound(name, at, o) {
       if (mode !== 'play') return
       const self = o.who && o.who === watched
+      if (!at && o.who && !self) return // someone else's menu clicks and buys
       audio.play(name, { at: self ? null : at, gain: (o.gain ?? 1) * (self && name.startsWith('step') ? 0.5 : 1), range: o.range ?? 40 })
     },
     tracer({ a, from, to, w }) {
@@ -206,11 +208,16 @@ function hooks() {
 }
 
 /** Starts a match (or the menu's background bot match, `demo`). */
-function start({ demo = false, practice = false } = {}) {
-  view?.dispose()
+function start({ demo = false, practice = false, host = false } = {}) {
+  if (!host || !net) endNet()
   const map = MAPS[settings.map]
   const team = demo ? null : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
-  game = new Game({ map, team, size: demo ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
+  game = new Game({ map, team, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
+  attachView(map, demo)
+}
+/** A new view (renderer scene) for the current game. */
+function attachView(map, demo = false) {
+  view?.dispose()
   const qq = QUALITY[settings.quality] ?? QUALITY.medium
   view = new View(renderer, { shadows: qq.shadows && renderer.shadowMap.enabled, shadowSize: qq.shadowSize })
   view.skinMat = skinMaterial
@@ -231,9 +238,132 @@ function start({ demo = false, practice = false } = {}) {
   document.body.classList.toggle('playing', !demo)
 }
 
+// ================= Online =================
+let hudBuyT = 0
+let net = null // NetHost or NetClient
+let hub = null
+let lobby = null
+const lobbyId = Math.random().toString(36).slice(2, 10)
+async function getHub() {
+  hub ??= await openHub()
+  return hub
+}
+function netName() {
+  const v = String($('#on-name')?.value || settings.netName || '').trim().slice(0, 20)
+  return v || 'Player' + Math.floor(1000 + Math.random() * 9000)
+}
+async function openOnline() {
+  show('online')
+  if (!settings.netName) settings.netName = window.nikstilOnline?.profile?.username || 'Player' + Math.floor(1000 + Math.random() * 9000)
+  $('#on-name').value = settings.netName
+  $('#on-status').textContent = 'Connecting…'
+  const h = await getHub()
+  $('#on-where').textContent = h.kind === 'online' ? 'Games on nikstil.com, open to everyone.' : 'Online play isn’t available right now, so this finds games in other tabs of this browser.'
+  $('#on-status').textContent = ''
+  closeLobby()
+  lobby = h.join('lobby', lobbyId, { role: 'browser' }, { onMembers: renderRooms })
+  renderRooms([])
+}
+function closeLobby() {
+  lobby?.leave()
+  lobby = null
+}
+function renderRooms(list) {
+  const ul = $('#on-rooms')
+  ul.replaceChildren()
+  const hosts = list.filter((m) => m.role === 'host' && m.code)
+  if (!hosts.length) {
+    const li = document.createElement('li')
+    li.className = 'empty'
+    li.textContent = 'No open games right now. Host one!'
+    ul.append(li)
+  }
+  for (const m of hosts) {
+    const li = document.createElement('li')
+    li.innerHTML = '<b></b><span></span><button class="go small" data-do="join-room">Join</button>'
+    $('b', li).textContent = `${m.name}’s game`
+    $('span', li).textContent = `${m.map} · ${m.humans} player${m.humans === 1 ? '' : 's'} · round ${m.round || 1} · code ${m.code}`
+    $('button', li).dataset.code = m.code
+    ul.append(li)
+  }
+}
+async function hostGame() {
+  settings.netName = netName()
+  saveSettings()
+  closeLobby()
+  const h = await getHub()
+  $('#loading').hidden = false
+  setTimeout(() => {
+    start({ host: true })
+    net = new NetHost(h, game, { code: makeCode(), name: settings.netName, mapId: settings.map, onSay: (t) => say(t, 3), onPeople: () => {} })
+    $('#loading').hidden = true
+    paused = false
+    show(null)
+    grab()
+    say(`Hosting: friends can join with the code ${net.code}`, 5)
+  }, 30)
+}
+async function joinGame(code) {
+  code = String(code || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4)
+  if (code.length !== 4) {
+    $('#on-status').textContent = 'A game code is four letters.'
+    return
+  }
+  settings.netName = netName()
+  saveSettings()
+  const h = await getHub()
+  $('#on-status').textContent = `Joining ${code}…`
+  endNet()
+  net = new NetClient(h, {
+    code,
+    name: settings.netName,
+    team: settings.team,
+    skins: equippedSkins(),
+    onWelcome: (w) => startClient(w),
+    onEnd: (why) => {
+      const wasPlaying = mode === 'play'
+      net = null
+      if (wasPlaying) {
+        paused = false
+        start({ demo: true })
+        show('menu')
+        syncMenu()
+        alertBox(why)
+      } else $('#on-status').textContent = why
+    },
+    onSay: (t) => say(t, 3),
+  })
+}
+/** The host said hello: build their match on our side. */
+function startClient(w) {
+  closeLobby()
+  const map = MAPS[w.map] ?? MAPS.dust2
+  settings.map = w.map in MAPS ? w.map : 'dust2'
+  game = new Game({ map, roster: w.roster, myId: w.me, netRole: 'client', rules: w.rules, hooks: hooks(), skinFor })
+  attachView(map)
+  paused = false
+  show(null)
+  grab()
+  say(`Joined ${w.host}’s game (${w.code})`, 3)
+  return game
+}
+function endNet() {
+  if (net) {
+    const n = net
+    net = null
+    n.close?.()
+  }
+}
+function alertBox(text) {
+  const p = $('#record')
+  p.textContent = text
+  p.classList.add('warn')
+  setTimeout(() => p.classList.remove('warn'), 6000)
+}
+
 // ================= Menus =================
 function show(id) {
-  for (const s of ['menu', 'pause', 'settings', 'controls', 'over', 'inventory']) $('#' + s).hidden = s !== id
+  for (const s of ['menu', 'pause', 'settings', 'controls', 'over', 'inventory', 'online']) $('#' + s).hidden = s !== id
   $('#hud').hidden = id === 'menu' || mode !== 'play'
   $('#touch').hidden = !coarse || mode !== 'play' || !!id
 }
@@ -337,6 +467,19 @@ document.addEventListener('click', (e) => {
   if (!b) return
   audio.unlockAudio()
   const act = b.dataset.do
+  if (act === 'again' && net instanceof NetHost) {
+    start({ host: true })
+    net.setGame(game)
+    paused = false
+    show(null)
+    grab()
+    return
+  }
+  if (act === 'again' && net instanceof NetClient) {
+    say('Waiting for the host to start the next match…', 4)
+    show(null)
+    return
+  }
   if (act === 'play' || act === 'practice' || act === 'again') {
     $('#loading').hidden = false
     setTimeout(() => {
@@ -359,7 +502,14 @@ document.addEventListener('click', (e) => {
     show('inventory')
   } else if (act === 'back') show(backTo)
   else if (act === 'resume') resume()
-  else if (act === 'quit') {
+  else if (act === 'online') openOnline()
+  else if (act === 'host') hostGame()
+  else if (act === 'join') joinGame($('#on-code').value)
+  else if (act === 'join-room') joinGame(b.dataset.code)
+  else if (act === 'online-back') {
+    closeLobby()
+    show('menu')
+  } else if (act === 'quit') {
     paused = false
     start({ demo: true })
     show('menu')
@@ -523,6 +673,7 @@ addEventListener('blur', () => {
 document.addEventListener('visibilitychange', () => document.hidden && pause())
 
 /** The human's commands for one tick. */
+const testInput = {} // (for automated tests)
 function playerCmd() {
   const a = game.player
   const k = (c) => keys.has(c)
@@ -546,6 +697,7 @@ function playerCmd() {
     drop: edge.drop,
     pickup: edge.pickup,
   }
+  Object.assign(cmd, testInput)
   edge.jump = edge.reload = edge.alt = edge.drop = edge.pickup = false
   edge.slot = null
   if (!a.alive) {
@@ -806,6 +958,16 @@ function fmtTime(s) {
 let radarT = 0
 let sbT = 0
 function updateHud(dt) {
+  const nb = $('#net-badge')
+  nb.hidden = !net
+  if (net) {
+    nb.textContent = net instanceof NetHost ? `Hosting · code ${net.code} · ${net.peers.size + 1} player${net.peers.size ? 's' : ''}` : `Online · ${net.mode === 'relay' ? 'relayed' : net.mode === 'p2p' ? 'direct' : 'connecting'}`
+    // online, the buy menu fills in when the host's answer comes back
+    if (buyOpen && net instanceof NetClient && (hudBuyT = (hudBuyT ?? 0) + dt) > 0.25) {
+      hudBuyT = 0
+      renderBuy()
+    }
+  }
   const g = game
   const me = g.player
   const w = watched
@@ -995,12 +1157,12 @@ function drawScoreboard() {
     let html = `<tr><th>Player</th>${showMoney ? '<th>$</th>' : ''}<th>K</th><th>A</th><th>D</th><th>★</th></tr>`
     for (const a of rows) {
       const n = a.name.replace(/[<>&"]/g, '')
-      html += `<tr class="${a.alive ? '' : 'dead'} ${a === game.player ? 'me' : ''}"><td>${a.inv.bomb ? '💣 ' : ''}${n}${a.alive ? '' : ' ✝'}</td>${showMoney ? `<td>$${a.money}</td>` : ''}<td>${a.kills}</td><td>${a.assists}</td><td>${a.deaths}</td><td>${a.mvps || ''}</td></tr>`
+      html += `<tr class="${a.alive ? '' : 'dead'} ${a === game.player ? 'me' : ''}"><td>${a.inv.bomb ? '💣 ' : ''}${net && a.isBot ? '<small class="bot">BOT</small> ' : ''}${n}${a.alive ? '' : ' ✝'}</td>${showMoney ? `<td>$${a.money}</td>` : ''}<td>${a.kills}</td><td>${a.assists}</td><td>${a.deaths}</td><td>${a.mvps || ''}</td></tr>`
     }
     table.innerHTML = html
     $(`#sb-${t.toLowerCase()}-score`).textContent = game.score[t]
   }
-  $('#sb-foot').textContent = `${MAPS[settings.map].name} · Round ${game.round} · first to ${game.rules.roundsToWin} · bots: ${DIFFICULTY[game.difficulty].name}`
+  $('#sb-foot').textContent = `${MAPS[settings.map].name} · Round ${game.round} · first to ${game.rules.roundsToWin} · bots: ${DIFFICULTY[game.difficulty].name}${net instanceof NetHost ? ` · online, code ${net.code}` : net ? ' · online' : ''}`
 }
 
 // ================= Camera =================
@@ -1038,6 +1200,32 @@ function cameraFor(dt) {
 }
 
 // ================= The loop =================
+/** One tick of the match (and, online, of the connection). */
+function step() {
+  const cmd = mode === 'play' && game.player ? (paused ? { yaw: look.yaw, pitch: look.pitch } : playerCmd()) : null
+  game.update(STEP, cmd)
+  net?.tick(STEP, cmd ?? {})
+}
+// A hosted match keeps going when its tab is in the background (timers in a worker aren't slowed down).
+let bgTicker = null
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && net instanceof NetHost) {
+    try {
+      bgTicker ??= new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'text/javascript' })))
+      let last = performance.now()
+      bgTicker.onmessage = () => {
+        const now = performance.now()
+        let n = Math.min(12, Math.round((now - last) / 1000 / STEP))
+        last = now
+        while (n-- > 0) step()
+      }
+    } catch {}
+  } else if (bgTicker) {
+    bgTicker.terminate()
+    bgTicker = null
+    lastT = performance.now()
+  }
+})
 let acc = 0
 let lastT = performance.now()
 function frame(t) {
@@ -1045,16 +1233,21 @@ function frame(t) {
   const dt = Math.min(0.1, (t - lastT) / 1000)
   lastT = t
   if (!game || !view) return
-  const live = !paused || mode === 'menu'
+  const live = !paused || mode === 'menu' || !!net
   if (live) {
     acc += dt
     let n = 0
     while (acc >= STEP && n < 6) {
-      game.update(STEP, mode === 'play' && game.player ? playerCmd() : null)
+      step()
       acc -= STEP
       n++
     }
     if (n === 6) acc = 0
+  }
+  if (game.player?.netTeleport) {
+    game.player.netTeleport = false
+    look.yaw = game.player.yaw
+    look.pitch = 0
   }
   const cam = cameraFor(dt)
   view.update(dt, game, mode === 'play' ? watched : null)
@@ -1076,4 +1269,4 @@ if (makeRenderer()) {
   if (q.has('play')) $('[data-do="play"]').click()
 }
 // for tests and the curious
-window.strife = { get game() { return game }, get view() { return view }, settings, look }
+window.strife = { get game() { return game }, get view() { return view }, get net() { return net }, settings, look, testInput }

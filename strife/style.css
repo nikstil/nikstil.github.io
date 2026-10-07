@@ -301,3 +301,24 @@ html.touch .crosshair { --len: 6px; }
   .inv-detail { width: auto; max-height: 260px; }
   .inv-wallet { margin-left: 0; }
 }
+
+/* ===== Online ===== */
+.online .menu-card { gap: 12px; }
+.on-where { margin: -4px 0 0; font-size: 13px; opacity: 0.75; }
+.on-box { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.03); }
+.on-box h3 { margin: 0; font-size: 15px; }
+.on-box p { margin: 0; font-size: 13px; opacity: 0.75; }
+.on-code { display: flex; gap: 8px; }
+.on-code input, #on-name { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(0, 0, 0, 0.3); color: #fff; font: 700 16px var(--font); letter-spacing: 0.08em; }
+#on-name { letter-spacing: 0; font-weight: 600; }
+.on-code input { text-transform: uppercase; letter-spacing: 0.3em; }
+.on-rooms { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; max-height: 220px; overflow: auto; }
+.on-rooms li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.04); }
+.on-rooms li span { grid-column: 1; font-size: 12px; opacity: 0.7; }
+.on-rooms li button { grid-row: 1 / 3; grid-column: 2; }
+.on-rooms li.empty { display: block; opacity: 0.6; font-size: 13px; }
+.on-status { min-height: 1.2em; color: #ffd65a; }
+.go.small { padding: 6px 12px; font-size: 13px; }
+.net-badge { position: absolute; top: 236px; left: 14px; padding: 3px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.45); font: 600 12px var(--font); color: #cfe; }
+.record.warn { color: #ffb36b; }
+.sb-team small.bot { padding: 0 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.15); font-size: 10px; opacity: 0.8; }

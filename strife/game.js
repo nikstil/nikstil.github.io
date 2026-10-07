@@ -71,6 +71,9 @@ export function makeActor(id, name, team, isBot) {
     defuse: 0,
     deadAt: 0,
     brain: null,
+    spawnSeq: 0,
+    remote: false,
+    netQueue: [],
   }
 }
 
@@ -100,6 +103,10 @@ export class Game {
     this.world = new World(opts.map)
     this.hooks = opts.hooks ?? {}
     this.skinFor = opts.skinFor ?? null // (actor, weaponId) => skin descriptor or null
+    // Online: the host runs the real match; a client only moves its own soldier and draws
+    // what the host sends (see net.js).
+    this.netRole = opts.netRole ?? null
+    this.client = this.netRole === 'client'
     this.difficulty = opts.difficulty ?? 1
     this.time = 0
     this.round = 0
@@ -122,11 +129,19 @@ export class Game {
     const size = this.practice ? (opts.team ? 1 : 0) : opts.size ?? 5
     let id = 0
     const names = { T: [...T_NAMES].sort(() => Math.random() - 0.5), CT: [...CT_NAMES].sort(() => Math.random() - 0.5) }
-    if (opts.team) {
+    if (opts.roster) {
+      // an online client: the host's line-up, no brains
+      for (const r of opts.roster) {
+        const a = makeActor(r.id, r.name, r.team, r.bot)
+        a.isPlayer = !r.bot
+        this.actors.push(a)
+      }
+      this.player = this.actors.find((a) => a.id === opts.myId) ?? null
+    } else if (opts.team) {
       this.player = makeActor(id++, opts.playerName ?? 'You', opts.team, false)
       this.actors.push(this.player)
     }
-    for (const team of ['T', 'CT']) {
+    for (const team of opts.roster ? [] : ['T', 'CT']) {
       const count = this.practice ? 0 : size - (opts.team === team ? 1 : 0)
       for (let k = 0; k < count; k++) {
         const a = makeActor(id++, names[team][k % names[team].length], team, true)
@@ -139,6 +154,8 @@ export class Game {
       this.applySkins(a)
     }
     this.startRound()
+    // an online client waits for the host to say where everyone is
+    if (this.client) for (const a of this.actors) a.spawnSeq = -1
   }
 
   emit(name, data) {
@@ -179,6 +196,7 @@ export class Game {
       a.pos.x = sx + 0.5
       a.pos.z = sz + 0.5
       a.pos.y = w.floorAt(a.pos.x, a.pos.z, sy == null ? 50 : sy + 1)
+      a.spawnSeq = (a.spawnSeq ?? 0) + 1
       a.vel.x = a.vel.y = a.vel.z = 0
       // face the map's middle
       a.yaw = Math.atan2(-(this.map.w / 2 - a.pos.x), -(this.map.d / 2 - a.pos.z))
@@ -281,6 +299,10 @@ export class Game {
   }
   /** Buys an item for `a`. Returns '' or why not. */
   buy(a, id) {
+    if (this.client) {
+      this.onClientBuy?.(id)
+      return ''
+    }
     if (!this.canBuy(a)) return 'You can’t buy here.'
     const w = WEAPONS[id]
     const g = GEAR[id]
@@ -494,7 +516,7 @@ export class Game {
       const raw = w.dmg * Math.pow(w.range, dist / 12.7)
       this.damage(victim, a, raw, w.pen, part, w.id, end, dir)
     } else if (wall && (!quiet || Math.random() < 0.5)) {
-      this.emit('impact', { at: end, normal: { x: wall.nx, y: wall.ny, z: wall.nz } })
+      this.emit('impact', { at: end, normal: { x: wall.nx, y: wall.ny, z: wall.nz }, a })
       if (Math.random() < 0.08) this.sound('ricochet', end, { range: 20 })
     }
     // Bullets whizzing past are heard.
@@ -552,6 +574,7 @@ export class Game {
     return { t: tmin, part }
   }
   damage(victim, attacker, raw, pen, part, weaponId, at, dir) {
+    if (this.client) return
     if (!victim.alive || (this.phase === 'over' && weaponId !== 'bomb')) return
     const { dmg, armorLoss } = applyDamage(victim, raw, pen, part)
     const taken = Math.min(victim.hp, dmg)
@@ -612,7 +635,7 @@ export class Game {
     const off = thrown ? 1.4 : 0.2
     const x = a.pos.x + d.x * off
     const z = a.pos.z + d.z * off
-    const drop = { id: s.id, clip: s.clip, reserve: s.reserve, silenced: s.silenced, burst: s.burst, skin: s.skin, pos: { x, y: this.world.groundUnder(x, z, 0.1, a.pos.y + 0.5), z }, yaw: Math.random() * 6.28, at: this.time }
+    const drop = { uid: Math.random(), id: s.id, clip: s.clip, reserve: s.reserve, silenced: s.silenced, burst: s.burst, skin: s.skin, pos: { x, y: this.world.groundUnder(x, z, 0.1, a.pos.y + 0.5), z }, yaw: Math.random() * 6.28, at: this.time }
     this.drops.push(drop)
     this.emit('drop', drop)
     if (a.active === slot) this.switchTo(a, a.inv.primary ? 'primary' : a.inv.pistol ? 'pistol' : 'knife', true)
@@ -646,12 +669,16 @@ export class Game {
       this.sound('stab', eye, { range: 10 })
     } else {
       const wall = this.world.trace(eye.x, eye.y, eye.z, dir.x, dir.y, dir.z, WEAPONS.knife.range)
-      if (wall) this.emit('impact', { at: { x: eye.x + dir.x * wall.t, y: eye.y + dir.y * wall.t, z: eye.z + dir.z * wall.t }, normal: { x: wall.nx, y: wall.ny, z: wall.nz }, soft: true })
+      if (wall) this.emit('impact', { at: { x: eye.x + dir.x * wall.t, y: eye.y + dir.y * wall.t, z: eye.z + dir.z * wall.t }, normal: { x: wall.nx, y: wall.ny, z: wall.nz }, soft: true, a })
     }
   }
 
   // ================= Grenades =================
   throwNade(a, lob) {
+    if (this.client) {
+      a.nextFire = this.time + 0.9
+      return
+    }
     const id = a.inv.grenades.shift()
     if (!id) return
     const w = WEAPONS[id]
@@ -797,12 +824,12 @@ export class Game {
         if (dur <= 0.25) continue
         b.flashFull = Math.max(b.flashFull, this.time + dur * 0.45)
         b.flashUntil = Math.max(b.flashUntil, this.time + dur)
-        if (b.isPlayer) this.sound('ring', null, { gain: Math.min(1, dur / 3) })
+        if (b.isPlayer) this.sound('ring', null, { who: b, gain: Math.min(1, dur / 3) })
         b.brain?.flashed(dur)
       }
     } else if (n.type === 'smoke') {
       this.sound('hiss', at, { range: 30 })
-      this.world.smokes.push({ x: at.x, y: at.y + 1.4, z: at.z, r: 0, until: this.time + 18, born: this.time })
+      this.world.smokes.push({ id: Math.random(), x: at.x, y: at.y + 1.4, z: at.z, r: 0, until: this.time + 18, born: this.time })
       // a smoke puts out any fire it lands in
       const fires = this.world.fires
       for (let k = fires.length - 1; k >= 0; k--) {
@@ -825,7 +852,7 @@ export class Game {
       }
     } else if (n.type === 'decoy') {
       const w = WEAPONS[n.owner.inv.primary?.id ?? n.owner.inv.pistol?.id ?? 'glock']
-      this.decoys.push({ pos: { ...at }, owner: n.owner, until: this.time + 15, next: this.time + 0.3, left: 0, w })
+      this.decoys.push({ id: Math.random(), pos: { ...at }, owner: n.owner, until: this.time + 15, next: this.time + 0.3, left: 0, w })
     }
   }
 
@@ -1045,6 +1072,7 @@ export class Game {
   // ================= The tick =================
   /** Advances the match. `input` is the human's commands (or null). */
   update(dt, input) {
+    if (this.client) return this.clientUpdate(dt, input)
     this.time += dt
     const now = this.time
     // Phases
@@ -1067,7 +1095,7 @@ export class Game {
     // Everyone moves and acts
     for (const a of this.actors) {
       if (!a.alive) continue
-      const cmd = a.isBot ? a.brain.update(dt) : a === this.player ? input ?? {} : {}
+      const cmd = a.isBot ? a.brain.update(dt) : a === this.player ? input ?? {} : a.remote ? this.remoteCmd(a) : {}
       this.act(a, cmd, dt)
     }
     this.separate()
@@ -1161,6 +1189,11 @@ export class Game {
     const firing = !!cmd.fire && !busy
     if (firing) this.fire(a, a.trigger)
     a.trigger = !!cmd.fire
+    if (this.client) {
+      // what the host decides (planting, dropping, picking up) waits for the host
+      if (!busy) this.moveActor(a, cmd, dt)
+      return
+    }
     this.use(a, !!cmd.use || (!!cmd.fire && a.active === 'bomb'), dt)
     if (cmd.drop) {
       if (a.active === 'bomb' && a.inv.bomb && this.phase !== 'freeze') {
@@ -1180,7 +1213,85 @@ export class Game {
       const d = this.drops.find((d) => Math.hypot(a.pos.x - d.pos.x, a.pos.z - d.pos.z) < 1.6 && Math.abs(a.pos.y - d.pos.y) < 1.5)
       if (d) this.pickUp(a, d)
     }
-    this.moveActor(a, cmd, dt)
+    if (cmd.buy) this.buy(a, cmd.buy)
+    if (a.remote) this.remoteMove(a, cmd, dt)
+    else this.moveActor(a, cmd, dt)
+  }
+
+  // ================= Online =================
+  /** Host: the next command a remote player sent (one per tick; the last one again if none came). */
+  remoteCmd(a) {
+    const q = a.netQueue
+    if (q.length > 8) q.splice(0, q.length - 4)
+    const c = q.shift()
+    if (c) {
+      a.netLast = c
+      return c
+    }
+    const l = a.netLast ?? {}
+    return { yaw: l.yaw, pitch: l.pitch, fire: l.fire, use: l.use, st: l.st, crouch: l.crouch, walk: l.walk }
+  }
+  /** Host: a remote player moves themselves; we take their word for it (within reason). */
+  remoteMove(a, cmd, dt) {
+    const st = cmd.st
+    if (st && st.seq === a.spawnSeq && a.plant === 0 && this.bomb.defuser !== a) {
+      const jump = Math.hypot(st.x - a.pos.x, st.z - a.pos.z)
+      if (jump < 4 && !this.world.blocked(st.x, st.y + 0.05, st.z, a.r * 0.8, 1.0, 0)) {
+        a.pos.x = st.x
+        a.pos.y = st.y
+        a.pos.z = st.z
+      }
+      a.vel.x = st.vx
+      a.vel.y = st.vy
+      a.vel.z = st.vz
+      a.crouch = st.c
+      a.h = st.h
+      a.onGround = st.g
+      a.walking = !!cmd.walk
+      if (a.onGround && !a.walking && Math.hypot(st.vx, st.vz) > 3) {
+        a.stepDist += Math.hypot(st.vx, st.vz) * dt
+        if (a.stepDist > 1.9) {
+          a.stepDist = 0
+          this.sound('step' + Math.floor(Math.random() * 4), a.pos, { who: a, range: 22, gain: 0.8 })
+        }
+      }
+    } else if (!st || st.seq !== a.spawnSeq) this.moveActor(a, {}, dt)
+  }
+  /** Client: move yourself, and ease everyone else toward where the host last said they were. */
+  clientUpdate(dt, input) {
+    this.time += dt
+    const me = this.player
+    if (me?.alive) this.act(me, input ?? {}, dt)
+    for (const a of this.actors) {
+      if (a === me || !a.net) continue
+      const n = a.net
+      const k = Math.min(1, dt * 14)
+      // extrapolate a little with their velocity, then ease toward it
+      const tx = n.x + n.vx * Math.min(0.1, this.time - n.at)
+      const tz = n.z + n.vz * Math.min(0.1, this.time - n.at)
+      if (Math.hypot(tx - a.pos.x, tz - a.pos.z) > 3) {
+        a.pos.x = tx
+        a.pos.z = tz
+        a.pos.y = n.y
+      } else {
+        a.pos.x += (tx - a.pos.x) * k
+        a.pos.z += (tz - a.pos.z) * k
+        a.pos.y += (n.y - a.pos.y) * k
+      }
+      a.vel.x = n.vx
+      a.vel.z = n.vz
+      const dy = Math.atan2(Math.sin(n.yaw - a.yaw), Math.cos(n.yaw - a.yaw))
+      a.yaw += dy * k
+      a.pitch += (n.pitch - a.pitch) * k
+      a.crouch += (n.crouch - a.crouch) * k
+    }
+    // smoke clouds grow and fade here too
+    const now = this.time
+    for (const s of this.world.smokes) {
+      const age = now - s.born
+      s.r = age < 1.5 ? 4.6 * (age / 1.5) : now > s.until - 2 ? 4.6 * Math.max(0, (s.until - now) / 2) : 4.6
+    }
+    for (const f of this.world.fires) f.r = Math.min(f.max, f.max * (0.35 + (now - f.born) / 0.8))
   }
 
   // ================= For the HUD =================

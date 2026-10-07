@@ -17,6 +17,16 @@ let filter = 'all'
 let onChange = () => {}
 
 export const inventory = () => inv
+/** Your equipped skins, weapon id -> descriptor (sent to the host when you join a game). */
+export function equippedSkins() {
+  inv = loadInventory()
+  const out = {}
+  for (const w of Object.keys(inv.equipped)) {
+    const d = skinDesc(equippedFor(inv, w))
+    if (d) out[w] = d
+  }
+  return out
+}
 const save = () => {
   saveInventory(inv)
   onChange(inv)
@@ -25,6 +35,7 @@ const save = () => {
 // ---------------- In the game
 /** The skin a soldier's gun wears: yours for you, now and then a random one for bots. */
 export function skinFor(a, weaponId) {
+  if (a.remote) return a.netSkins?.[weaponId] ?? null
   if (a.isPlayer) return skinDesc(equippedFor(inv, weaponId))
   if (a.isBot && Math.random() < 0.3) return randomSkinFor(weaponId)
   return null
