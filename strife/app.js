@@ -6,6 +6,7 @@ import { Game, eyeOf, weaponOf, dirOf } from './game.js'
 import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP } from './weapons.js'
+import { gunIcon } from './icons.js'
 import { DIFFICULTY } from './bots.js'
 import * as audio from './audio.js'
 
@@ -114,7 +115,7 @@ function hooks() {
     },
     tracer({ a, from, to, w }) {
       if (!view) return
-      if (a === watched && mode === 'play') view.kick(w)
+      if (a === watched && mode === 'play') view.kick(w, !!a.inv[a.active]?.silenced)
       else view.muzzle(a)
       if (a !== watched || Math.random() < 0.5) view.tracer(from, to, a === watched)
     },
@@ -139,8 +140,12 @@ function hooks() {
     knife({ a }) {
       if (a === watched) view?.slash()
     },
+    mode({ a, text }) {
+      if (a === game.player) say(text, 1.2)
+    },
     detonate({ nade }) {
-      if (nade.type !== 'smoke') view?.explosion(nade.pos, nade.type)
+      if (nade.type === 'he' || nade.type === 'flash') view?.explosion(nade.pos, nade.type)
+      else if (nade.type === 'fire') view?.explosion(nade.pos, 'fire')
     },
     explode({ pos }) {
       view?.explosion(pos, 'bomb')
@@ -572,13 +577,17 @@ function renderBuy() {
       n++
       const b = document.createElement('button')
       b.className = 'buy-item'
-      const owned = (WEAPONS[id] && (a.inv[WEAPONS[id].slot]?.id === id || a.inv.grenades.includes(id))) || (id === 'kit' && a.kit) || (id === 'vesthelm' && a.helmet && a.armor >= 100) || (id === 'vest' && a.armor >= 100)
+      const owned = (WEAPONS[id] && (a.inv[WEAPONS[id].slot]?.id === id || (WEAPONS[id].slot === 'grenade' && a.inv.grenades.filter((x) => x === id).length >= (WEAPONS[id].carry ?? 1)))) || (id === 'kit' && a.kit) || (id === 'vesthelm' && a.helmet && a.armor >= 100) || (id === 'vest' && a.armor >= 100)
       b.classList.toggle('owned', !!owned)
       b.disabled = a.money < (id === 'vesthelm' && a.armor >= 100 ? 350 : it.price) || !!owned
-      b.innerHTML = `<b></b><span></span><small></small>`
-      $('b', b).textContent = `${ci === buyCat ? n + '. ' : ''}${it.name}`
+      b.innerHTML = `<i></i><b></b><span></span><small></small>`
+      const pic = WEAPONS[id] ? gunIcon(id, 160, 56) : ''
+      if (pic) $('i', b).style.backgroundImage = `url(${pic})`
+      else $('i', b).textContent = id === 'kit' ? '🧰' : '🦺'
+      $('b', b).textContent = `${ci === buyCat && n <= 10 ? (n % 10) + '. ' : ''}${it.name}`
       $('span', b).textContent = `$${it.price}`
-      $('small', b).textContent = WEAPONS[id]?.dmg ? `${WEAPONS[id].dmg} dmg · ${WEAPONS[id].mag} rounds${WEAPONS[id].auto ? ' · auto' : ''}` : ''
+      const W = WEAPONS[id]
+      $('small', b).textContent = W?.mag ? `${W.pellets > 1 ? W.pellets + '×' : ''}${W.dmg} dmg · ${W.mag} rds${W.auto ? ' · auto' : ''}${W.zoom ? ' · scope' : ''}${W.modes === 'burst' ? ' · burst' : ''}${W.modes === 'silencer' || W.silenced ? ' · silenced' : ''}${W.reward && W.reward !== 300 ? ` · kill $${W.reward}` : ''}` : W?.kind === 'grenade' ? (W.carry ? `carry ${W.carry}` : '') : ''
       b.dataset.id = id
       b.addEventListener('click', () => doBuy(id))
       col.append(b)
@@ -600,7 +609,8 @@ function buyKey(n) {
     if (n >= 1 && n <= SHOP.length) buyCat = n - 1
   } else {
     const items = SHOP[buyCat].items.filter((id) => !itemDef(id).team || itemDef(id).team === game.player.team)
-    if (items[n - 1]) doBuy(items[n - 1])
+    const k = n === 0 ? 9 : n - 1
+    if (items[k]) doBuy(items[k])
     buyCat = -1
   }
   renderBuy()
@@ -816,7 +826,7 @@ function updateHud(dt) {
     const nk = w.inv.grenades.join(',') + w.active
     if (last.nades !== nk) {
       last.nades = nk
-      hud.nades.innerHTML = w.inv.grenades.map((id, k) => `<span class="${w.active === 'grenade' && k === 0 ? 'on' : ''}">${WEAPONS[id].name.replace(' Grenade', '').replace('Flashbang', 'Flash')}</span>`).join('')
+      hud.nades.innerHTML = w.inv.grenades.map((id, k) => `<span class="${w.active === 'grenade' && k === 0 ? 'on' : ''}">${WEAPONS[id].name.replace(' Grenade', '').replace('Flashbang', 'Flash').replace('Incendiary', 'Incend.')}</span>`).join('')
     }
   }
   if (me) {

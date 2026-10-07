@@ -4,6 +4,7 @@
 import * as THREE from './lib/three.min.js'
 import { buildLevel, buildSky } from './render.js'
 import { WEAPONS } from './weapons.js'
+import { buildGun } from './guns.js'
 import { eyeOf, weaponOf } from './game.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
@@ -94,72 +95,15 @@ const box = (w, h, d, mat, x = 0, y = 0, z = 0) => {
 const lam = (color) => new THREE.MeshLambertMaterial({ color })
 
 // ================= Guns =================
-/** A gun model (for hands, the floor, or first person). Points down -z, grip at the origin. */
-export function gunModel(id, detail = 1) {
+/** A gun model (for hands, the floor, or first person). Points down -z, trigger at the origin. */
+export function gunModel(id, detail = 1, opts = {}) {
+  const inner = buildGun(id, { detail, silenced: opts.silenced, skin: opts.skin })
+  const k = WEAPONS[id]?.kind
+  const sc = k === 'pistol' || k === 'taser' ? 0.82 : k === 'grenade' || k === 'knife' || k === 'bomb' ? 1 : 0.72
+  inner.scale.setScalar(sc)
   const g = new THREE.Group()
-  const black = lam('#303237')
-  const dark = lam('#474a50')
-  const wood = lam('#7a4a26')
-  const steel = lam('#9aa0a6')
-  const w = WEAPONS[id]
-  const kind = w?.kind ?? 'pistol'
-  if (id === 'ak47') {
-    g.add(box(0.06, 0.07, 0.42, dark, 0, 0.04, -0.2)) // receiver
-    g.add(box(0.025, 0.025, 0.42, black, 0, 0.06, -0.6)) // barrel
-    g.add(box(0.05, 0.05, 0.22, wood, 0, 0.03, -0.42)) // handguard
-    g.add(box(0.055, 0.09, 0.3, wood, 0, 0.0, 0.17)) // stock
-    const mag = box(0.04, 0.16, 0.07, lam('#7a4a26'), 0, -0.06, -0.24)
-    mag.rotation.x = 0.35
-    g.add(mag)
-    g.add(box(0.035, 0.09, 0.04, wood, 0, -0.04, -0.02)) // grip
-    g.add(box(0.012, 0.04, 0.012, black, 0, 0.09, -0.75)) // front sight
-  } else if (id === 'm4') {
-    g.add(box(0.06, 0.08, 0.4, black, 0, 0.04, -0.2))
-    g.add(box(0.024, 0.024, 0.4, black, 0, 0.05, -0.58))
-    g.add(box(0.06, 0.06, 0.24, dark, 0, 0.04, -0.46))
-    g.add(box(0.05, 0.08, 0.26, black, 0, 0.02, 0.15))
-    g.add(box(0.035, 0.03, 0.18, black, 0, 0.1, -0.16)) // carry rail
-    g.add(box(0.035, 0.15, 0.06, dark, 0, -0.07, -0.24))
-    g.add(box(0.035, 0.09, 0.04, black, 0, -0.04, -0.02))
-  } else if (id === 'awp') {
-    const green = lam('#4c5a3a')
-    g.add(box(0.07, 0.09, 0.62, green, 0, 0.03, -0.15))
-    g.add(box(0.03, 0.03, 0.55, black, 0, 0.05, -0.72))
-    const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.34, 10), black)
-    scope.rotation.x = Math.PI / 2
-    scope.position.set(0, 0.13, -0.15)
-    g.add(scope)
-    g.add(box(0.04, 0.1, 0.06, black, 0, -0.05, -0.12))
-    g.add(box(0.05, 0.11, 0.06, green, 0, -0.05, 0.08))
-  } else if (id === 'smg') {
-    g.add(box(0.055, 0.08, 0.32, black, 0, 0.04, -0.14))
-    g.add(box(0.025, 0.025, 0.16, black, 0, 0.05, -0.38))
-    g.add(box(0.035, 0.18, 0.045, dark, 0, -0.08, -0.04))
-    g.add(box(0.04, 0.03, 0.2, dark, 0, 0.02, 0.12))
-  } else if (kind === 'pistol') {
-    const mat = id === 'deagle' ? steel : black
-    g.add(box(0.035, 0.05, id === 'deagle' ? 0.24 : 0.18, mat, 0, 0.04, -0.07))
-    g.add(box(0.03, 0.1, 0.045, dark, 0, -0.03, 0.01))
-    if (id === 'usp') {
-      const sup = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.14, 8), dark)
-      sup.rotation.x = Math.PI / 2
-      sup.position.set(0, 0.045, -0.23)
-      g.add(sup)
-    }
-  } else if (kind === 'knife') {
-    g.add(box(0.025, 0.035, 0.11, black, 0, 0, 0.02))
-    const blade = box(0.006, 0.035, 0.17, steel, 0, 0.01, -0.12)
-    g.add(blade)
-  } else if (kind === 'grenade') {
-    const col = w.nade === 'he' ? '#4b5a33' : w.nade === 'flash' ? '#8a8f94' : '#6f7378'
-    const body = w.nade === 'smoke' ? new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 10), lam(col)) : new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), lam(col))
-    g.add(body)
-    g.add(box(0.015, 0.03, 0.04, steel, 0, 0.06, 0))
-  } else if (kind === 'bomb') {
-    g.add(box(0.2, 0.09, 0.14, lam('#6b5a3a'), 0, 0, 0))
-    g.add(box(0.08, 0.02, 0.06, lam('#2c3a2c'), 0.03, 0.055, 0))
-    g.add(box(0.04, 0.03, 0.03, lam('#c0392b'), -0.06, 0.055, 0.03))
-  }
+  g.add(inner)
+  g.userData.muzzle = (inner.userData.muzzle ?? 0.3) * sc
   return g
 }
 
@@ -388,7 +332,7 @@ export class View {
     this.light(new THREE.Vector3(p.x, p.y + 1, p.z), big ? 80 : 30, big ? 0.5 : 0.25)
   }
   addDrop(d) {
-    const m = gunModel(d.id)
+    const m = gunModel(d.id, 1, { silenced: d.silenced, skin: this.skinMat?.(d.skin) })
     m.scale.setScalar(1.4)
     m.position.set(d.pos.x, d.pos.y + 0.06, d.pos.z)
     m.rotation.set(0, d.yaw, Math.PI / 2)
@@ -421,10 +365,11 @@ export class View {
       s.root.rotation.y = a.yaw
       // gun in hand
       const w = weaponOf(a)
-      const gid = a.alive ? w?.id ?? null : null
+      const sl = a.inv?.[a.active]
+      const gid = a.alive && w ? `${w.id}|${sl?.silenced}|${sl?.skin?.key ?? ''}` : null
       if (gid !== s.gunId) {
         if (s.gun) s.hand.remove(s.gun)
-        s.gun = gid ? gunModel(gid) : null
+        s.gun = gid ? gunModel(w.id, 1, { silenced: sl?.silenced, skin: this.skinMat?.(sl?.skin) }) : null
         if (s.gun) {
           s.gun.scale.setScalar(1.3)
           s.hand.add(s.gun)
@@ -502,7 +447,7 @@ export class View {
       live.add(nd)
       let m = this.nadeMeshes.get(nd)
       if (!m) {
-        m = gunModel(nd.type === 'he' ? 'he' : nd.type === 'flash' ? 'flash' : 'smoke')
+        m = gunModel(nd.item ?? (nd.type === 'he' ? 'he' : nd.type === 'flash' ? 'flash' : 'smoke'))
         m.scale.setScalar(1.4)
         this.scene.add(m)
         this.nadeMeshes.set(nd, m)
@@ -548,6 +493,64 @@ export class View {
         }
         this.smokeClouds.delete(sm)
       }
+    // Molotov fires: flickering flames over a glowing patch of floor
+    this.fireFx ??= new Map()
+    const fires = new Set(game.world.fires)
+    for (const f of game.world.fires) {
+      let fx = this.fireFx.get(f)
+      if (!fx) {
+        fx = { flames: [], glow: null }
+        const glow = new THREE.Mesh(new THREE.CircleGeometry(1, 20), new THREE.MeshBasicMaterial({ map: this.tex.soft, color: '#ff7a20', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.8 }))
+        glow.rotation.x = -Math.PI / 2
+        glow.position.set(f.x, f.y + 0.03, f.z)
+        this.scene.add(glow)
+        fx.glow = glow
+        for (let k = 0; k < 26; k++) {
+          const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.tex.flash, color: k % 3 ? '#ff8c2a' : '#ffd060', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
+          const ang = Math.random() * 6.28
+          sp.userData = { a: ang, r: Math.sqrt(Math.random()), ph: Math.random() * 6.28, sp: 6 + Math.random() * 6 }
+          this.scene.add(sp)
+          fx.flames.push(sp)
+        }
+        this.fireFx.set(f, fx)
+      }
+      fx.glow.scale.setScalar(f.r * 1.3)
+      const fade = Math.min(1, (f.until - now) / 1.2)
+      for (const sp of fx.flames) {
+        const u = sp.userData
+        const t = (now * u.sp + u.ph) % 6.28
+        const h = 0.4 + 0.5 * Math.abs(Math.sin(t))
+        sp.position.set(f.x + Math.cos(u.a) * u.r * f.r, f.y + h * 0.5, f.z + Math.sin(u.a) * u.r * f.r)
+        sp.scale.set(0.7 * fade, h * 1.4 * fade, 1)
+        sp.material.opacity = 0.75 * fade
+      }
+    }
+    for (const [f, fx] of this.fireFx)
+      if (!fires.has(f)) {
+        this.scene.remove(fx.glow)
+        for (const sp of fx.flames) {
+          this.scene.remove(sp)
+          sp.material.dispose()
+        }
+        this.fireFx.delete(f)
+      }
+    // Decoys lying on the floor
+    this.decoyFx ??= new Map()
+    const decoys = new Set(game.decoys)
+    for (const d of game.decoys)
+      if (!this.decoyFx.has(d)) {
+        const m = gunModel('decoy')
+        m.scale.setScalar(1.4)
+        m.rotation.z = Math.PI / 2
+        m.position.set(d.pos.x, d.pos.y + 0.04, d.pos.z)
+        this.scene.add(m)
+        this.decoyFx.set(d, m)
+      }
+    for (const [d, m] of this.decoyFx)
+      if (!decoys.has(d)) {
+        this.scene.remove(m)
+        this.decoyFx.delete(d)
+      }
     // The bomb (on the floor or planted)
     const b = game.bomb
     const showBomb = b && (b.state === 'dropped' || b.state === 'planted')
@@ -564,11 +567,13 @@ export class View {
     const st = this.vmState
     const w = a && a.alive ? weaponOf(a) : null
     const id = w?.id ?? null
-    if (id !== this.vmGunId) {
+    const slot = a?.inv?.[a.active]
+    const key = id && `${id}|${slot?.silenced}|${slot?.skin?.key ?? ''}`
+    if (key !== this.vmGunId) {
       this.vm.clear()
-      this.vmGunId = id
+      this.vmGunId = key
       if (id) {
-        const g = gunModel(id, 2)
+        const g = gunModel(id, 2, { silenced: slot?.silenced, skin: this.skinMat?.(slot?.skin) })
         const arms = new THREE.Group()
         const sleeve = lam(a.team === 'T' ? '#8a7350' : '#2e4060')
         const glove = lam('#1e1e1e')
@@ -576,15 +581,16 @@ export class View {
         const rArm = box(0.075, 0.075, 0.42, sleeve, 0.05, -0.17, 0.2)
         rArm.rotation.x = 0.55
         arms.add(rArm, box(0.06, 0.07, 0.09, glove, 0.0, -0.06, 0.0))
-        if (w.kind === 'rifle' || w.kind === 'smg' || w.kind === 'sniper') {
+        const twoHands = w.kind === 'rifle' || w.kind === 'smg' || w.kind === 'sniper' || w.kind === 'heavy'
+        if (twoHands) {
           // the left hand holds the front, its arm coming in from the lower left
-          const fore = w.kind === 'smg' ? -0.2 : -0.36
+          const fore = -Math.min(0.36, g.userData.muzzle * 0.5)
           const lArm = box(0.075, 0.075, 0.45, sleeve, -0.13, -0.17, fore + 0.18)
           lArm.rotation.set(0.5, -0.55, 0)
           arms.add(lArm, box(0.06, 0.07, 0.09, glove, -0.02, -0.03, fore))
         }
         const holder = new THREE.Group()
-        const sc = w.kind === 'rifle' || w.kind === 'sniper' ? 0.78 : w.kind === 'smg' ? 0.85 : 1
+        const sc = w.kind === 'rifle' || w.kind === 'sniper' || w.kind === 'heavy' ? 0.64 : w.kind === 'smg' ? 0.72 : w.kind === 'pistol' || w.kind === 'taser' ? 0.8 : 1
         g.scale.setScalar(sc)
         arms.scale.setScalar(sc)
         holder.add(g, arms)
@@ -594,7 +600,7 @@ export class View {
         // muzzle flash sprite at the barrel
         const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.tex.flash, color: '#ffe8b0', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
         flash.scale.setScalar(0.28)
-        flash.position.set(0, 0.05, w.kind === 'pistol' ? (id === 'usp' ? -0.3 : -0.22) : w.kind === 'smg' ? -0.48 : -0.82)
+        flash.position.set(0, 0.03, -g.userData.muzzle - 0.02)
         flash.visible = false
         g.add(flash)
         this.vmFlash = flash
@@ -623,7 +629,7 @@ export class View {
     const h = this.vmHolder
     const crouchDip = a.crouch * 0.01
     const kind = WEAPONS[id].kind
-    const base = kind === 'pistol' ? [0.13, -0.14, -0.36] : kind === 'knife' ? [0.15, -0.15, -0.34] : kind === 'grenade' || kind === 'bomb' ? [0.14, -0.15, -0.36] : [0.12, -0.13, -0.36]
+    const base = kind === 'pistol' || kind === 'taser' ? [0.12, -0.12, -0.36] : kind === 'knife' ? [0.15, -0.15, -0.34] : kind === 'grenade' || kind === 'bomb' ? [0.14, -0.15, -0.36] : [0.11, -0.115, -0.34]
     h.position.set(
       base[0] + Math.sin(st.bob) * 0.008 * bobA + st.swayX,
       base[1] - Math.abs(Math.cos(st.bob)) * 0.007 * bobA + st.swayY - (1 - st.draw) * 0.25 - rl * 0.1 - crouchDip,
@@ -637,9 +643,9 @@ export class View {
     }
     this.vm.visible = !(w.zoom && a.scope)
   }
-  kick(w) {
-    this.vmState.kick = Math.min(1, this.vmState.kick + (w.kind === 'sniper' ? 1 : w.kind === 'pistol' ? 0.7 : 0.45))
-    this.vmState.flash = w.sound === 'silenced' ? 0 : 0.05
+  kick(w, silenced = false) {
+    this.vmState.kick = Math.min(1, this.vmState.kick + (w.kind === 'sniper' || w.type === 'shotgun' ? 1 : w.kind === 'pistol' ? 0.7 : 0.45))
+    this.vmState.flash = silenced ? 0 : 0.05
   }
   slash() {
     this.vmState.slash = 1

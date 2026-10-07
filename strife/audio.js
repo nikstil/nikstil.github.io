@@ -65,6 +65,29 @@ function bake() {
   buffers.pistol = shot({ crack: 0.9, body: 0.55, lp: 0.4, thump: 0.4, thumpHz: 110, tail: 0.1, bodyDecay: 24, len: 0.4 })
   buffers.deagle = shot({ crack: 1, body: 1, lp: 0.2, thump: 0.9, thumpHz: 55, tail: 0.3, bodyDecay: 10, len: 0.7 })
   buffers.awp = shot({ crack: 1, body: 1.1, lp: 0.15, thump: 1, thumpHz: 45, thumpDecay: 8, tail: 0.5, tailDecay: 2.5, bodyDecay: 7, len: 1.4 })
+  buffers.shotgun = shot({ crack: 1, body: 1.2, lp: 0.18, thump: 1, thumpHz: 50, thumpDecay: 12, tail: 0.4, tailDecay: 3.5, bodyDecay: 9, len: 0.9 })
+  buffers.mg = shot({ crack: 0.95, body: 0.9, lp: 0.24, thump: 0.75, thumpHz: 70, tail: 0.2, bodyDecay: 16, len: 0.5 })
+  buffers.scout = shot({ crack: 1, body: 0.8, lp: 0.3, thump: 0.6, thumpHz: 75, thumpDecay: 14, tail: 0.35, tailDecay: 3, bodyDecay: 12, len: 1.0 })
+  buffers.auto = shot({ crack: 1, body: 1, lp: 0.2, thump: 0.85, thumpHz: 55, thumpDecay: 10, tail: 0.35, tailDecay: 3, bodyDecay: 10, len: 0.9 })
+  buffers.zeus = buffer(0.5, (t) => (Math.random() < 0.5 ? 1 : -1) * Math.exp(-t * 7) * (0.4 + 0.6 * (Math.sin(2 * Math.PI * 90 * t) > 0 ? 1 : 0)) * 0.6)
+  buffers.molotov = buffer(1.2, (t, s) => {
+    const n = noise()
+    s.lp += (n - s.lp) * 0.08
+    const glass = t < 0.15 ? n * Math.exp(-t * 30) * (Math.sin(2 * Math.PI * 3200 * t) * 0.5 + 0.5) : 0
+    return glass * 0.8 + s.lp * 2.2 * Math.min(1, t * 6) * Math.exp(-t * 2.2)
+  })
+  buffers.burn = buffer(0.5, (t, s) => {
+    const n = noise()
+    s.lp += (n - s.lp) * 0.06
+    const pop = Math.random() < 0.002 ? 1 : 0
+    s.last = Math.max(s.last * 0.97, pop)
+    return (s.lp * 1.2 + n * s.last * 0.6) * Math.sin(Math.PI * t / 0.5)
+  })
+  buffers.pop = buffer(0.2, (t, s) => {
+    const n = noise()
+    s.lp += (n - s.lp) * 0.2
+    return s.lp * 1.5 * Math.exp(-t * 30)
+  })
   buffers.silenced = buffer(0.25, (t, s) => {
     const n = noise()
     s.lp += (n - s.lp) * 0.12

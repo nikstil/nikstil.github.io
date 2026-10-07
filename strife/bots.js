@@ -178,30 +178,51 @@ export class Brain {
   buy() {
     const { g, a } = this
     const team = a.team
+    const T = team === 'T'
     const firstRound = g.round === 1 || (g.halftimeDone && g.round === g.halftimeAt + 1)
-    const teamMoney = g.actors.filter((b) => b.team === team).reduce((s, b) => s + b.money, 0) / Math.max(1, g.actors.filter((b) => b.team === team).length)
-    const rifle = team === 'T' ? 'ak47' : 'm4'
+    const mates = g.actors.filter((b) => b.team === team)
+    const teamMoney = mates.reduce((s, b) => s + b.money, 0) / Math.max(1, mates.length)
     const has = a.inv.primary
     const tryBuy = (id) => g.buy(a, id) === ''
+    // Each bot has its favourites, so a team doesn't all carry the same thing.
+    const taste = this.taste ??= Math.random()
+    const choose = (list) => {
+      const ok = list.filter(([id, w]) => WEAPONS[id] && (!WEAPONS[id].team || WEAPONS[id].team === team) && a.money >= WEAPONS[id].price + 650 && w > 0)
+      if (!ok.length) return null
+      const total = ok.reduce((s, [, w]) => s + w, 0)
+      let r = ((taste * 7.31 + Math.random() * 0.5) % 1) * total
+      for (const [id, w] of ok) if ((r -= w) <= 0) return id
+      return ok[ok.length - 1][0]
+    }
     if (firstRound) {
-      if (Math.random() < 0.5) tryBuy('vest')
-      else if (Math.random() < 0.5) tryBuy('deagle')
-      else tryBuy(team === 'T' ? 'flash' : 'kit')
+      const r = Math.random()
+      if (r < 0.35) tryBuy('vest')
+      else if (r < 0.55) tryBuy(T ? 'tec9' : 'fiveseven')
+      else if (r < 0.7) tryBuy('p250')
+      else if (r < 0.8) tryBuy('deagle')
+      else if (r < 0.9) tryBuy('flash') && tryBuy('flash')
+      else tryBuy(T ? 'flash' : 'kit')
     } else {
       const eco = !has && teamMoney < 2600 && a.money < 3700
       if (!eco) {
-        const awpers = g.actors.filter((b) => b.team === team && b.inv.primary?.id === 'awp').length
+        const awpers = mates.filter((b) => b.inv.primary?.id === 'awp').length
         if (!has) {
-          if (!awpers && a.money >= 4750 + 1000 && Math.random() < 0.3) tryBuy('awp')
-          else if (a.money >= WEAPONS[rifle].price + 650) tryBuy(rifle)
-          else if (a.money >= 1250 + 650) tryBuy('smg')
+          let pick = null
+          if (!awpers && a.money >= 4750 + 1000 && taste < 0.35) pick = 'awp'
+          else if (a.money >= 2700 + 1000) pick = choose(T ? [['ak47', 8], ['sg553', 2], ['ssg08', taste > 0.85 ? 3 : 0.4]] : [['m4a4', 4], ['m4a1s', 4], ['aug', 1.5], ['ssg08', taste > 0.85 ? 3 : 0.4]])
+          if (!pick && a.money >= 1800 + 650) pick = choose(T ? [['galil', 4], ['mac10', 1], ['ump45', 1], ['xm1014', 0.6]] : [['famas', 4], ['mp9', 1.5], ['ump45', 1], ['mag7', 0.6]])
+          if (!pick) pick = choose(T ? [['mac10', 3], ['ump45', 1.5], ['nova', 0.6], ['sawedoff', 0.4], ['bizon', 0.5]] : [['mp9', 3], ['ump45', 1.5], ['nova', 0.6], ['mag7', 0.4], ['mp5', 0.6]])
+          if (pick) tryBuy(pick)
         }
         if (a.armor < 100 || !a.helmet) tryBuy(a.money >= 1000 ? 'vesthelm' : 'vest')
-        if (team === 'CT' && a.money >= 400 && Math.random() < 0.6) tryBuy('kit')
+        if (!T && a.money >= 400 && Math.random() < 0.6) tryBuy('kit')
         if (a.money >= 300 && Math.random() < 0.7) tryBuy('smoke')
-        if (a.money >= 300 && Math.random() < 0.5) tryBuy('he')
+        if (a.money >= 400 && Math.random() < 0.45) tryBuy(T ? 'molotov' : 'incendiary')
+        if (a.money >= 300 && Math.random() < 0.45) tryBuy('he')
         if (a.money >= 200 && Math.random() < 0.4) tryBuy('flash')
-      } else if (a.money >= 1500 && Math.random() < 0.5) tryBuy('deagle')
+        if (a.money >= 1500 && Math.random() < 0.08) tryBuy('zeus')
+      } else if (a.money >= 1500 && Math.random() < 0.5) tryBuy(Math.random() < 0.6 ? 'deagle' : T ? 'tec9' : 'fiveseven')
+      else if (a.money >= 500 && Math.random() < 0.3) tryBuy('p250')
     }
     if (a.inv.primary) g.switchTo(a, 'primary', true)
   }
@@ -430,7 +451,7 @@ export class Brain {
     }
     let t = this.target
     if (t && w) {
-      const range = { rifle: 60, smg: 32, pistol: 30, sniper: 140, knife: 12 }[w.kind] ?? 45
+      const range = w.type === 'shotgun' ? 16 : w.type === 'mg' ? 50 : w.kind === 'taser' ? 3.4 : { rifle: 60, smg: 32, pistol: 30, sniper: 140, knife: 12 }[w.kind] ?? 45
       const far = Math.hypot(t.pos.x - a.pos.x, t.pos.z - a.pos.z) > range
       const shotAt = this.lastHurt && now - this.lastHurt.at < 2
       if (far && !shotAt) t = null
@@ -467,7 +488,7 @@ export class Brain {
       const off = Math.hypot(wrap(want.yaw - cmd.yaw), want.pitch - cmd.pitch)
       const tol = Math.max(0.012, Math.atan(0.3 / Math.max(1, dist)))
       // Snipers scope in first.
-      if (w?.zoom && !a.scope && now > this.reactAt - 0.25) cmd.alt = true
+      if (w?.zoom && !a.scope && now > this.reactAt - 0.25 && (w.kind === 'sniper' || dist > 20)) cmd.alt = true
       // Movement while fighting: stop to shoot (rifles, the AWP), strafe with pistols and SMGs.
       if (w && (w.kind === 'pistol' || w.kind === 'smg') && dist < 20) {
         if (now > this.strafeNext) {
@@ -476,7 +497,7 @@ export class Brain {
         }
         const r = dirOf(a.yaw + Math.PI / 2, 0)
         wish = { fx: r.x * this.strafe, fz: r.z * this.strafe }
-      } else if (w?.kind === 'knife') {
+      } else if (w?.kind === 'knife' || w?.kind === 'taser') {
         wish = { fx: (t.pos.x - a.pos.x) / (dist || 1), fz: (t.pos.z - a.pos.z) / (dist || 1) }
       }
       if (dist > 25 && d.control > 0.6 && w?.kind === 'rifle') cmd.crouch = Math.random() < 0.02 ? !this.crouched : this.crouched
@@ -484,18 +505,19 @@ export class Brain {
       const ready = now >= this.reactAt && now >= this.pauseUntil && off < tol * (w?.kind === 'sniper' ? 1 : 2.2)
       if (ready && w && w.kind !== 'grenade' && w.kind !== 'bomb') {
         if (w.kind === 'knife') cmd.fire = dist < 1.8
+        else if (w.kind === 'taser') cmd.fire = dist < 3.2
         else if (slot && slot.clip === 0) cmd.reload = true
         else {
           cmd.fire = true
           this.burst++
-          const maxBurst = w.kind === 'rifle' || w.kind === 'smg' ? (dist > 28 ? 1 + Math.floor(Math.random() * 2) : dist > 14 ? 3 + Math.floor(Math.random() * 3) : 30) : 1
+          const maxBurst = (w.kind === 'rifle' || w.kind === 'smg' || w.type === 'mg') && !slot?.burst ? (dist > 28 ? 1 + Math.floor(Math.random() * 2) : dist > 14 ? 3 + Math.floor(Math.random() * 3) : 30) : 1
           if (this.burst >= maxBurst) {
             this.burst = 0
             this.pauseUntil = now + (w.kind === 'pistol' ? 0.18 + Math.random() * 0.2 : dist > 14 ? 0.28 + Math.random() * 0.25 : 0.05)
           }
         }
       }
-      if (!w || (w.kind !== 'pistol' && w.kind !== 'smg' && w.kind !== 'knife')) wish = { fx: 0, fz: 0 } // counter-strafe
+      if (!w || (w.kind !== 'pistol' && w.kind !== 'smg' && w.kind !== 'knife' && w.kind !== 'taser')) wish = { fx: 0, fz: 0 } // counter-strafe
       if (obj.use && a.team === 'T') cmd.use = false
     } else {
       // ---- Go about the plan ----

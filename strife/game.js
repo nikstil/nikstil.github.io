@@ -2,7 +2,7 @@
 // sound go through `hooks` (see app.js), so a whole match can also run headless (for tests).
 
 import { World, GRAVITY } from './world.js'
-import { WEAPONS, GEAR, ECONOMY, applyDamage } from './weapons.js'
+import { WEAPONS, GEAR, ECONOMY, MAX_GRENADES, applyDamage } from './weapons.js'
 import { Brain, planRound } from './bots.js'
 
 export const STAND_H = 1.83
@@ -84,8 +84,9 @@ export const weaponOf = (a) => {
   if (a.active === 'bomb') return a.inv.bomb ? WEAPONS.bomb : null
   return s ? WEAPONS[s.id] : null
 }
-const gun = (id) => ({ id, clip: WEAPONS[id].mag, reserve: WEAPONS[id].reserve })
+const gun = (id, skin = null) => ({ id, clip: WEAPONS[id].mag, reserve: WEAPONS[id].reserve, silenced: !!WEAPONS[id].silenced, burst: false, skin })
 const defaultPistol = (team) => gun(team === 'T' ? 'glock' : 'usp')
+const DEFAULT_PISTOLS = ['glock', 'usp', 'p2000']
 
 export class Game {
   /**
@@ -108,6 +109,7 @@ export class Game {
     this.roundStart = 0
     this.actors = []
     this.nades = []
+    this.decoys = []
     this.drops = []
     this.bomb = null
     this.intel = { T: [], CT: [] } // recent sightings: { pos, at, id }
@@ -158,6 +160,9 @@ export class Game {
     const w = this.world
     w.smokes.length = 0
     this.nades.length = 0
+    this.decoys.length = 0
+    w.fires.length = 0
+    for (const a of this.actors) a.inv && (a.inv.zeus ??= null)
     for (const d of this.drops) this.emit('dropRemoved', d)
     this.drops.length = 0
     this.intel = { T: [], CT: [] }
@@ -290,14 +295,18 @@ export class Game {
         return ''
       }
     } else if (w.slot === 'grenade') {
-      if (a.inv.grenades.length >= 3) return 'You can’t carry more grenades.'
-      if (a.inv.grenades.includes(id)) return 'You already have one.'
+      if (a.inv.grenades.length >= MAX_GRENADES) return 'You can’t carry more grenades.'
+      const have = a.inv.grenades.filter((x) => x === id || (w.group && WEAPONS[x].group === w.group)).length
+      if (have >= (w.carry ?? 1)) return 'You can’t carry any more of those.'
       a.inv.grenades.push(id)
+    } else if (w.slot === 'zeus') {
+      if (a.inv.zeus) return 'You already have one.'
+      a.inv.zeus = gun(id)
     } else {
       const cur = a.inv[w.slot]
       if (cur?.id === id) return 'You already have it.'
       if (cur && w.slot === 'primary') this.dropWeapon(a, 'primary', true)
-      a.inv[w.slot] = gun(id)
+      a.inv[w.slot] = gun(id, this.skinFor?.(a, id) ?? null)
       this.switchTo(a, w.slot, true)
     }
     a.money -= item.price
@@ -318,6 +327,7 @@ export class Game {
     a.reloadEnd = 0
     a.switchEnd = this.time + (slot === 'knife' ? 0.35 : 0.6)
     a.recoil = 0
+    a.burstLeft = 0
     this.emit('switch', { a })
   }
   cycleGrenade(a) {
@@ -354,6 +364,17 @@ export class Game {
       a.scope = (a.scope + 1) % (w.zoom.length + 1)
       this.sound('click', null, { who: a })
     }
+    const s = a.inv[a.active]
+    if (w.modes === 'burst' && s) {
+      s.burst = !s.burst
+      this.emit('mode', { a, text: s.burst ? 'Switched to burst-fire mode' : w.kind === 'pistol' ? 'Switched to semi-automatic' : 'Switched to automatic' })
+      this.sound('click', null, { who: a })
+    }
+    if (w.modes === 'silencer' && s && this.time >= a.reloadEnd && this.time >= a.switchEnd) {
+      s.silenced = !s.silenced
+      a.switchEnd = this.time + 1.3 // screwing it on or off
+      this.emit('mode', { a, text: s.silenced ? 'Silencer on' : 'Silencer off', silencer: true })
+    }
     if (w.kind === 'knife' && this.time >= a.nextFire) this.knife(a, true)
     if (w.kind === 'grenade' && this.time >= a.nextFire && this.time >= a.switchEnd) this.throwNade(a, true)
   }
@@ -374,7 +395,7 @@ export class Game {
     if (w.kind === 'bomb') return
     const s = a.inv[a.active]
     if (now < a.reloadEnd) return
-    if (!w.auto && held) return
+    if ((!w.auto || s.burst) && held) return
     if (now < a.nextFire) return
     if (s.clip <= 0) {
       if (!held) this.sound('click', eyeOf(a), { who: a, range: 6 })
@@ -383,10 +404,25 @@ export class Game {
       return
     }
     a.nextFire = now + 1 / w.rate
+    if (s.burst) {
+      // three rounds, quickly, then a pause
+      const gap = w.kind === 'pistol' ? 0.05 : 0.075
+      a.burstLeft = Math.min(2, s.clip - 1)
+      a.burstNext = now + gap
+      a.nextFire = now + gap * 3 + (w.kind === 'pistol' ? 0.45 : 0.3)
+    }
+    this.fireRound(a, w, s)
+  }
+  /** One round (or one load of pellets) out of the barrel. */
+  fireRound(a, w, s) {
+    const now = this.time
     s.clip--
     // How inaccurate: base, moving, in the air, crouched, scoped.
     const hs = Math.hypot(a.vel.x, a.vel.z)
     let spread = w.zoom ? (a.scope ? w.scopedSpread : w.spread) : w.spread
+    if (s.burst) spread *= w.kind === 'pistol' ? 1.6 : 0.8
+    if (w.modes === 'silencer' && !s.silenced) spread *= 1.35
+    if (w.settles) spread *= Math.max(0.2, 1 - a.recoil / 14)
     spread += w.moveSpread * smooth(0.34, 1, hs / w.speed)
     if (!a.onGround) spread += w.airSpread
     if (a.crouch > 0.5 && a.onGround) spread *= 0.72
@@ -398,23 +434,35 @@ export class Game {
     // The view kicks up with the spray (aim punch), half as much as the bullets climb.
     a.punch.pitch += w.kind === 'sniper' ? 0.03 : rp * 0.5 - (a.punch.pitch > rp * 0.5 ? (a.punch.pitch - rp * 0.5) * 0.5 : 0) + 0.004
     a.punch.yaw += ry * 0.5 - a.punch.yaw * 0.2
-    const ang = Math.random() * Math.PI * 2
-    const mag = Math.sqrt(Math.random()) * spread
-    const yaw = a.yaw + ry + Math.cos(ang) * mag
-    const pitch = a.pitch + rp + Math.sin(ang) * mag
     const eye = eyeOf(a)
-    const dir = dirOf(yaw, pitch)
-    this.shoot(a, eye, dir, w)
-    if (w.zoom && a.scope) a.scope = 0 // bolt action: you come out of the scope
-    const loud = w.sound !== 'silenced'
-    this.sound(w.sound, eye, { who: a, range: loud ? (w.kind === 'sniper' ? 120 : 75) : 18 })
+    // A shotgun's pellets share one aim point, each with its own scatter.
+    const ang0 = Math.random() * Math.PI * 2
+    const mag0 = w.pellets > 1 ? Math.sqrt(Math.random()) * (spread - w.spread) : 0
+    for (let p = 0; p < w.pellets; p++) {
+      const ang = Math.random() * Math.PI * 2
+      const mag = w.pellets > 1 ? Math.sqrt(Math.random()) * w.spread : Math.sqrt(Math.random()) * spread
+      const yaw = a.yaw + ry + Math.cos(ang) * mag + Math.cos(ang0) * mag0
+      const pitch = a.pitch + rp + Math.sin(ang) * mag + Math.sin(ang0) * mag0
+      this.shoot(a, eye, dirOf(yaw, pitch), w, p > 0)
+    }
+    if (w.bolt && a.scope) a.scope = 0 // bolt action: you come out of the scope
+    const loud = !s.silenced && w.kind !== 'taser'
+    const sound = s.silenced ? 'silenced' : w.sound
+    this.sound(sound, eye, { who: a, range: loud ? (w.kind === 'sniper' ? 120 : 75) : 18 })
     this.noise(eye, a.team, loud ? 45 : 12)
-    this.emit('shot', { a, w })
+    this.emit('shot', { a, w, silenced: !loud })
     if (s.clip === 0 && s.reserve > 0) a.autoReload = now + 0.3
+    if (w.kind === 'taser' && s.clip === 0) {
+      // one charge: the Zeus is spent
+      a.inv.zeus = null
+      a.burstLeft = 0
+      this.switchTo(a, a.inv.primary ? 'primary' : a.inv.pistol ? 'pistol' : 'knife', true)
+      a.switchEnd = now + 0.8
+    }
   }
   /** A bullet: the nearest body or wall along the ray. */
-  shoot(a, eye, dir, w) {
-    const max = 200
+  shoot(a, eye, dir, w, quiet = false) {
+    const max = w.reach ?? 200
     const wall = this.world.trace(eye.x, eye.y, eye.z, dir.x, dir.y, dir.z, max)
     let tMax = wall ? wall.t : max
     let victim = null
@@ -429,17 +477,17 @@ export class Game {
       }
     }
     const end = { x: eye.x + dir.x * tMax, y: eye.y + dir.y * tMax, z: eye.z + dir.z * tMax }
-    this.emit('tracer', { a, from: eye, to: end, w })
+    if (!quiet || Math.random() < 0.35) this.emit('tracer', { a, from: eye, to: end, w })
     if (victim) {
       const dist = tMax
       const raw = w.dmg * Math.pow(w.range, dist / 12.7)
       this.damage(victim, a, raw, w.pen, part, w.id, end, dir)
-    } else if (wall) {
+    } else if (wall && (!quiet || Math.random() < 0.5)) {
       this.emit('impact', { at: end, normal: { x: wall.nx, y: wall.ny, z: wall.nz } })
       if (Math.random() < 0.08) this.sound('ricochet', end, { range: 20 })
     }
     // Bullets whizzing past are heard.
-    for (const b of this.actors) if (b !== victim && b.team !== a.team && b.alive) this.passBy(b, eye, dir, tMax)
+    if (!quiet) for (const b of this.actors) if (b !== victim && b.team !== a.team && b.alive) this.passBy(b, eye, dir, tMax)
   }
   passBy(b, eye, dir, t) {
     const c = chestOf(b)
@@ -530,7 +578,7 @@ export class Game {
     }
     // Drop the best gun, and the bomb.
     if (victim.inv.primary) this.dropWeapon(victim, 'primary')
-    else if (victim.inv.pistol && victim.inv.pistol.id !== (victim.team === 'T' ? 'glock' : 'usp')) this.dropWeapon(victim, 'pistol')
+    else if (victim.inv.pistol && !DEFAULT_PISTOLS.includes(victim.inv.pistol.id)) this.dropWeapon(victim, 'pistol')
     if (victim.inv.bomb) {
       victim.inv.bomb = false
       this.bomb.state = 'dropped'
@@ -553,7 +601,7 @@ export class Game {
     const off = thrown ? 1.4 : 0.2
     const x = a.pos.x + d.x * off
     const z = a.pos.z + d.z * off
-    const drop = { id: s.id, clip: s.clip, reserve: s.reserve, pos: { x, y: this.world.groundUnder(x, z, 0.1, a.pos.y + 0.5), z }, yaw: Math.random() * 6.28, at: this.time }
+    const drop = { id: s.id, clip: s.clip, reserve: s.reserve, silenced: s.silenced, burst: s.burst, skin: s.skin, pos: { x, y: this.world.groundUnder(x, z, 0.1, a.pos.y + 0.5), z }, yaw: Math.random() * 6.28, at: this.time }
     this.drops.push(drop)
     this.emit('drop', drop)
     if (a.active === slot) this.switchTo(a, a.inv.primary ? 'primary' : a.inv.pistol ? 'pistol' : 'knife', true)
@@ -561,7 +609,7 @@ export class Game {
   pickUp(a, drop) {
     const w = WEAPONS[drop.id]
     if (a.inv[w.slot]) this.dropWeapon(a, w.slot, true)
-    a.inv[w.slot] = { id: drop.id, clip: drop.clip, reserve: drop.reserve }
+    a.inv[w.slot] = { id: drop.id, clip: drop.clip, reserve: drop.reserve, silenced: drop.silenced ?? !!w.silenced, burst: !!drop.burst, skin: drop.skin ?? null }
     this.drops.splice(this.drops.indexOf(drop), 1)
     this.emit('dropRemoved', drop)
     this.switchTo(a, w.slot, true)
@@ -602,6 +650,7 @@ export class Game {
     const speed = lob ? 9 : 17
     const nade = {
       type: w.nade,
+      item: id,
       pos: { x: eye.x + d.x * 0.5, y: eye.y + d.y * 0.5 - 0.1, z: eye.z + d.z * 0.5 },
       vel: { x: d.x * speed + a.vel.x * 0.8, y: d.y * speed + (lob ? 2 : 2.5) + Math.max(0, a.vel.y) * 0.5, z: d.z * speed + a.vel.z * 0.8 },
       owner: a,
@@ -644,6 +693,7 @@ export class Game {
             if (hit.ny > 0.5) {
               n.vel.x *= 0.7
               n.vel.z *= 0.7
+              n.landed = true
             }
             if (Math.abs(vn) > 2.5) this.sound('bounce', n.pos, { range: 20 })
           } else {
@@ -655,11 +705,56 @@ export class Game {
       }
       const resting = Math.hypot(n.vel.x, n.vel.y, n.vel.z) < 0.6
       n.still = resting ? n.still + dt : 0
-      const due = n.type === 'smoke' ? (n.still > 0.4 && this.time > n.fuse) || this.time > n.fuse + 2.5 : this.time > n.fuse
+      const settles = n.type === 'smoke' || n.type === 'decoy'
+      const due = settles ? (n.still > 0.4 && this.time > n.fuse) || this.time > n.fuse + 2.5 : n.type === 'fire' ? n.landed || this.time > n.fuse : this.time > n.fuse
       if (due) {
         this.nades.splice(k, 1)
         this.detonate(n)
       }
+    }
+  }
+  /** Molotov fires burn whoever stands in them; decoys fake gunfire. */
+  stepFires(dt) {
+    const now = this.time
+    const fires = this.world.fires
+    for (let k = fires.length - 1; k >= 0; k--) {
+      const f = fires[k]
+      const age = now - f.born
+      f.r = Math.min(f.max, f.max * (0.35 + age / 0.8))
+      if (now > f.until) {
+        fires.splice(k, 1)
+        continue
+      }
+      if (now >= (f.crackle ?? 0)) {
+        f.crackle = now + 0.45
+        this.sound('burn', f, { range: 22 })
+      }
+      for (const b of this.actors) {
+        if (!b.alive || (b.team === f.owner.team && b !== f.owner)) continue
+        if (Math.hypot(b.pos.x - f.x, b.pos.z - f.z) > f.r + b.r || Math.abs(b.pos.y - f.y) > 1.2) continue
+        b.burn = (b.burn ?? 0) + dt * 40
+        if (b.burn >= 8) {
+          this.damage(b, f.owner, b.burn, 1, 'chest', f.owner.team === 'T' ? 'molotov' : 'incendiary', null, null)
+          b.burn = 0
+        }
+      }
+    }
+    for (let k = this.decoys.length - 1; k >= 0; k--) {
+      const d = this.decoys[k]
+      if (now > d.until) {
+        this.decoys.splice(k, 1)
+        this.sound('pop', d.pos, { range: 30 })
+        this.emit('decoyEnd', { decoy: d })
+        continue
+      }
+      if (now < d.next) continue
+      // a short burst, then a pause, like someone shooting
+      const w = d.w
+      if (d.left <= 0) d.left = w.auto ? 2 + Math.floor(Math.random() * 5) : 1 + Math.floor(Math.random() * 2)
+      d.left--
+      this.sound(w.silenced ? 'silenced' : w.sound, d.pos, { range: 75 })
+      this.noise(d.pos, d.owner.team, 45)
+      d.next = now + (d.left > 0 ? 1 / w.rate : 0.6 + Math.random() * 1.6)
     }
   }
   detonate(n) {
@@ -697,6 +792,29 @@ export class Game {
     } else if (n.type === 'smoke') {
       this.sound('hiss', at, { range: 30 })
       this.world.smokes.push({ x: at.x, y: at.y + 1.4, z: at.z, r: 0, until: this.time + 18, born: this.time })
+      // a smoke puts out any fire it lands in
+      const fires = this.world.fires
+      for (let k = fires.length - 1; k >= 0; k--) {
+        const f = fires[k]
+        if (Math.hypot(f.x - at.x, f.z - at.z) < 4.6 + f.r * 0.5 && Math.abs(f.y - at.y) < 3) {
+          fires.splice(k, 1)
+          this.sound('hiss', f, { range: 25 })
+        }
+      }
+    } else if (n.type === 'fire') {
+      // Only bursts into flames on a floor, and not inside a smoke.
+      const floor = this.world.groundUnder(at.x, at.z, 0.1, at.y + 0.3)
+      const inSmoke = this.world.smokes.some((sm) => Math.hypot(sm.x - at.x, sm.z - at.z) < sm.r + 0.5 && Math.abs(sm.y - at.y) < 3)
+      if (at.y - floor > 1.2 || inSmoke) {
+        this.sound('pop', at, { range: 30 })
+      } else {
+        this.sound('molotov', at, { range: 60 })
+        this.noise(at, n.owner.team, 30)
+        this.world.fires.push({ x: at.x, y: floor, z: at.z, r: 0, max: 3.1, born: this.time, until: this.time + 7, owner: n.owner, id: Math.random() })
+      }
+    } else if (n.type === 'decoy') {
+      const w = WEAPONS[n.owner.inv.primary?.id ?? n.owner.inv.pistol?.id ?? 'glock']
+      this.decoys.push({ pos: { ...at }, owner: n.owner, until: this.time + 15, next: this.time + 0.3, left: 0, w })
     }
   }
 
@@ -943,6 +1061,7 @@ export class Game {
     }
     this.separate()
     this.stepNades(dt)
+    this.stepFires(dt)
     this.stepBomb()
     // Smoke clouds grow, linger and thin out.
     const smokes = this.world.smokes
@@ -1004,6 +1123,8 @@ export class Game {
     if (cmd.slot) {
       if (cmd.slot === 'grenade') this.cycleGrenade(a)
       else if (cmd.slot === 'last') this.switchTo(a, a.lastActive)
+      else if (cmd.slot === 'knife' && a.active === 'knife' && a.inv.zeus) this.switchTo(a, 'zeus')
+      else if (cmd.slot === 'knife' && a.active === 'zeus') this.switchTo(a, 'knife')
       else this.switchTo(a, cmd.slot)
     }
     if (cmd.reload) this.reload(a)
@@ -1016,6 +1137,15 @@ export class Game {
       this.reload(a)
     }
     if (cmd.alt) this.alt(a)
+    if (a.burstLeft > 0 && this.time >= a.burstNext) {
+      const sl = a.inv[a.active]
+      const w = weaponOf(a)
+      if (sl?.burst && sl.clip > 0 && this.time >= a.reloadEnd) {
+        this.fireRound(a, w, sl)
+        a.burstLeft--
+        a.burstNext += w.kind === 'pistol' ? 0.05 : 0.075
+      } else a.burstLeft = 0
+    }
     const busy = a.plant > 0 || this.bomb.defuser === a
     const firing = !!cmd.fire && !busy
     if (firing) this.fire(a, a.trigger)
