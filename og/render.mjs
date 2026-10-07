@@ -96,7 +96,7 @@ const noOnline = (ctx) => ctx.route('**/site.json', (r) => r.fulfill({ contentTy
     const g = window.strife.game
     const me = g.player
     me.money = 16000
-    g.buy(me, 'm4')
+    g.buy(me, 'm4a1s')
     g.buy(me, 'vesthelm')
     g.buy(me, 'smoke')
     g.phase = 'live'
