@@ -10,6 +10,7 @@ import { gunIcon } from './icons.js'
 import { skinMaterial } from './skins.js'
 import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins } from './inventory.js'
 import { openHub, NetHost, NetClient, makeCode } from './net.js'
+import { track } from './stats.js'
 import { DIFFICULTY } from './bots.js'
 import * as audio from './audio.js'
 
@@ -139,6 +140,7 @@ function hooks() {
         deathInfo = e
         record.deaths++
       }
+      if (!game.practice) track.kill(e, game.player, game)
       if (e.attacker === game.player && e.victim.team !== game.player.team) {
         record.kills++
         if (!game.practice) rewardKill(e.weaponId)
@@ -165,6 +167,7 @@ function hooks() {
     },
     roundStart() {
       if (mode !== 'play') return
+      track.roundStart()
       hideBanner()
       deathInfo = null
       spectIdx = 0
@@ -183,16 +186,20 @@ function hooks() {
       const reasons = { elimination: winner === 'T' ? 'All Counter-Terrorists are dead' : 'All Terrorists are dead', bomb: 'The bomb exploded', defuse: 'The bomb has been defused', time: 'Time ran out: the bomb was never planted' }
       showBanner(winner, reasons[reason], mvp ? `MVP: ${mvp.name}${mvp === game.player ? ' (you!)' : ''}` : '')
       if (game.player) audio.play(winner === game.player.team ? 'win' : 'lose')
+      if (game.player && !game.practice) track.roundEnd({ winner, mvp }, game.player, !!net)
       if (game.player && !game.practice && !over) {
         const got = rewardRound(winner === game.player.team)
         if (got) setTimeout(() => say(`Case drop: you received a ${got}`, 3), 1500)
       }
       if (over) setTimeout(matchOver, 3500)
     },
-    planted({ site }) {
+    planted(e) {
+      const { site } = e
+      if (mode === 'play' && !game.practice) track.planted(e, game.player)
       if (mode === 'play') say(`The bomb has been planted at ${site}`, 3, true)
     },
-    defused() {
+    defused(e) {
+      if (mode === 'play' && !game.practice) track.defused(e, game.player)
       if (mode === 'play') say('The bomb has been defused', 3)
     },
     bombDropped() {
@@ -295,7 +302,7 @@ async function hostGame() {
   $('#loading').hidden = false
   setTimeout(() => {
     start({ host: true })
-    net = new NetHost(h, game, { code: makeCode(), name: settings.netName, mapId: settings.map, onSay: (t) => say(t, 3), onPeople: () => {} })
+    net = new NetHost(h, game, { code: makeCode(), name: settings.netName, mapId: settings.map, onSay: (t) => say(t, 3), onPeople: (list) => list.length && track.hostedWithFriend() })
     $('#loading').hidden = true
     paused = false
     show(null)
@@ -535,6 +542,7 @@ function matchOver() {
   if (me) won ? record.wins++ : record.losses++
   store.set(RKEY, record)
   const got = me ? rewardMatch(won, me.mvps ?? 0) : ''
+  if (me) track.matchOver(won, settings.map, game.difficulty)
   $('#over-drop').textContent = got ? `Case drop: ${got} · open it from Inventory` : ''
   $('#over-title').textContent = won ? 'Victory' : 'Defeat'
   $('#over-title').className = won ? 'win' : 'loss'
@@ -1260,7 +1268,7 @@ function frame(t) {
 // ================= Boot =================
 if (makeRenderer()) {
   buildMenu()
-  initInventory({ audio })
+  initInventory({ audio, onChange: () => track.poke() })
   syncSettings()
   start({ demo: true })
   show('menu')

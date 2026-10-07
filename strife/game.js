@@ -919,7 +919,7 @@ export class Game {
     a.defuse = 0
     this.pay(a, ECONOMY.defuse)
     a.roundKills += 1 // counts toward MVP
-    this.emit('defused', { a })
+    this.emit('defused', { a, left: this.bomb.explodeAt - this.time })
     this.endRound('CT', 'defuse')
   }
   stepBomb() {

@@ -120,7 +120,7 @@ export function rollCase(caseId, rand = Math.random) {
 export function makeItem(skinId, rand = Math.random) {
   // floats cluster in Field-Tested like the real thing
   const wear = Math.min(0.999, Math.max(0.0001, Math.pow(rand(), 1.6) * 0.8 + rand() * 0.06))
-  return { skin: skinId, wear: Number(wear.toFixed(4)), seed: Math.floor(rand() * 1000), st: rand() < 0.1 ? 0 : null }
+  return { skin: skinId, r: skinById[skinId]?.rarity, wear: Number(wear.toFixed(4)), seed: Math.floor(rand() * 1000), st: rand() < 0.1 ? 0 : null }
 }
 export function itemName(it) {
   const s = skinById[it.skin]
