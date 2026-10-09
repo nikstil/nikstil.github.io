@@ -23,16 +23,16 @@
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨', achievements: '🏅', files: '🗂️' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '🗄️' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷', achievements: '✪', files: '▤' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯', achievements: '🏆', files: '📂' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🏅', files: '🗂️' },
-    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯', achievements: '🎖️', files: '📁' },
-    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨', achievements: '💿', files: '📼' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨', achievements: '🏅', files: '🗂️', terminal: '📟' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '🗄️', terminal: '⌨️' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷', achievements: '✪', files: '▤', terminal: '>_' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯', achievements: '🏆', files: '📂', terminal: '🖥️' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🏅', files: '🗂️', terminal: '⌨️' },
+    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯', achievements: '🎖️', files: '📁', terminal: '⌨️' },
+    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨', achievements: '💿', files: '📼', terminal: '💾' },
   }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
@@ -57,6 +57,7 @@
     strife: { title: 'COUNTER-STRIFE', icon: 'strife', width: 900, init: initStrife },
     achievements: { title: 'Achievements', icon: 'achievements', width: 820, init: initAchievements },
     files: { title: 'File Explorer', icon: 'files', width: 780, init: initFiles },
+    terminal: { title: 'Command Prompt', icon: 'terminal', width: 680, init: initTerminal },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
     messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
@@ -581,6 +582,8 @@
   let filesStart = null // where the next Explorer window opens
   const osApi = {
     openApp: (id) => openApp(id),
+    explore: (path) => explore(path),
+    closeWin: (w) => closeWin(w),
     msgbox: (...a) => msgbox(...a),
     askbox: (o) => askbox(o),
     makeWindow: (o) => makeWindow(o),
@@ -594,6 +597,19 @@
     filesStart = null
     loadFiles().then((m) => {
       if (!closed) cleanup = m.initExplorer(el, win, osApi, start ? { path: start } : {})
+    })
+    return () => {
+      closed = true
+      cleanup?.()
+    }
+  }
+  /** Command Prompt (os/terminal.js): the same drive as File Explorer, typed at. */
+  function initTerminal(el, win) {
+    let cleanup = null
+    let closed = false
+    win.setTitle = (t) => ($('.win-title', win.el).textContent = t)
+    import('/os/terminal.js').then((m) => {
+      if (!closed) cleanup = m.initTerminal(el, win, osApi)
     })
     return () => {
       closed = true

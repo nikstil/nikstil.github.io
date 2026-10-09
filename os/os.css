@@ -1750,3 +1750,15 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .prof-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .prof-empty { margin: 0; }
 @media (max-width: 480px) { .prof-stats { grid-template-columns: 1fr; } }
+
+/* ---------- Command Prompt ---------- */
+.win-body.term { --term-bg: #0c0c0c; --term-fg: #cccccc; position: relative; height: min(440px, 62vh); padding: 6px 8px; overflow: auto; background: var(--term-bg) !important; color: var(--term-fg) !important; font: 14px/1.35 Consolas, 'Cascadia Mono', 'Lucida Console', 'Courier New', monospace; cursor: text; border-radius: 0 !important; }
+.term-out { white-space: pre-wrap; overflow-wrap: anywhere; }
+.term-l { min-height: 1.35em; }
+.term-err { color: #f2f2f2; }
+.term-dim { opacity: 0.7; }
+.term-green { color: #16c60c; }
+.term-line { display: flex; align-items: baseline; }
+.term-prompt { white-space: pre; }
+.term-in { flex: 1; min-width: 0; padding: 0; border: 0 !important; outline: 0; background: transparent !important; color: inherit; font: inherit; box-shadow: none !important; caret-color: currentColor; }
+.term-matrix { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; }

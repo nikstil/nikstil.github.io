@@ -67,6 +67,7 @@ const APP_FILES = [
   ['achievements', 'Achievements', 'achievements.exe'],
   ['themes', 'Themes', 'themes.exe'],
   ['files', 'File Explorer', 'explorer.exe'],
+  ['terminal', 'Command Prompt', 'cmd.exe'],
 ]
 const SAVES = [
   ['translatr-save', 'TRANSLATR™'],
@@ -228,6 +229,44 @@ export function writeText(path, name, text) {
   save()
   return true
 }
+/** Writes a text file in a folder you own (making it if needed; append adds to the end). Returns '' or why not. */
+export function putText(path, name, text, append = false) {
+  const node = ownNode(path)
+  name = String(name ?? '').trim()
+  if (!node) return 'Access is denied.'
+  if (!name || BAD.test(name)) return 'The filename, directory name, or volume label syntax is incorrect.'
+  let it = node.c.find((x) => x.n.toLowerCase() === name.toLowerCase())
+  if (it && it.k !== 'f') return 'Access is denied.'
+  if (!it) node.c.push((it = { n: name, k: 'f', t: '', m: now() }))
+  it.t = String((append ? it.t + '\n' : '') + text).replace(/^\n/, '').slice(0, 200000)
+  it.m = now()
+  save()
+  return ''
+}
+/** Makes a folder with this name in a folder you own. Returns '' or why not. */
+export function makeDir(path, name) {
+  const node = ownNode(path)
+  name = String(name ?? '').trim()
+  if (!node) return 'Access is denied.'
+  if (!name || BAD.test(name)) return 'The filename, directory name, or volume label syntax is incorrect.'
+  if (node.c.some((x) => x.n.toLowerCase() === name.toLowerCase())) return `A subdirectory or file ${name} already exists.`
+  node.c.push({ n: name, k: 'd', c: [], m: now() })
+  save()
+  return ''
+}
+/** The text inside a listed item (your files, the read-only ones, the games' saves), or null. */
+export function textOf(it) {
+  if (!it) return null
+  if (it.node) return it.node.t ?? ''
+  if (it.storageKey) {
+    try {
+      return localStorage.getItem(it.storageKey)
+    } catch {
+      return null
+    }
+  }
+  return it.text ?? null
+}
 export function markOpened() {
   if (state.opened) return
   state.opened = true
@@ -367,24 +406,7 @@ export function initExplorer(el, win, os, opts = {}) {
   }
   function openItem(it) {
     if (it.kind === 'dir' || it.kind === 'drive') return go(it.path)
-    markOpened()
-    if (it.kind === 'bin' || it.kind === 'app') return os.openApp(it.app)
-    if (it.kind === 'joke') return os.msgbox(it.name, it.alert, it.icon)
-    if (it.kind === 'img') return openImage(os, it)
-    if (it.kind === 'save') {
-      let raw = ''
-      try {
-        raw = JSON.stringify(JSON.parse(localStorage.getItem(it.storageKey)), null, 2)
-      } catch {
-        raw = localStorage.getItem(it.storageKey) ?? ''
-      }
-      if (raw.length > 60000) raw = raw.slice(0, 60000) + '\n\n… (the rest is too long to show)'
-      return openNotepad(os, { name: it.name, text: raw, ro: true, note: `${it.game} keeps this in your browser.` })
-    }
-    if (it.kind === 'txt' || it.kind === 'file') {
-      if (it.ro) return openNotepad(os, { name: it.name, text: it.text ?? '', ro: true })
-      return openNotepad(os, { name: it.name, text: it.node.t, dir: path })
-    }
+    openFile(os, it, path)
   }
   async function doRename(it) {
     if (it.ro) return os.msgbox('Rename', 'Access denied: this file belongs to the system.', '🔒')
@@ -495,6 +517,27 @@ export function initExplorer(el, win, os, opts = {}) {
 
 // ================= Notepad =================
 let noteCount = 0
+/** Opens a file the way double-clicking it does (`dir`: the folder it's in, for saving). */
+export function openFile(os, it, dir) {
+  markOpened()
+  if (it.kind === 'bin' || it.kind === 'app') return os.openApp(it.app)
+  if (it.kind === 'joke') return os.msgbox(it.name, it.alert, it.icon)
+  if (it.kind === 'img') return openImage(os, it)
+  if (it.kind === 'save') {
+    let raw = ''
+    try {
+      raw = JSON.stringify(JSON.parse(localStorage.getItem(it.storageKey)), null, 2)
+    } catch {
+      raw = localStorage.getItem(it.storageKey) ?? ''
+    }
+    if (raw.length > 60000) raw = raw.slice(0, 60000) + '\n\n… (the rest is too long to show)'
+    return openNotepad(os, { name: it.name, text: raw, ro: true, note: `${it.game} keeps this in your browser.` })
+  }
+  if (it.kind === 'txt' || it.kind === 'file') {
+    if (it.ro) return openNotepad(os, { name: it.name, text: it.text ?? '', ro: true })
+    return openNotepad(os, { name: it.name, text: it.node.t, dir })
+  }
+}
 export function openNotepad(os, { name, text, ro = false, dir = null, note = '' }) {
   const content = document.createDocumentFragment()
   const body = document.createElement('div')
@@ -538,7 +581,7 @@ export function openNotepad(os, { name, text, ro = false, dir = null, note = '' 
 
 // ================= Pictures =================
 let picCount = 0
-function openImage(os, it) {
+export function openImage(os, it) {
   const content = document.createDocumentFragment()
   const body = document.createElement('div')
   body.className = 'win-body picview'

@@ -145,6 +145,8 @@ export const ACHIEVEMENTS = [
   { id: 'loggle-30', game: 'loggle', icon: '🗓️', name: 'Robert Loggia Fan Club', desc: 'Play 30 LOGGLEs.', points: 15, check: (s) => P(n(s.loggle?.stats?.played), 30) },
 
   // ---------------- the site itself
+  { id: 'site-cmd', game: 'site', icon: '⌨️', name: 'I’m In', desc: 'Run a command in the Command Prompt.', points: 5, check: () => B(read('nikstilos-terminal')?.runs) },
+  { id: 'site-eggs', game: 'site', icon: '🥚', name: 'Easter Egg Hunter', desc: 'Find 5 hidden commands in the Command Prompt.', points: 20, check: () => P((read('nikstilos-terminal')?.found ?? []).length, 5) },
   { id: 'site-explorer', game: 'site', icon: '🗂️', name: 'Snooping Around', desc: 'Open a file in the File Explorer.', points: 5, check: () => B(read('nikstilos-files')?.opened) },
   { id: 'site-games', game: 'site', icon: '🕹️', name: 'Sampler Platter', desc: 'Earn an achievement in four different games.', points: 20, meta: true },
   { id: 'site-half', game: 'site', icon: '🌗', name: 'Halfway There', desc: 'Unlock half of all achievements.', points: 50, meta: true },
