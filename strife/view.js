@@ -98,7 +98,7 @@ const lam = (color) => new THREE.MeshLambertMaterial({ color })
 // ================= Guns =================
 /** A gun model (for hands, the floor, or first person). Points down -z, trigger at the origin. */
 export function gunModel(id, detail = 1, opts = {}) {
-  const inner = buildGun(id, { detail, silenced: opts.silenced, skin: opts.skin })
+  const inner = buildGun(id, { detail, silenced: opts.silenced, skin: opts.skin, stickers: opts.stickers })
   const k = WEAPONS[id]?.kind
   const sc = k === 'pistol' || k === 'taser' ? 0.82 : k === 'grenade' || k === 'knife' || k === 'bomb' ? 1 : 0.72
   inner.scale.setScalar(sc)
@@ -275,7 +275,7 @@ export class View {
     this.light(new THREE.Vector3(p.x, p.y + 1, p.z), big ? 80 : 30, big ? 0.5 : 0.25)
   }
   addDrop(d) {
-    const m = gunModel(d.id, 1, { silenced: d.silenced, skin: this.skinMat?.(d.skin) })
+    const m = gunModel(d.id, 1, { silenced: d.silenced, skin: this.skinMat?.(d.skin), stickers: (d.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) })
     m.scale.setScalar(1.4)
     m.position.set(d.pos.x, d.pos.y + 0.06, d.pos.z)
     m.rotation.set(0, d.yaw, Math.PI / 2)
@@ -312,7 +312,7 @@ export class View {
       const gid = a.alive && w ? `${w.id}|${sl?.silenced}|${sl?.skin?.key ?? ''}` : null
       if (gid !== s.gunId) {
         if (s.gun) s.hand.remove(s.gun)
-        s.gun = gid ? gunModel(w.id, 1, { silenced: sl?.silenced, skin: this.skinMat?.(sl?.skin) }) : null
+        s.gun = gid ? gunModel(w.id, 1, { silenced: sl?.silenced, skin: this.skinMat?.(sl?.skin), stickers: (sl?.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) }) : null
         if (s.gun) {
           s.gun.scale.setScalar(1.3)
           s.hand.add(s.gun)
@@ -516,7 +516,7 @@ export class View {
       this.vm.clear()
       this.vmGunId = key
       if (id) {
-        const g = gunModel(id, 2, { silenced: slot?.silenced, skin: this.skinMat?.(slot?.skin) })
+        const g = gunModel(id, 2, { silenced: slot?.silenced, skin: this.skinMat?.(slot?.skin), stickers: (slot?.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) })
         const twoHands = w.kind === 'rifle' || w.kind === 'smg' || w.kind === 'sniper' || w.kind === 'heavy'
         const k = w.kind === 'pistol' || w.kind === 'taser' ? 0.82 : 0.72
         const fore = -Math.min(0.32, g.userData.muzzle * 0.45)

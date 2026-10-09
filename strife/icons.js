@@ -32,7 +32,7 @@ export function gunIcon(id, w = 200, h = 80, opts = {}) {
   try {
     if (!r) setup()
     r.setSize(w, h, false)
-    const g = buildGun(id, { detail: 2, silenced: opts.silenced ?? true, skin: opts.skin })
+    const g = buildGun(id, { detail: 2, silenced: opts.silenced ?? true, skin: opts.skin, stickers: opts.stickers })
     // seen from the right side: the muzzle (-z) points right on screen
     scene.add(g)
     const box = new THREE.Box3().setFromObject(g)

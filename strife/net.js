@@ -40,7 +40,7 @@ class LocalRoom {
     const now = Date.now()
     let changed = false
     for (const [id, p] of this.peers)
-      if (now - p.seen > 2600) {
+      if (now - p.seen > 6000) {
         this.peers.delete(id)
         changed = true
       }
@@ -403,6 +403,13 @@ export class NetHost {
   onLink(from, m) {
     const p = this.peers.get(from)
     if (!p) return
+    if (m.k === 't' && typeof m.to === 'number') {
+      // a trade message: for the host's player, or passed on to another player
+      const me = this.game.player
+      if (me && m.to === me.id) this.info.onTrade?.({ id: p.actor.id, name: p.actor.name }, m.m)
+      else for (const q of this.peers.values()) if (q.actor.id === m.to) q.out.push(['t', p.actor.id, p.actor.name, m.m])
+      return
+    }
     if (m.k === 'c' && Array.isArray(m.c)) {
       for (const c of m.c.slice(0, 20)) p.actor.netQueue.push(sanitize(c))
     } else if (m.k === 'bye') this.drop(from, 'left')
@@ -422,6 +429,11 @@ export class NetHost {
     a.brain = new Brain(this.game, a)
     this.rosterChanged()
     this.info.onPeople?.(this.people())
+  }
+  /** A trade message from the host's player to another player. */
+  sendTrade(toId, m) {
+    const me = this.game.player
+    for (const q of this.peers.values()) if (q.actor.id === toId) q.out.push(['t', me?.id ?? -1, me?.name ?? 'Host', m])
   }
   /** Called every frame after game.update: sends snapshots at a steady rate. */
   tick(dt) {
@@ -571,9 +583,13 @@ export class NetClient {
       else if (e[0] === 's') {
         const o = e[3] ?? {}
         this.game.sound(e[1], e[2], { range: o.range, gain: o.gain, who: o.who != null ? this.game.actors[o.who] : undefined })
-      } else if (e[0] === 'r') applyRoster(this.game, e[1])
+      } else if (e[0] === 't') this.info.onTrade?.({ id: e[1], name: e[2] }, e[3])
+      else if (e[0] === 'r') applyRoster(this.game, e[1])
       else if (e[0] === 'm') this.info.onSay?.(e[1])
     }
+  }
+  sendTrade(toId, m) {
+    this.link?.send({ k: 't', to: toId, m })
   }
   /** Called every frame after game.update with the input used: batches it for the host. */
   tick(dt, input) {

@@ -7,8 +7,8 @@ import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP } from './weapons.js'
 import { gunIcon } from './icons.js'
-import { skinMaterial } from './skins.js'
-import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins } from './inventory.js'
+import { skinMaterial, stickerMaterial } from './skins.js'
+import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
 import { openHub, NetHost, NetClient, makeCode } from './net.js'
 import { track } from './stats.js'
 import { Recorder, Player, clip, saveReplay, listReplays, loadReplay, deleteReplay } from './replay.js'
@@ -176,6 +176,7 @@ function hooks() {
     roundStart() {
       if (mode !== 'play') return
       track.roundStart()
+      if (!game.respawns && !game.practice) audio.music(musicKit(), 'start')
       hideBanner()
       deathInfo = null
       spectIdx = 0
@@ -195,6 +196,10 @@ function hooks() {
       showBanner(winner, reasons[reason], mvp ? `MVP: ${mvp.name}${mvp === game.player ? ' (you!)' : ''}` : '')
       if (game.player) audio.play(winner === game.player.team ? 'win' : 'lose')
       if (game.player && !game.practice) track.roundEnd({ winner, mvp }, game.player, !!net)
+      if (game.player && mvp === game.player && !game.practice) {
+        setTimeout(() => audio.music(musicKit(), 'mvp'), 600)
+        rewardMvp()
+      }
       if (game.player && !game.practice && !over) {
         const got = rewardRound(winner === game.player.team)
         if (got) setTimeout(() => say(`Case drop: you received a ${got}`, 3), 1500)
@@ -250,6 +255,7 @@ function attachView(map, demo = false) {
   const qq = QUALITY[settings.quality] ?? QUALITY.medium
   view = new View(renderer, { shadows: qq.shadows && renderer.shadowMap.enabled, shadowSize: qq.shadowSize })
   view.skinMat = skinMaterial
+  view.stickerMat = stickerMaterial
   view.load(game)
   resize()
   radarImg = radarImage(map)
@@ -325,6 +331,7 @@ async function startReplay(data) {
   const qq = QUALITY[settings.quality] ?? QUALITY.medium
   view = new View(renderer, { shadows: qq.shadows && renderer.shadowMap.enabled, shadowSize: qq.shadowSize })
   view.skinMat = skinMaterial
+  view.stickerMat = stickerMaterial
   view.load(player.ghost)
   resize()
   radarImg = radarImage(map)
@@ -526,7 +533,8 @@ async function hostGame() {
   $('#loading').hidden = false
   setTimeout(() => {
     start({ host: true })
-    net = new NetHost(h, game, { code: makeCode(), name: settings.netName, mapId: settings.map, onSay: (t) => say(t, 3), onPeople: (list) => list.length && track.hostedWithFriend() })
+    net = new NetHost(h, game, { code: makeCode(), name: settings.netName, mapId: settings.map, onSay: (t) => say(t, 3), onPeople: (list) => list.length && track.hostedWithFriend(), onTrade: (from, m) => onTradeMessage(from, m) })
+    tradeHookup()
     $('#loading').hidden = true
     paused = false
     show(null)
@@ -563,7 +571,9 @@ async function joinGame(code) {
       } else $('#on-status').textContent = why
     },
     onSay: (t) => say(t, 3),
+    onTrade: (from, m) => onTradeMessage(from, m),
   })
+  tradeHookup()
 }
 /** The host said hello: build their match on our side. */
 function startClient(w) {
@@ -578,7 +588,23 @@ function startClient(w) {
   say(`Joined ${w.host}’s game (${w.code})`, 3)
   return game
 }
+/** Lets the inventory trade with the other people in this online game. */
+function tradeHookup() {
+  document.body.classList.add('online')
+  setTradeApi({
+    partners: () => game.actors.filter((a) => !a.isBot && a !== game.player).map((a) => ({ id: a.id, name: a.name })),
+    send: (to, m) => net?.sendTrade(to, m),
+    // the trade window needs the mouse: pause (the online game itself keeps going)
+    onOpen: () => {
+      if (mode !== 'play' || paused) return
+      document.exitPointerLock?.()
+      pause()
+    },
+  })
+}
 function endNet() {
+  setTradeApi(null)
+  document.body.classList.remove('online')
   if (net) {
     const n = net
     net = null
@@ -751,6 +777,12 @@ document.addEventListener('click', (e) => {
   } else if (act === 'back') show(backTo)
   else if (act === 'resume') resume()
   else if (act === 'online') openOnline()
+  else if (act === 'trade' && net) {
+    backTo = 'pause'
+    showInventory()
+    show('inventory')
+    openTradePicker()
+  }
   else if (act === 'watch-replay' && lastReplay) startReplay(lastReplay)
   else if (act === 'replays') openReplays()
   else if (act === 'replay-exit') endReplay()

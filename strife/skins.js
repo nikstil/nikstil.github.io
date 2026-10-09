@@ -93,13 +93,72 @@ export const CASES = [
   { id: 'quarterly', name: 'Quarterly Case', color: '#2e6a3c', skins: SKINS.slice(16, 32).map((s) => s.id) },
   { id: 'overtime', name: 'Overtime Case', color: '#2a6fd6', skins: SKINS.slice(32).map((s) => s.id) },
 ]
+// ---------------- Stickers and music kits
+// Sticker grades use the same colours as skin rarities.
+export const STICKER_GRADE = { milspec: 'High Grade', restricted: 'Remarkable', classified: 'Exotic', covert: 'Extraordinary' }
+const K = (id, name, text, bg, fg, rarity, style = 'paper', emoji = '') => ({ id, name, text, bg, fg, rarity, style, emoji })
+export const STICKERS = [
+  K('gg', 'GG', 'GG', '#2b2b2b', '#7ce08a', 'milspec'),
+  K('ez', 'ez', 'ez', '#f2c230', '#1c1c1c', 'milspec'),
+  K('nt', 'nice try', 'nt', '#3b7bd6', '#fff', 'milspec'),
+  K('rush-b', 'Rush B', 'RUSH B', '#c8102e', '#fff', 'milspec'),
+  K('eco', 'Eco Round', 'ECO', '#4a6b3a', '#e8f5d0', 'milspec'),
+  K('kevin', 'Kevin (Sales)', 'KEVIN', '#d9d0b8', '#2b2b2b', 'milspec', 'paper', '📈'),
+  K('translatr', 'TRANSLATR™', 'TR™', '#3da6e8', '#fff', 'milspec', 'paper', '🌐'),
+  K('bomb', 'Bomb Has Been Planted', '', '#2b2b2b', '#ff4d4d', 'restricted', 'holo', '💣'),
+  K('headshot', 'Headshot', '', '#1c1c24', '#ffd23a', 'restricted', 'holo', '🎯'),
+  K('ninja', 'Ninja Defuse', '', '#1a1a1a', '#9fe0ff', 'restricted', 'holo', '🥷'),
+  K('dragon', 'Synergy Dragon', '', '#2e6a3c', '#d9b54a', 'restricted', 'holo', '🐉'),
+  K('nikstil', 'nikstil.com', 'nikstil', '#101418', '#f2c14e', 'restricted', 'holo'),
+  K('ceo-dog', 'The CEO Dog', '', '#e8e0d0', '#2b2b2b', 'classified', 'foil', '🐕'),
+  K('crown', 'Crown', '', '#3a2a10', '#ffd23a', 'classified', 'foil', '👑'),
+  K('snail', 'Patient Snail', '', '#2a3a2a', '#c8e0a0', 'classified', 'foil', '🐌'),
+  K('ace', 'Ace', 'ACE', '#1a1a1a', '#e4ae39', 'covert', 'gold', '🂡'),
+  K('howl', 'Howl of the Intern', '', '#1c1c1c', '#e85d1e', 'covert', 'gold', '🐺'),
+]
+export const stickerById = Object.fromEntries(STICKERS.map((k) => [k.id, k]))
+
+/** Music kits: a sound (wave), a tempo and a scale. The tunes are made up from them as they play. */
+export const MUSIC_KITS = [
+  { id: 'default', name: 'COUNTER-STRIFE', artist: 'nikstil.com', wave: 'square', bpm: 126, root: 220, scale: [0, 3, 5, 7, 10], seed: 1 },
+  { id: 'elevator', name: 'Corporate Elevator', artist: 'Brenda (HR)', wave: 'sine', bpm: 96, root: 261.6, scale: [0, 4, 7, 9, 11], seed: 7 },
+  { id: 'spreadsheet', name: '8-bit Spreadsheet', artist: 'Lil Spreadsheet', wave: 'square', bpm: 150, root: 293.7, scale: [0, 2, 4, 7, 9], seed: 13 },
+  { id: 'lofi', name: 'Lo-fi Cubicle', artist: 'Kevin (Sales)', wave: 'triangle', bpm: 84, root: 196, scale: [0, 3, 5, 7, 10], seed: 21 },
+  { id: 'synergy', name: 'Synergy Beats', artist: 'The Founder & CEO', wave: 'sawtooth', bpm: 132, root: 233.1, scale: [0, 2, 3, 7, 8], seed: 33 },
+  { id: 'overtime', name: 'Overtime Anthem', artist: 'Motivational Eagle', wave: 'sawtooth', bpm: 140, root: 164.8, scale: [0, 4, 5, 7, 11], seed: 45 },
+  { id: 'dialup', name: 'Dial-Up Dreams', artist: 'Captain Captcha', wave: 'square', bpm: 110, root: 349.2, scale: [0, 1, 5, 7, 8], seed: 57 },
+  { id: 'algorithm', name: 'The Algorithm', artist: 'TheAlgorithm', wave: 'triangle', bpm: 118, root: 207.7, scale: [0, 2, 5, 7, 9], seed: 69 },
+]
+export const musicById = Object.fromEntries(MUSIC_KITS.map((k) => [k.id, k]))
+
+CASES.push(
+  { id: 'capsule', name: 'Sticker Capsule', color: '#8a5ad6', kind: 'sticker', stickers: STICKERS.map((k) => k.id) },
+  { id: 'musicbox', name: 'Music Kit Box', color: '#d68a2a', kind: 'music', music: MUSIC_KITS.filter((k) => k.id !== 'default').map((k) => k.id) },
+)
 export const caseById = Object.fromEntries(CASES.map((c) => [c.id, c]))
+/** What kind of thing an item is. */
+export const kindOf = (it) => it?.kind ?? 'skin'
 export const KEY_PRICE = 25 // credits
 
 // ---------------- Rolling
 /** Picks what comes out of a case: rarity by the classic odds, then a skin of that rarity. */
 export function rollCase(caseId, rand = Math.random) {
   const c = caseById[caseId]
+  if (c.kind === 'music') return { kind: 'music', music: c.music[Math.floor(rand() * c.music.length)], r: 'milspec', st: rand() < 0.1 ? 0 : null }
+  if (c.kind === 'sticker') {
+    const odds = { milspec: 0.8, restricted: 0.16, classified: 0.032, covert: 0.008 }
+    let x = rand()
+    let grade = 'milspec'
+    for (const [k, p] of Object.entries(odds)) {
+      x -= p
+      if (x <= 0) {
+        grade = k
+        break
+      }
+    }
+    const of = STICKERS.filter((k) => k.rarity === grade)
+    return { kind: 'sticker', sticker: of[Math.floor(rand() * of.length)].id, r: grade }
+  }
   const pool = c.skins.map((id) => skinById[id])
   const present = RARITY_ORDER.filter((r) => pool.some((s) => s.rarity === r))
   const total = present.reduce((s, r) => s + RARITY[r].odds, 0)
@@ -123,6 +182,11 @@ export function makeItem(skinId, rand = Math.random) {
   return { skin: skinId, r: skinById[skinId]?.rarity, wear: Number(wear.toFixed(4)), seed: Math.floor(rand() * 1000), st: rand() < 0.1 ? 0 : null }
 }
 export function itemName(it) {
+  if (kindOf(it) === 'sticker') return `Sticker | ${stickerById[it.sticker]?.name ?? '?'}`
+  if (kindOf(it) === 'music') {
+    const k = musicById[it.music]
+    return `${it.st != null ? 'StatTrak™ ' : ''}Music Kit | ${k?.artist}, ${k?.name}`
+  }
   const s = skinById[it.skin]
   const w = WEAPONS[s.weapon]
   return `${s.rarity === 'gold' ? '★ ' : ''}${it.st != null ? 'StatTrak™ ' : ''}${w.name} | ${s.name}`
@@ -440,7 +504,7 @@ export function skinMaterial(item) {
   }
   return matCache.get(key)
 }
-export const itemKey = (it) => (it ? `${it.skin}|${it.seed}|${Math.round(it.wear * 50)}` : '')
+export const itemKey = (it) => (it ? `${it.skin}|${it.seed}|${Math.round(it.wear * 50)}|${(it.stickers ?? []).join(',')}` : '')
 
 // ---------------- The inventory (saved in localStorage)
 const KEY = 'strife-inventory'
@@ -477,7 +541,120 @@ export function equippedFor(inv, weaponId) {
   return uid ? inv.items.find((x) => x.uid === uid) ?? null : null
 }
 /** A skin descriptor for a gun in play (small, serialisable). */
-export const skinDesc = (it) => (it ? { skin: it.skin, wear: it.wear, seed: it.seed, key: itemKey(it), uid: it.uid } : null)
+export const skinDesc = (it) => (it ? { skin: it.skin, wear: it.wear, seed: it.seed, key: itemKey(it), uid: it.uid, stickers: it.stickers ?? [] } : null)
+
+// ---------------- Painting stickers
+const stickerMats = new Map()
+export function paintSticker(k, size = 128) {
+  const c = document.createElement('canvas')
+  c.width = c.height = size
+  const g = c.getContext('2d')
+  const S = size
+  // a die-cut shape with a white border
+  g.fillStyle = '#ffffff'
+  g.beginPath()
+  g.roundRect(4, 4, S - 8, S - 8, S * 0.22)
+  g.fill()
+  let fill = k.bg
+  if (k.style === 'holo') {
+    const gr = g.createLinearGradient(0, 0, S, S)
+    for (const [t, col] of [[0, '#ff7ad9'], [0.25, '#7ae0ff'], [0.5, '#c4ff7a'], [0.75, '#ffd27a'], [1, '#b07aff']]) gr.addColorStop(t, col)
+    fill = gr
+  } else if (k.style === 'foil') {
+    const gr = g.createLinearGradient(0, 0, S, S)
+    gr.addColorStop(0, '#d8dde2')
+    gr.addColorStop(0.5, '#8f99a3')
+    gr.addColorStop(1, '#eef2f5')
+    fill = gr
+  } else if (k.style === 'gold') {
+    const gr = g.createLinearGradient(0, 0, S, S)
+    gr.addColorStop(0, '#fff1b0')
+    gr.addColorStop(0.45, '#e4ae39')
+    gr.addColorStop(1, '#8a5a12')
+    fill = gr
+  }
+  g.fillStyle = fill
+  g.beginPath()
+  g.roundRect(10, 10, S - 20, S - 20, S * 0.18)
+  g.fill()
+  if (k.style === 'holo' || k.style === 'foil' || k.style === 'gold') {
+    g.globalAlpha = 0.55
+    g.fillStyle = k.bg
+    g.beginPath()
+    g.roundRect(18, 18, S - 36, S - 36, S * 0.14)
+    g.fill()
+    g.globalAlpha = 1
+  }
+  g.textAlign = 'center'
+  g.textBaseline = 'middle'
+  if (k.emoji) {
+    g.font = `${S * (k.text ? 0.36 : 0.52)}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`
+    g.fillText(k.emoji, S / 2, k.text ? S * 0.38 : S / 2 + 2)
+  }
+  if (k.text) {
+    const fs = Math.min(S * 0.34, (S * 1.5) / Math.max(2, k.text.length))
+    g.font = `900 ${fs}px Impact, "Arial Black", sans-serif`
+    g.lineWidth = fs * 0.14
+    g.strokeStyle = 'rgba(0,0,0,0.55)'
+    const y = k.emoji ? S * 0.72 : S / 2 + 2
+    g.strokeText(k.text, S / 2, y)
+    g.fillStyle = k.fg
+    g.fillText(k.text, S / 2, y)
+  }
+  return c
+}
+/** A material for a sticker on a gun (cached). */
+export function stickerMaterial(id) {
+  const k = stickerById[id]
+  if (!k || typeof document === 'undefined') return null
+  if (!stickerMats.has(id)) {
+    const t = new THREE.CanvasTexture(paintSticker(k))
+    t.colorSpace = THREE.SRGBColorSpace
+    stickerMats.set(id, new THREE.MeshPhongMaterial({ map: t, transparent: true, alphaTest: 0.2, shininess: k.style === 'paper' ? 10 : 90, specular: k.style === 'paper' ? '#222' : '#aaa', polygonOffset: true, polygonOffsetFactor: -2 }))
+  }
+  return stickerMats.get(id)
+}
+const stickerUrls = new Map()
+export function stickerUrl(id) {
+  if (!stickerUrls.has(id)) stickerUrls.set(id, stickerById[id] ? paintSticker(stickerById[id], 96).toDataURL() : '')
+  return stickerUrls.get(id)
+}
+
+// ---------------- Trade-up contracts
+/** What a contract of these items could give: [{ skin, weight }], or why it can't be signed. */
+export function tradeUpOutcomes(items) {
+  const grades = ['milspec', 'restricted', 'classified', 'covert']
+  if (!items.length) return { error: 'Add skins of one grade.' }
+  const r0 = skinById[items[0].skin]?.rarity
+  if (!items.every((it) => kindOf(it) === 'skin' && skinById[it.skin]?.rarity === r0)) return { error: 'Every skin in a contract must be the same grade.' }
+  if (!grades.includes(r0)) return { error: 'Knives can’t go into a contract.' }
+  const need = r0 === 'covert' ? 5 : 10
+  const next = r0 === 'covert' ? 'gold' : grades[grades.indexOf(r0) + 1]
+  const weights = new Map()
+  for (const it of items) {
+    const c = CASES.find((cs) => cs.skins?.includes(it.skin))
+    const pool = (c?.skins ?? []).map((id) => skinById[id]).filter((s) => s.rarity === next)
+    for (const s of pool) weights.set(s.id, (weights.get(s.id) ?? 0) + 1 / pool.length)
+  }
+  return { need, grade: r0, next, outcomes: [...weights].map(([skin, weight]) => ({ skin, weight: weight / items.length })).sort((a, b) => b.weight - a.weight) }
+}
+/** Signs it: the result (wear is the average of the inputs; StatTrak™ only if they all were). */
+export function signTradeUp(items, rand = Math.random) {
+  const o = tradeUpOutcomes(items)
+  if (o.error || items.length !== o.need || !o.outcomes.length) return null
+  let x = rand()
+  let pick = o.outcomes[0].skin
+  for (const out of o.outcomes) {
+    x -= out.weight
+    if (x <= 0) {
+      pick = out.skin
+      break
+    }
+  }
+  const wear = items.reduce((s, it) => s + it.wear, 0) / items.length
+  const it = makeItem(pick, rand)
+  return { ...it, wear: Number(wear.toFixed(4)), st: items.every((i) => i.st != null) ? 0 : null }
+}
 
 /** Random skins for bots, so the server looks lived-in. */
 export function randomSkinFor(weaponId, rand = Math.random) {

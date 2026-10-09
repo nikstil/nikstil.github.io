@@ -220,3 +220,78 @@ export function play(name, { at = null, gain = 1, rate = 1, range = 40 } = {}) {
   } else src.connect(g).connect(master)
   src.start()
 }
+
+// ================= Music kits =================
+// A kit is a sound (oscillator wave), a tempo, a root note and a scale; its tunes are made up
+// from them (the same tune every time for the same kit), with a bass line and a little drum kit.
+let musicGain = null
+let musicStop = null
+export function music(kit, kind = 'start') {
+  if (!ctx || !kit) return
+  if (ctx.state === 'suspended') ctx.resume()
+  musicStop?.()
+  musicGain = ctx.createGain()
+  musicGain.gain.value = kind === 'mvp' ? 0.32 : 0.22
+  musicGain.connect(master)
+  const out = musicGain
+  let s = kit.seed * 9301 + (kind === 'mvp' ? 77 : kind === 'lose' ? 191 : 0)
+  const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280)
+  const beat = 60 / kit.bpm
+  const bars = kind === 'mvp' ? 4 : kind === 'lose' ? 1 : 2
+  const steps = bars * 8 // eighth notes
+  const t0 = ctx.currentTime + 0.05
+  const scale = kind === 'lose' ? kit.scale.map((n, k) => (k === 1 ? n - 1 : n)) : kit.scale
+  const freq = (deg, oct = 0) => kit.root * Math.pow(2, (scale[((deg % scale.length) + scale.length) % scale.length] + 12 * (oct + Math.floor(deg / scale.length))) / 12)
+  const nodes = []
+  const note = (f, at, len, wave, vol) => {
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.type = wave
+    o.frequency.value = f
+    g.gain.setValueAtTime(0, at)
+    g.gain.linearRampToValueAtTime(vol, at + 0.01)
+    g.gain.exponentialRampToValueAtTime(0.0008, at + len)
+    o.connect(g).connect(out)
+    o.start(at)
+    o.stop(at + len + 0.05)
+    nodes.push(o)
+  }
+  const drum = (at, kick) => {
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.frequency.setValueAtTime(kick ? 120 : 900, at)
+    o.frequency.exponentialRampToValueAtTime(kick ? 40 : 200, at + 0.12)
+    g.gain.setValueAtTime(kick ? 0.6 : 0.15, at)
+    g.gain.exponentialRampToValueAtTime(0.001, at + (kick ? 0.2 : 0.05))
+    o.connect(g).connect(out)
+    o.start(at)
+    o.stop(at + 0.25)
+    nodes.push(o)
+  }
+  // a melody that walks the scale, a bass on the beat, drums
+  let deg = 2
+  for (let k = 0; k < steps; k++) {
+    const at = t0 + k * beat * 0.5
+    if (rnd() < (kind === 'lose' ? 0.45 : 0.78)) {
+      deg += Math.floor(rnd() * 5) - 2
+      deg = Math.max(0, Math.min(9, deg))
+      const last = k === steps - 1
+      note(freq(last ? 0 : deg, 1), at, beat * (last ? 1.6 : 0.45), kit.wave, 0.14)
+    }
+    if (k % 2 === 0) note(freq(k % 8 < 4 ? 0 : 3, -1), at, beat * 0.9, 'triangle', 0.22)
+    if (kind !== 'lose') {
+      if (k % 4 === 0) drum(at, true)
+      if (k % 4 === 2) drum(at, false)
+    }
+  }
+  const end = t0 + steps * beat * 0.5 + 1.8
+  const g = musicGain
+  musicStop = () => {
+    try {
+      g.gain.setTargetAtTime(0, ctx.currentTime, 0.08)
+      for (const n of nodes) n.stop(ctx.currentTime + 0.4)
+    } catch {}
+    musicStop = null
+  }
+  setTimeout(() => musicStop === null || g !== musicGain || musicStop?.(), (end - ctx.currentTime) * 1000)
+}

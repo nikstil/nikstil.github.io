@@ -184,6 +184,7 @@
       <div class="menu-card">
         <h2>Paused</h2>
         <button class="go" data-do="resume">Resume</button>
+        <button class="ghost net-only" data-do="trade">🤝 Trade with a player</button>
         <button class="ghost" data-do="settings">Settings</button>
         <button class="ghost" data-do="controls">Controls</button>
         <button class="ghost danger" data-do="quit">Leave match</button>
@@ -281,7 +282,7 @@
       <div class="menu-card inv-card-wrap">
         <header class="inv-head">
           <h2>Inventory</h2>
-          <div class="inv-tabs"><button data-inv="tab" data-v="items">Skins</button><button data-inv="tab" data-v="cases">Cases</button></div>
+          <div class="inv-tabs"><button data-inv="tab" data-v="items">Items</button><button data-inv="tab" data-v="cases">Cases</button><button data-inv="tab" data-v="tradeup">Trade Up</button><button data-inv="trade" hidden>🤝 Trade</button></div>
           <div class="inv-wallet"><span title="Credits: 1 per kill, 3 per round won, more for winning the match">ⓒ <b id="inv-credits">0</b></span><span title="Keys open cases">🔑 <b id="inv-keys">0</b></span><button class="ghost small" data-inv="key">Buy key (ⓒ 25)</button></div>
           <button class="x" data-do="back" aria-label="Close">✕</button>
         </header>
@@ -298,6 +299,7 @@
       </div>
     </section>
 
+    <div class="trade" id="trade" hidden></div>
     <div class="loading" id="loading" hidden><span>Loading…</span></div>
     <a class="home-link" href="/" title="Back to nikstil.com">nikstil.com</a>
     <p class="nogl" id="nogl" hidden>COUNTER-STRIFE needs WebGL, which this browser has switched off.</p>

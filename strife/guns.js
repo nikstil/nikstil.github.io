@@ -624,6 +624,29 @@ export function muzzleOf(g) {
   return -b.min.z
 }
 
+/** Up to four stickers along the right side of the receiver. */
+const stickerGeo = new THREE.PlaneGeometry(1, 1)
+function applyStickers(g, mats) {
+  const box = new THREE.Box3()
+  g.updateMatrixWorld(true)
+  g.traverse((m) => m.isMesh && m.userData.paint && box.expandByObject(m))
+  if (box.isEmpty()) return
+  const len = box.max.z - box.min.z
+  const h = box.max.y - box.min.y
+  const size = Math.min(0.05, h * 0.7, len / 5)
+  // On both sides: the icons show the right side, the first-person view the left
+  mats.slice(0, 4).forEach((m, k) => {
+    if (!m) return
+    for (const side of [1, -1]) {
+      const p = new THREE.Mesh(stickerGeo, m)
+      p.scale.set(size, size, 1)
+      p.position.set(side > 0 ? box.max.x + 0.0015 : box.min.x - 0.0015, box.min.y + h * 0.55, box.max.z - len * (0.22 + k * 0.17))
+      p.rotation.y = (side * Math.PI) / 2
+      g.add(p)
+    }
+  })
+}
+
 /**
  * A gun model. opts: { detail: 1 (world) | 2 (first person), silenced, skin: Material }.
  * Old models are scaled to roughly the size the rest of the game expects.
@@ -635,6 +658,7 @@ export function buildGun(id, opts = {}) {
   make(g, opts.detail ?? 1, { silenced: opts.silenced })
   if (opts.skin) g.traverse((m) => m.isMesh && m.userData.paint && (m.material = opts.skin))
   g.userData.muzzle = muzzleOf(g)
+  if (opts.stickers?.length) applyStickers(g, opts.stickers)
   return g
 }
 export const HAS_MODEL = (id) => !!BUILD[id]
