@@ -5,6 +5,7 @@ import * as THREE from './lib/three.min.js'
 import { buildLevel, buildSky } from './render.js'
 import { WEAPONS } from './weapons.js'
 import { buildGun } from './guns.js'
+import { buildSoldier, buildViewArms } from './models.js'
 import { eyeOf, weaponOf } from './game.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
@@ -107,66 +108,8 @@ export function gunModel(id, detail = 1, opts = {}) {
   return g
 }
 
-// ================= Soldiers =================
-const SKIN = '#c08a62'
-function soldier(team) {
-  const T = team === 'T'
-  const jacket = lam(T ? '#8a7350' : '#2e4060')
-  const vest = lam(T ? '#5d4d36' : '#1f2b3d')
-  const pants = lam(T ? '#4b4235' : '#2a3242')
-  const boots = lam('#1d1a17')
-  const head = lam(T ? '#2b2b2b' : SKIN)
-  const helmet = lam(T ? '#3a3328' : '#2a3528')
-  const glove = lam('#1f1f1f')
-  const root = new THREE.Group()
-  const hips = new THREE.Group()
-  hips.position.y = 0.92
-  root.add(hips)
-  const torso = new THREE.Group()
-  hips.add(torso)
-  torso.add(box(0.42, 0.56, 0.24, jacket, 0, 0.3, 0))
-  torso.add(box(0.44, 0.36, 0.27, vest, 0, 0.34, 0))
-  const neck = new THREE.Group()
-  neck.position.y = 0.6
-  torso.add(neck)
-  neck.add(box(0.22, 0.25, 0.24, head, 0, 0.14, 0))
-  if (T) neck.add(box(0.23, 0.05, 0.25, lam('#c9a37a'), 0, 0.17, -0.005)) // eye slit
-  else {
-    neck.add(box(0.26, 0.11, 0.28, helmet, 0, 0.27, 0))
-    neck.add(box(0.2, 0.05, 0.03, lam('#111'), 0, 0.17, -0.13)) // goggles
-  }
-  const legs = []
-  for (const s of [-1, 1]) {
-    const thigh = new THREE.Group()
-    thigh.position.set(s * 0.11, 0, 0)
-    hips.add(thigh)
-    thigh.add(box(0.16, 0.46, 0.18, pants, 0, -0.23, 0))
-    const shin = new THREE.Group()
-    shin.position.y = -0.46
-    thigh.add(shin)
-    shin.add(box(0.15, 0.44, 0.16, pants, 0, -0.22, 0))
-    shin.add(box(0.16, 0.08, 0.26, boots, 0, -0.42, -0.04))
-    legs.push({ thigh, shin })
-  }
-  // Arms reach forward to hold the gun.
-  const arms = new THREE.Group()
-  arms.position.set(0, 0.48, -0.05)
-  torso.add(arms)
-  const armR = box(0.11, 0.11, 0.42, jacket, 0.17, 0, -0.18)
-  armR.rotation.y = 0.25
-  const armL = box(0.11, 0.11, 0.48, jacket, -0.12, 0, -0.26)
-  armL.rotation.y = -0.45
-  arms.add(armR, armL, box(0.1, 0.1, 0.1, glove, 0.1, -0.02, -0.38), box(0.1, 0.1, 0.1, glove, -0.02, -0.02, -0.5))
-  const hand = new THREE.Group()
-  hand.position.set(0.08, -0.02, -0.38)
-  arms.add(hand)
-  // A soft dark blob under them (the level's shadows are baked once, so people need their own).
-  const blob = new THREE.Mesh(new THREE.CircleGeometry(0.42, 16), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.28, depthWrite: false }))
-  blob.rotation.x = -Math.PI / 2
-  blob.position.y = 0.02
-  root.add(blob)
-  return { root, hips, torso, neck, legs, arms, hand, blob, gunId: null, phase: Math.random() * 6, fall: 0, fallDir: Math.random() < 0.5 ? -1 : 1 }
-}
+// ================= Soldiers (models.js) =================
+const soldier = (team, seed) => buildSoldier(team, seed)
 
 // ================= The view =================
 export class View {
@@ -237,7 +180,7 @@ export class View {
     this.smokeClouds = new Map()
   }
   addSoldier(a) {
-    const s = soldier(a.team)
+    const s = soldier(a.team, a.id * 7 + (a.isBot ? 0 : 1))
     s.team = a.team
     this.scene.add(s.root)
     this.soldiers.set(a.id, s)
@@ -574,21 +517,13 @@ export class View {
       this.vmGunId = key
       if (id) {
         const g = gunModel(id, 2, { silenced: slot?.silenced, skin: this.skinMat?.(slot?.skin) })
-        const arms = new THREE.Group()
-        const sleeve = lam(a.team === 'T' ? '#8a7350' : '#2e4060')
-        const glove = lam('#1e1e1e')
-        // right hand on the grip, its forearm running back and down out of view
-        const rArm = box(0.075, 0.075, 0.42, sleeve, 0.05, -0.17, 0.2)
-        rArm.rotation.x = 0.55
-        arms.add(rArm, box(0.06, 0.07, 0.09, glove, 0.0, -0.06, 0.0))
         const twoHands = w.kind === 'rifle' || w.kind === 'smg' || w.kind === 'sniper' || w.kind === 'heavy'
-        if (twoHands) {
-          // the left hand holds the front, its arm coming in from the lower left
-          const fore = -Math.min(0.36, g.userData.muzzle * 0.5)
-          const lArm = box(0.075, 0.075, 0.45, sleeve, -0.13, -0.17, fore + 0.18)
-          lArm.rotation.set(0.5, -0.55, 0)
-          arms.add(lArm, box(0.06, 0.07, 0.09, glove, -0.02, -0.03, fore))
-        }
+        const k = w.kind === 'pistol' || w.kind === 'taser' ? 0.82 : 0.72
+        const fore = -Math.min(0.32, g.userData.muzzle * 0.45)
+        // the right hand on the grip; the left on the handguard (or cupping a pistol's grip)
+        const right = w.kind === 'knife' ? [0, 0, 0.02] : w.kind === 'grenade' || w.kind === 'bomb' ? [0.01, -0.03, 0.02] : [0, -0.05 * k, 0.03 * k]
+        const left = twoHands ? [-0.005, -0.012, fore] : id === 'dualies' ? [-0.22 * k, -0.05 * k, 0.05 * k] : null
+        const arms = buildViewArms(a.team, a.id * 7 + (a.isBot ? 0 : 1), right, left)
         const holder = new THREE.Group()
         const sc = w.kind === 'rifle' || w.kind === 'sniper' || w.kind === 'heavy' ? 0.64 : w.kind === 'smg' ? 0.72 : w.kind === 'pistol' || w.kind === 'taser' ? 0.8 : 1
         g.scale.setScalar(sc)

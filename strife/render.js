@@ -3,6 +3,7 @@
 
 import * as THREE from './lib/three.min.js'
 import { MAT_NAMES, WALL_H, INF, MAXS } from './maps.js'
+import { decorate } from './detail.js'
 
 // ================= Textures =================
 function rng(seed) {
@@ -378,6 +379,7 @@ export function buildLevel(map, renderer, quality) {
     group.add(mesh)
   })
   for (const p of map.props ?? []) group.add(buildProp(p, look, textures, aniso))
+  group.add(decorate(map, map.look))
   return { group, textures, look }
 }
 
