@@ -25,7 +25,8 @@ const angleTo = (from, to) => ({
 /** The Terrorists' plan for a round, and where each Counter-Terrorist holds. */
 export function planRound(g) {
   const m = g.map
-  const site = Math.random() < 0.5 ? 'A' : 'B'
+  const one = g.sites && Object.keys(g.sites).length === 1 ? Object.keys(g.sites)[0] : null
+  const site = g.bomb?.state === 'planted' && g.bomb.site ? g.bomb.site : one ?? (Math.random() < 0.5 ? 'A' : 'B')
   const other = site === 'A' ? 'B' : 'A'
   const routes = m.routes[site]
   const main = pick(routes)
@@ -36,7 +37,7 @@ export function planRound(g) {
     let route = main
     let lurk = false
     if (k === 1 && routes.length > 1 && Math.random() < 0.55) route = pick(routes.filter((r) => r !== main))
-    if (k === 2 && Math.random() < 0.3) {
+    if (k === 2 && !one && Math.random() < 0.3) {
       route = pick(m.routes[other])
       lurk = true
     }
@@ -44,7 +45,7 @@ export function planRound(g) {
   })
   const rush = Math.random() < 0.3
   // CT spots: two on each site, one mid, then extras.
-  const spots = [
+  const spots = one ? m.holds[one].map((h) => ({ ...h, area: one })) : [
     ...m.holds.A.slice(0, 2).map((h) => ({ ...h, area: 'A' })),
     ...m.holds.B.slice(0, 2).map((h) => ({ ...h, area: 'B' })),
     ...m.holds.mid.slice(0, 1).map((h) => ({ ...h, area: 'mid' })),
@@ -287,6 +288,7 @@ export class Brain {
   // ================= What to do =================
   objective() {
     const { g, a } = this
+    if (g.respawns) return this.roam()
     const m = g.map
     const plan = g.plan
     const now = g.time
@@ -393,6 +395,28 @@ export class Brain {
         this.holdLook = { x: s.look[0] + 0.5, y: a.pos.y + 1.5, z: s.look[1] + 0.5 }
       }
     }
+    return {}
+  }
+  /** Respawn modes: hunt. Head for where the enemy was last heard or seen, else wander the map's hot spots. */
+  roam() {
+    const { g, a } = this
+    const now = g.time
+    const m = g.map
+    let lead = null
+    for (let k = g.noises.length - 1; k >= 0 && !lead; k--) {
+      const n = g.noises[k]
+      if (n.team !== a.team && now - n.at < 6 && Math.hypot(n.x - a.pos.x, n.z - a.pos.z) < 55) lead = n
+    }
+    if (lead && (!this.goal || now > (this.roamUntil ?? 0) - 6)) {
+      this.setGoal(lead.x, lead.z, 2, lead.y)
+      this.roamUntil = now + 8
+    } else if (!this.goal || this.steerArrived || now > (this.roamUntil ?? 0)) {
+      const spots = [...Object.values(m.holds).flat().map((h) => h.at), ...Object.values(m.posts).flat().map((h) => h.at), ...Object.values(m.routes).flat().flatMap((r) => r.path)]
+      const p = spots[Math.floor(Math.random() * spots.length)]
+      this.goTo(p, 1.5)
+      this.roamUntil = now + 10 + Math.random() * 10
+    }
+    this.holdLook = null
     return {}
   }
   /** Somewhere well away from the bomb: whichever spawn point is farthest from it. */
@@ -523,6 +547,7 @@ export class Brain {
       // ---- Go about the plan ----
       this.burst = 0
       const s = this.steer(dt)
+      this.steerArrived = s.arrived
       wish = { fx: s.fx, fz: s.fz }
       if (this.jumpNext) {
         cmd.jump = true

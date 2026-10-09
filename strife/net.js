@@ -262,7 +262,7 @@ const OWN_SOUNDS = new Set(['silenced', 'click', 'reload', 'swish', 'land', ...n
 // Events a player's own browser already shows for them.
 const OWN_EVENTS = new Set(['tracer', 'impact', 'shot', 'knife', 'mode', 'switch', 'reload'])
 // Events everyone needs.
-const EVENTS = ['kill', 'hit', 'roundStart', 'live', 'roundEnd', 'planted', 'defused', 'explode', 'bombDropped', 'bombPicked', 'halftime', 'drop', 'dropRemoved', 'detonate', 'tracer', 'impact', 'knife', 'throw', 'plantStart', 'mode', 'shot', 'decoyEnd']
+const EVENTS = ['respawn', 'levelUp', 'kill', 'hit', 'roundStart', 'live', 'roundEnd', 'planted', 'defused', 'explode', 'bombDropped', 'bombPicked', 'halftime', 'drop', 'dropRemoved', 'detonate', 'tracer', 'impact', 'knife', 'throw', 'plantStart', 'mode', 'shot', 'decoyEnd']
 const ownerOf = (name, d) => d?.a ?? (name === 'tracer' || name === 'shot' ? d?.a : null) ?? d?.by ?? null
 
 // ================= The host =================
@@ -383,7 +383,7 @@ export class NetHost {
   }
   welcomeData(me) {
     const g = this.game
-    return { me: me.id, map: this.info.mapId, rules: g.rules, roster: this.roster(), code: this.code, host: this.info.name }
+    return { me: me.id, map: this.info.mapId, mode: g.mode, rules: g.rules, roster: this.roster(), code: this.code, host: this.info.name }
   }
   roster() {
     return this.game.actors.map((a) => ({ id: a.id, name: a.name, team: a.team, bot: a.isBot, human: !a.isBot }))
@@ -482,9 +482,10 @@ function snapshot(g, me) {
     b: { s: b.state, p: b.pos, si: b.site, x: b.explodeAt, c: b.carrier?.id ?? -1, d: b.defuser?.id ?? -1, de: b.defuseEnd ?? 0 },
     a: g.actors.map((a) => [
       a.id, a.team, a.alive ? 1 : 0, r3(a.pos.x), r3(a.pos.y), r3(a.pos.z), r3(a.yaw), r3(a.pitch), r2(a.crouch), r2(a.vel.x), r2(a.vel.y), r2(a.vel.z),
-      a.hp, a.armor, a.helmet ? 1 : 0, a.kit ? 1 : 0, a.money, a.kills, a.deaths, a.assists, a.mvps, a.active, gunOf(a), r2(a.plant), r2(a.defuse), a.inv.bomb ? 1 : 0,
+      a.hp, a.armor, a.helmet ? 1 : 0, a.kit ? 1 : 0, a.money, a.kills, a.deaths, a.assists, a.mvps, a.active, gunOf(a), r2(a.plant), r2(a.defuse), a.inv.bomb ? 1 : 0, a.arLevel ?? 0,
     ]),
-    you: { inv: a2inv(me.inv), seq: me.spawnSeq, x: me.pos.x, y: me.pos.y, z: me.pos.z, fu: me.flashUntil, ff: me.flashFull, rk: me.roundKills },
+    rc: g.retakeCard ?? null,
+    you: { ra: me.respawnAt ?? 0, inv: a2inv(me.inv), seq: me.spawnSeq, x: me.pos.x, y: me.pos.y, z: me.pos.z, fu: me.flashUntil, ff: me.flashFull, rk: me.roundKills },
     n: g.nades.map((n) => [n.id, n.type, n.item, r2(n.pos.x), r2(n.pos.y), r2(n.pos.z)]),
     sm: g.world.smokes.map((s) => [s.id, r2(s.x), r2(s.y), r2(s.z), r3(s.born), r3(s.until)]),
     f: g.world.fires.map((f) => [f.id, r2(f.x), r2(f.y), r2(f.z), f.max, r3(f.born), r3(f.until), f.owner?.id ?? -1]),
@@ -668,6 +669,7 @@ export function applySnapshot(g, s) {
     a.assists = r[19]
     a.mvps = r[20]
     a.plant = r[23]
+    a.arLevel = r[26] ?? 0
     a.defuse = r[24]
     if (!a.alive && wasAlive) a.deadAt = g.time
     if (a === me) continue
@@ -703,6 +705,8 @@ export function applySnapshot(g, s) {
     me.flashUntil = y.fu
     me.flashFull = y.ff
     me.roundKills = y.rk
+    me.respawnAt = y.ra
+    g.retakeCard = s.rc
     // a new round (or the host moved us): go where the host says
     if (y.seq !== me.spawnSeq) {
       me.spawnSeq = y.seq

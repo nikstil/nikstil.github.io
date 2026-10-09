@@ -2,7 +2,7 @@
 
 import * as THREE from './lib/three.min.js'
 import { MAPS, MAP_LIST } from './maps.js'
-import { Game, eyeOf, weaponOf, dirOf } from './game.js'
+import { Game, MODES, MODE_LIST, ARMS_LADDER, eyeOf, weaponOf, dirOf } from './game.js'
 import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP } from './weapons.js'
@@ -54,6 +54,7 @@ const settings = {
   diff: 1,
   length: 9,
   size: 5,
+  mode: 'competitive',
   ...(store.get(SKEY) ?? {}),
 }
 if (q.get('map') && MAPS[q.get('map')]) settings.map = q.get('map')
@@ -183,7 +184,7 @@ function hooks() {
     },
     roundEnd({ winner, reason, mvp, over }) {
       if (mode !== 'play') return
-      const reasons = { elimination: winner === 'T' ? 'All Counter-Terrorists are dead' : 'All Terrorists are dead', bomb: 'The bomb exploded', defuse: 'The bomb has been defused', time: 'Time ran out: the bomb was never planted' }
+      const reasons = { elimination: winner === 'T' ? 'All Counter-Terrorists are dead' : 'All Terrorists are dead', bomb: 'The bomb exploded', defuse: 'The bomb has been defused', time: game.respawns ? 'Time is up: most kills wins' : 'Time ran out: the bomb was never planted', kills: `First to ${game.rules.killsToWin} kills`, armsrace: `${mvp?.name ?? 'Someone'} went through every gun and won with the knife` }
       showBanner(winner, reasons[reason], mvp ? `MVP: ${mvp.name}${mvp === game.player ? ' (you!)' : ''}` : '')
       if (game.player) audio.play(winner === game.player.team ? 'win' : 'lose')
       if (game.player && !game.practice) track.roundEnd({ winner, mvp }, game.player, !!net)
@@ -208,6 +209,20 @@ function hooks() {
     bombPicked({ a }) {
       if (mode === 'play' && a === game.player) say('You picked up the bomb', 2)
     },
+    respawn({ a }) {
+      if (a !== game.player) return
+      deathInfo = null
+      camY = null
+      look.yaw = a.yaw
+      look.pitch = 0
+      watched = a
+    },
+    levelUp({ a, level }) {
+      if (a !== game.player || mode !== 'play') return
+      const id = ARMS_LADDER[Math.min(level, ARMS_LADDER.length - 1)]
+      say(`Level ${level + 1}: ${WEAPONS[id].name}`, 1.6)
+      audio.play('buy')
+    },
     halftime() {
       if (mode === 'play') say('Halftime: switching sides', 4)
     },
@@ -219,7 +234,7 @@ function start({ demo = false, practice = false, host = false } = {}) {
   if (!host || !net) endNet()
   const map = MAPS[settings.map]
   const team = demo ? null : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
-  game = new Game({ map, team, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
+  game = new Game({ map, team, mode: demo ? 'competitive' : settings.mode, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
   attachView(map, demo)
 }
 /** A new view (renderer scene) for the current game. */
@@ -346,7 +361,7 @@ function startClient(w) {
   closeLobby()
   const map = MAPS[w.map] ?? MAPS.dust2
   settings.map = w.map in MAPS ? w.map : 'dust2'
-  game = new Game({ map, roster: w.roster, myId: w.me, netRole: 'client', rules: w.rules, hooks: hooks(), skinFor })
+  game = new Game({ map, mode: w.mode, roster: w.roster, myId: w.me, netRole: 'client', rules: w.rules, hooks: hooks(), skinFor })
   attachView(map)
   paused = false
   show(null)
@@ -417,6 +432,15 @@ function buildMenu() {
     )
   seg('#seg-team', 'team')
   seg('#seg-diff', 'diff', true)
+  const modes = $('#seg-mode')
+  modes.replaceChildren()
+  for (const id of MODE_LIST) {
+    const b = document.createElement('button')
+    b.dataset.v = id
+    b.textContent = MODES[id].name
+    modes.append(b)
+  }
+  seg('#seg-mode', 'mode')
   seg('#seg-length', 'length', true)
   seg('#seg-size', 'size', true)
   syncMenu()
@@ -428,6 +452,12 @@ function syncMenu() {
   mark('#seg-diff', settings.diff)
   mark('#seg-length', settings.length)
   mark('#seg-size', settings.size)
+  mark('#seg-mode', settings.mode)
+  const md = MODES[settings.mode] ?? MODES.competitive
+  $('#mode-blurb').textContent = md.blurb
+  // match length and team size only mean something in some modes
+  $('#seg-length').parentElement.hidden = !!md.respawn
+  $('#seg-size').parentElement.hidden = !!md.size
   $('#record').textContent = record.wins + record.losses ? `Record: ${record.wins} won, ${record.losses} lost · ${record.kills} kills, ${record.deaths} deaths` : ''
 }
 function syncSettings() {
@@ -874,7 +904,7 @@ if (coarse) {
 
 // ================= HUD =================
 const hud = {}
-for (const id of ['clock', 'score-t', 'score-ct', 'alive-t', 'alive-ct', 'money', 'hp', 'armor', 'clip', 'reserve', 'weapon-name', 'nades', 'kit', 'bomb-carry', 'place', 'hint', 'progress', 'progress-bar', 'center-msg', 'spectate', 'crosshair', 'scope', 'flashbang', 'damage', 'hitmarker', 'scoreboard'])
+for (const id of ['mode-info', 'clock', 'score-t', 'score-ct', 'alive-t', 'alive-ct', 'money', 'hp', 'armor', 'clip', 'reserve', 'weapon-name', 'nades', 'kit', 'bomb-carry', 'place', 'hint', 'progress', 'progress-bar', 'center-msg', 'spectate', 'crosshair', 'scope', 'flashbang', 'damage', 'hitmarker', 'scoreboard'])
   hud[id] = $('#' + id)
 const last = {}
 const setText = (id, v) => {
@@ -980,9 +1010,19 @@ function updateHud(dt) {
   const me = g.player
   const w = watched
   const now = g.time
+  // what the mode is about
+  let info = ''
+  if (g.mode === 'armsrace' && w) {
+    const lv = Math.min(w.arLevel ?? 0, ARMS_LADDER.length - 1)
+    const next = ARMS_LADDER[lv + 1]
+    info = `Level ${lv + 1}/${ARMS_LADDER.length} · ${WEAPONS[ARMS_LADDER[lv]].name}${next ? ` · next: ${WEAPONS[next].name}` : ' · knife kill to win!'}`
+  } else if (g.mode === 'deathmatch') info = `Deathmatch · first team to ${g.rules.killsToWin} kills · B for any gun, free`
+  else if (g.mode === 'retakes' && g.bomb.site) info = `Retake ${g.bomb.site} · ${{ full: 'full buy', force: 'force buy', pistol: 'pistols' }[g.retakeCard] ?? ''}`
+  else if (g.mode === 'wingman') info = `Wingman · ${Object.keys(g.sites).join('')} site only`
+  setText('mode-info', info)
   // clock and scores
   const bombPlanted = g.bomb.state === 'planted'
-  setText('clock', g.practice ? '∞' : bombPlanted ? '💣' : g.phase === 'freeze' ? fmtTime(g.phaseEnd - now) : fmtTime(g.roundTimeLeft))
+  setText('clock', g.practice ? '∞' : bombPlanted && !g.respawns ? '💣' : g.phase === 'freeze' ? fmtTime(g.phaseEnd - now) : fmtTime(g.roundTimeLeft))
   hud.clock.classList.toggle('bomb', bombPlanted)
   hud.clock.classList.toggle('low', !bombPlanted && g.phase === 'live' && g.roundTimeLeft < 15)
   setText('score-t', String(g.score.T))
@@ -1050,7 +1090,10 @@ function updateHud(dt) {
   if (performance.now() > msgUntil) setText('center-msg', '')
   else last['center-msg'] = null
   // spectating / death
-  if (me && !me.alive && !g.practice) {
+  if (me && !me.alive && g.respawns) {
+    hud.spectate.hidden = false
+    hud.spectate.textContent = g.phase === 'over' ? '' : `Respawning in ${Math.max(0, Math.ceil((me.respawnAt ?? 0) - now))}…`
+  } else if (me && !me.alive && !g.practice) {
     hud.spectate.hidden = false
     const killer = deathInfo?.attacker && deathInfo.attacker !== me ? `Killed by ${deathInfo.attacker.name} (${WEAPONS[deathInfo.weaponId]?.name ?? deathInfo.weaponId}${deathInfo.headshot ? ', headshot' : ''})` : 'You died'
     const sp = watched && watched !== me ? `Spectating ${watched.name}` : 'Spectating'

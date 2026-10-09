@@ -43,6 +43,7 @@
         <div class="team-alive ct" id="alive-ct"></div>
       </div>
 
+      <div class="mode-info" id="mode-info"></div>
       <ol class="killfeed" id="killfeed" aria-live="polite"></ol>
 
       <div class="crosshair" id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
@@ -112,6 +113,11 @@
         <h1 class="logo">COUNTER<span>-</span>STRIFE</h1>
         <p class="tag">5v5 bomb defusal, against bots or online</p>
         <div class="menu-section">
+          <h2>Mode</h2>
+          <div class="seg seg-mode" id="seg-mode"></div>
+          <p class="mode-blurb" id="mode-blurb"></p>
+        </div>
+        <div class="menu-section">
           <h2>Map</h2>
           <div class="maps" id="maps"></div>
         </div>
@@ -129,7 +135,7 @@
             </div>
           </div>
         </div>
-        <div class="menu-section row-2">
+        <div class="menu-section row-2" id="row-match">
           <div>
             <h2>Match</h2>
             <div class="seg" id="seg-length">

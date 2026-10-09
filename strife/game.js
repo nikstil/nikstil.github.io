@@ -16,6 +16,18 @@ const STOP_SPEED = 2.0
 
 export const RULES = { freeze: 7, roundTime: 115, bombTime: 40, plantTime: 3.2, defuseTime: 10, kitTime: 5, buyTime: 25, postRound: 5, roundsToWin: 9 }
 
+/** The ways to play. Respawn modes have no rounds and no bomb. */
+export const MODES = {
+  competitive: { name: 'Competitive', blurb: 'Bomb defusal, first to the round limit', bomb: true },
+  wingman: { name: 'Wingman', blurb: '2v2 on a single bombsite', bomb: true, size: 2, rules: { roundTime: 90, freeze: 6 } },
+  retakes: { name: 'Retakes', blurb: 'The bomb is down: Ts hold the site, CTs take it back', bomb: true, retakes: true, rules: { freeze: 3, roundTime: 60, postRound: 4 } },
+  deathmatch: { name: 'Deathmatch', blurb: 'Respawns, free guns, first team to 60 kills', respawn: true, rules: { freeze: 3, matchTime: 480, killsToWin: 60 } },
+  armsrace: { name: 'Arms Race', blurb: 'Each kill gives you the next gun; win with the golden knife', respawn: true, armsrace: true, rules: { freeze: 3, matchTime: 900 } },
+}
+export const MODE_LIST = Object.keys(MODES)
+/** Arms Race: every kill moves you one gun down the list; a knife kill with the last one wins. */
+export const ARMS_LADDER = ['m4a1s', 'ak47', 'famas', 'galil', 'aug', 'sg553', 'p90', 'mp7', 'ump45', 'mac10', 'mag7', 'nova', 'negev', 'awp', 'ssg08', 'deagle', 'fiveseven', 'tec9', 'glock', 'knife']
+
 const T_NAMES = ['Vinnie', 'CryptoKaren', 'xX_N00bSlayer_Xx', 'Grandma1947', 'Gary', 'Kevin (Sales)', 'TheAlgorithm', 'Chad', 'Lil Spreadsheet', 'Mr. Pop-Up']
 const CT_NAMES = ['Sir Scratchington', 'Motivational Eagle', 'Doom Daily', 'Brenda (HR)', 'The Founder & CEO', 'Steve', 'Officer Cookie', 'Ad-Block Andy', 'Captain Captcha', 'Dave']
 
@@ -98,8 +110,14 @@ export class Game {
    */
   constructor(opts) {
     this.opts = opts
-    this.rules = { ...RULES, ...(opts.rules ?? {}) }
+    this.mode = MODES[opts.mode] ? opts.mode : 'competitive'
+    this.modeDef = MODES[this.mode]
+    this.respawns = !!this.modeDef.respawn
+    this.rules = { ...RULES, ...(this.modeDef.rules ?? {}), ...(opts.rules ?? {}) }
     this.map = opts.map
+    // Wingman plays on one site only (the map can say which; B otherwise).
+    const wingSite = opts.map.wingman ?? 'B'
+    this.sites = this.mode === 'wingman' ? { [wingSite]: opts.map.sites[wingSite] } : opts.map.sites
     this.world = new World(opts.map)
     this.hooks = opts.hooks ?? {}
     this.skinFor = opts.skinFor ?? null // (actor, weaponId) => skin descriptor or null
@@ -126,7 +144,7 @@ export class Game {
     this.halftimeDone = false
     this.plan = null
     this.practice = !!opts.practice
-    const size = this.practice ? (opts.team ? 1 : 0) : opts.size ?? 5
+    const size = this.practice ? (opts.team ? 1 : 0) : this.modeDef.size ?? opts.size ?? 5
     let id = 0
     const names = { T: [...T_NAMES].sort(() => Math.random() - 0.5), CT: [...CT_NAMES].sort(() => Math.random() - 0.5) }
     if (opts.roster) {
@@ -228,9 +246,11 @@ export class Game {
     }
     // The bomb goes to a random Terrorist.
     const ts = this.actors.filter((a) => a.team === 'T')
-    const carrier = ts[Math.floor(Math.random() * ts.length)]
+    const carrier = this.modeDef.bomb && !this.modeDef.retakes ? ts[Math.floor(Math.random() * ts.length)] : null
     if (carrier && !this.practice) carrier.inv.bomb = true
     this.bomb = { state: carrier && !this.practice ? 'carried' : 'none', carrier, pos: null, site: null, explodeAt: 0, nextBeep: 0, defuser: null }
+    if (this.modeDef.retakes && !this.practice) this.setupRetake()
+    if (this.respawns) for (const a of this.actors) this.respawn(a, true)
     if (this.practice) for (const a of this.actors) a.money = ECONOMY.max
     this.phase = 'freeze'
     this.phaseEnd = this.time + (this.practice ? 0.5 : this.rules.freeze)
@@ -238,6 +258,116 @@ export class Game {
     this.plan = planRound(this)
     for (const a of this.actors) a.brain?.newRound()
     this.emit('roundStart', { round: this.round })
+  }
+
+  // ================= Modes =================
+  /** Retakes: the bomb is already planted on a site, Ts are on it, everyone gets a loadout. */
+  setupRetake() {
+    const m = this.map
+    const site = Math.random() < 0.5 ? 'A' : 'B'
+    const spot = m.plant[site][Math.floor(Math.random() * m.plant[site].length)]
+    const w = this.world
+    const pos = { x: spot[0] + 0.5, y: w.floorAt(spot[0] + 0.5, spot[1] + 0.5, spot[2] == null ? 50 : spot[2] + 1), z: spot[1] + 0.5 }
+    this.bomb = { state: 'planted', carrier: null, pos, site, explodeAt: this.time + this.rules.freeze + this.rules.bombTime, nextBeep: 0, defuser: null, planter: null }
+    const posts = m.posts[site]
+    const card = ['full', 'full', 'force', 'pistol'][Math.floor(Math.random() * 4)]
+    this.retakeCard = card
+    let k = 0
+    for (const a of this.actors) {
+      if (a.team === 'T') {
+        const p = posts[k++ % posts.length].at
+        a.pos.x = p[0] + 0.5 + (Math.random() - 0.5) * 0.6
+        a.pos.z = p[1] + 0.5 + (Math.random() - 0.5) * 0.6
+        a.pos.y = w.floorAt(a.pos.x, a.pos.z, p[2] == null ? 50 : p[2] + 1)
+      }
+      // the loadout for this round
+      const T = a.team === 'T'
+      const pick = (list) => list[Math.floor(Math.random() * list.length)]
+      a.inv.primary = card === 'full' ? gun(pick(T ? ['ak47', 'ak47', 'sg553', 'galil'] : ['m4a4', 'm4a1s', 'aug', 'famas']), a.inv.primary?.skin ?? null) : card === 'force' ? gun(pick(T ? ['mac10', 'ump45', 'xm1014', 'galil'] : ['mp9', 'ump45', 'famas', 'mag7'])) : null
+      if (a.inv.primary) a.inv.primary.skin = this.skinFor?.(a, a.inv.primary.id) ?? null
+      if (card === 'pistol') a.inv.pistol = gun(pick(T ? ['tec9', 'deagle', 'p250'] : ['fiveseven', 'deagle', 'p250']), this.skinFor?.(a, 'deagle') ?? null)
+      a.armor = 100
+      a.helmet = card !== 'pistol'
+      a.kit = !T && Math.random() < 0.6
+      a.inv.grenades = card === 'pistol' ? ['flash'] : [pick(['smoke', 'flash', 'he']), T ? 'molotov' : 'incendiary'].slice(0, card === 'full' ? 2 : 1)
+      a.active = a.inv.primary ? 'primary' : 'pistol'
+    }
+    this.emit('planted', { a: null, site, pos, retake: true })
+  }
+  /** Respawn modes: back in, away from the enemy, with a gun. */
+  respawn(a, first = false) {
+    const w = this.world
+    const m = this.map
+    const foes = this.actors.filter((b) => b.alive && b.team !== a.team && b !== a)
+    const cands = [...m.spawns.T, ...m.spawns.CT, ...Object.values(m.holds).flat().map((h) => h.at), ...Object.values(m.posts).flat().map((h) => h.at), ...m.plant.A, ...m.plant.B]
+    const scored = cands
+      .map((p) => {
+        const x = p[0] + 0.5
+        const z = p[1] + 0.5
+        const y = w.floorAt(x, z, p[2] == null ? 50 : p[2] + 1)
+        const near = foes.reduce((d, b) => Math.min(d, Math.hypot(b.pos.x - x, b.pos.z - z) + (w.sees({ x, y: y + 1.6, z }, { x: b.pos.x, y: b.pos.y + 1.5, z: b.pos.z }) ? -15 : 0)), 99)
+        return { x, y, z, near: near + Math.random() * 6 }
+      })
+      .sort((p, q) => q.near - p.near)
+    const at = first ? scored[Math.floor(Math.random() * Math.min(scored.length, 12))] : scored[Math.floor(Math.random() * Math.max(1, Math.floor(scored.length / 3)))]
+    a.pos.x = at.x
+    a.pos.y = at.y
+    a.pos.z = at.z
+    a.vel.x = a.vel.y = a.vel.z = 0
+    a.yaw = Math.random() * Math.PI * 2
+    a.pitch = 0
+    a.spawnSeq = (a.spawnSeq ?? 0) + 1
+    a.alive = true
+    a.hp = 100
+    a.armor = 100
+    a.helmet = true
+    a.crouch = 0
+    a.h = STAND_H
+    a.onGround = true
+    a.scope = 0
+    a.flashUntil = a.flashFull = 0
+    a.reloadEnd = a.switchEnd = 0
+    a.recoil = 0
+    a.damageBy = {}
+    a.protectUntil = this.time + (first ? 0 : 1.5)
+    a.inv = { primary: null, pistol: defaultPistol(a.team), knife: { id: 'knife' }, grenades: [], bomb: false, zeus: null }
+    this.applySkins(a)
+    if (this.modeDef.armsrace) this.armsWeapon(a)
+    else {
+      // Deathmatch: your last pick (or a rifle)
+      const pick = a.dmPick ?? (a.isBot ? ['ak47', 'm4a4', 'm4a1s', 'awp', 'p90', 'sg553', 'aug', 'galil', 'famas', 'ssg08', 'xm1014', 'mp9'][(a.id * 7 + this.round) % 12] : a.team === 'T' ? 'ak47' : 'm4a1s')
+      a.inv.primary = gun(pick, this.skinFor?.(a, pick) ?? null)
+      if (a.dmPistol) a.inv.pistol = gun(a.dmPistol, this.skinFor?.(a, a.dmPistol) ?? null)
+      a.active = 'primary'
+    }
+    a.money = ECONOMY.max
+    a.brain?.newRound()
+    if (!first) this.emit('respawn', { a })
+  }
+  /** Arms Race: hand over the gun for this level. */
+  armsWeapon(a) {
+    a.arLevel ??= 0
+    const id = ARMS_LADDER[Math.min(a.arLevel, ARMS_LADDER.length - 1)]
+    a.inv.primary = null
+    a.inv.pistol = null
+    a.inv.grenades = []
+    if (id === 'knife') a.active = 'knife'
+    else {
+      const slot = WEAPONS[id].slot
+      a.inv[slot] = gun(id, this.skinFor?.(a, id) ?? null)
+      a.active = slot
+    }
+    a.switchEnd = this.time + 0.3
+    this.emit('switch', { a })
+  }
+  /** Ends a respawn match. */
+  endMatch(winner, reason, star = null) {
+    if (this.phase === 'over') return
+    this.phase = 'over'
+    this.winner = winner
+    const mvp = star ?? [...this.actors].filter((a) => a.team === winner).sort((a, b) => b.kills - a.kills)[0] ?? null
+    if (mvp) mvp.mvps++
+    this.emit('roundEnd', { winner, reason, mvp, over: true })
   }
   endRound(winner, reason) {
     if (this.phase !== 'live' && this.phase !== 'freeze') return
@@ -294,6 +424,8 @@ export class Game {
   canBuy(a) {
     if (!a.alive) return false
     if (this.practice) return true
+    if (this.mode === 'deathmatch') return true // free guns, any time, anywhere
+    if (this.modeDef.armsrace || this.modeDef.retakes) return false
     if (this.phase !== 'freeze' && !(this.phase === 'live' && this.time - this.roundStart < this.rules.freeze + this.rules.buyTime)) return false
     return this.world.inRect(this.map.buy[a.team], a.pos.x, a.pos.z, a.pos.y)
   }
@@ -343,7 +475,9 @@ export class Game {
       this.switchTo(a, w.slot, true)
     }
     a.money -= item.price
-    if (this.practice) a.money = ECONOMY.max
+    if (this.practice || this.mode === 'deathmatch') a.money = ECONOMY.max
+    if (this.mode === 'deathmatch' && w?.slot === 'primary') a.dmPick = id
+    if (this.mode === 'deathmatch' && w?.slot === 'pistol') a.dmPistol = id
     this.sound('buy', null, { who: a })
     return ''
   }
@@ -575,6 +709,7 @@ export class Game {
   }
   damage(victim, attacker, raw, pen, part, weaponId, at, dir) {
     if (this.client) return
+    if (victim.protectUntil > this.time && attacker) return
     if (!victim.alive || (this.phase === 'over' && weaponId !== 'bomb')) return
     const { dmg, armorLoss } = applyDamage(victim, raw, pen, part)
     const taken = Math.min(victim.hp, dmg)
@@ -609,6 +744,22 @@ export class Game {
         const b = this.actors[id]
         if (b && b !== attacker && dmg >= 41 && b.team !== victim.team) b.assists++
       }
+    }
+    if (this.respawns) {
+      victim.respawnAt = this.time + 2.5
+      victim.inv.grenades = []
+      this.emit('kill', { victim, attacker, weaponId, headshot })
+      if (attacker && attacker !== victim && attacker.team !== victim.team) {
+        this.score[attacker.team]++
+        if (this.modeDef.armsrace) {
+          if (weaponId === 'knife' && victim.arLevel > 0) victim.arLevel--
+          attacker.arLevel = (attacker.arLevel ?? 0) + 1
+          if (attacker.arLevel >= ARMS_LADDER.length) return this.endMatch(attacker.team, 'armsrace', attacker)
+          if (attacker.alive) this.armsWeapon(attacker)
+          this.emit('levelUp', { a: attacker, level: attacker.arLevel })
+        } else if (this.score[attacker.team] >= this.rules.killsToWin) return this.endMatch(attacker.team, 'kills')
+      }
+      return
     }
     // Drop the best gun, and the bomb.
     if (victim.inv.primary) this.dropWeapon(victim, 'primary')
@@ -858,7 +1009,7 @@ export class Game {
 
   // ================= The bomb =================
   inSite(a) {
-    for (const [k, rr] of Object.entries(this.map.sites)) if (this.world.inRect(rr, a.pos.x, a.pos.z, a.pos.y)) return k
+    for (const [k, rr] of Object.entries(this.sites)) if (this.world.inRect(rr, a.pos.x, a.pos.z, a.pos.y)) return k
     return null
   }
   /** Hold to plant (Ts with the bomb, on a site) or to defuse (CTs at the bomb). */
@@ -959,7 +1110,7 @@ export class Game {
     }
   }
   checkWin() {
-    if (this.phase !== 'live' || this.practice) return
+    if (this.phase !== 'live' || this.practice || this.respawns) return
     const alive = (t) => this.actors.some((a) => a.alive && a.team === t)
     if (!alive('CT')) return this.endRound('T', 'elimination')
     if (!alive('T') && this.bomb.state !== 'planted') return this.endRound('CT', 'elimination')
@@ -1078,9 +1229,11 @@ export class Game {
     // Phases
     if (this.phase === 'freeze' && now >= this.phaseEnd) {
       this.phase = 'live'
-      this.phaseEnd = this.practice ? Infinity : now + this.rules.roundTime
+      this.phaseEnd = this.practice ? Infinity : now + (this.respawns ? this.rules.matchTime : this.rules.roundTime)
       this.emit('live', {})
       this.sound('roundStart', null, {})
+    } else if (this.phase === 'live' && now >= this.phaseEnd && this.respawns) {
+      this.endMatch(this.score.T > this.score.CT ? 'T' : 'CT', 'time')
     } else if (this.phase === 'live' && now >= this.phaseEnd && this.bomb.state !== 'planted') {
       this.endRound('CT', 'time')
     } else if (this.phase === 'post' && now >= this.phaseEnd) {
@@ -1088,6 +1241,7 @@ export class Game {
       this.startRound()
     }
     if (this.practice && this.player && !this.player.alive && now - this.player.deadAt > 2) this.startRound()
+    if (this.respawns && this.phase === 'live') for (const a of this.actors) if (!a.alive && now >= (a.respawnAt ?? 0)) this.respawn(a)
     if (this.phase === 'over') {
       for (const a of this.actors) if (a.alive) this.moveActor(a, {}, dt)
       return
