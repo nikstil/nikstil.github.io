@@ -78,8 +78,11 @@ export const track = {
     if (won && online) bump('onlineRounds')
     commit()
   },
-  matchOver(won, mapId, difficulty) {
+  matchOver(won, mapId, difficulty, mode = 'competitive', star = false) {
     if (won) {
+      s.winsMode ??= {}
+      s.winsMode[mode] = (s.winsMode[mode] ?? 0) + 1
+      if (mode === 'armsrace' && star) s.armsWins = (s.armsWins ?? 0) + 1
       s.winsOn ??= {}
       s.winsOn[mapId] = (s.winsOn[mapId] ?? 0) + 1
       if (difficulty >= 3) s.expertWin = true

@@ -572,7 +572,7 @@ function matchOver() {
   if (me) won ? record.wins++ : record.losses++
   store.set(RKEY, record)
   const got = me ? rewardMatch(won, me.mvps ?? 0) : ''
-  if (me) track.matchOver(won, settings.map, game.difficulty)
+  if (me) track.matchOver(won, settings.map, game.difficulty, game.mode, game.mode === 'armsrace' && (me.arLevel ?? 0) >= ARMS_LADDER.length)
   $('#over-drop').textContent = got ? `Case drop: ${got} · open it from Inventory` : ''
   $('#over-title').textContent = won ? 'Victory' : 'Defeat'
   $('#over-title').className = won ? 'win' : 'loss'

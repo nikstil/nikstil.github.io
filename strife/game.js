@@ -1198,6 +1198,12 @@ export class Game {
     }
     const before = a.onGround
     const landed = w.move(a, dt)
+    // off the edge of a skyscraper
+    if (this.map.killY != null && a.pos.y < this.map.killY) {
+      if (a.alive && !this.client) this.damage(a, null, 999, 1, 'chest', 'fall', null, null)
+      a.pos.y = Math.max(a.pos.y, this.map.killY - 6)
+      a.vel.y = Math.max(a.vel.y, -4)
+    }
     if (a.onGround) a.airTuck = false
     if (landed) {
       if (landed > 6) this.sound('land', a.pos, { who: a, range: 18 })

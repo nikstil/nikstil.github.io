@@ -11,6 +11,9 @@ import { mergeGroup } from './models.js'
 const STYLE = {
   dust: { skirting: '#b8a274', coping: '#e8d6aa', shutter: '#2d6fa8', frame: '#8a6a44', beams: true, cables: true, corner: 'barrel', barrel: '#6e7a4a', tufts: '#9a8a52', lamp: false, pipes: false, sill: '#d8c79d' },
   mirage: { skirting: '#c9b28c', coping: '#f0e2c2', shutter: '#3a8a7f', frame: '#6e4a2c', beams: true, cables: true, corner: 'pot', barrel: '#b8643c', tufts: '#7a8a46', lamp: true, pipes: false, sill: '#e8dcc0' },
+  inferno: { skirting: '#7a5a42', coping: '#b8643c', shutter: '#4a6b3a', frame: '#5a3a22', beams: true, cables: true, corner: 'pot', barrel: '#b8643c', tufts: '#6a7a3a', lamp: true, pipes: false, sill: '#e6d6b8' },
+  overpass: { skirting: '#8a877c', coping: '#d0cdc2', shutter: null, frame: '#4a5a62', beams: false, cables: false, corner: 'barrel', barrel: '#3d6f96', tufts: '#5f7a3a', lamp: true, pipes: true, sill: '#c2bfb3' },
+  vertigo: { skirting: '#d07a2a', coping: '#9a968e', shutter: null, frame: '#6b6f74', beams: false, cables: true, corner: 'barrel', barrel: '#d07a2a', tufts: null, lamp: true, pipes: true, sill: '#a19d95' },
   nuke: { skirting: '#c9a227', coping: '#b5babd', shutter: null, frame: '#6b7378', beams: false, cables: false, corner: 'barrel', barrel: '#d9b52a', tufts: null, lamp: true, pipes: true, sill: '#9aa2a6' },
 }
 const hash = (...n) => {

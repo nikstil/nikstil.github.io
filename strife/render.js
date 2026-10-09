@@ -212,6 +212,48 @@ const LOOKS = {
     wood: { paint: 'planks', base: '#8a6a44', wear: '#5a4026', size: 2 },
     trim: { paint: 'plaster', base: '#e0e4e6', band: '#c9a227', size: 3 },
   },
+  inferno: {
+    wall: { paint: 'plaster', base: '#dcc39a', band: '#8a4a32', size: 4 },
+    ground: { paint: 'tiles', base: '#9a8a76', alt: '#8d7e6b', mortar: '#6f6252', n: 6, size: 3 },
+    path: { paint: 'tiles', base: '#a89580', alt: '#9c8a75', mortar: '#776753', n: 5, size: 3 },
+    step: { paint: 'tiles', base: '#a2917c', mortar: '#7a6a56', n: 2, size: 2 },
+    crate: { paint: 'crate', base: '#8a5a32', size: 1.1 },
+    door: { paint: 'planks', base: '#5a3a22', wear: '#3a2414', size: 2.8 },
+    metal: { paint: 'ribs', base: '#6b6f5a', size: 2.6 },
+    car: { paint: 'body', base: '#8c3a2c', size: 1.6 },
+    low: { paint: 'blocks', base: '#b8644a', mortar: '#8a4a36', rows: 4, cols: 3, size: 1.5 },
+    tile: { paint: 'tiles', base: '#b8643c', alt: '#c87a4c', mortar: '#7a3e22', n: 4, size: 2.4 },
+    wood: { paint: 'planks', base: '#6e4a2c', wear: '#4a2f1a', size: 2 },
+    trim: { paint: 'plaster', base: '#e6d6b8', band: '#4a6b3a', size: 3 },
+  },
+  overpass: {
+    wall: { paint: 'blocks', base: '#b7b4a8', mortar: '#99968b', rows: 2, cols: 1, size: 3.4 },
+    ground: { paint: 'sand', base: '#7f8a62', size: 6 },
+    path: { paint: 'tiles', base: '#a9a79c', alt: '#9d9b90', mortar: '#7f7d73', n: 2, size: 3 },
+    step: { paint: 'tiles', base: '#a3a196', mortar: '#7a786e', n: 2, size: 2 },
+    crate: { paint: 'crate', base: '#6a7a5a', size: 1.1 },
+    door: { paint: 'planks', base: '#3d5a7a', wear: '#6b6b6b', size: 2.8 },
+    metal: { paint: 'ribs', base: '#5a6a72', size: 2.6 },
+    car: { paint: 'body', base: '#c9b23a', size: 1.6 },
+    low: { paint: 'blocks', base: '#c2bfb3', mortar: '#99968b', rows: 2, cols: 2, size: 1.5 },
+    tile: { paint: 'tiles', base: '#5f7a82', alt: '#6b8890', mortar: '#4a5f66', n: 3, size: 2.4 },
+    wood: { paint: 'planks', base: '#7a5a3a', wear: '#5a4026', size: 2 },
+    trim: { paint: 'plaster', base: '#d8d6cc', band: '#5a7a4a', size: 3 },
+  },
+  vertigo: {
+    wall: { paint: 'blocks', base: '#c4c0b8', mortar: '#a19d95', rows: 2, cols: 1, size: 3 },
+    ground: { paint: 'sand', base: '#a8a49c', size: 6 },
+    path: { paint: 'tiles', base: '#b4b0a8', alt: '#aaa69e', mortar: '#8c8880', n: 2, size: 3 },
+    step: { paint: 'tiles', base: '#aca8a0', mortar: '#868278', n: 2, size: 2 },
+    crate: { paint: 'crate', base: '#7a7a72', size: 1.1 },
+    door: { paint: 'planks', base: '#d9a227', wear: '#6b6b6b', size: 2.8 },
+    metal: { paint: 'ribs', base: '#d07a2a', size: 2.6 },
+    car: { paint: 'body', base: '#d9b52a', size: 1.6 },
+    low: { paint: 'blocks', base: '#cfcbc3', mortar: '#a19d95', rows: 2, cols: 2, size: 1.5 },
+    tile: { paint: 'tiles', base: '#c9c5bd', alt: '#bdb9b1', mortar: '#9a968e', n: 4, size: 2.4 },
+    wood: { paint: 'planks', base: '#a07a4a', wear: '#7a5a30', size: 2 },
+    trim: { paint: 'plaster', base: '#e0ddd6', band: '#d07a2a', size: 3 },
+  },
   mirage: {
     wall: { paint: 'plaster', base: '#e6d4b0', band: '#b99b72', size: 4 },
     ground: { paint: 'sand', base: '#cdb08a', size: 6 },
@@ -485,7 +527,53 @@ export function buildSky(map, quality) {
     sun.shadow.needsUpdate = true
   }
   group.add(hemi, sun, sun.target)
-  return { group, sun, hemi, fog: new THREE.Fog(sky.fog, 50, 260) }
+  if (map.skyline) group.add(skyline(map))
+  return { group, sun, hemi, fog: new THREE.Fog(sky.fog, map.skyline ? 80 : 50, map.skyline ? 420 : 260) }
+}
+
+/** Vertigo: the city far below, and the other towers around. */
+function skyline(map) {
+  const g = new THREE.Group()
+  const rand = rng(31)
+  const win = document.createElement('canvas')
+  win.width = 64
+  win.height = 128
+  const c = win.getContext('2d')
+  c.fillStyle = '#5d6a78'
+  c.fillRect(0, 0, 64, 128)
+  for (let y = 4; y < 128; y += 8)
+    for (let x = 4; x < 64; x += 8) {
+      c.fillStyle = rand() < 0.25 ? '#e8e0b8' : rand() < 0.5 ? '#3a4656' : '#7f93a8'
+      c.fillRect(x, y, 5, 5)
+    }
+  const tex = new THREE.CanvasTexture(win)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  const mats = ['#8a96a4', '#9aa3ad', '#7d8794', '#a8a49a'].map((col) => new THREE.MeshLambertMaterial({ color: col, map: tex }))
+  const cx = map.w / 2
+  const cz = map.d / 2
+  for (let k = 0; k < 70; k++) {
+    const a = rand() * Math.PI * 2
+    const dist = 90 + rand() * 220
+    const w = 14 + rand() * 26
+    const h = 60 + rand() * 170
+    const top = -150 + h
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * (0.7 + rand() * 0.6)), mats[k % mats.length])
+    b.position.set(cx + Math.cos(a) * dist, top - h / 2, cz + Math.sin(a) * dist)
+    b.rotation.y = rand() * 0.6
+    g.add(b)
+  }
+  // the streets, a long way down
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.MeshLambertMaterial({ color: '#56606a' }))
+  ground.rotation.x = -Math.PI / 2
+  ground.position.set(cx, -150, cz)
+  g.add(ground)
+  // the outside of our own tower, going down
+  const tower = new THREE.Mesh(new THREE.BoxGeometry(map.w - 2, 140, map.d - 2), new THREE.MeshLambertMaterial({ color: '#9aa0a8', map: tex }))
+  tower.position.set(cx, -12 - 70, cz)
+  tex.repeat.set(6, 8)
+  g.add(tower)
+  return g
 }
 
 // ================= Radar =================
