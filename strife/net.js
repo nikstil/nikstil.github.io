@@ -262,7 +262,7 @@ const OWN_SOUNDS = new Set(['silenced', 'click', 'reload', 'swish', 'land', ...n
 // Events a player's own browser already shows for them.
 const OWN_EVENTS = new Set(['tracer', 'impact', 'shot', 'knife', 'mode', 'switch', 'reload'])
 // Events everyone needs.
-const EVENTS = ['respawn', 'levelUp', 'kill', 'hit', 'roundStart', 'live', 'roundEnd', 'planted', 'defused', 'explode', 'bombDropped', 'bombPicked', 'halftime', 'drop', 'dropRemoved', 'detonate', 'tracer', 'impact', 'knife', 'throw', 'plantStart', 'mode', 'shot', 'decoyEnd']
+const EVENTS = ['chat', 'radio', 'respawn', 'levelUp', 'kill', 'hit', 'roundStart', 'live', 'roundEnd', 'planted', 'defused', 'explode', 'bombDropped', 'bombPicked', 'halftime', 'drop', 'dropRemoved', 'detonate', 'tracer', 'impact', 'knife', 'throw', 'plantStart', 'mode', 'shot', 'decoyEnd']
 const ownerOf = (name, d) => d?.a ?? (name === 'tracer' || name === 'shot' ? d?.a : null) ?? d?.by ?? null
 
 // ================= The host =================
@@ -304,6 +304,8 @@ export class NetHost {
           if (!p.actor) continue
           if (who && who === p.actor && OWN_EVENTS.has(name)) continue
           if (name === 'mode' && d.a !== p.actor) continue
+          // team chat and the radio: that team only
+          if ((name === 'chat' || name === 'radio') && d.team && d.team !== p.actor.team) continue
           packed ??= pack(d)
           p.out.push(['e', name, packed])
         }
@@ -410,6 +412,8 @@ export class NetHost {
       else for (const q of this.peers.values()) if (q.actor.id === m.to) q.out.push(['t', p.actor.id, p.actor.name, m.m])
       return
     }
+    if (m.k === 'say' && typeof m.text === 'string') return this.game.chat(p.actor, m.text.slice(0, 200), !!m.team)
+    if (m.k === 'radio' && typeof m.id === 'string') return this.game.radio(p.actor, m.id)
     if (m.k === 'c' && Array.isArray(m.c)) {
       for (const c of m.c.slice(0, 20)) p.actor.netQueue.push(sanitize(c))
     } else if (m.k === 'bye') this.drop(from, 'left')
@@ -590,6 +594,13 @@ export class NetClient {
   }
   sendTrade(toId, m) {
     this.link?.send({ k: 't', to: toId, m })
+  }
+  /** Chat and radio go to the host, who sends them on to everyone (it's the host's bots that answer). */
+  sendChat(text, team) {
+    this.link?.send({ k: 'say', text, team: !!team })
+  }
+  sendRadio(id) {
+    this.link?.send({ k: 'radio', id })
   }
   /** Called every frame after game.update with the input used: batches it for the host. */
   tick(dt, input) {

@@ -94,6 +94,14 @@ function bake() {
     return (s.lp * 1.4 * Math.exp(-t * 30) + Math.sin(2 * Math.PI * 180 * t) * 0.3 * Math.exp(-t * 40)) * 0.8
   })
   buffers.click = buffer(0.05, (t) => (Math.random() * 2 - 1) * Math.exp(-t * 300) * 0.6)
+  // the radio: a squelch of static and a two-tone beep
+  buffers.radio = buffer(0.28, (t, s) => {
+    const n = noise()
+    s.hp = n - s.last
+    s.last = n
+    const tone = t > 0.05 && t < 0.2 ? Math.sign(Math.sin(2 * Math.PI * (t < 0.12 ? 1320 : 990) * t)) * 0.12 : 0
+    return s.hp * 0.25 * Math.exp(-t * 18) + tone
+  })
   buffers.reload = buffer(1.0, (t) => {
     const hit = (at) => (t > at && t < at + 0.03 ? noise() * Math.exp(-(t - at) * 160) : 0)
     return (hit(0.1) * 0.6 + hit(0.55) * 0.8 + hit(0.62) * 0.5 + hit(0.85) * 0.7) * 0.8

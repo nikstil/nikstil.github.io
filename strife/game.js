@@ -4,6 +4,7 @@
 import { World, GRAVITY } from './world.js'
 import { WEAPONS, GEAR, ECONOMY, MAX_GRENADES, applyDamage } from './weapons.js'
 import { Brain, planRound } from './bots.js'
+import { Chatter, RADIO } from './radio.js'
 
 export const STAND_H = 1.83
 export const CROUCH_H = 1.37
@@ -126,6 +127,8 @@ export class Game {
     this.netRole = opts.netRole ?? null
     this.client = this.netRole === 'client'
     this.difficulty = opts.difficulty ?? 1
+    // the bots' radio and chat (the host's, on a client)
+    this.chatter = this.client ? null : new Chatter(this)
     this.time = 0
     this.round = 0
     this.score = { T: 0, CT: 0 }
@@ -178,6 +181,35 @@ export class Game {
 
   emit(name, data) {
     this.hooks[name]?.(data)
+    this.chatter?.on(name, data)
+  }
+  /** A chat line (teamOnly: just their team sees it). Bots may answer a player. */
+  chat(a, text, teamOnly = false) {
+    text = String(text ?? '')
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 120)
+    if (!a || !text) return
+    if (!a.isBot) {
+      // a few lines in a row are fine; a flood isn't
+      a.chatTimes = (a.chatTimes ?? []).filter((t) => this.time - t < 4)
+      if (a.chatTimes.length >= 3) return
+      a.chatTimes.push(this.time)
+    }
+    this.emit('chat', { a, text, team: teamOnly ? a.team : null, dead: !a.alive })
+    if (!a.isBot) this.chatter?.heard(a, text, teamOnly)
+  }
+  /** A radio command: the team hears it, and the bots act on orders. place: where (a callout). */
+  radio(a, id, place) {
+    if (!a || !RADIO[id] || !a.alive) return
+    if (!a.isBot) {
+      if (this.time < (a.radioNext ?? 0)) return
+      a.radioNext = this.time + 0.8
+    }
+    if (place === undefined) place = this.world.calloutAt(a.pos.x, a.pos.z, a.pos.y)
+    this.emit('radio', { a, id, team: a.team, place: place || '' })
+    if (!a.isBot) this.chatter?.order(a, id)
   }
   sound(name, at, opts = {}) {
     this.hooks.sound?.(name, at, opts)
@@ -1232,6 +1264,7 @@ export class Game {
     if (this.client) return this.clientUpdate(dt, input)
     this.time += dt
     const now = this.time
+    this.chatter?.update()
     // Phases
     if (this.phase === 'freeze' && now >= this.phaseEnd) {
       this.phase = 'live'

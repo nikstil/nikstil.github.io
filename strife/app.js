@@ -8,6 +8,7 @@ import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP } from './weapons.js'
 import { gunIcon } from './icons.js'
 import { skinMaterial, stickerMaterial } from './skins.js'
+import { initChat } from './chatui.js'
 import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
 import { openHub, NetHost, NetClient, makeCode } from './net.js'
 import { track } from './stats.js'
@@ -51,6 +52,7 @@ const settings = {
   cross: '#4dff6a',
   invert: false,
   killcam: true,
+  radioVoice: true,
   map: 'dust2',
   team: 'auto',
   diff: 1,
@@ -115,6 +117,12 @@ let orbit = 0
 
 function hooks() {
   return {
+    chat(d) {
+      if (mode === 'play') chatUi.chat(d)
+    },
+    radio(d) {
+      if (mode === 'play') chatUi.radio(d)
+    },
     sound(name, at, o) {
       if (mode !== 'play') return
       const self = o.who && o.who === watched
@@ -272,6 +280,7 @@ function attachView(map, demo = false) {
   camY = null
   killfeed.length = 0
   $('#killfeed').replaceChildren()
+  chatUi.clear()
   hideBanner()
   document.body.classList.toggle('playing', !demo)
 }
@@ -341,6 +350,7 @@ async function startReplay(data) {
   mode = 'replay'
   killfeed.length = 0
   $('#killfeed').replaceChildren()
+  chatUi.clear()
   show(null)
   $('#hud').hidden = false
   document.body.classList.add('replaying')
@@ -582,6 +592,8 @@ function startClient(w) {
   settings.map = w.map in MAPS ? w.map : 'dust2'
   game = new Game({ map, mode: w.mode, roster: w.roster, myId: w.me, netRole: 'client', rules: w.rules, hooks: hooks(), skinFor })
   attachView(map)
+  chatUi.clear()
+  document.body.classList.add('playing')
   paused = false
   show(null)
   grab()
@@ -706,6 +718,7 @@ function syncSettings() {
   $('#set-cross').value = settings.cross
   $('#set-invert').checked = settings.invert
   $('#set-killcam').checked = settings.killcam
+  $('#set-radio-voice').checked = settings.radioVoice
   $('#crosshair').style.setProperty('--c', settings.cross)
 }
 $('#set-sens').addEventListener('input', (e) => ((settings.sens = Number(e.target.value)), saveSettings(), syncSettings()))
@@ -719,6 +732,7 @@ $('#set-vol').addEventListener('input', (e) => {
 $('#set-cross').addEventListener('change', (e) => ((settings.cross = e.target.value), saveSettings(), syncSettings()))
 $('#set-invert').addEventListener('change', (e) => ((settings.invert = e.target.checked), saveSettings()))
 $('#set-killcam').addEventListener('change', (e) => ((settings.killcam = e.target.checked), saveSettings()))
+$('#set-radio-voice').addEventListener('change', (e) => ((settings.radioVoice = e.target.checked), saveSettings()))
 $('#set-quality').addEventListener('change', (e) => {
   settings.quality = e.target.value
   saveSettings()
@@ -856,6 +870,19 @@ const edge = { jump: false, reload: false, slot: null, alt: false, drop: false, 
 let mouseFire = false
 let tabHeld = false
 const touch = { mx: 0, mz: 0, fire: false, use: false, crouch: false }
+// the chat box and the radio menus (they take the keyboard while open)
+const chatUi = initChat({
+  game: () => game,
+  net: () => net,
+  playing: () => mode === 'play' && !paused && !!game?.player,
+  settings,
+  audio,
+  onOpen: () => {
+    keys.clear()
+    mouseFire = false
+  },
+  onClose: () => {},
+})
 let locked = false
 let wantLock = false
 
@@ -871,7 +898,7 @@ function releaseMouse() {
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === renderer?.domElement
   // Losing the mouse mid-game (Esc) pauses, unless we let it go on purpose (buy menu, etc).
-  if (!locked && wantLock && mode === 'play' && !buyOpen && !paused) pause()
+  if (!locked && wantLock && mode === 'play' && !buyOpen && !paused && !chatUi.busy) pause()
 })
 stage.addEventListener('mousedown', (e) => {
   audio.unlockAudio()
@@ -932,6 +959,7 @@ addEventListener('keydown', (e) => {
     if (e.code === 'Escape' && !$('#pause').hidden) resume()
     return
   }
+  if (!buyOpen && chatUi.key(e)) return
   if (buyOpen && /^Digit[0-9]$/.test(e.code)) {
     buyKey(Number(e.code.slice(5)))
     return
@@ -1142,6 +1170,8 @@ if (coarse) {
       if (t === 'buy') toggleBuy()
       if (t === 'score') tabHeld = !tabHeld
       if (t === 'pause') pause()
+      if (t === 'radio') chatUi.toggleRadio()
+      if (t === 'chat') chatUi.openChat(false)
     })
     const up = () => {
       if (t !== 'crouch') b.classList.remove('on')
@@ -1319,6 +1349,7 @@ function updateHud(dt) {
     }
   }
   setText('place', w ? g.world.calloutAt(w.pos.x, w.pos.z, w.pos.y) : '')
+  chatUi.tick()
   // hints and progress
   let hint = ''
   let prog = null

@@ -69,6 +69,7 @@ export class Brain {
     return DIFFICULTY[this.g.difficulty] ?? DIFFICULTY[1]
   }
   newRound() {
+    this.ord = null
     this.goal = null
     this.path = null
     this.pathGoal = null
@@ -152,6 +153,7 @@ export class Brain {
     if (g.intel[a.team].length > 40) g.intel[a.team].splice(0, 20)
     if (best && best !== this.target) {
       const lastSeen = this.seen[best.id]?.prev ?? -9
+      if (now - lastSeen > 3) g.chatter?.spotted(a, best)
       // A fresh sighting takes a moment to react to; one you've just lost and found again, less.
       const react = d.react * (0.75 + Math.random() * 0.5) * (now - lastSeen < 1.2 ? 0.4 : 1)
       this.reactAt = Math.max(this.reactAt, now + react)
@@ -285,9 +287,67 @@ export class Brain {
     this.setGoal(p[0] + 0.5, p[1] + 0.5, r, p[2] ?? null)
   }
 
+  // ================= Orders on the radio =================
+  /** A teammate's order: follow / regroup / backup (go to them), hold (stay here), fallback. */
+  order(kind, from, slot = 0) {
+    const dur = { follow: 30, regroup: 12, backup: 18, hold: 25, fallback: 14 }[kind] ?? 15
+    this.ord = { kind, from, slot, until: this.g.time + dur, at: { ...this.a.pos }, yaw: from.yaw, nearSince: null }
+  }
+  clearOrder() {
+    this.ord = null
+  }
+  /** A teammate called an enemy: look that way. */
+  heardCall(p) {
+    if (this.target) return
+    this.lookAt = { x: p.x, y: p.y + 1.2, z: p.z }
+    this.lookUntil = this.g.time + 3
+  }
+  /** Carry out the order, if there is one. True when it chose where to go. */
+  orders() {
+    const { g, a } = this
+    const o = this.ord
+    const now = g.time
+    if (!o) return false
+    const f = o.from
+    if (now > o.until || !f.alive || (g.bomb && g.bomb.state === 'planted')) {
+      this.ord = null
+      return false
+    }
+    const fwd = (yaw, d) => ({ x: -Math.sin(yaw) * d, z: -Math.cos(yaw) * d })
+    if (o.kind === 'hold') {
+      this.setGoal(o.at.x, o.at.z, 1, o.at.y)
+      const l = fwd(o.yaw, 12)
+      this.holdLook = { x: o.at.x + l.x, y: a.pos.y + 1.5, z: o.at.z + l.z }
+      return true
+    }
+    if (o.kind === 'fallback') {
+      const sp = g.map.spawns[a.team]
+      this.goTo(sp[a.id % sp.length], 2)
+      this.holdLook = null
+      return true
+    }
+    // follow, regroup, backup: a step behind them, off to one side
+    const side = (o.slot % 2 ? 1 : -1) * (0.55 + Math.floor(o.slot / 2) * 0.35)
+    const back = fwd(f.yaw + side, o.kind === 'backup' ? -1.6 : -2.4)
+    this.setGoal(f.pos.x + back.x, f.pos.z + back.z, 1.3, f.pos.y)
+    const close = Math.hypot(f.pos.x - a.pos.x, f.pos.z - a.pos.z) < 4.5
+    if (close) {
+      o.nearSince ??= now
+      const l = fwd(f.yaw, 12)
+      this.holdLook = { x: f.pos.x + l.x, y: a.pos.y + 1.5, z: f.pos.z + l.z }
+    } else {
+      o.nearSince = null
+      this.holdLook = null
+    }
+    // regrouped / backed up: back to the plan after a few seconds together
+    if ((o.kind === 'regroup' || o.kind === 'backup') && o.nearSince != null && now - o.nearSince > (o.kind === 'regroup' ? 3 : 6)) this.ord = null
+    return true
+  }
+
   // ================= What to do =================
   objective() {
     const { g, a } = this
+    if (this.ord && this.orders()) return {}
     if (g.respawns) return this.roam()
     const m = g.map
     const plan = g.plan

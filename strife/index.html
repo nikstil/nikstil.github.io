@@ -122,7 +122,13 @@
       <button class="tb buy-btn" data-t="buy">$</button>
       <button class="tb score-btn" data-t="score">☰</button>
       <button class="tb pause-btn" data-t="pause">❚❚</button>
+      <button class="tb radio-btn" data-t="radio" aria-label="Radio">📻</button>
+      <button class="tb chat-btn" data-t="chat" aria-label="Chat">💬</button>
     </div>
+
+    <!-- ===== Chat and radio (above the touch controls, so they can be tapped) ===== -->
+    <div class="chat" id="chat"><ol class="chat-log" id="chat-log" aria-live="polite"></ol><form class="chat-form" id="chat-form" hidden><span id="chat-to">All:</span><input id="chat-in" maxlength="120" autocomplete="off" enterkeyhint="send" aria-label="Chat message"></form></div>
+    <div class="radio-menu" id="radio-menu" hidden></div>
 
     <!-- ===== Menus ===== -->
     <section class="menu main-menu" id="menu">
@@ -205,6 +211,7 @@
         </label>
         <label class="setting check"><input type="checkbox" id="set-invert"><span>Invert mouse</span></label>
         <label class="setting check"><input type="checkbox" id="set-killcam"><span>Killcam (watch how you died)</span></label>
+        <label class="setting check"><input type="checkbox" id="set-radio-voice"><span>Radio voices (read the radio out loud)</span></label>
         <button class="go" data-do="back">Done</button>
       </div>
     </section>
@@ -227,6 +234,8 @@
           <dt>G</dt><dd>Drop your gun (or the bomb)</dd>
           <dt>B</dt><dd>Buy menu (in spawn, early in the round)</dd>
           <dt>Tab</dt><dd>Scoreboard</dd>
+          <dt>Y / U</dt><dd>Chat to everyone / your team (type “rush b” and your bots go B)</dd>
+          <dt>Z / X</dt><dd>Radio: commands the bots follow (follow me, hold, regroup…) and reports</dd>
           <dt>M</dt><dd>Sound on / off</dd>
           <dt>Esc</dt><dd>Pause</dd>
         </dl>

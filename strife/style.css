@@ -392,3 +392,32 @@ body.killcam-on .bottom-left, body.killcam-on .bottom-right, body.killcam-on .sp
 .trade-state { flex: 1; color: #ffd65a; font-size: 13px; }
 @media (max-width: 640px) { .trade-cols { grid-template-columns: 1fr; } .tu-slots { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 body:not(.online) .net-only { display: none; }
+
+/* ---------- Chat and radio ---------- */
+.chat { position: absolute; z-index: 16; left: 14px; bottom: 96px; width: min(440px, calc(100vw - 28px)); display: grid; gap: 4px; pointer-events: none; }
+.chat-log { margin: 0; padding: 0; list-style: none; display: grid; justify-items: start; gap: 2px; font-size: 13.5px; line-height: 1.35; }
+.chat-log li { padding: 1px 7px; border-radius: 3px; background: rgba(0, 0, 0, 0.42); overflow-wrap: anywhere; transition: opacity 0.8s; }
+.chat-log li.old { opacity: 0; }
+.chat.typing .chat-log li.old { opacity: 0.85; }
+.chat-log li.is-radio { color: #d8e8c8; }
+.chat-log b.T { color: var(--t); }
+.chat-log b.CT { color: var(--ct); }
+.chat-log .dead { color: #ff7070; font-size: 11.5px; font-weight: 700; }
+.chat-log .to { color: #9fd0ff; font-size: 12px; }
+.chat-form { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.72); border: 1px solid rgba(255, 255, 255, 0.18); pointer-events: auto; }
+.chat-form span { font-size: 12.5px; font-weight: 700; color: #ffe7a8; }
+.chat-form input { flex: 1; min-width: 0; padding: 3px 4px; border: 0; outline: 0; background: transparent; color: #fff; font: inherit; font-size: 14px; }
+.radio-menu { position: absolute; z-index: 16; left: 14px; top: 50%; translate: 0 -50%; width: 250px; padding: 10px 12px; border-radius: 8px; background: rgba(10, 13, 17, 0.86); border: 1px solid rgba(255, 255, 255, 0.14); pointer-events: auto; text-shadow: none; }
+.radio-menu h4 { margin: 0 0 6px; font-size: 14px; letter-spacing: 0.04em; }
+.radio-menu ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.radio-menu ol button { display: flex; gap: 8px; align-items: center; width: 100%; padding: 5px 6px; border: 0; border-radius: 4px; background: transparent; color: #e8eef4; font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
+.radio-menu ol button:hover { background: rgba(255, 255, 255, 0.08); }
+.radio-menu kbd { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); font: 700 11px var(--font); }
+.radio-menu p { display: flex; gap: 4px; margin: 8px 0 4px; }
+.radio-menu p button { flex: 1; padding: 3px 0; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; background: transparent; color: #cfd8e0; font: inherit; font-size: 11.5px; cursor: pointer; }
+.radio-menu p button.on { background: #ffd65a; color: #111; border-color: #ffd65a; }
+.radio-menu small { opacity: 0.55; font-size: 11px; }
+.tb.radio-btn { left: 116px; top: 50%; width: 44px; height: 44px; font-size: 18px; }
+.tb.chat-btn { left: 166px; top: 50%; width: 44px; height: 44px; font-size: 18px; }
+body:not(.playing) .chat, body:not(.playing) .radio-menu, body.killcam-on .chat, body.replaying .chat, body.replaying .radio-menu { display: none; }
+@media (max-width: 640px) { .chat { bottom: 150px; width: calc(100vw - 28px); } .chat-log { font-size: 12.5px; } }
