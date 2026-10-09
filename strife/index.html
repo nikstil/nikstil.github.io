@@ -73,8 +73,25 @@
 
       <div class="spectate" id="spectate" hidden></div>
       <div class="net-badge" id="net-badge" hidden></div>
+      <div class="killcam" id="killcam" hidden><b>KILLCAM</b><span id="killcam-who"></span><button data-do="killcam-skip">Skip ▸</button></div>
       <div class="banner" id="banner" hidden><b id="banner-title"></b><span id="banner-sub"></span><em id="banner-mvp"></em></div>
     </div>
+
+    <!-- ===== Replay controls ===== -->
+    <section class="replay" id="replay" hidden aria-label="Replay">
+      <div class="rp-top"><b>REPLAY</b><span id="rp-title"></span><button class="ghost small" data-do="replay-exit">✕ Exit</button></div>
+      <div class="rp-bar">
+        <button class="rp-btn" id="rp-back" title="Back 10 s">⏪</button>
+        <button class="rp-btn" id="rp-play" title="Play / pause (Space)">❚❚</button>
+        <button class="rp-btn" id="rp-fwd" title="Forward 10 s">⏩</button>
+        <input type="range" id="rp-seek" min="0" max="1000" value="0" aria-label="Position">
+        <span class="rp-time" id="rp-time">0:00</span>
+        <select id="rp-speed" aria-label="Speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+        <select id="rp-follow" aria-label="Camera"></select>
+        <button class="rp-btn" id="rp-view" title="First / third person (V)">👁</button>
+      </div>
+      <div class="rp-rounds"><span>Rounds</span><div id="rp-rounds"></div></div>
+    </section>
 
     <!-- ===== Buy menu ===== -->
     <section class="panel buy" id="buy" hidden aria-label="Buy menu">
@@ -154,6 +171,7 @@
           <button class="go online-btn" data-do="online">🌐 Online</button>
           <button class="ghost" data-do="practice" title="Walk the map with no bots">Walk the map</button>
           <button class="ghost" data-do="inventory">Inventory</button>
+          <button class="ghost" data-do="replays">Replays</button>
           <button class="ghost" data-do="settings">Settings</button>
           <button class="ghost" data-do="controls">Controls</button>
         </div>
@@ -185,6 +203,7 @@
           <select id="set-cross"><option value="#4dff6a">Green</option><option value="#ffffff">White</option><option value="#29e5ff">Cyan</option><option value="#ffe14d">Yellow</option><option value="#ff4d6d">Pink</option></select>
         </label>
         <label class="setting check"><input type="checkbox" id="set-invert"><span>Invert mouse</span></label>
+        <label class="setting check"><input type="checkbox" id="set-killcam"><span>Killcam (watch how you died)</span></label>
         <button class="go" data-do="back">Done</button>
       </div>
     </section>
@@ -222,6 +241,7 @@
         <div class="over-board" id="over-board"></div>
         <div class="menu-buttons">
           <button class="go" data-do="again">Play again</button>
+          <button class="ghost" data-do="watch-replay" id="over-replay" hidden>🎬 Watch replay</button>
           <button class="ghost" data-do="inventory">Inventory</button>
           <button class="ghost" data-do="quit">Main menu</button>
         </div>
@@ -245,6 +265,15 @@
           <p class="on-status" id="on-status" aria-live="polite"></p>
         </div>
         <button class="ghost" data-do="online-back">Back</button>
+      </div>
+    </section>
+
+    <section class="menu replays" id="replays" hidden>
+      <div class="menu-card wide">
+        <h2>Replays</h2>
+        <p class="muted-note">Your last five matches are kept in this browser. Watch them from anyone’s eyes, or from above.</p>
+        <ul class="rp-list" id="rp-list"></ul>
+        <div class="menu-buttons"><label class="ghost file-btn">📂 Open a replay file<input type="file" id="rp-file" accept=".json,application/json" hidden></label><button class="ghost" data-do="back">Back</button></div>
       </div>
     </section>
 

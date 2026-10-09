@@ -11,6 +11,7 @@ import { skinMaterial } from './skins.js'
 import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins } from './inventory.js'
 import { openHub, NetHost, NetClient, makeCode } from './net.js'
 import { track } from './stats.js'
+import { Recorder, Player, clip, saveReplay, listReplays, loadReplay, deleteReplay } from './replay.js'
 import { DIFFICULTY } from './bots.js'
 import * as audio from './audio.js'
 
@@ -49,6 +50,7 @@ const settings = {
   quality: coarse ? 'low' : 'medium',
   cross: '#4dff6a',
   invert: false,
+  killcam: true,
   map: 'dust2',
   team: 'auto',
   diff: 1,
@@ -139,6 +141,11 @@ function hooks() {
       addKillfeed(e)
       if (e.victim === game.player) {
         deathInfo = e
+        if (e.attacker && e.attacker !== e.victim && !game.respawns && !game.practice) {
+          const killerId = e.attacker.id
+          const deathT = game.time
+          setTimeout(() => mode === 'play' && game.time - deathT < 6 && startKillcam(killerId, deathT), 1100)
+        }
         record.deaths++
       }
       if (!game.practice) track.kill(e, game.player, game)
@@ -248,6 +255,9 @@ function attachView(map, demo = false) {
   radarImg = radarImage(map)
   radarLow = map.radarSplit != null ? radarImage(map, true) : null
   mode = demo ? 'menu' : 'play'
+  rec = !demo && !game.practice ? new Recorder(game) : null
+  if (rec) recordInto(game)
+  killcam = null
   watched = game.player
   if (game.player) {
     look.yaw = game.player.yaw
@@ -258,6 +268,205 @@ function attachView(map, demo = false) {
   $('#killfeed').replaceChildren()
   hideBanner()
   document.body.classList.toggle('playing', !demo)
+}
+
+// ================= Killcam and replays =================
+let rec = null // the Recorder for the match being played
+let killcam = null // { player, killer, until }
+let replay = null // { player, data, follow, fp, orbit }
+let lastReplay = null
+const REC_EVENTS = ['tracer', 'impact', 'detonate', 'explode', 'kill', 'roundEnd', 'hit']
+/** Every recordable event also goes into the recording. */
+function recordInto(g) {
+  const orig = g.hooks
+  const hooks = { ...orig }
+  for (const name of REC_EVENTS)
+    hooks[name] = (d) => {
+      orig[name]?.(d)
+      if (rec?.game === g) rec.event(name, d)
+    }
+  g.hooks = hooks
+}
+/** Effects for a playback (the killcam, a replay) through the current view. */
+const replayFx = () => ({
+  tracer: (from, to) => view?.tracer(from, to, false),
+  impact: (at, n, soft) => view?.impact(at, n, soft),
+  explosion: (at, type) => view?.explosion(at, type),
+  blood: (at) => view?.blood(at, null),
+  sound: (name, at) => audio.play(name, { at, range: 75, gain: 0.8 }),
+  kill: (e) => mode === 'replay' && addKillfeed(e),
+})
+function startKillcam(killerId, deathT) {
+  if (!rec || !settings.killcam) return
+  const data = clip(rec, deathT - 5.2, deathT + 0.6)
+  if (data.frames.length < 10) return
+  const player = new Player(data, game.map, replayFx())
+  player.seek(player.t0)
+  const killer = player.ghost.actors[killerId]
+  if (!killer) return
+  killcam = { player, killer }
+  document.body.classList.add('killcam-on')
+  const kc = $('#killcam')
+  kc.hidden = false
+  $('#killcam-who').textContent = killer.name
+}
+function endKillcam() {
+  killcam = null
+  document.body.classList.remove('killcam-on')
+  $('#killcam').hidden = true
+}
+async function startReplay(data) {
+  const map = MAPS[data.meta.map]
+  if (!map) return
+  paused = false
+  releaseMouse()
+  const player = new Player(data, map, replayFx())
+  view?.dispose()
+  const qq = QUALITY[settings.quality] ?? QUALITY.medium
+  view = new View(renderer, { shadows: qq.shadows && renderer.shadowMap.enabled, shadowSize: qq.shadowSize })
+  view.skinMat = skinMaterial
+  view.load(player.ghost)
+  resize()
+  radarImg = radarImage(map)
+  radarLow = map.radarSplit != null ? radarImage(map, true) : null
+  const me = data.roster.find((r) => r.me)
+  replay = { player, data, follow: me ? me.id : -1, fp: true, orbit: 0 }
+  mode = 'replay'
+  killfeed.length = 0
+  $('#killfeed').replaceChildren()
+  show(null)
+  $('#hud').hidden = false
+  document.body.classList.add('replaying')
+  $('#replay').hidden = false
+  const sel = $('#rp-follow')
+  sel.replaceChildren(new Option('Overview (from above)', '-1'))
+  for (const r of data.roster) sel.append(new Option(`${r.name}${r.me ? ' (you)' : ''} · ${r.team}`, String(r.id)))
+  sel.value = String(replay.follow)
+  $('#rp-title').textContent = `${map.name} · ${MODES[data.meta.mode]?.name ?? 'Competitive'} · ${new Date(data.meta.date).toLocaleString()} · ${data.meta.score?.T ?? 0}–${data.meta.score?.CT ?? 0}`
+  const rounds = $('#rp-rounds')
+  rounds.replaceChildren()
+  for (const r of player.rounds()) {
+    const b = document.createElement('button')
+    b.textContent = r.round
+    b.title = `Round ${r.round}`
+    b.addEventListener('click', () => player.seek(r.t))
+    rounds.append(b)
+  }
+}
+/** The Replays screen: the last few matches, and replay files. */
+async function openReplays() {
+  backTo = 'menu'
+  show('replays')
+  const ul = $('#rp-list')
+  ul.replaceChildren()
+  const list = await listReplays()
+  if (!list.length) {
+    const li = document.createElement('li')
+    li.className = 'empty'
+    li.textContent = 'No replays yet: finish a match and it’ll be here.'
+    ul.append(li)
+  }
+  for (const r of list) {
+    const m = r.meta
+    const li = document.createElement('li')
+    li.innerHTML = '<div><b></b><small></small></div><button class="go small">▶ Watch</button><button class="ghost small">⬇</button><button class="ghost small">🗑</button>'
+    $('b', li).textContent = `${MAPS[m.map]?.name ?? m.map} · ${MODES[m.mode]?.name ?? 'Competitive'}`
+    $('small', li).textContent = `${new Date(m.date).toLocaleString()} · ${m.score?.T ?? 0}–${m.score?.CT ?? 0} · ${m.rounds ?? '?'} rounds`
+    const [watch, dl, del] = li.querySelectorAll('button')
+    watch.addEventListener('click', async () => startReplay(await loadReplay(r.id)))
+    dl.title = 'Download the replay file'
+    dl.addEventListener('click', async () => {
+      const data = await loadReplay(r.id)
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }))
+      a.download = `counter-strife-${m.map}-${new Date(m.date).toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+    })
+    del.title = 'Delete'
+    del.addEventListener('click', async () => {
+      await deleteReplay(r.id)
+      openReplays()
+    })
+    ul.append(li)
+  }
+}
+$('#rp-file').addEventListener('change', async (e) => {
+  const f = e.target.files?.[0]
+  if (!f) return
+  try {
+    const data = JSON.parse(await f.text())
+    if (!data?.frames?.length || !data.meta?.map) throw new Error('not a replay')
+    startReplay(data)
+  } catch {
+    alertBox('That file isn’t a COUNTER-STRIFE replay.')
+    show('menu')
+  }
+  e.target.value = ''
+})
+// replay controls
+$('#rp-play').addEventListener('click', () => replay && (replay.player.playing = !replay.player.playing || (replay.player.time >= replay.player.t1 ? (replay.player.seek(replay.player.t0), true) : true)))
+$('#rp-back').addEventListener('click', () => replay && replay.player.seek(replay.player.time - 10))
+$('#rp-fwd').addEventListener('click', () => replay && replay.player.seek(replay.player.time + 10))
+$('#rp-seek').addEventListener('input', (e) => replay && replay.player.seek(replay.player.t0 + (Number(e.target.value) / 1000) * replay.player.duration))
+$('#rp-speed').addEventListener('change', (e) => replay && (replay.player.speed = Number(e.target.value)))
+$('#rp-follow').addEventListener('change', (e) => replay && (replay.follow = Number(e.target.value)))
+$('#rp-view').addEventListener('click', () => replay && (replay.fp = !replay.fp))
+addEventListener('keydown', (e) => {
+  if (mode !== 'replay' || !replay || e.target.closest?.('input, select')) return
+  if (e.code === 'Space') $('#rp-play').click()
+  else if (e.code === 'KeyV') replay.fp = !replay.fp
+  else if (e.code === 'ArrowLeft') replay.player.seek(replay.player.time - 5)
+  else if (e.code === 'ArrowRight') replay.player.seek(replay.player.time + 5)
+  else if (e.code === 'Escape') endReplay()
+  else if (e.code === 'Tab' || e.code === 'KeyQ' || e.code === 'KeyE') {
+    // next / previous player
+    const ids = [-1, ...replay.data.roster.map((r) => r.id)]
+    const k = ids.indexOf(replay.follow)
+    replay.follow = ids[(k + (e.code === 'KeyQ' ? ids.length - 1 : 1)) % ids.length]
+    $('#rp-follow').value = String(replay.follow)
+  } else return
+  e.preventDefault()
+})
+function endReplay() {
+  replay = null
+  document.body.classList.remove('replaying')
+  $('#replay').hidden = true
+  start({ demo: true })
+  show('menu')
+  syncMenu()
+}
+function replayCamera(dt) {
+  const p = replay.player
+  const g = p.ghost
+  const a = g.actors[replay.follow]
+  if (!a) {
+    replay.orbit += dt * 0.06
+    const cx = g.map.w / 2
+    const cz = g.map.d / 2
+    return { x: cx + Math.sin(replay.orbit) * 48, y: 46, z: cz + Math.cos(replay.orbit) * 48, yaw: replay.orbit, pitch: -0.72, fov: 62, who: null }
+  }
+  const eye = eyeOf(a)
+  if (replay.fp && a.alive) return { x: eye.x, y: eye.y, z: eye.z, yaw: a.yaw, pitch: a.pitch, fov: settings.fov, who: a }
+  // third person: behind and a little above
+  const back = dirOf(a.yaw, 0)
+  return { x: eye.x - back.x * 2.6, y: eye.y + 0.7, z: eye.z - back.z * 2.6, yaw: a.yaw, pitch: -0.18, fov: settings.fov, who: null }
+}
+function updateReplayHud() {
+  const p = replay.player
+  const g = p.ghost
+  const now = p.time - p.t0
+  $('#rp-time').textContent = `${fmtTime(now)} / ${fmtTime(p.duration)}`
+  const range = $('#rp-seek')
+  if (document.activeElement !== range) range.value = String(Math.round((now / Math.max(1, p.duration)) * 1000))
+  $('#rp-play').textContent = p.playing ? '❚❚' : '▶'
+  setText('score-t', String(g.score.T))
+  setText('score-ct', String(g.score.CT))
+  setText('clock', g.phase === 'live' && g.phaseEnd !== Infinity ? fmtTime(Math.max(0, g.phaseEnd - g.time)) : '–')
+  setText('alive-t', '')
+  setText('alive-ct', '')
+  const a = g.actors[replay.follow]
+  setText('place', a ? `${a.name} · ${a.alive ? a.hp + ' HP' : 'dead'}` : 'Overview')
 }
 
 // ================= Online =================
@@ -385,7 +594,7 @@ function alertBox(text) {
 
 // ================= Menus =================
 function show(id) {
-  for (const s of ['menu', 'pause', 'settings', 'controls', 'over', 'inventory', 'online']) $('#' + s).hidden = s !== id
+  for (const s of ['menu', 'pause', 'settings', 'controls', 'over', 'inventory', 'online', 'replays']) $('#' + s).hidden = s !== id
   $('#hud').hidden = id === 'menu' || mode !== 'play'
   $('#touch').hidden = !coarse || mode !== 'play' || !!id
 }
@@ -470,6 +679,7 @@ function syncSettings() {
   $('#set-quality').value = settings.quality
   $('#set-cross').value = settings.cross
   $('#set-invert').checked = settings.invert
+  $('#set-killcam').checked = settings.killcam
   $('#crosshair').style.setProperty('--c', settings.cross)
 }
 $('#set-sens').addEventListener('input', (e) => ((settings.sens = Number(e.target.value)), saveSettings(), syncSettings()))
@@ -482,6 +692,7 @@ $('#set-vol').addEventListener('input', (e) => {
 })
 $('#set-cross').addEventListener('change', (e) => ((settings.cross = e.target.value), saveSettings(), syncSettings()))
 $('#set-invert').addEventListener('change', (e) => ((settings.invert = e.target.checked), saveSettings()))
+$('#set-killcam').addEventListener('change', (e) => ((settings.killcam = e.target.checked), saveSettings()))
 $('#set-quality').addEventListener('change', (e) => {
   settings.quality = e.target.value
   saveSettings()
@@ -540,6 +751,10 @@ document.addEventListener('click', (e) => {
   } else if (act === 'back') show(backTo)
   else if (act === 'resume') resume()
   else if (act === 'online') openOnline()
+  else if (act === 'watch-replay' && lastReplay) startReplay(lastReplay)
+  else if (act === 'replays') openReplays()
+  else if (act === 'replay-exit') endReplay()
+  else if (act === 'killcam-skip') endKillcam()
   else if (act === 'host') hostGame()
   else if (act === 'join') joinGame($('#on-code').value)
   else if (act === 'join-room') joinGame(b.dataset.code)
@@ -571,6 +786,11 @@ function matchOver() {
   const won = me && game.winner === me.team
   if (me) won ? record.wins++ : record.losses++
   store.set(RKEY, record)
+  if (rec && rec.game === game && rec.frames.length > 30) {
+    lastReplay = rec.data()
+    saveReplay(lastReplay)
+  }
+  $('#over-replay').hidden = !lastReplay
   const got = me ? rewardMatch(won, me.mvps ?? 0) : ''
   if (me) track.matchOver(won, settings.map, game.difficulty, game.mode, game.mode === 'armsrace' && (me.arLevel ?? 0) >= ARMS_LADDER.length)
   $('#over-drop').textContent = got ? `Case drop: ${got} · open it from Inventory` : ''
@@ -1139,6 +1359,48 @@ function updateHud(dt) {
     }
   }
 }
+/** The radar during a replay: everyone, both teams, around whoever you follow (or the whole map). */
+function drawReplayRadar(cam) {
+  const c = $('#radar')
+  const g = c.getContext('2d')
+  const S = c.width
+  g.clearRect(0, 0, S, S)
+  if (!radarImg) return
+  const ghost = replay.player.ghost
+  const a = ghost.actors[replay.follow]
+  const cx = a ? a.pos.x : ghost.map.w / 2
+  const cz = a ? a.pos.z : ghost.map.d / 2
+  const scale = a ? 2.4 : (S / Math.max(ghost.map.w, ghost.map.d)) * 0.95
+  g.save()
+  g.beginPath()
+  g.arc(S / 2, S / 2, S / 2 - 1, 0, 7)
+  g.clip()
+  g.translate(S / 2, S / 2)
+  if (a) g.rotate(a.yaw)
+  g.scale(scale, scale)
+  g.translate(-cx, -cz)
+  const rimg = radarLow && a && a.pos.y < ghost.map.radarSplit ? radarLow : radarImg
+  g.globalAlpha = 0.9
+  g.drawImage(rimg, 0, 0, rimg.width / 8, rimg.height / 8)
+  g.globalAlpha = 1
+  for (const b of ghost.actors) {
+    if (!b.alive) continue
+    g.beginPath()
+    g.arc(b.pos.x, b.pos.z, b === a ? 2.2 : 1.6, 0, 7)
+    g.fillStyle = b.team === 'T' ? '#e3ac48' : '#6fa8e0'
+    g.fill()
+    g.lineWidth = b === a ? 0.8 : 0.4
+    g.strokeStyle = b === a ? '#fff' : '#000'
+    g.stroke()
+  }
+  if (ghost.bomb.pos && (ghost.bomb.state === 'planted' || ghost.bomb.state === 'dropped')) {
+    g.font = '5px sans-serif'
+    g.textAlign = 'center'
+    g.textBaseline = 'middle'
+    g.fillText('💣', ghost.bomb.pos.x, ghost.bomb.pos.z)
+  }
+  g.restore()
+}
 function drawRadar() {
   const c = $('#radar')
   const g = c.getContext('2d')
@@ -1256,6 +1518,7 @@ function step() {
   const cmd = mode === 'play' && game.player ? (paused ? { yaw: look.yaw, pitch: look.pitch } : playerCmd()) : null
   game.update(STEP, cmd)
   net?.tick(STEP, cmd ?? {})
+  rec?.tick(STEP)
 }
 // A hosted match keeps going when its tab is in the background (timers in a worker aren't slowed down).
 let bgTicker = null
@@ -1284,6 +1547,17 @@ function frame(t) {
   const dt = Math.min(0.1, (t - lastT) / 1000)
   lastT = t
   if (!game || !view) return
+  if (mode === 'replay' && replay) {
+    replay.player.step(dt)
+    const cam = replayCamera(dt)
+    view.update(dt, replay.player.ghost, cam.who)
+    if (cam.who) view.updateViewmodel(dt, cam.who, replay.player.ghost)
+    view.render(cam, !!cam.who)
+    audio.setListener(cam.x, cam.y, cam.z, cam.yaw)
+    updateReplayHud()
+    drawReplayRadar(cam)
+    return
+  }
   const live = !paused || mode === 'menu' || !!net
   if (live) {
     acc += dt
@@ -1299,6 +1573,21 @@ function frame(t) {
     game.player.netTeleport = false
     look.yaw = game.player.yaw
     look.pitch = 0
+  }
+  if (killcam && mode === 'play') {
+    // through the killer's eyes, the last few seconds
+    const p = killcam.player
+    p.step(dt)
+    const k = killcam.killer
+    const e = eyeOf(k)
+    const cam = { x: e.x, y: e.y, z: e.z, yaw: k.yaw, pitch: k.pitch, fov: settings.fov }
+    view.update(dt, p.ghost, k)
+    view.updateViewmodel(dt, k, p.ghost)
+    view.render(cam, k.alive)
+    audio.setListener(cam.x, cam.y, cam.z, cam.yaw)
+    updateHud(dt)
+    if (!p.playing || (game.player?.alive && !game.respawns)) endKillcam()
+    return
   }
   const cam = cameraFor(dt)
   view.update(dt, game, mode === 'play' ? watched : null)
