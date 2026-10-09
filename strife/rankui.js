@@ -34,6 +34,7 @@ export function initRanks({ difficultyName }) {
   async function refreshOnline() {
     if (!me) return
     try {
+      if (typeof online()?.strifeRating !== 'function') return
       const r = await online().strifeRating()
       setOnlineRank({ ...(r ?? { rating: 1000, matches: 0, wins: 0, losses: 0 }), user: me.username })
     } catch {}
@@ -62,11 +63,12 @@ export function initRanks({ difficultyName }) {
   function startMatch(game, mapId) {
     if (!game?.player || game.practice || game.client || !RANKED_MODES.includes(game.mode)) return null
     const ctx = { mode: game.mode, map: mapId, difficulty: game.difficulty, roundsToWin: game.rules.roundsToWin, matchId: null, done: false }
-    if (me) {
-      online()
-        .strifeStart(ctx.mode, ctx.map, ctx.difficulty, ctx.roundsToWin)
+    // (an online.js from before ranks existed, cached somewhere, just means not ranked online)
+    if (me && typeof online()?.strifeStart === 'function') {
+      Promise.resolve()
+        .then(() => online().strifeStart(ctx.mode, ctx.map, ctx.difficulty, ctx.roundsToWin))
         .then((id) => (ctx.matchId = id))
-        .catch((e) => (ctx.error = online().errorText(e)))
+        .catch((e) => (ctx.error = online().errorText?.(e) ?? String(e)))
     }
     return ctx
   }
@@ -87,7 +89,7 @@ export function initRanks({ difficultyName }) {
     const m = { won: game.winner === p.team, difficulty: ctx.difficulty, roundsToWin: ctx.roundsToWin, rounds: us + them, kills: p.kills, deaths: p.deaths, map: ctx.map, mode: ctx.mode }
     const local = recordMatch(m)
     showResult({ ...local, online: false })
-    if (!me) return
+    if (!me || typeof online()?.strifeFinish !== 'function') return
     const send = () =>
       online()
         .strifeFinish(ctx.matchId, { won: m.won, roundsUs: us, roundsThem: them, kills: p.kills, deaths: p.deaths, mvps: p.mvps ?? 0 })

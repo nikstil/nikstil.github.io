@@ -1,7 +1,7 @@
 // Your COUNTER-STRIFE career, for the achievements: kills by weapon, headshots, aces, clutches,
 // plants and defuses, wins on each map. Saved locally; nikstil.com's achievement hub reads it.
 
-import { check, toast } from '../achievements/list.js'
+import { check, toast, sync } from '../achievements/list.js'
 
 const KEY = 'strife-stats'
 let s = load()
@@ -26,6 +26,7 @@ export function commit() {
   } catch {}
   try {
     toast(check())
+    sync()
   } catch {}
 }
 

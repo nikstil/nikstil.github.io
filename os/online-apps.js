@@ -18,6 +18,8 @@
     ['snail', '🐌', 'ive waited 4 no 5000 years for this'],
   ]
   const ending = (id) => ENDINGS.find((e) => e[0] === id)
+  // An invite to an online COUNTER-STRIFE game (the game writes these: strife/invite.js)
+  const INVITE = /\/strife\/\?join=([A-Z]{4})\b/
 
   function formatTime(ms) {
     if (ms == null) return '—'
@@ -177,13 +179,89 @@
 
     /** A player's profile picture (online/avatar.js). */
     const pic = (who, size = 40, className = 'avatar') => window.nikstilAvatar?.img(who, size, className) ?? h('span', { class: className })
+    /** A COUNTER-STRIFE invite in a message: the game code, or null. */
+    const inviteCode = (body) => String(body ?? '').match(INVITE)?.[1] ?? null
     /** What a message says, for one-line previews (a GIF is just "GIF"). */
-    const preview = (body) => (net().gifUrl(body) ? '🎞️ GIF' : body)
+    const preview = (body) => (net().gifUrl(body) ? '🎞️ GIF' : inviteCode(body) ? '💣 COUNTER-STRIFE invite' : body)
 
     /** Opens Messenger on a chat with `user` ({ id, username }). */
     function openChat(user) {
       os.openApp('messenger')
       messenger?.show(user)
+    }
+
+    // ================= Profiles =================
+    /** A player's profile in its own window: achievements, COUNTER-STRIFE rank, best run. */
+    function openProfile(user) {
+      const id = `profile:${user.id}`
+      const already = os.open.get(id)
+      if (already) return os.restore(already)
+      const body = h('div', { class: 'win-body prof' }, h('p', { class: 'muted' }, 'Loading…'))
+      os.makeWindow({ id, title: `${user.username} - Profile`, icon: 'account', width: 460, content: body })
+      Promise.all([net().playerProfile(user.id), import('/achievements/list.js'), import('/strife/ranks.js')])
+        .then(([p, A, R]) => {
+          if (!p) return body.replaceChildren(h('p', { class: 'muted' }, 'This player isn’t around any more.'))
+          const mine = me && p.id === me.id
+          const got = new Set(p.achievements ?? [])
+          const list = A.ACHIEVEMENTS.filter((a) => got.has(a.id))
+          const points = list.reduce((n, a) => n + a.points, 0)
+          const total = A.ACHIEVEMENTS.reduce((n, a) => n + a.points, 0)
+          const badge = h('span', { class: 'prof-badge' })
+          const placed = (p.strife_matches ?? 0) >= 3
+          badge.innerHTML = R.rankBadge(placed ? p.strife_tier : null)
+          const e = ending(p.best_ending)
+          body.replaceChildren(
+            ...[
+              h(
+                'div',
+                { class: 'prof-head' },
+                pic(p, 64, 'avatar prof-pic'),
+                h('div', {}, h('b', { class: 'prof-name' }, p.username), h('small', { class: 'muted' }, `Joined ${new Date(p.created_at).toLocaleDateString([], { year: 'numeric', month: 'long' })}`)),
+              ),
+              h(
+                'div',
+                { class: 'prof-stats' },
+                h('div', { class: 'prof-stat' }, h('span', { class: 'prof-big' }, `🎖️ ${points}G`), h('small', { class: 'muted' }, `${list.length} of ${A.ACHIEVEMENTS.length} achievements · ${Math.round((points / total) * 100)}%`)),
+                h(
+                  'div',
+                  { class: 'prof-stat' },
+                  badge,
+                  h('small', { class: 'muted' }, placed ? `${R.rankName(p.strife_tier)} · ${p.strife_rating}${p.strife_rank ? ` · #${p.strife_rank}` : ''}` : p.strife_matches ? 'COUNTER-STRIFE: not ranked yet' : 'COUNTER-STRIFE: no ranked matches'),
+                ),
+                h(
+                  'div',
+                  { class: 'prof-stat' },
+                  h('span', { class: 'prof-big' }, p.best_time_ms != null ? `🏁 ${formatTime(p.best_time_ms)}` : '🏁 —'),
+                  h('small', { class: 'muted' }, p.best_time_ms != null ? `TRANSLATR™ best${e ? ` · ${e[2]}` : ''} · ${p.endings ?? 0} endings` : `TRANSLATR™ · ${p.endings ?? 0} endings found`),
+                ),
+              ),
+              h(
+                'div',
+                { class: 'prof-games' },
+                A.GAMES.map((g) => {
+                  const all = A.ACHIEVEMENTS.filter((a) => a.game === g.id)
+                  const done = all.filter((a) => got.has(a.id))
+                  return h(
+                    'div',
+                    { class: 'prof-game' },
+                    h('div', { class: 'prof-game-head' }, h('span', {}, `${g.icon} ${g.name}`), h('small', { class: 'muted' }, `${done.length}/${all.length}`)),
+                    h('div', { class: 'prof-icons' }, done.length ? done.map((a) => h('span', { class: 'prof-ach', title: `${a.name} (${a.points}G): ${a.desc}` }, a.icon)) : h('small', { class: 'muted' }, 'Nothing yet')),
+                  )
+                }),
+              ),
+              !got.size && h('p', { class: 'muted prof-empty' }, mine ? 'Your achievements show up here once you’ve played signed in.' : 'No achievements on this profile yet.'),
+              !mine &&
+                me &&
+                h(
+                  'div',
+                  { class: 'prof-actions' },
+                  h('button', { class: 'btn', onclick: () => openChat({ id: p.id, username: p.username }) }, '💬 Message'),
+                  h('button', { class: 'btn btn-primary', onclick: () => os.openStrife(`host=1&invite=${p.id}`) }, '💣 Invite to COUNTER-STRIFE'),
+                ),
+            ].filter(Boolean),
+          )
+        })
+        .catch((err) => body.replaceChildren(h('p', { class: 'muted' }, net().errorText(err))))
     }
 
     /** A tiny element builder. */
@@ -264,7 +342,7 @@
             ...rows.map((r) => {
               const e = ending(r.ending)
               const medal = ['🥇', '🥈', '🥉'][r.rank - 1]
-              const name = h('button', { class: 'lb-name', title: me && r.user_id !== me.id ? `Message ${r.username}` : null, onclick: () => me && r.user_id !== me.id && openChat({ id: r.user_id, username: r.username }) }, r.username)
+              const name = h('button', { class: 'lb-name', title: `${r.username}’s profile`, onclick: () => openProfile({ id: r.user_id, username: r.username }) }, r.username)
               return h(
                 'tr',
                 { class: me && r.user_id === me.id ? 'is-me' : null },
@@ -300,7 +378,7 @@
             ...rows.map((r) => {
               const badge = h('span', { class: 'lb-badge' })
               badge.innerHTML = R.rankBadge(r.tier)
-              const name = h('button', { class: 'lb-name', title: me && r.user_id !== me.id ? `Message ${r.username}` : null, onclick: () => me && r.user_id !== me.id && openChat({ id: r.user_id, username: r.username }) }, r.username)
+              const name = h('button', { class: 'lb-name', title: `${r.username}’s profile`, onclick: () => openProfile({ id: r.user_id, username: r.username }) }, r.username)
               return h(
                 'tr',
                 { class: me && r.user_id === me.id ? 'is-me' : null },
@@ -415,6 +493,7 @@
         }
       })
       $('.acct-signout', el).addEventListener('click', () => net().signOut())
+      $('.acct-profile', el).addEventListener('click', () => me && openProfile(me))
       $('.acct-delete', el).addEventListener('click', async () => {
         const ok = await os.askbox({
           title: 'Delete account',
@@ -720,10 +799,19 @@
         const mine = m.sender === net().profile?.id
         return h(
           'li',
-          { class: `msgr-msg${mine ? ' is-mine' : ''}${net().gifUrl(m.body) ? ' is-gif' : ''}`, 'data-id': m.id },
-          gifOrText(m.body),
+          { class: `msgr-msg${mine ? ' is-mine' : ''}${net().gifUrl(m.body) ? ' is-gif' : ''}${inviteCode(m.body) ? ' is-invite' : ''}`, 'data-id': m.id },
+          inviteCode(m.body) ? inviteCard(inviteCode(m.body), mine) : gifOrText(m.body),
           h('time', { class: 'msgr-time', datetime: m.created_at, title: new Date(m.created_at).toLocaleString() }, when(m.created_at)),
           !mine && h('button', { class: 'msgr-flag', title: 'Report this message', 'aria-label': 'Report this message', onclick: () => reportUser(m.id) }, '⚑'),
+        )
+      }
+      function inviteCard(code, mine) {
+        return h(
+          'span',
+          { class: 'msgr-invite' },
+          h('span', { class: 'msgr-invite-icon', 'aria-hidden': 'true' }, '💣'),
+          h('span', { class: 'msgr-invite-text' }, h('b', {}, 'COUNTER-STRIFE'), h('small', {}, mine ? `You sent an invite · code ${code}` : `Join my game · code ${code}`)),
+          !mine && h('button', { class: 'btn btn-primary msgr-invite-join', onclick: () => os.openStrife(`join=${code}`) }, 'Join'),
         )
       }
       function gifOrText(body) {
@@ -948,6 +1036,10 @@
         }
       }
       $('.msgr-report', el).addEventListener('click', () => reportUser())
+      // play together: the game hosts, and sends them the invite itself
+      $('.msgr-play', el).addEventListener('click', () => current && os.openStrife(`host=1&invite=${current.id}`))
+      $('.msgr-profile', el).addEventListener('click', () => current && openProfile(current))
+      $('.msgr-with', el).addEventListener('click', () => current && openProfile(current))
 
       // ----- live updates
       function onMessage(m) {

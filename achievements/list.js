@@ -228,3 +228,25 @@ export function toast(list, root = document.body) {
     t += 1600
   }
 }
+
+/**
+ * Signed in to nikstil.com: puts the achievements unlocked on this device on the player's profile,
+ * so other players can see them (only when something new has been unlocked since last time).
+ */
+export async function sync() {
+  const net = window.nikstilOnline
+  if (!net) return
+  const known = new Set(ACHIEVEMENTS.map((a) => a.id))
+  const ids = Object.keys(unlockedAt())
+    .filter((id) => known.has(id))
+    .sort()
+  if (!ids.length) return
+  const me = await net.me().catch(() => null)
+  if (!me) return
+  const sig = `${me.id}:${ids.join(',')}`
+  if (read(UNLOCK_KEY + '-synced') === sig) return
+  try {
+    await net.syncAchievements(ids)
+    localStorage.setItem(UNLOCK_KEY + '-synced', JSON.stringify(sig))
+  } catch {}
+}

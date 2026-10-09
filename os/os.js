@@ -556,8 +556,23 @@
   }
 
   /** COUNTER-STRIFE, 5v5 bomb defusal against bots (the page at /strife/). */
+  let strifeQuery = '' // what the next COUNTER-STRIFE window should do (see openStrife)
   function initStrife(el) {
-    $('.strife-frame', el).src = '/strife/?embed'
+    $('.strife-frame', el).src = '/strife/?embed' + (strifeQuery ? `&${strifeQuery}` : '')
+    strifeQuery = ''
+  }
+  /** Opens COUNTER-STRIFE to do something: 'join=ABCD' (a game invite), 'host=1&invite=<user id>'. */
+  function openStrife(query = '') {
+    // Messenger on its own (TRANSLATR™'s bubble): there's no desktop, so a new tab
+    if (embedApp) return void window.open(`/strife/?${query}`, '_blank', 'noopener')
+    const win = open.get('strife')
+    if (win) {
+      $('.strife-frame', win.el).src = `/strife/?embed&${query}`
+      restore(win)
+      return
+    }
+    strifeQuery = query
+    openApp('strife')
   }
 
   // ================= File Explorer (os/files.js) =================
@@ -1519,6 +1534,8 @@
       $$,
       open,
       openApp,
+      openStrife,
+      makeWindow: (o) => makeWindow(o),
       closeWin,
       focusWin,
       restore,
@@ -1633,7 +1650,10 @@
         // Achievement toasts for progress made in any game on the site (they share this storage).
         import('/achievements/list.js')
           .then((m) => {
-            const run = () => m.toast(m.check())
+            const run = () => {
+              m.toast(m.check())
+              m.sync?.() // signed in: onto the player's profile too
+            }
             run()
             setInterval(run, 6000)
             addEventListener('storage', run)

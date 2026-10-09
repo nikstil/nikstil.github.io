@@ -10,6 +10,7 @@ import { gunIcon } from './icons.js'
 import { skinMaterial, stickerMaterial } from './skins.js'
 import { initChat } from './chatui.js'
 import { initRanks } from './rankui.js'
+import { initInvites, isUserId } from './invite.js'
 import { rankBadge } from './ranks.js'
 import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
 import { openHub, NetHost, NetClient, makeCode } from './net.js'
@@ -551,16 +552,20 @@ async function hostGame() {
   closeLobby()
   const h = await getHub()
   $('#loading').hidden = false
-  setTimeout(() => {
-    start({ host: true })
-    net = new NetHost(h, game, { code: makeCode(), name: settings.netName, mapId: settings.map, onSay: (t) => say(t, 3), onPeople: (list) => list.length && track.hostedWithFriend(), onTrade: (from, m) => onTradeMessage(from, m) })
-    tradeHookup()
-    $('#loading').hidden = true
-    paused = false
-    show(null)
-    grab()
-    say(`Hosting: friends can join with the code ${net.code}`, 5)
-  }, 30)
+  await new Promise((done) =>
+    setTimeout(() => {
+      start({ host: true })
+      net = new NetHost(h, game, { code: makeCode(), name: settings.netName, mapId: settings.map, onSay: (t) => say(t, 3), onPeople: (list) => list.length && track.hostedWithFriend(), onTrade: (from, m) => onTradeMessage(from, m) })
+      tradeHookup()
+      document.body.classList.add('hosting')
+      $('#loading').hidden = true
+      paused = false
+      show(null)
+      grab()
+      say(`Hosting: friends can join with the code ${net.code} (Esc → Invite friends)`, 5)
+      done()
+    }, 30),
+  )
 }
 async function joinGame(code) {
   code = String(code || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4)
@@ -627,7 +632,8 @@ function tradeHookup() {
 }
 function endNet() {
   setTradeApi(null)
-  document.body.classList.remove('online')
+  document.body.classList.remove('online', 'hosting')
+  inviteUi.close()
   if (net) {
     const n = net
     net = null
@@ -811,6 +817,7 @@ document.addEventListener('click', (e) => {
   }
   else if (act === 'watch-replay' && lastReplay) startReplay(lastReplay)
   else if (act === 'replays') openReplays()
+  else if (act === 'invite') inviteUi.open()
   else if (act === 'ranks') {
     backTo = 'menu'
     show('ranks')
@@ -890,6 +897,8 @@ const edge = { jump: false, reload: false, slot: null, alt: false, drop: false, 
 let mouseFire = false
 let tabHeld = false
 const touch = { mx: 0, mz: 0, fire: false, use: false, crouch: false }
+// inviting Messenger friends into the game you're hosting
+const inviteUi = initInvites({ code: () => (net instanceof NetHost ? net.code : null) })
 // ranks: the menu card, ranked matches, the Ranks page
 const rankUi = initRanks({ difficultyName: (i) => DIFFICULTY[i].name })
 let rankCtx = null // the ranked match being played, if it is one
@@ -1696,6 +1705,28 @@ if (makeRenderer()) {
   requestAnimationFrame(frame)
   // ?play starts straight away (the phone and nikstilOS open the menu; this is for links)
   if (q.has('play')) $('[data-do="play"]').click()
+  // ?join=CODE: an invite from Messenger. ?host=1&invite=<user>: Messenger's "Play" button (host,
+  // then send them the invite). Done once: the address forgets them, so a reload doesn't repeat it.
+  const joinCode = String(q.get('join') ?? '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4)
+  const inviteWho = q.get('invite')
+  if (joinCode.length === 4 || q.get('host') === '1') {
+    const u = new URL(location.href)
+    for (const k of ['join', 'host', 'invite']) u.searchParams.delete(k)
+    history.replaceState(null, '', u)
+  }
+  if (joinCode.length === 4)
+    openOnline().then(() => {
+      $('#on-code').value = joinCode
+      joinGame(joinCode)
+    })
+  else if (q.get('host') === '1')
+    openOnline()
+      .then(() => hostGame())
+      .then(async () => {
+        if (!isUserId(inviteWho)) return
+        const err = await inviteUi.sendTo(inviteWho)
+        say(err || 'Invite sent: they can join from Messenger', 5, !!err)
+      })
 }
 // for tests and the curious
 window.strife = { get game() { return game }, get view() { return view }, get net() { return net }, settings, look, testInput }

@@ -1,6 +1,6 @@
 // The achievement hub: every game's achievements, worked out from their saves in this browser.
 
-import { GAMES, evaluate, unlockedAt, check, toast } from './list.js'
+import { GAMES, evaluate, unlockedAt, check, toast, sync } from './list.js'
 
 const $ = (s, el = document) => el.querySelector(s)
 if (new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embed')
@@ -21,6 +21,7 @@ const when = (ts) => {
 function refresh() {
   const fresh = check()
   if (fresh.length) toast(fresh)
+  sync()
   list = evaluate()
   stamps = unlockedAt()
   render()
@@ -179,7 +180,8 @@ async function profile() {
     const p = await on.me()
     if (!p) return
     $('#me-name').textContent = p.username
-    $('#me-sub').textContent = 'Signed in on nikstil.com'
+    $('#me-sub').textContent = 'Signed in on nikstil.com · other players see these on your profile'
+    sync()
     $('#me-avatar').textContent = p.username.slice(0, 1).toUpperCase()
   } catch {}
 }

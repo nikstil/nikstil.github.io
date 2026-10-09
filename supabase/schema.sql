@@ -842,6 +842,59 @@ begin
 end;
 $$;
 
+-- ================= Profiles: achievements and the rest =================
+-- Which achievements a player has unlocked (the ids from achievements/list.js), so other players
+-- can see them on their profile. The site sends them from whichever device the player is on; they
+-- only ever add up (a fresh device can't wipe them), and an admin reset is a ban away.
+alter table public.profiles add column if not exists achievements text[] not null default '{}';
+
+create or replace function public.sync_achievements(p_ids text[])
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := public.require_player();
+  n integer;
+begin
+  update public.profiles p
+  set achievements = (
+    select coalesce(array_agg(e order by e), '{}')
+    from (select distinct e from unnest(p.achievements || coalesce(p_ids, '{}')) e where e ~ '^[a-z0-9-]{2,32}$' limit 400) x
+  )
+  where p.id = me
+  returning cardinality(p.achievements) into n;
+  return n;
+end;
+$$;
+
+/** Everything a player's profile shows: who they are, their achievements, their rank, their best run. */
+create or replace function public.player_profile(p_user uuid)
+returns table (id uuid, username text, avatar text, created_at timestamptz, achievements text[], endings integer,
+               strife_rating integer, strife_tier smallint, strife_matches integer, strife_wins integer, strife_losses integer, strife_rank bigint,
+               best_time_ms integer, best_ending text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.id, p.username, p.avatar, p.created_at, p.achievements, cardinality(p.endings_done),
+         r.rating, case when r.rating is not null then public.strife_tier(r.rating) end, r.matches, r.wins, r.losses,
+         case when r.matches >= 3 then 1 + (select count(*) from public.strife_ratings o
+                                              join public.profiles q on q.id = o.user_id and not q.banned
+                                              where o.matches >= 3 and o.rating > r.rating) end,
+         b.time_ms, b.ending
+  from public.profiles p
+  left join public.strife_ratings r on r.user_id = p.id
+  left join lateral (
+    select x.time_ms, x.ending from public.runs x
+    where x.user_id = p.id and x.status = 'finished' and x.mode = 'speedrun'
+    order by x.time_ms limit 1
+  ) b on true
+  where p.id = p_user and not p.banned;
+$$;
+
 -- ================= Row Level Security =================
 -- Tables are read-only from the website except where a policy says otherwise: every other write
 -- goes through the functions above.
@@ -909,7 +962,9 @@ revoke execute on function
   public.strife_finish(uuid, boolean, integer, integer, integer, integer, integer),
   public.strife_leaderboard(integer),
   public.strife_rating(uuid),
-  public.admin_strife_reset(uuid)
+  public.admin_strife_reset(uuid),
+  public.sync_achievements(text[]),
+  public.player_profile(uuid)
 from public, anon, authenticated;
 grant execute on function public.leaderboard(text, date, integer) to anon, authenticated;
 grant execute on function public.my_rank(text, date) to authenticated;
@@ -932,6 +987,8 @@ grant execute on function public.strife_finish(uuid, boolean, integer, integer, 
 grant execute on function public.strife_leaderboard(integer) to anon, authenticated;
 grant execute on function public.strife_rating(uuid) to anon, authenticated;
 grant execute on function public.admin_strife_reset(uuid) to authenticated;
+grant execute on function public.sync_achievements(text[]) to authenticated;
+grant execute on function public.player_profile(uuid) to anon, authenticated;
 
 -- ================= Realtime =================
 -- New messages are pushed to the recipient's browser (Realtime checks the policies above, so

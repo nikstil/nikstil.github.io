@@ -471,3 +471,12 @@ body:not(.playing) .chat, body:not(.playing) .radio-menu, body.killcam-on .chat,
 .sb-rank { width: 36px; padding-right: 0 !important; }
 .sb-rank .rank-badge { width: 32px; height: 16px; }
 @media (max-width: 720px) { .rk-cols { grid-template-columns: 1fr; } }
+
+/* ---------- Invites ---------- */
+body:not(.hosting) .host-only { display: none; }
+.invite-note { margin: 0; font-size: 13px; opacity: 0.75; }
+.invite-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; max-height: 260px; overflow: auto; }
+.invite-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.03); }
+.invite-list li.muted { display: block; border: 0; background: none; font-size: 13px; opacity: 0.7; }
+.invite-find { display: flex; gap: 6px; }
+.invite-find input { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(0, 0, 0, 0.3); color: inherit; font: inherit; }

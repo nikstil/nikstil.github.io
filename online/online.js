@@ -248,6 +248,23 @@
     }
   }
 
+  // ================= Profiles =================
+  /** Adds achievement ids to the signed-in player's profile (they only ever add up). */
+  async function syncAchievements(ids) {
+    if (!profile) return null
+    const c = await connect()
+    const { data, error } = await c.rpc('sync_achievements', { p_ids: ids })
+    if (error) throw error
+    return data
+  }
+  /** A player's public profile: achievements, COUNTER-STRIFE rank, best TRANSLATR™ run. */
+  async function playerProfile(userId) {
+    const c = await connect()
+    const { data, error } = await c.rpc('player_profile', { p_user: userId })
+    if (error) throw error
+    return data?.[0] ?? null
+  }
+
   // ================= COUNTER-STRIFE ranks =================
   // A ranked match: the server is told when it starts and when it ends, and works out the rating.
   async function strifeStart(mode, map, difficulty, roundsToWin) {
@@ -502,6 +519,8 @@
     watchLeaderboard,
     startRun,
     finishRun,
+    syncAchievements,
+    playerProfile,
     strifeStart,
     strifeFinish,
     strifeLeaderboard,
