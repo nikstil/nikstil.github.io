@@ -338,13 +338,13 @@
   <template id="app-leaderboard">
     <div class="win-body lb">
       <div class="lb-bar">
-        <label class="lb-mode-pick"><span class="sr-only">Mode</span><select class="lb-mode"><option value="speedrun">🏁 Speedrun</option><option value="daily">📅 Daily Challenge</option></select></label>
+        <label class="lb-mode-pick"><span class="sr-only">Mode</span><select class="lb-mode"><option value="speedrun">🏁 Speedrun</option><option value="daily">📅 Daily Challenge</option><option value="strife">💣 COUNTER-STRIFE ranks</option></select></label>
         <label class="lb-pick"><span class="sr-only">Board</span><select class="lb-board"></select></label>
         <button class="btn lb-refresh" title="Refresh" aria-label="Refresh">⟳</button>
       </div>
       <div class="lb-wrap">
         <table class="lb-table">
-          <thead><tr><th class="lb-rank">#</th><th>Player</th><th class="lb-time">Time</th><th class="lb-ending">Ending</th><th class="lb-when">When</th></tr></thead>
+          <thead class="lb-head"><tr><th class="lb-rank">#</th><th>Player</th><th class="lb-time">Time</th><th class="lb-ending">Ending</th><th class="lb-when">When</th></tr></thead>
           <tbody></tbody>
         </table>
         <p class="lb-empty muted" hidden></p>

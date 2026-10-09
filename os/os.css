@@ -1321,6 +1321,8 @@ html[data-theme="vapor"] .br-fx-layer { background: linear-gradient(180deg, rgb(
 .lb-empty { padding: 18px; text-align: center; }
 .lb-me:empty { display: none; }
 .lb-me { font-weight: 600; }
+.lb-badge { display: inline-block; vertical-align: middle; }
+.lb-badge .rank-badge { display: block; width: 44px; height: 22px; }
 .lb-how { font-size: 12px; }
 
 /* Account */

@@ -155,6 +155,7 @@ export class Game {
       for (const r of opts.roster) {
         const a = makeActor(r.id, r.name, r.team, r.bot)
         a.isPlayer = !r.bot
+        a.rankTier = r.rank ?? null
         this.actors.push(a)
       }
       this.player = this.actors.find((a) => a.id === opts.myId) ?? null

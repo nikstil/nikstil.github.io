@@ -358,6 +358,7 @@ export class NetHost {
     actor.remote = true
     actor.isPlayer = true
     actor.botName ??= actor.name
+    actor.botRank ??= actor.rankTier ?? null
     actor.name = String(name || 'Player').slice(0, 20)
     actor.netSkins = skins && typeof skins === 'object' ? skins : {}
     actor.netQueue = []
@@ -375,6 +376,8 @@ export class NetHost {
       this.room.send('full', { to: p.from })
       return
     }
+    // the rank they show (on the scoreboard): a skill group 0-17, or none
+    actor.rankTier = Number.isInteger(p.rank) && p.rank >= 0 && p.rank <= 17 ? p.rank : null
     const peer = { actor, out: [], name: actor.name, since: Date.now(), team: p.team, skins: actor.netSkins }
     peer.link = new Link(this.room, this.id, p.from, true, (m) => this.onLink(p.from, m), this.forceRelay)
     this.peers.set(p.from, peer)
@@ -388,7 +391,7 @@ export class NetHost {
     return { me: me.id, map: this.info.mapId, mode: g.mode, rules: g.rules, roster: this.roster(), code: this.code, host: this.info.name }
   }
   roster() {
-    return this.game.actors.map((a) => ({ id: a.id, name: a.name, team: a.team, bot: a.isBot, human: !a.isBot }))
+    return this.game.actors.map((a) => ({ id: a.id, name: a.name, team: a.team, bot: a.isBot, human: !a.isBot, rank: a.rankTier ?? null }))
   }
   rosterChanged() {
     const r = this.roster()
@@ -430,6 +433,7 @@ export class NetHost {
     a.netQueue = []
     this.say(`${a.name} ${why === 'left' ? 'left' : 'disconnected'}: a bot takes over`)
     a.name = a.botName ?? a.name
+    a.rankTier = a.botRank ?? null
     a.brain = new Brain(this.game, a)
     this.rosterChanged()
     this.info.onPeople?.(this.people())
@@ -544,7 +548,7 @@ export class NetClient {
   }
   knock() {
     if (!this.hostId || this.link) return
-    this.room.send('hello', { to: this.hostId, from: this.id, name: this.info.name, team: this.info.team, skins: this.info.skins })
+    this.room.send('hello', { to: this.hostId, from: this.id, name: this.info.name, team: this.info.team, skins: this.info.skins, rank: this.info.rank ?? null })
     this.link = new Link(this.room, this.id, this.hostId, false, (m) => this.onLink(m), this.forceRelay)
     clearInterval(this.knockTimer)
   }
@@ -777,5 +781,6 @@ export function applyRoster(g, roster) {
     a.team = r.team
     a.isBot = r.bot
     a.isPlayer = !r.bot
+    a.rankTier = r.rank ?? null
   }
 }

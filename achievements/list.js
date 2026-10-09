@@ -9,6 +9,18 @@ const read = (k) => {
     return null
   }
 }
+/** COUNTER-STRIFE ranks: the most ranked matches played and the best skill group reached (on this device or online). */
+function strifeRank() {
+  const local = read('strife-rank') ?? {}
+  const online = read('strife-rank-online') ?? {}
+  const placed = (x) => (x.matches ?? 0) >= 3
+  const at = [0, 750, 850, 950, 1050, 1150, 1250, 1350, 1450, 1550, 1650, 1750, 1850, 1950, 2050, 2150, 2250, 2350]
+  const tier = (r) => at.filter((t) => r >= t).length - 1
+  return {
+    matches: Math.max(local.matches ?? 0, online.matches ?? 0),
+    best: Math.max(placed(local) ? local.best ?? 0 : -1, placed(online) ? Math.max(online.best_tier ?? 0, tier(online.rating ?? 0)) : -1),
+  }
+}
 /** Everything the checks need, read once. */
 export function readSaves() {
   const tr = read('translatr-save')
@@ -21,6 +33,7 @@ export function readSaves() {
     strife: read('strife-stats') ?? {},
     strifeRecord: read('strife-record') ?? {},
     strifeInv: read('strife-inventory') ?? null,
+    strifeRank: strifeRank(),
   }
 }
 
@@ -82,6 +95,11 @@ export const ACHIEVEMENTS = [
   { id: 'cs-trade', game: 'strife', icon: '🤝', name: 'Fair Trade', desc: 'Trade with another player online.', points: 15, check: (s) => B(s.strifeInv?.trades) },
   { id: 'cs-drip', game: 'strife', icon: '🎨', name: 'Fashion Week', desc: 'Have five skins equipped at once.', points: 10, check: (s) => P(Object.keys(s.strifeInv?.equipped ?? {}).length, 5) },
   { id: 'cs-online', game: 'strife', icon: '🌐', name: 'LAN Party', desc: 'Win a round in an online game.', points: 15, check: (s) => B(st(s).onlineRounds) },
+  { id: 'cs-ranked', game: 'strife', icon: '🎖️', name: 'Placed', desc: 'Play three ranked matches and get a rank.', points: 10, check: (s) => P(s.strifeRank.matches, 3) },
+  { id: 'cs-goldnova', game: 'strife', icon: '🌟', name: 'Gold Nova', desc: 'Reach Gold Nova I.', points: 15, check: (s) => B(s.strifeRank.best >= 6) },
+  { id: 'cs-guardian', game: 'strife', icon: '🛡️', name: 'Master Guardian', desc: 'Reach Master Guardian I.', points: 25, check: (s) => B(s.strifeRank.best >= 10) },
+  { id: 'cs-eagle', game: 'strife', icon: '🦅', name: 'Legendary', desc: 'Reach Legendary Eagle.', points: 40, check: (s) => B(s.strifeRank.best >= 14) },
+  { id: 'cs-global', game: 'strife', icon: '🌍', name: 'The Global Elite', desc: 'Reach the top rank.', points: 75, check: (s) => B(s.strifeRank.best >= 17) },
   { id: 'cs-host', game: 'strife', icon: '🏠', name: 'Host with the Most', desc: 'Host a game that someone joins.', points: 15, check: (s) => B(st(s).hostedWithFriend) },
 
   // ---------------- TRANSLATR

@@ -135,6 +135,7 @@
       <div class="menu-side">
         <h1 class="logo">COUNTER<span>-</span>STRIFE</h1>
         <p class="tag">5v5 bomb defusal, against bots or online</p>
+        <div class="rank-card" id="rank-card"></div>
         <div class="menu-section">
           <h2>Mode</h2>
           <div class="seg seg-mode" id="seg-mode"></div>
@@ -247,6 +248,7 @@
       <div class="menu-card wide">
         <h2 id="over-title">Victory</h2>
         <p class="over-score" id="over-score"></p>
+        <div class="over-rank" id="over-rank" hidden></div>
         <p class="over-drop" id="over-drop"></p>
         <div class="over-board" id="over-board"></div>
         <div class="menu-buttons">
@@ -275,6 +277,13 @@
           <p class="on-status" id="on-status" aria-live="polite"></p>
         </div>
         <button class="ghost" data-do="online-back">Back</button>
+      </div>
+    </section>
+
+    <section class="menu ranks" id="ranks" hidden>
+      <div class="menu-card wide ranks-card">
+        <header class="inv-head"><h2>Ranks</h2><button class="x" data-do="back" aria-label="Close">✕</button></header>
+        <div class="ranks-body" id="ranks-body"></div>
       </div>
     </section>
 

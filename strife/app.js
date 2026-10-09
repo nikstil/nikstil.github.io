@@ -9,6 +9,8 @@ import { WEAPONS, GEAR, SHOP } from './weapons.js'
 import { gunIcon } from './icons.js'
 import { skinMaterial, stickerMaterial } from './skins.js'
 import { initChat } from './chatui.js'
+import { initRanks } from './rankui.js'
+import { rankBadge } from './ranks.js'
 import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
 import { openHub, NetHost, NetClient, makeCode } from './net.js'
 import { track } from './stats.js'
@@ -251,10 +253,18 @@ function hooks() {
 
 /** Starts a match (or the menu's background bot match, `demo`). */
 function start({ demo = false, practice = false, host = false } = {}) {
+  // walking out of a ranked match (to the menu, or into another) counts as a loss
+  rankUi.abandon(rankCtx)
+  rankCtx = null
   if (!host || !net) endNet()
   const map = MAPS[settings.map]
   const team = demo ? null : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
   game = new Game({ map, team, mode: demo ? 'competitive' : settings.mode, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
+  if (!demo) {
+    rankCtx = rankUi.startMatch(game, settings.map)
+    rankUi.tagActors(game)
+  }
+  $('#pause [data-do="quit"]').textContent = rankCtx ? 'Leave match (counts as a loss)' : 'Leave match'
   attachView(map, demo)
 }
 /** A new view (renderer scene) for the current game. */
@@ -568,6 +578,7 @@ async function joinGame(code) {
     name: settings.netName,
     team: settings.team,
     skins: equippedSkins(),
+    rank: rankUi.myTier(),
     onWelcome: (w) => startClient(w),
     onEnd: (why) => {
       const wasPlaying = mode === 'play'
@@ -632,7 +643,8 @@ function alertBox(text) {
 
 // ================= Menus =================
 function show(id) {
-  for (const s of ['menu', 'pause', 'settings', 'controls', 'over', 'inventory', 'online', 'replays']) $('#' + s).hidden = s !== id
+  for (const s of ['menu', 'pause', 'settings', 'controls', 'over', 'inventory', 'online', 'replays', 'ranks']) $('#' + s).hidden = s !== id
+  if (id === 'menu') rankUi.renderCard()
   $('#hud').hidden = id === 'menu' || mode !== 'play'
   $('#touch').hidden = !coarse || mode !== 'play' || !!id
 }
@@ -799,6 +811,11 @@ document.addEventListener('click', (e) => {
   }
   else if (act === 'watch-replay' && lastReplay) startReplay(lastReplay)
   else if (act === 'replays') openReplays()
+  else if (act === 'ranks') {
+    backTo = 'menu'
+    show('ranks')
+    rankUi.openBoard()
+  }
   else if (act === 'replay-exit') endReplay()
   else if (act === 'killcam-skip') endKillcam()
   else if (act === 'host') hostGame()
@@ -809,6 +826,7 @@ document.addEventListener('click', (e) => {
     show('menu')
   } else if (act === 'quit') {
     paused = false
+    releaseMouse()
     start({ demo: true })
     show('menu')
     syncMenu()
@@ -838,6 +856,8 @@ function matchOver() {
   }
   $('#over-replay').hidden = !lastReplay
   const got = me ? rewardMatch(won, me.mvps ?? 0) : ''
+  rankUi.hideResult()
+  if (rankCtx) rankUi.finishMatch(rankCtx, game)
   if (me) track.matchOver(won, settings.map, game.difficulty, game.mode, game.mode === 'armsrace' && (me.arLevel ?? 0) >= ARMS_LADDER.length)
   $('#over-drop').textContent = got ? `Case drop: ${got} · open it from Inventory` : ''
   $('#over-title').textContent = won ? 'Victory' : 'Defeat'
@@ -870,6 +890,12 @@ const edge = { jump: false, reload: false, slot: null, alt: false, drop: false, 
 let mouseFire = false
 let tabHeld = false
 const touch = { mx: 0, mz: 0, fire: false, use: false, crouch: false }
+// ranks: the menu card, ranked matches, the Ranks page
+const rankUi = initRanks({ difficultyName: (i) => DIFFICULTY[i].name })
+let rankCtx = null // the ranked match being played, if it is one
+addEventListener('pagehide', () => {
+  if (rankCtx && game?.phase !== 'over') rankUi.abandon(rankCtx)
+})
 // the chat box and the radio menus (they take the keyboard while open)
 const chatUi = initChat({
   game: () => game,
@@ -1530,10 +1556,10 @@ function drawScoreboard() {
     const table = $(`#sb-${t.toLowerCase()}`)
     const rows = game.actors.filter((a) => a.team === t).sort((a, b) => b.kills - a.kills)
     const showMoney = game.player?.team === t
-    let html = `<tr><th>Player</th>${showMoney ? '<th>$</th>' : ''}<th>K</th><th>A</th><th>D</th><th>★</th></tr>`
+    let html = `<tr><th></th><th>Player</th>${showMoney ? '<th>$</th>' : ''}<th>K</th><th>A</th><th>D</th><th>★</th></tr>`
     for (const a of rows) {
       const n = a.name.replace(/[<>&"]/g, '')
-      html += `<tr class="${a.alive ? '' : 'dead'} ${a === game.player ? 'me' : ''}"><td>${a.inv.bomb ? '💣 ' : ''}${net && a.isBot ? '<small class="bot">BOT</small> ' : ''}${n}${a.alive ? '' : ' ✝'}</td>${showMoney ? `<td>$${a.money}</td>` : ''}<td>${a.kills}</td><td>${a.assists}</td><td>${a.deaths}</td><td>${a.mvps || ''}</td></tr>`
+      html += `<tr class="${a.alive ? '' : 'dead'} ${a === game.player ? 'me' : ''}"><td class="sb-rank">${rankBadge(a.rankTier ?? null, { title: true })}</td><td>${a.inv.bomb ? '💣 ' : ''}${net && a.isBot ? '<small class="bot">BOT</small> ' : ''}${n}${a.alive ? '' : ' ✝'}</td>${showMoney ? `<td>$${a.money}</td>` : ''}<td>${a.kills}</td><td>${a.assists}</td><td>${a.deaths}</td><td>${a.mvps || ''}</td></tr>`
     }
     table.innerHTML = html
     $(`#sb-${t.toLowerCase()}-score`).textContent = game.score[t]

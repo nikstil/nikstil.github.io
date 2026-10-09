@@ -146,7 +146,8 @@ html.embed .home-link, body.playing .home-link { display: none; }
 .sb-team.ct h3 { color: var(--ct); }
 .scoreboard table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .scoreboard th { text-align: right; font-weight: 600; opacity: 0.6; padding: 2px 6px; }
-.scoreboard th:first-child, .scoreboard td:first-child { text-align: left; }
+.scoreboard th:first-child, .scoreboard td:first-child, .scoreboard th:nth-child(2), .scoreboard td:nth-child(2) { text-align: left; }
+.scoreboard td:nth-child(2) { width: 100%; }
 .scoreboard td { text-align: right; padding: 3px 6px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
 .scoreboard tr.dead td { opacity: 0.45; }
 .scoreboard tr.me td { background: rgba(255, 255, 255, 0.08); }
@@ -421,3 +422,52 @@ body:not(.online) .net-only { display: none; }
 .tb.chat-btn { left: 166px; top: 50%; width: 44px; height: 44px; font-size: 18px; }
 body:not(.playing) .chat, body:not(.playing) .radio-menu, body.killcam-on .chat, body.replaying .chat, body.replaying .radio-menu { display: none; }
 @media (max-width: 640px) { .chat { bottom: 150px; width: calc(100vw - 28px); } .chat-log { font-size: 12.5px; } }
+
+/* ---------- Ranks ---------- */
+.rank-badge { display: block; flex: none; }
+.rank-card { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.rank-card .rk-text { display: grid; flex: 1; min-width: 0; line-height: 1.25; }
+.rank-card b { font-size: 15px; }
+.rank-card small { font-size: 12px; opacity: 0.75; }
+.rank-card .rk-where { font-size: 11px; opacity: 0.55; }
+.over-rank { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 6px auto 12px; padding: 10px 14px; max-width: 460px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.05); }
+.over-rank .rank-badge { width: 84px; height: 42px; }
+.over-rank .rk-text { display: grid; flex: 1; min-width: 160px; gap: 2px; text-align: left; }
+.over-rank b { font-size: 17px; }
+.over-rank small { font-size: 12.5px; opacity: 0.75; }
+.rk-bar { height: 6px; margin-top: 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.rk-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #ffd65a, #ff9b3d); transition: width 0.8s ease-out; }
+.rk-delta { font: 800 22px var(--font); }
+.rk-delta.plus { color: #6fe08a; }
+.rk-delta.minus { color: #ff7070; }
+.over-rank .rk-where { flex-basis: 100%; text-align: center; font-size: 11px; opacity: 0.55; }
+.over-rank .rk-note { flex-basis: 100%; margin: 0; font-size: 12px; color: #ffcf7a; text-align: center; }
+.over-rank.up, .over-rank.placed { border-color: #ffd65a; box-shadow: 0 0 24px rgba(255, 214, 90, 0.35); animation: rank-up 1.2s ease-out; }
+.over-rank.up b, .over-rank.placed b { color: #ffd65a; }
+.over-rank.down b { color: #ff9a9a; }
+@keyframes rank-up { 0% { transform: scale(0.85); opacity: 0; } 60% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); } }
+.ranks-card { width: min(980px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; }
+.ranks-body { display: grid; gap: 12px; }
+.rk-mine { display: flex; align-items: center; gap: 14px; }
+.rk-mine .rank-badge { width: 96px; height: 48px; }
+.rk-mine div { display: grid; gap: 2px; }
+.rk-mine b { font-size: 19px; }
+.rk-mine small { opacity: 0.75; }
+.rk-how { margin: 0; font-size: 13px; opacity: 0.7; }
+.rk-cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
+.rk-cols h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; }
+.rk-status:empty { display: none; }
+.rk-status { font-size: 13px; opacity: 0.75; }
+.rk-board { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.rk-board th { text-align: left; font-size: 11.5px; opacity: 0.6; font-weight: 600; padding: 4px 6px; }
+.rk-board td { padding: 4px 6px; border-top: 1px solid var(--line); }
+.rk-board .rank-badge { width: 44px; height: 22px; }
+.rk-board tr.me td { background: rgba(255, 214, 90, 0.12); }
+.rk-ladder { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; max-height: 420px; overflow: auto; }
+.rk-ladder li { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.rk-ladder .rank-badge { width: 44px; height: 22px; }
+.rk-ladder small { opacity: 0.5; font-variant-numeric: tabular-nums; }
+.rk-ladder li.me { background: rgba(255, 214, 90, 0.15); font-weight: 700; }
+.sb-rank { width: 36px; padding-right: 0 !important; }
+.sb-rank .rank-badge { width: 32px; height: 16px; }
+@media (max-width: 720px) { .rk-cols { grid-template-columns: 1fr; } }

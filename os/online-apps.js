@@ -214,7 +214,25 @@
         const [y, m, d] = localDay(offset).split('-').map(Number)
         return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
       }
+      const head = $('.lb-head', el)
+      const how = $('.lb-how', el)
+      const HEADS = {
+        runs: '<tr><th class="lb-rank">#</th><th>Player</th><th class="lb-time">Time</th><th class="lb-ending">Ending</th><th class="lb-when">When</th></tr>',
+        strife: '<tr><th class="lb-rank">#</th><th>Player</th><th>Rank</th><th class="lb-time">Rating</th><th class="lb-when">W–L</th></tr>',
+      }
+      const HOWS = {
+        runs: 'Speedrun and Daily Challenge times post here by themselves when you play TRANSLATR™ signed in. The server times every run too.',
+        strife: 'Ranked COUNTER-STRIFE matches (Competitive and Wingman against bots) move your rating when you play signed in. Three matches to get a rank.',
+      }
       function fillBoards() {
+        const strife = mode.value === 'strife'
+        $('.lb-pick', el).hidden = strife
+        head.innerHTML = HEADS[strife ? 'strife' : 'runs']
+        how.textContent = HOWS[strife ? 'strife' : 'runs']
+        if (strife) {
+          select.replaceChildren(h('option', { value: 'strife' }, 'Ranks'))
+          return
+        }
         select.replaceChildren(
           ...(mode.value === 'daily'
             ? Array.from({ length: 7 }, (_, i) => h('option', { value: `daily:${-i}` }, dayName(-i)))
@@ -237,6 +255,7 @@
         const [board, offset] = select.value.split(':')
         const day = board === 'daily' ? localDay(Number(offset)) : null
         status.textContent = 'Loading…'
+        if (board === 'strife') return loadStrife(run)
         try {
           const rows = await net().leaderboard(board, day)
           if (run !== seq) return
@@ -265,6 +284,42 @@
             if (run === seq && rank) mine.textContent = `You: #${rank.rank} with ${formatTime(rank.time_ms)}`
           } else if (!me) {
             mine.replaceChildren(h('button', { class: 'lb-link', onclick: () => os.openApp('account') }, 'Sign in'), ' to get your runs on the board.')
+          }
+          status.textContent = live ? '● Live' : `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+        } catch (err) {
+          if (run === seq) status.textContent = net().errorText(err)
+        }
+      }
+      // COUNTER-STRIFE: the rating board, with each player's rank emblem
+      async function loadStrife(run) {
+        try {
+          const [rows, R] = await Promise.all([net().strifeLeaderboard(50), import('/strife/ranks.js')])
+          if (run !== seq) return
+          el.classList.remove('lb-any')
+          tbody.replaceChildren(
+            ...rows.map((r) => {
+              const badge = h('span', { class: 'lb-badge' })
+              badge.innerHTML = R.rankBadge(r.tier)
+              const name = h('button', { class: 'lb-name', title: me && r.user_id !== me.id ? `Message ${r.username}` : null, onclick: () => me && r.user_id !== me.id && openChat({ id: r.user_id, username: r.username }) }, r.username)
+              return h(
+                'tr',
+                { class: me && r.user_id === me.id ? 'is-me' : null },
+                h('td', { class: 'lb-rank' }, ['🥇', '🥈', '🥉'][r.rank - 1] ?? String(r.rank)),
+                h('td', {}, name),
+                h('td', { title: R.rankName(r.tier) }, badge),
+                h('td', { class: 'lb-time' }, String(r.rating)),
+                h('td', { class: 'lb-when' }, `${r.wins}–${r.losses}`),
+              )
+            }),
+          )
+          empty.hidden = rows.length > 0
+          empty.textContent = 'Nobody’s ranked yet. Play three ranked COUNTER-STRIFE matches signed in to be the first.'
+          mine.textContent = ''
+          if (me && !rows.some((r) => r.user_id === me.id)) {
+            const r = await net().strifeRating()
+            if (run === seq && r) mine.textContent = r.matches >= 3 ? `You: #${r.board_rank} · ${R.rankName(r.tier)} (${r.rating})` : `You: ${3 - r.matches} more ranked match${r.matches === 2 ? '' : 'es'} to get a rank`
+          } else if (!me) {
+            mine.replaceChildren(h('button', { class: 'lb-link', onclick: () => os.openApp('account') }, 'Sign in'), ' to get your rank on the board.')
           }
           status.textContent = live ? '● Live' : `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
         } catch (err) {
