@@ -1698,7 +1698,7 @@ function frame(t) {
 // ================= Boot =================
 if (makeRenderer()) {
   buildMenu()
-  initInventory({ audio, onChange: () => track.poke() })
+  initInventory({ audio, onChange: () => track.poke(), onGifts: (got) => ($('#record').textContent = `🎁 ${got.join(' · ')}: they’re in your Inventory`) })
   syncSettings()
   start({ demo: true })
   show('menu')

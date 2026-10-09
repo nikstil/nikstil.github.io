@@ -1,6 +1,7 @@
 // The achievement hub: every game's achievements, worked out from their saves in this browser.
 
 import { GAMES, evaluate, unlockedAt, check, toast, sync } from './list.js'
+import { REWARDS, claimed, claim } from './rewards.js'
 
 const $ = (s, el = document) => el.querySelector(s)
 if (new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embed')
@@ -54,12 +55,84 @@ function render() {
     nav.append(b)
   }
   navBtn('all', '🎖️', 'Overview', '#f2c14e', list)
+  rewardsBtn(nav, pts)
   for (const g of GAMES) navBtn(g.id, g.icon, g.name, g.color, list.filter((a) => a.game === g.id))
 
   const main = $('#main')
   main.replaceChildren()
   if (sel === 'all') overview(main, done, pts)
+  else if (sel === 'rewards') rewardsPage(main, pts)
   else gamePage(main, gameOf(sel))
+}
+
+// ---------------- Rewards: points unlock things across the site
+function rewardsBtn(nav, pts) {
+  const got = claimed()
+  const ready = REWARDS.filter((r) => pts >= r.at && !got[r.id]).length
+  const b = document.createElement('button')
+  b.className = sel === 'rewards' ? 'sel' : ''
+  b.style.setProperty('--c', '#e8a33d')
+  const n = REWARDS.filter((r) => got[r.id]).length
+  b.innerHTML = `<span class="gi">🎁</span><b>Rewards${ready ? ` <em class="ready">${ready}</em>` : ''}</b><small><span class="bar"><i style="width:${(n / REWARDS.length) * 100}%"></i></span>${n}/${REWARDS.length}</small>`
+  b.addEventListener('click', () => {
+    sel = 'rewards'
+    render()
+    $('#main').scrollTop = 0
+  })
+  nav.append(b)
+}
+function rewardsPage(main, pts) {
+  const got = claimed()
+  const next = REWARDS.find((r) => pts < r.at)
+  const top = REWARDS[REWARDS.length - 1].at
+  const b = document.createElement('div')
+  b.className = 'banner rw-banner'
+  b.style.setProperty('--c', '#e8a33d')
+  b.innerHTML = `<span class="bi">🎁</span><div><h2>Rewards</h2><p></p><div class="rw-track"><i></i></div></div>`
+  $('p', b).textContent = next ? `${pts.toLocaleString()} points · ${next.at - pts} more for “${next.name}”` : `${pts.toLocaleString()} points · every reward unlocked`
+  $('.rw-track i', b).style.width = `${Math.min(100, (pts / top) * 100)}%`
+  main.append(b)
+  const p = document.createElement('p')
+  p.className = 'rw-note'
+  p.textContent = 'Achievement points unlock things all over nikstil.com. Points aren’t spent: claim each one when you get there. COUNTER-STRIFE rewards wait in your inventory there; wallpapers and themes are in Themes on the desktop.'
+  main.append(p)
+  const grid = document.createElement('div')
+  grid.className = 'grid rw-grid'
+  for (const r of REWARDS) {
+    const el = document.createElement('div')
+    const have = !!got[r.id]
+    const can = !have && pts >= r.at
+    el.className = 'ach rw' + (have ? ' claimed' : can ? ' can' : ' locked')
+    el.style.setProperty('--c', '#e8a33d')
+    el.innerHTML = `<span class="badge"></span><h3></h3><span class="pts"></span><p></p><div class="meta"></div>`
+    $('.badge', el).textContent = r.icon
+    $('h3', el).textContent = r.name
+    $('.pts', el).textContent = `${r.at}G`
+    $('p', el).textContent = r.desc
+    const meta = $('.meta', el)
+    if (have) meta.textContent = `✓ Claimed ${when(got[r.id])}`
+    else if (can) {
+      const go = document.createElement('button')
+      go.className = 'rw-claim'
+      go.textContent = 'Claim'
+      go.addEventListener('click', () => {
+        const err = claim(r.id, pts)
+        if (err) return (meta.textContent = err)
+        toast([{ icon: r.icon, points: r.at, name: r.name }])
+        render()
+      })
+      meta.append(go)
+    } else {
+      const bar = document.createElement('span')
+      bar.className = 'bar'
+      bar.innerHTML = `<i style="width:${(pts / r.at) * 100}%"></i>`
+      const t = document.createElement('span')
+      t.textContent = `${pts} / ${r.at}`
+      meta.append(bar, t)
+    }
+    grid.append(el)
+  }
+  main.append(grid)
 }
 
 function card(a, showGame = false) {
@@ -113,6 +186,17 @@ function overview(main, done, pts) {
     stats.append(s)
   }
   main.append(stats)
+  const ready = REWARDS.filter((r) => pts >= r.at && !claimed()[r.id])
+  if (ready.length) {
+    const t = document.createElement('button')
+    t.className = 'rw-teaser'
+    t.textContent = `🎁 ${ready.length} reward${ready.length === 1 ? '' : 's'} to claim: ${ready.map((r) => r.name).join(', ')}`
+    t.addEventListener('click', () => {
+      sel = 'rewards'
+      render()
+    })
+    main.append(t)
+  }
   const recent = done.filter((a) => stamps[a.id]).sort((a, b) => stamps[b.id] - stamps[a.id]).slice(0, 6)
   section(main, 'Recently unlocked', recent, 'Nothing yet. Play anything on nikstil.com and your achievements show up here.')
   const close = list.filter((a) => !a.done && !a.secret && a.max > 1 && a.cur > 0).sort((a, b) => b.cur / b.max - a.cur / a.max).slice(0, 6)

@@ -19,6 +19,8 @@
     { id: 'minimal', name: 'Minimalist', blurb: 'Nothing. Beautifully. (2013)', swatch: ['#ffffff', '#000000', '#ffffff'], chrome: '#ffffff', start: 'Start', fonts: 'Inter:wght@300;400;500;600' },
     { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid (199X, forever)', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', start: 'スタート', fonts: 'VT323' },
     { id: 'glass', name: 'Liquid Glass', blurb: 'Every surface is a lens now (2025)', swatch: ['#7fe3ff', '#ffffff', '#ff9ad5'], chrome: '#5b7cff', start: '' },
+    // unlocked with achievement points (Achievements → Rewards; see /achievements/rewards.js)
+    { id: 'terminal', name: 'Terminal', blurb: 'Green on black, like a hacker in a film (1999, in films)', swatch: ['#050a05', '#33ff66', '#0f3d1a'], chrome: '#050a05', start: 'C:\\>', fonts: 'IBM+Plex+Mono:wght@400;500;600', reward: 'r-theme-terminal', at: 200 },
   ]
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
@@ -34,8 +36,28 @@
     glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
     vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨', achievements: '💿', files: '📼', terminal: '💾' },
   }
+  ICONS.terminal = { ...ICONS.minimal }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
+  // ================= Rewards (claimed with achievement points on the hub) =================
+  // The same ids as /achievements/rewards.js, which keeps what's claimed under this key.
+  const REWARDS_KEY = 'nikstil-rewards'
+  const WALLPAPER_KEY = 'nikstilos-wallpaper'
+  const WALLPAPERS = [
+    { id: 'dust', name: 'Dust II', reward: 'r-wall-dust', at: 50 },
+    { id: 'lawn', name: 'Front Lawn', reward: 'r-wall-lawn', at: 150 },
+    { id: 'grid', name: 'Midnight Grid', reward: 'r-wall-grid', at: 400 },
+    { id: 'elite', name: 'The Global Elite', reward: 'r-wall-elite', at: 750 },
+  ]
+  const claimedReward = (id) => {
+    try {
+      return !!JSON.parse(localStorage.getItem(REWARDS_KEY))?.claimed?.[id]
+    } catch {
+      return false
+    }
+  }
+  const isLocked = (thing) => !!thing?.reward && !claimedReward(thing.reward)
+  const lockedNote = (name, at) => `${name} unlocks at ${at} achievement points. Claim it in Achievements → Rewards.`
   const GAME_THEME_KEY = 'translatr-theme' // the game's pick, used until you choose one here
   const GAME_SAVE_KEY = 'translatr-save' // same site, so the homepage can read the game's save
   const BOOTED_KEY = 'nikstilos-booted'
@@ -104,7 +126,8 @@
   }
 
   function applyTheme(id, save = true) {
-    const theme = THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === 'aero')
+    let theme = THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === 'aero')
+    if (isLocked(theme)) theme = THEMES.find((t) => t.id === 'aero')
     document.documentElement.dataset.theme = theme.id
     $('meta[name="theme-color"]').content = theme.chrome
     $('.start-label').textContent = theme.start
@@ -146,12 +169,49 @@
       sw.append(i)
     })
     $('.theme-name', b).textContent = theme.name
+    markLock(b, theme)
     b.addEventListener('click', (e) => {
       closeMenus()
+      if (isLocked(theme)) return msgbox('Themes', lockedNote(`The ${theme.name} theme`, theme.at), '🔒')
       switchTheme(theme.id, originOf(e))
     })
     return b
   }
+  /** A 🔒 on a theme or wallpaper you haven't unlocked yet. */
+  function markLock(b, thing) {
+    const locked = isLocked(thing)
+    b.classList.toggle('is-locked', locked)
+    b.title = locked ? lockedNote(thing.name, thing.at) : ''
+  }
+  // ----- wallpapers
+  function applyWallpaper(id, save = true) {
+    const w = WALLPAPERS.find((x) => x.id === id)
+    if (w && !isLocked(w)) document.documentElement.dataset.wallpaper = w.id
+    else delete document.documentElement.dataset.wallpaper
+    if (save) storage.set(WALLPAPER_KEY, w && !isLocked(w) ? w.id : '')
+    $$('[data-wallpaper-pick]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.wallpaperPick || null) === (document.documentElement.dataset.wallpaper ?? null))))
+  }
+  function wallpaperButton(w) {
+    const b = document.createElement('button')
+    b.className = 'wall-card'
+    b.dataset.wallpaperPick = w ? w.id : ''
+    b.innerHTML = '<span class="wall-thumb" aria-hidden="true"></span><span class="theme-name"></span>'
+    if (w) $('.wall-thumb', b).style.backgroundImage = `url(/os/wallpapers/${w.id}.svg)`
+    else $('.wall-thumb', b).classList.add('is-theme')
+    $('.theme-name', b).textContent = w ? w.name : 'The theme’s own'
+    if (w) markLock(b, w)
+    b.addEventListener('click', () => {
+      if (w && isLocked(w)) return msgbox('Themes', lockedNote(`The ${w.name} wallpaper`, w.at), '🔒')
+      applyWallpaper(w?.id ?? null)
+    })
+    return b
+  }
+  // claimed on the hub (in another tab, or its window here): the locks come off straight away
+  addEventListener('storage', (e) => {
+    if (e.key !== REWARDS_KEY) return
+    for (const b of $$('[data-theme-pick]')) markLock(b, THEMES.find((t) => t.id === b.dataset.themePick))
+    for (const b of $$('[data-wallpaper-pick]')) b.dataset.wallpaperPick && markLock(b, WALLPAPERS.find((w) => w.id === b.dataset.wallpaperPick))
+  })
 
   // ================= Windows =================
   const layer = $('#windows')
@@ -984,7 +1044,10 @@
       card.append(blurb)
       grid.append(card)
     }
+    const walls = $('#wall-grid', el)
+    walls.append(wallpaperButton(null), ...WALLPAPERS.map(wallpaperButton))
     applyTheme(document.documentElement.dataset.theme, false) // mark the current one
+    applyWallpaper(document.documentElement.dataset.wallpaper ?? null, false)
   }
 
   function initBin(el) {
@@ -1646,6 +1709,7 @@
       const saved = storage.get(THEME_KEY) || storage.get(GAME_THEME_KEY)
       const fallback = THEMES.some((t) => t.id === site.defaultTheme) ? site.defaultTheme : 'aero'
       applyTheme(THEMES.some((t) => t.id === saved) ? saved : fallback, false)
+      applyWallpaper(storage.get(WALLPAPER_KEY), false)
       layoutIcons()
       const onlineReady = Promise.resolve(online?.start()).catch(() => {})
       if (APPS[embedApp]) {

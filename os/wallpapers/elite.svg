@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.45" r="0.75"><stop offset="0" stop-color="#16407e"/><stop offset="0.55" stop-color="#0a2148"/><stop offset="1" stop-color="#030a18"/></radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe49a"/><stop offset="0.5" stop-color="#f2c14e"/><stop offset="1" stop-color="#b8862a"/></linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#7fb2ff" stop-opacity="0.35"/><stop offset="1" stop-color="#7fb2ff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <g fill="#cfe0ff" opacity="0.7">
+    <circle cx="140" cy="120" r="2"/><circle cx="330" cy="240" r="1.5"/><circle cx="470" cy="90" r="2"/><circle cx="1150" cy="80" r="2"/><circle cx="1290" cy="220" r="1.5"/><circle cx="1460" cy="120" r="2.2"/><circle cx="220" cy="700" r="1.6"/><circle cx="1380" cy="720" r="1.6"/><circle cx="90" cy="460" r="1.3"/><circle cx="1520" cy="470" r="1.3"/>
+  </g>
+  <circle cx="800" cy="420" r="330" fill="url(#halo)"/>
+  <g fill="url(#gold)">
+    <path d="M590 430 C520 360 380 330 230 360 C330 380 400 410 440 450 C360 430 300 440 250 470 C340 470 410 490 450 520 C390 520 340 540 310 570 C420 560 520 540 590 500Z"/>
+    <path d="M1010 430 C1080 360 1220 330 1370 360 C1270 380 1200 410 1160 450 C1240 430 1300 440 1350 470 C1260 470 1190 490 1150 520 C1210 520 1260 540 1290 570 C1180 560 1080 540 1010 500Z"/>
+  </g>
+  <g fill="none" stroke="#f2c14e" stroke-width="10">
+    <circle cx="800" cy="420" r="200"/>
+    <ellipse cx="800" cy="420" rx="70" ry="200"/>
+    <ellipse cx="800" cy="420" rx="140" ry="200"/>
+    <path d="M600 420H1000"/>
+    <path d="M627 320H973"/><path d="M627 520H973"/>
+  </g>
+  <g fill="url(#gold)">
+    <path d="M800 160 l13 27 30 4 -22 21 5 30 -26 -14 -26 14 5 -30 -22 -21 30 -4Z"/>
+  </g>
+  <text x="800" y="720" font-family="Helvetica, Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="14" text-anchor="middle" fill="url(#gold)">THE GLOBAL ELITE</text>
+</svg>

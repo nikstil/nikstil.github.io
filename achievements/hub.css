@@ -65,3 +65,14 @@ html.embed .top { padding: 10px 14px; }
   .banner a { margin-left: 0; }
   .grid { grid-template-columns: 1fr; }
 }
+
+/* ---------- Rewards ---------- */
+.games .ready { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 5px; border-radius: 9px; background: #e8a33d; color: #1b1300; font: 700 11px/1 system-ui, sans-serif; vertical-align: 2px; }
+.rw-track { height: 8px; margin-top: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.rw-track i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #f2c14e, #e8a33d); }
+.rw-note { margin: 0 0 14px; font-size: 13px; opacity: 0.7; }
+.ach.rw.can { box-shadow: 0 0 0 2px #e8a33d, 0 0 24px rgba(232, 163, 61, 0.35); }
+.ach.rw.claimed .meta { color: #7ce08a; }
+.rw-claim { padding: 5px 16px; border: 0; border-radius: 6px; background: linear-gradient(#f7cf6a, #e0a02a); color: #2a1a00; font: 700 13px system-ui, sans-serif; cursor: pointer; }
+.rw-claim:hover { filter: brightness(1.08); }
+.rw-teaser { display: block; width: 100%; margin: 0 0 14px; padding: 10px 14px; border: 1px solid #e8a33d; border-radius: 10px; background: rgba(232, 163, 61, 0.12); color: inherit; font: 600 14px system-ui, sans-serif; text-align: left; cursor: pointer; }

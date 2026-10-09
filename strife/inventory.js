@@ -5,7 +5,7 @@
 import { WEAPONS } from './weapons.js'
 import { gunIcon } from './icons.js'
 import {
-  RARITY, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem, skinMaterial, itemKey,
+  SKINS, RARITY, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem, skinMaterial, itemKey,
   loadInventory, saveInventory, addItem, toggleEquip, equippedFor, skinDesc, randomSkinFor,
   kindOf, stickerById, musicById, stickerMaterial, stickerUrl, STICKER_GRADE, tradeUpOutcomes, signTradeUp, MUSIC_KITS,
 } from './skins.js'
@@ -144,6 +144,11 @@ function shortName(it) {
 export function initInventory(opts) {
   audio = opts.audio
   onChange = opts.onChange ?? onChange
+  // gifts waiting from the rest of the site: unpack them now, and say so
+  setTimeout(() => {
+    const got = collectGifts()
+    if (got.length) opts.onGifts?.(got)
+  })
   const root = $('#inventory')
   root.addEventListener('click', (e) => {
     const t = e.target.closest('[data-inv]')
@@ -203,8 +208,59 @@ export function initInventory(opts) {
 export function showInventory() {
   inv = loadInventory()
   picking = null
+  const got = collectGifts()
   render()
+  if (got.length) flash(`🎁 ${got.join(' · ')}`)
 }
+
+// ---------------- Gifts from the rest of nikstil.com
+// Achievement rewards (the hub at /achievements/) and TRANSLATR™'s Premium Vault leave things in
+// 'strife-gifts' (this site's storage, shared by every page); they're unpacked here.
+const GIFTS = 'strife-gifts'
+const KNIVES = SKINS.filter((x) => x.weapon === 'knife')
+/** Unpacks any waiting gifts into the inventory. Returns what came, as lines ("2 keys from TRANSLATR™"). */
+export function collectGifts() {
+  let list = []
+  try {
+    list = JSON.parse(localStorage.getItem(GIFTS) || '[]')
+    localStorage.removeItem(GIFTS)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(list) || !list.length) return []
+  inv = loadInventory()
+  const lines = []
+  for (const g of list.slice(0, 50)) {
+    if (!g || typeof g !== 'object') continue
+    const parts = []
+    const keys = Math.max(0, Math.min(25, g.keys | 0))
+    if (keys) {
+      inv.keys += keys
+      parts.push(`${keys} key${keys === 1 ? '' : 's'}`)
+    }
+    for (const id of Array.isArray(g.cases) ? g.cases.slice(0, 5) : []) {
+      if (!caseById[id]) continue
+      inv.cases[id] = (inv.cases[id] ?? 0) + 1
+      parts.push(caseById[id].name)
+    }
+    if (g.knife && KNIVES.length) {
+      const it = addItem(inv, makeItem(KNIVES[Math.floor(Math.random() * KNIVES.length)].id))
+      parts.push(itemName(it))
+    }
+    if (parts.length) lines.push(`${parts.join(', ')}${g.from ? ` from ${String(g.from).slice(0, 40)}` : ''}`)
+  }
+  save()
+  return lines
+}
+// (bought or claimed somewhere else while this page is open)
+addEventListener('storage', (e) => {
+  if (e.key !== GIFTS || !e.newValue) return
+  const got = collectGifts()
+  if (got.length && !$('#inventory')?.hidden) {
+    render()
+    flash(`🎁 ${got.join(' · ')}`)
+  }
+})
 function flash(text) {
   const n = $('#inv-note')
   n.textContent = text

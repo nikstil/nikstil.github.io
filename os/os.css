@@ -1762,3 +1762,98 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .term-prompt { white-space: pre; }
 .term-in { flex: 1; min-width: 0; padding: 0; border: 0 !important; outline: 0; background: transparent !important; color: inherit; font: inherit; box-shadow: none !important; caret-color: currentColor; }
 .term-matrix { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; }
+
+
+/* ---------- Reward wallpapers (unlocked with achievement points) ---------- */
+.wp-custom { display: none; background: center / cover no-repeat; }
+html[data-wallpaper] .wallpaper > :not(.wp-custom) { display: none; }
+html[data-wallpaper] .wp-custom { display: block; }
+html[data-wallpaper="dust"] .wp-custom { background-image: url(/os/wallpapers/dust.svg); }
+html[data-wallpaper="lawn"] .wp-custom { background-image: url(/os/wallpapers/lawn.svg); }
+html[data-wallpaper="grid"] .wp-custom { background-image: url(/os/wallpapers/grid.svg); }
+html[data-wallpaper="elite"] .wp-custom { background-image: url(/os/wallpapers/elite.svg); }
+html[data-wallpaper] .di-label { color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / 0.85); }
+.wall-head { margin: 16px 0 2px; font-size: 14px; }
+.wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; }
+.wall-card { display: grid; gap: 4px; padding: 6px; border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); border-radius: 6px; background: transparent; color: inherit; font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.wall-card[aria-pressed="true"] { border-color: var(--accent, #3a8fd8); box-shadow: 0 0 0 2px var(--accent, #3a8fd8); }
+.wall-thumb { display: block; aspect-ratio: 16 / 9; border-radius: 4px; background: center / cover no-repeat; }
+.wall-thumb.is-theme { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--ink) 10%, transparent) 0 8px, transparent 8px 16px); }
+.is-locked { position: relative; opacity: 0.6; }
+.is-locked .theme-name::after { content: " 🔒"; }
+
+/* ---------- Terminal theme (a reward): the minimalist theme, in phosphor green ---------- */
+/* The desktop's own parts are recoloured; what's inside windows keeps the minimalist look and goes
+   through a filter that turns white to black and black to green (games in frames are left alone). */
+html[data-theme="terminal"] { --t-bg: #050a05; --t-fg: #33ff66; --t-hi: #0c2412; --font-ui: "IBM Plex Mono", Consolas, "Courier New", monospace; --font-title: var(--font-ui); --ink: #33ff66; --muted: #1fae4a; --accent: #33ff66; --phosphor: grayscale(1) invert(1) sepia(1) saturate(5) hue-rotate(62deg) brightness(1.05); }
+html[data-theme="terminal"] .marquee { border: 1px solid #000; background: rgb(0 0 0 / 0.06); }
+html[data-theme="terminal"] body { background: var(--t-bg); }
+html[data-theme="terminal"] .wp-sky { background: var(--t-bg); }
+html[data-theme="terminal"] :is(.wp-rays, .wp-hills, .wp-bubble, .wp-noise) { display: none; }
+html[data-theme="terminal"] .desk-icons { gap: 10px; padding: 24px; }
+html[data-theme="terminal"] .di-img { filter: none; font-size: 34px; font-weight: 300; }
+html[data-theme="terminal"] .di-label { color: var(--t-fg); text-shadow: none; font-size: 11px; letter-spacing: 0.04em; }
+html[data-theme="terminal"] .desk-icon { border-radius: 0; }
+html[data-theme="terminal"] .desk-icon:hover { background: var(--t-hi); border-color: transparent; }
+html[data-theme="terminal"] .desk-icon.is-selected { background: var(--t-bg); border-color: var(--t-fg); }
+html[data-theme="terminal"] .win, html[data-theme="terminal"] .win:not(.is-active) { padding: 0; border-radius: 0; background: var(--t-bg); border: 1px solid var(--t-fg); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+html[data-theme="terminal"] .win.is-active { box-shadow: 6px 6px 0 var(--t-fg); }
+html[data-theme="terminal"] .win::before { content: none; }
+html[data-theme="terminal"] .win-bar { min-height: 46px; padding-left: 16px; gap: 10px; border-bottom: 1px solid var(--t-fg); }
+html[data-theme="terminal"] .win-title { font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--t-fg); text-shadow: none; }
+html[data-theme="terminal"] .win-client { border: 0; border-radius: 0; background: #fff; box-shadow: none; }
+html[data-theme="terminal"] .win-caps { align-self: stretch; margin: 0; border: 0; border-left: 1px solid var(--t-fg); border-radius: 0; box-shadow: none; }
+html[data-theme="terminal"] .cap, html[data-theme="terminal"] .cap-close { width: 40px; height: auto; font-size: 11px; color: var(--t-fg); text-shadow: none; background: var(--t-bg); border-left-color: var(--t-fg); }
+html[data-theme="terminal"] .cap:hover, html[data-theme="terminal"] .cap-close:hover { color: var(--t-bg); background: var(--t-fg); box-shadow: none; }
+html[data-theme="terminal"] .win-foot { border-top: 1px solid #000; background: #fff; }
+html[data-theme="terminal"] .btn { border-radius: 0; border: 1px solid #000; font-weight: 500; letter-spacing: 0.04em; color: #000; background: #fff; box-shadow: none; }
+html[data-theme="terminal"] .btn:hover { color: #fff; border-color: #000; background: #000; box-shadow: none; }
+html[data-theme="terminal"] .btn-primary { color: #fff; background: #000; }
+html[data-theme="terminal"] .btn-primary:hover { color: #000; background: #fff; }
+html[data-theme="terminal"] .taskbar { color: var(--t-fg); text-shadow: none; background: var(--t-bg); border-top: 1px solid var(--t-fg); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+html[data-theme="terminal"] .task { border-radius: 0; }
+html[data-theme="terminal"] .task:hover { border-color: var(--t-fg); background: var(--t-bg); box-shadow: none; }
+html[data-theme="terminal"] .task.is-active { border-color: transparent; background: var(--t-bg); box-shadow: inset 0 -2px 0 var(--t-fg); }
+html[data-theme="terminal"] .tray { border-color: var(--t-fg); }
+html[data-theme="terminal"] .show-desktop { border-color: var(--t-fg); background: var(--t-bg); }
+html[data-theme="terminal"] .show-desktop:hover { background: var(--t-fg); }
+html[data-theme="terminal"] .start-btn { height: 30px; padding: 0 12px 0 5px; gap: 9px; border-radius: 0; border: 1px solid var(--t-fg); background: var(--t-bg); }
+html[data-theme="terminal"] .start-btn:hover { background: var(--t-hi); }
+html[data-theme="terminal"] .start-orb, html[data-theme="terminal"] .start-btn:hover .start-orb, html[data-theme="terminal"] .start-btn[aria-expanded="true"] .start-orb { width: 20px; height: 20px; border-radius: 0; border: 0; background: var(--t-fg); box-shadow: none; filter: none; }
+html[data-theme="terminal"] .start-orb::before { content: none; }
+html[data-theme="terminal"] .start-glyph { font-size: 12px; font-weight: 600; text-shadow: none; }
+html[data-theme="terminal"] .start-label { font-size: 12px; font-weight: 500; letter-spacing: 0.06em; color: var(--t-fg); }
+html[data-theme="terminal"] .start-menu { padding: 0; border-radius: 0; color: var(--t-fg); background: var(--t-bg); border: 1px solid var(--t-fg); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 6px 6px 0 var(--t-fg); animation: none; }
+html[data-theme="terminal"] .sm-head { padding: 12px 14px; border-bottom: 1px solid var(--t-fg); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; text-shadow: none; }
+html[data-theme="terminal"] .sm-avatar { border-radius: 0; border: 1px solid var(--t-fg); background: var(--t-bg); box-shadow: none; }
+html[data-theme="terminal"] .sm-cols { gap: 0; }
+html[data-theme="terminal"] .sm-list { border: 0; border-right: 1px solid var(--t-fg); border-radius: 0; padding: 6px; }
+html[data-theme="terminal"] .sm-item, html[data-theme="terminal"] .sm-theme { border-radius: 0; }
+html[data-theme="terminal"] .sm-item:hover, html[data-theme="terminal"] .sm-item:focus-visible, html[data-theme="terminal"] .sm-theme:hover, html[data-theme="terminal"] .sm-theme[aria-pressed="true"] { background: var(--t-hi); box-shadow: inset 2px 0 0 var(--t-fg); }
+html[data-theme="terminal"] .sm-side { padding: 6px; text-shadow: none; }
+html[data-theme="terminal"] .sm-heading { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; opacity: 1; }
+html[data-theme="terminal"] .sm-foot { padding: 8px; border-top: 1px solid var(--t-fg); }
+html[data-theme="terminal"] .sm-power { border-radius: 0; border: 1px solid var(--t-fg); text-shadow: none; background: var(--t-fg); }
+html[data-theme="terminal"] .swatch { border-radius: 0; border-color: #000; }
+html[data-theme="terminal"] .ctx-menu { background: var(--t-bg); border-color: var(--t-fg); box-shadow: 4px 4px 0 var(--t-fg); }
+html[data-theme="terminal"] .ctx-item { border-radius: 0; }
+html[data-theme="terminal"] .ctx-item:hover, html[data-theme="terminal"] .ctx-item:focus-visible { color: var(--t-bg); background: var(--t-fg); border-color: var(--t-fg); }
+html[data-theme="terminal"] .ctx-menu hr { border-color: var(--t-fg); }
+html[data-theme="terminal"] .pc-logo { color: #000; }
+html[data-theme="terminal"] .tr-facts li { border-radius: 0; border-color: #000; background: #fff; }
+html[data-theme="terminal"] .theme-card { border-radius: 0; border-color: #000; background: #fff; }
+html[data-theme="terminal"] .theme-card:hover, html[data-theme="terminal"] .theme-card[aria-pressed="true"] { border-color: #000; box-shadow: 4px 4px 0 #000; }
+html[data-theme="terminal"] .bin-file { border-radius: 0; }
+html[data-theme="terminal"] .bin-file:hover, html[data-theme="terminal"] .bin-file.is-selected { background: #f2f2f2; border-color: #000; }
+html[data-theme="terminal"] .br-view:not(.no-fx) :is(.br-frame, .br-start) { filter: grayscale(1) contrast(1.15); }
+html[data-theme="terminal"] :is(.win-body :is(input, select, textarea), .msg-input, .msgr-suggest, .lb-wrap) { border-color: var(--t-fg); border-radius: 0; }
+html[data-theme="terminal"] :is(.msgr-msg, .acct-avatar) { border-radius: 0; box-shadow: none; border: 1px solid var(--t-fg); background: var(--t-bg); }
+html[data-theme="terminal"] .msgr-msg.is-mine { color: var(--t-bg); background: var(--t-fg); }
+html[data-theme="terminal"] .msgr-msg.is-mine .msgr-time { color: rgb(255 255 255 / 0.7); }
+html[data-theme="terminal"] body { background: #050a05; }
+html[data-theme="terminal"] .wp-sky { background: radial-gradient(ellipse at 50% 40%, #0c2412, #020502 70%), #020502; }
+html[data-theme="terminal"] .wp-noise { display: block; opacity: 1; background: repeating-linear-gradient(0deg, rgb(51 255 102 / 0.05) 0 1px, transparent 1px 3px); }
+html[data-theme="terminal"] :is(.di-label, .win-title, .start-label, .sm-head, .taskbar) { text-shadow: 0 0 6px rgb(51 255 102 / 0.55); }
+html[data-theme="terminal"] :is(.di-img, .sm-item [data-icon], .task-icon, .win-icon) { filter: grayscale(1) sepia(1) saturate(6) hue-rotate(65deg) brightness(1.2); }
+html[data-theme="terminal"] .win-client { --ink: #000; --muted: #555; color: #000; }
+html[data-theme="terminal"] .win-client:not(:has(iframe, .term)), html[data-theme="terminal"] .win-client:has(iframe, .term) .win-foot { filter: var(--phosphor); }
