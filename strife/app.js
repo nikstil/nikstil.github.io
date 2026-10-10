@@ -1047,7 +1047,8 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyQ') edge.slot = 'last'
   if (e.code === 'KeyG') edge.drop = true
   if (e.code === 'KeyE') edge.pickup = true
-  if (e.code === 'KeyF') edge.mode = true
+  if (e.code === 'KeyF') inspect()
+  if (e.code === 'KeyV') edge.mode = true
   if (SLOT_KEYS[e.code]) edge.slot = SLOT_KEYS[e.code]
   if (e.code === 'KeyB') toggleBuy()
   if (e.code === 'Escape') {
@@ -1106,6 +1107,11 @@ function playerCmd() {
   return cmd
 }
 
+/** F: have a look at what's in your hands (and its skin). */
+function inspect() {
+  if (mode !== 'play' || !game.player?.alive || paused) return
+  view?.inspect()
+}
 /** You died: the buy menu goes away (left open, it kept the mouse free and the trigger off into the next life). */
 function afterDeath() {
   if (buyOpen) toggleBuy(false)
@@ -1261,6 +1267,7 @@ if (coarse) {
       if (t === 'reload') edge.reload = true
       if (t === 'alt') altDown(true)
       if (t === 'mode') edge.mode = true
+      if (t === 'inspect') inspect()
       if (t === 'swap') cycleWeapon(1)
       if (t === 'nade') edge.slot = 'grenade'
       if (t === 'crouch') touch.crouch = !touch.crouch

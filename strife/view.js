@@ -131,6 +131,47 @@ function holdKnifeTp(g) {
   g.position.sub(mid)
 }
 
+// ================= Inspecting (F) =================
+// Key poses over the animation (0 to 1), as offsets from how it's normally held: x, y, z move it
+// (toward the middle, up, nearer), rx tilts the muzzle up, ry turns it to show its side, rz rolls
+// it over. Between poses it eases.
+const INSPECT = {
+  gun: {
+    secs: 3.6,
+    keys: [
+      [0, {}],
+      [0.16, { x: -0.09, y: 0.06, z: 0.02, rx: 0.1, ry: 1.0, rz: -0.22 }], // turned to show its side
+      [0.48, { x: -0.085, y: 0.055, z: 0.015, rx: 0.05, ry: 1.08, rz: -0.16 }],
+      [0.64, { x: -0.07, y: 0.075, z: 0.02, rx: -0.2, ry: 0.5, rz: 1.3 }], // rolled over: the other side, the top
+      [0.84, { x: -0.068, y: 0.07, z: 0.018, rx: -0.16, ry: 0.46, rz: 1.22 }],
+      [1, {}],
+    ],
+  },
+  knife: {
+    secs: 3.0,
+    keys: [
+      [0, {}],
+      [0.18, { x: -0.07, y: 0.03, z: 0.05, rx: -0.25, ry: 0.9, rz: -0.5 }], // the blade, side on
+      [0.45, { x: -0.065, y: 0.035, z: 0.05, rx: -0.2, ry: 0.95, rz: -0.42 }],
+      [0.62, { x: -0.06, y: 0.06, z: 0.04, rx: -0.3, ry: 0.4, rz: 2.5 }], // a flip of the wrist: the other side
+      [0.8, { x: -0.06, y: 0.055, z: 0.04, rx: -0.25, ry: 0.35, rz: 2.4 }],
+      [1, {}],
+    ],
+  },
+}
+const INSPECT_KEYS = ['x', 'y', 'z', 'rx', 'ry', 'rz']
+function inspectPose(keys, t) {
+  let i = 0
+  while (i < keys.length - 2 && t > keys[i + 1][0]) i++
+  const [t0, a] = keys[i]
+  const [t1, b] = keys[i + 1]
+  const u = Math.min(1, Math.max(0, (t - t0) / (t1 - t0)))
+  const e = u * u * (3 - 2 * u)
+  const o = {}
+  for (const k of INSPECT_KEYS) o[k] = (a[k] ?? 0) + ((b[k] ?? 0) - (a[k] ?? 0)) * e
+  return o
+}
+
 // ================= Soldiers (models.js) =================
 const soldier = (team, seed) => buildSoldier(team, seed)
 
@@ -151,7 +192,7 @@ export class View {
     this.vm = new THREE.Group()
     this.vmScene.add(this.vm)
     this.vmGunId = null
-    this.vmState = { kick: 0, swayX: 0, swayY: 0, lastYaw: 0, lastPitch: 0, bob: 0, draw: 0, slash: 0, flash: 0 }
+    this.vmState = { kick: 0, swayX: 0, swayY: 0, lastYaw: 0, lastPitch: 0, bob: 0, draw: 0, slash: 0, flash: 0, inspect: -1, inspectOut: 0 }
     this.tex = { soft: softTex(), smoke: smokeTex(), flash: flashTex(), hole: holeTex() }
   }
 
@@ -603,6 +644,30 @@ export class View {
       base[2] + st.kick * lerp(0.035, 0.02, ads),
     )
     h.rotation.set(st.kick * lerp(0.1, 0.03, ads) + rl * 0.5 - (1 - st.draw) * 0.6, (0.06 + st.swayX * 2) * (1 - ads) + Math.sin(st.slash * Math.PI) * 0.8, rl * 0.4 + Math.sin(st.slash * Math.PI) * -0.6)
+    // inspecting (F): turning it over to look at it; anything else you do puts it away
+    if (st.inspect >= 0) {
+      const busy = reloading || now < a.switchEnd || a.ads > 0.05 || a.scope || st.kick > 0.05 || st.slash > 0 || st.draw < 1
+      const look = INSPECT[kind === 'knife' ? 'knife' : 'gun']
+      if (busy) st.inspectStop = true // (once stopped, it stays stopped)
+      if (st.inspectStop) {
+        st.inspectOut = Math.max(0, st.inspectOut - dt * 6)
+        if (st.inspectOut === 0) st.inspect = -1
+      } else {
+        st.inspect += dt / look.secs
+        st.inspectOut = Math.min(1, st.inspectOut + dt * 6)
+        if (st.inspect >= 1) st.inspect = -1
+      }
+      if (st.inspect >= 0) {
+        const o = inspectPose(look.keys, st.inspect)
+        const k = st.inspectOut
+        h.position.x += o.x * k
+        h.position.y += o.y * k
+        h.position.z += o.z * k
+        h.rotation.x += o.rx * k
+        h.rotation.y += o.ry * k
+        h.rotation.z += o.rz * k
+      }
+    }
     if (st.flash > 0) {
       st.flash -= dt
       this.vmFlash.visible = st.flash > 0
@@ -613,9 +678,21 @@ export class View {
   kick(w, silenced = false) {
     this.vmState.kick = Math.min(1, this.vmState.kick + (w.kind === 'sniper' || w.type === 'shotgun' ? 1 : w.kind === 'pistol' ? 0.7 : 0.45))
     this.vmState.flash = silenced ? 0 : 0.05
+    this.vmState.inspectStop = true
   }
   slash() {
     this.vmState.slash = 1
+    this.vmState.inspectStop = true
+  }
+  /** Starts the inspect animation (F) for what's in your hands, or starts it over. */
+  inspect() {
+    if (!this.vmGunId) return
+    this.vmState.inspect = 0
+    this.vmState.inspectOut = 1
+    this.vmState.inspectStop = false
+  }
+  get inspecting() {
+    return this.vmState.inspect >= 0
   }
 
   /** Draws the frame. `cam` = { x, y, z, yaw, pitch, fov }. */

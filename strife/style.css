@@ -170,6 +170,7 @@ html.embed .home-link, body.playing .home-link { display: none; }
 .tb.mode { right: 180px; bottom: 220px; width: 44px; height: 44px; font-size: 11px; }
 .tb.mode[hidden] { display: none; }
 .tb.swap { right: 180px; bottom: 100px; width: 44px; height: 44px; }
+.tb.inspect { right: 236px; bottom: 160px; width: 44px; height: 44px; font-size: 18px; }
 .tb.nade { right: 180px; bottom: 160px; width: 44px; height: 44px; }
 .tb.buy-btn { left: 16px; top: 50%; width: 44px; height: 44px; }
 .tb.score-btn { left: 66px; top: 50%; width: 44px; height: 44px; }
