@@ -153,6 +153,7 @@ function hooks() {
       addKillfeed(e)
       if (e.victim === game.player) {
         deathInfo = e
+        afterDeath()
         if (e.attacker && e.attacker !== e.victim && !game.respawns && !game.practice) {
           const killerId = e.attacker.id
           const deathT = game.time
@@ -192,6 +193,7 @@ function hooks() {
       hideBanner()
       deathInfo = null
       spectIdx = 0
+      freshSpawn()
       if (game.player) {
         look.yaw = game.player.yaw
         look.pitch = 0
@@ -235,6 +237,7 @@ function hooks() {
     },
     respawn({ a }) {
       if (a !== game.player) return
+      freshSpawn()
       deathInfo = null
       camY = null
       look.yaw = a.yaw
@@ -1099,6 +1102,20 @@ function playerCmd() {
   return cmd
 }
 
+/** You died: the buy menu goes away (left open, it kept the mouse free and the trigger off into the next life). */
+function afterDeath() {
+  if (buyOpen) toggleBuy(false)
+  mouseFire = false
+  aimLatch = false
+}
+/** A new round or a respawn: nothing from the last life carries over (a half-pressed button, an open menu). */
+function freshSpawn() {
+  if (buyOpen && !game.canBuy(game.player)) toggleBuy(false)
+  edge.jump = edge.reload = edge.alt = edge.mode = edge.drop = edge.pickup = false
+  edge.slot = null
+  aimLatch = false
+}
+
 // ================= Buy menu =================
 let buyOpen = false
 let buyCat = -1
@@ -1357,6 +1374,8 @@ function fmtTime(s) {
 let radarT = 0
 let sbT = 0
 function updateHud(dt) {
+  // the buy menu closes itself when buying's over (time's up, out of the buy zone, dead)
+  if (buyOpen && game.player && !game.canBuy(game.player)) toggleBuy(false)
   const nb = $('#net-badge')
   nb.hidden = !net
   if (net) {

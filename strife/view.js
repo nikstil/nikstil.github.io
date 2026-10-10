@@ -109,6 +109,28 @@ export function gunModel(id, detail = 1, opts = {}) {
   return g
 }
 
+/**
+ * A knife in a fist: the handle runs up through the hand like a pistol grip (so the fingers wrap
+ * round it), and the blade comes out of the top, pointing up and forward, edge first.
+ * `hand`: where the fist is, in the holder's space. (The model points down -z from the guard,
+ * the handle behind it.)
+ */
+const KNIFE_TILT = 0.82 // how far the blade is raised from pointing straight ahead
+function holdKnife(g, hand) {
+  const handle = new THREE.Vector3(0, 0, 0.06) // the middle of the handle
+  g.rotation.set(KNIFE_TILT, 0.3, -0.3, 'XYZ')
+  g.updateMatrix()
+  const mid = handle.clone().applyMatrix4(g.matrix)
+  g.position.set(hand[0] - 0.012 - mid.x, hand[1] - 0.012 - mid.y, hand[2] - 0.03 - mid.z)
+}
+/** The same, for a soldier's hand (third person). */
+function holdKnifeTp(g) {
+  g.rotation.set(0.7, 0, 0)
+  g.updateMatrix()
+  const mid = new THREE.Vector3(0, 0, 0.06).applyMatrix4(g.matrix)
+  g.position.sub(mid)
+}
+
 // ================= Soldiers (models.js) =================
 const soldier = (team, seed) => buildSoldier(team, seed)
 
@@ -316,6 +338,7 @@ export class View {
         s.gun = gid ? gunModel(w.id, 1, { silenced: sl?.silenced, skin: this.skinMat?.(sl?.skin), stickers: (sl?.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) }) : null
         if (s.gun) {
           s.gun.scale.setScalar(1.3)
+          if (w.kind === 'knife') holdKnifeTp(s.gun)
           s.hand.add(s.gun)
         }
         s.gunId = gid
@@ -529,6 +552,7 @@ export class View {
         const sc = w.kind === 'rifle' || w.kind === 'sniper' || w.kind === 'heavy' ? 0.64 : w.kind === 'smg' ? 0.72 : w.kind === 'pistol' || w.kind === 'taser' ? 0.8 : 1
         g.scale.setScalar(sc)
         arms.scale.setScalar(sc)
+        if (w.kind === 'knife') holdKnife(g, right)
         holder.add(g, arms)
         this.vm.add(holder)
         this.vmGun = g

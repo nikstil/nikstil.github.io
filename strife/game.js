@@ -358,12 +358,14 @@ export class Game {
     a.armor = 100
     a.helmet = true
     a.crouch = 0
+    a.crouching = a.airTuck = false
     a.h = STAND_H
     a.onGround = true
     a.scope = 0
     a.ads = 0
     a.flashUntil = a.flashFull = 0
-    a.reloadEnd = a.switchEnd = 0
+    a.reloadEnd = a.switchEnd = a.nextFire = a.slowUntil = a.autoReload = 0
+    a.plant = a.defuse = a.burstLeft = 0
     a.recoil = 0
     a.damageBy = {}
     a.protectUntil = this.time + (first ? 0 : 1.5)
