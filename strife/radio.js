@@ -93,8 +93,8 @@ export class Chatter {
   say(b, text, team = false) {
     this.g.chat(b, text, team)
   }
-  radio(b, id, place) {
-    if (b.alive) this.g.radio(b, id, place)
+  radio(b, id, place, at) {
+    if (b.alive) this.g.radio(b, id, place, at)
   }
 
   // ---------------- Players talking to the bots
@@ -221,7 +221,7 @@ export class Chatter {
     if (!b.isBot || g.time - (this.spottedAt[enemy.id] ?? -99) < 8) return
     this.spottedAt[enemy.id] = g.time
     if (!chance(0.45) || !this.free(b.team, 3)) return
-    this.radio(b, 'spotted', g.world.calloutAt(enemy.pos.x, enemy.pos.z, enemy.pos.y))
+    this.radio(b, 'spotted', g.world.calloutAt(enemy.pos.x, enemy.pos.z, enemy.pos.y), enemy.pos)
   }
 }
 

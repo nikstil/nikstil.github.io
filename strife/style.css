@@ -494,3 +494,18 @@ html.touch .chat-log li:nth-last-child(n + 5) { display: none; }
   html.touch .bottom-right { right: 14px; bottom: auto; top: 168px; }
   html.touch .chat { left: 14px; bottom: auto; top: 262px; width: calc(100vw - 28px); }
 }
+
+/* ===== Waypoints: where a radio callout is (app.js) ===== */
+.waypoints { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.wp { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: 1px; width: 0; translate: 0 -14px; will-change: transform; }
+.wp-icon { display: grid; place-items: center; width: 22px; height: 22px; font-style: normal; background: var(--wp); rotate: 45deg; border-radius: 3px; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 12px var(--wp); animation: wp-in 0.35s ease-out; }
+.wp-icon span { rotate: -45deg; font: 800 13px/1 var(--font); color: #111; }
+.wp-place, .wp-dist { white-space: nowrap; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
+.wp-place { margin-top: 5px; font-size: 12px; font-weight: 700; color: var(--wp); }
+.wp-dist { font-size: 11px; color: #fff; opacity: 0.85; }
+.wp.edge .wp-place { display: none; }
+.wp.edge .wp-icon { width: 18px; height: 18px; }
+.wp.edge .wp-icon span { font-size: 11px; }
+@keyframes wp-in { from { scale: 1.8; opacity: 0; } }
+body.killcam-on .waypoints, body.replaying .waypoints { display: none; }
+body.no-radio :is(.radio-btn, .radio-menu, .waypoints, .place) { display: none !important; }

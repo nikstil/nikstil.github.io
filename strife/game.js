@@ -203,16 +203,35 @@ export class Game {
     this.emit('chat', { a, text, team: teamOnly ? a.team : null, dead: !a.alive })
     if (!a.isBot) this.chatter?.heard(a, text, teamOnly)
   }
-  /** A radio command: the team hears it, and the bots act on orders. place: where (a callout). */
-  radio(a, id, place) {
-    if (!a || !RADIO[id] || !a.alive) return
+  /**
+   * A radio command: the team hears it (and sees where, as a waypoint), and the bots act on orders.
+   * place: the callout's name; at: where it is (the speaker, or for "spotted", what they're
+   * looking at). Deathmatch and Arms Race have no radio: everyone's on their own.
+   */
+  radio(a, id, place, at) {
+    if (!a || !RADIO[id] || !a.alive || this.respawns) return
     if (!a.isBot) {
       if (this.time < (a.radioNext ?? 0)) return
       a.radioNext = this.time + 0.8
     }
-    if (place === undefined) place = this.world.calloutAt(a.pos.x, a.pos.z, a.pos.y)
-    this.emit('radio', { a, id, team: a.team, place: place || '' })
+    let where = null
+    if (RADIO[id].place) {
+      where = at ?? (id === 'spotted' && !a.isBot ? this.aimPoint(a) : a.pos)
+      where = { x: Math.round(where.x * 100) / 100, y: Math.round(where.y * 100) / 100, z: Math.round(where.z * 100) / 100 }
+    }
+    if (place === undefined) place = where ? this.world.calloutAt(where.x, where.z, where.y) : this.world.calloutAt(a.pos.x, a.pos.z, a.pos.y)
+    this.emit('radio', { a, id, team: a.team, place: place || '', at: where })
     if (!a.isBot) this.chatter?.order(a, id)
+  }
+  /** Where `a` is looking: the first wall or floor down their crosshair (or 30 m out). */
+  aimPoint(a) {
+    const e = eyeOf(a)
+    const d = dirOf(a.yaw, a.pitch)
+    const hit = this.world.trace(e.x, e.y, e.z, d.x, d.y, d.z, 80)
+    const t = hit ? Math.max(0, hit.t - 0.2) : 30
+    const p = { x: e.x + d.x * t, y: e.y + d.y * t, z: e.z + d.z * t }
+    p.y = this.world.floorAt(p.x, p.z, p.y + 0.5)
+    return p
   }
   sound(name, at, opts = {}) {
     this.hooks.sound?.(name, at, opts)

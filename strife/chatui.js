@@ -36,9 +36,8 @@ export function initChat(env) {
       if (d.team) li.append(tag('(Team)', 'to'))
       li.append(who(d.a), document.createTextNode(': ' + d.text))
     } else {
+      // (no voice: where it is shows up as a waypoint instead)
       li.append(tag('📻', 'ico'), who(d.a), document.createTextNode(': ' + radioText(d.id, d.place)))
-      if (d.a !== me) env.audio.play('radio', { gain: 0.5 })
-      speak(d)
     }
     log.append(li)
     while (log.children.length > 14) log.firstChild.remove()
@@ -54,18 +53,6 @@ export function initChat(env) {
     s.className = a?.team ?? ''
     s.textContent = a?.name ?? '?'
     return s
-  }
-  // a radio line out loud (the browser's speech voices), if there are any and it's switched on
-  function speak(d) {
-    if (!env.settings.radioVoice || env.audio.isMuted() || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return
-    try {
-      const u = new SpeechSynthesisUtterance(radioText(d.id, d.place))
-      u.rate = 1.15
-      u.pitch = 0.7 + ((d.a?.id ?? 0) % 5) * 0.12
-      u.volume = 0.7
-      if (speechSynthesis.pending) speechSynthesis.cancel()
-      speechSynthesis.speak(u)
-    } catch {}
   }
   /** Lines fade after a while (all of them come back while you type). */
   function tick() {
@@ -125,8 +112,10 @@ export function initChat(env) {
   // ---------------- The radio
   function openRadio(which) {
     if (!env.playing()) return
-    const me = env.game()?.player
-    if (!me?.alive) return
+    const g = env.game()
+    const me = g?.player
+    // (Deathmatch and Arms Race have no radio)
+    if (!me?.alive || g.respawns) return
     menu = which
     const m = RADIO_MENUS[which]
     menuEl.hidden = false

@@ -30,6 +30,7 @@
 
     <!-- ===== HUD ===== -->
     <div class="hud" id="hud" hidden>
+      <div class="waypoints" id="waypoints" aria-hidden="true"></div>
       <div class="radar-wrap">
         <canvas class="radar" id="radar" width="200" height="200" aria-label="Radar"></canvas>
         <div class="place" id="place"></div>
@@ -214,7 +215,6 @@
         </label>
         <label class="setting check"><input type="checkbox" id="set-invert"><span>Invert mouse</span></label>
         <label class="setting check"><input type="checkbox" id="set-killcam"><span>Killcam (watch how you died)</span></label>
-        <label class="setting check"><input type="checkbox" id="set-radio-voice"><span>Radio voices (read the radio out loud)</span></label>
         <label class="setting check"><input type="checkbox" id="set-aim-toggle"><span>Toggle aim (right click once to aim down the sights, again to stop)</span></label>
         <button class="go" data-do="back">Done</button>
       </div>
