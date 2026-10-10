@@ -75,6 +75,7 @@ export class Brain {
     this.pathGoal = null
     this.pathIdx = 0
     this.wp = 0
+    this.plantSpot = null
     this.target = null
     this.seen = {}
     this.reactAt = 0
@@ -407,7 +408,11 @@ export class Brain {
       // On the site
       const site = as.lurk ? (plan.site === 'A' ? 'B' : 'A') : plan.site
       if (a.inv.bomb) {
-        if (!this.plantSpot) this.plantSpot = pick(m.plant[site])
+        // (a spot on the site this round is going for: the plan can change, and the bomb change hands)
+        if (!this.plantSpot || this.plantSite !== site) {
+          this.plantSpot = pick(m.plant[site])
+          this.plantSite = site
+        }
         this.goTo(this.plantSpot, 0.5)
         if (g.inSite(a) && Math.hypot(this.plantSpot[0] + 0.5 - a.pos.x, this.plantSpot[1] + 0.5 - a.pos.z) < 1.2) return { use: true }
         return {}
