@@ -221,6 +221,9 @@ export class World {
   }
   calloutAt(x, z, y = 0) {
     for (const [name, rr] of this.callouts) if (this.inRect(rr, x, z, y)) return name
+    // on top of a crate or a railing, say: the place beside it
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]])
+      for (const [name, rr] of this.callouts) if (this.inRect(rr, x + dx, z + dz, y)) return name
     return ''
   }
   inRect(rr, x, z, y = 0) {
