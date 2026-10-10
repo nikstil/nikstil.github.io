@@ -7,7 +7,9 @@
 //
 // Coordinates: x goes east, z goes south, y up, all in metres from the map's top-left corner.
 
-export const WALL_H = 7
+import DUST2 from './plans/dust2.js'
+
+export const WALL_H = 12
 export const INF = 1e6
 export const MAXS = 4 // spans per cell at most
 
@@ -126,146 +128,153 @@ const MAT = Object.fromEntries(MAT_NAMES.map((n, i) => [n, i]))
 const r = (x0, z0, x1, z1, y0 = -INF, y1 = INF) => ({ x0, z0, x1, z1, y0, y1 })
 
 // ============================================================================================
-// Dust 2: T spawn at the bottom, CT spawn at the top. A is top right (long A up the east side,
-// short A over catwalk from mid), B is top left (through the tunnels, or B doors from CT).
+// Maps from traced floor plans (plans/*.js): 1:1 with the real thing (a cell is a metre; heights
+// come from the overview's colour ramp). The plan gives every cell's floor and the crates; build()
+// adds what an overview can't show, like the roofs over tunnels.
+// ============================================================================================
+const PLAN_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const unrle = (row) => row.replace(/(\D)(\d*)/g, (_, c, n) => c.repeat(n ? +n : 1))
+function fromPlan(plan, { fix, build } = {}) {
+  const H = plan.rows.map((row) => [...unrle(row)].map((c) => (c === '#' ? null : PLAN_ALPHA.indexOf(c) * 0.2)))
+  const at = (x, z) => H[z]?.[x] ?? null
+  // Fixes for what an overview can't say: a flight of stairs is drawn as a sudden change of
+  // colour, so it traces as a cliff (ramp() makes it a slope again), and markings make a few
+  // bumps (flat() levels an area).
+  const shape = {
+    /** A slope across the rectangle along axis, from the floor at its first row to the floor at its last. */
+    ramp(x0, z0, x1, z1, axis) {
+      const n = axis === 'x' ? x1 - x0 : z1 - z0
+      for (let z = z0; z < z1; z++)
+        for (let x = x0; x < x1; x++) {
+          if (at(x, z) == null) continue
+          // the ends of this line of the ramp (the first and last open cells along it)
+          let a = null
+          let b = null
+          for (let k = 0; k < n && a == null; k++) a = axis === 'x' ? at(x0 + k, z) : at(x, z0 + k)
+          for (let k = n - 1; k >= 0 && b == null; k--) b = axis === 'x' ? at(x0 + k, z) : at(x, z0 + k)
+          const t = ((axis === 'x' ? x - x0 : z - z0) + 0.5) / n
+          H[z][x] = Math.round((a + (b - a) * t) * 20) / 20
+        }
+    },
+    /** Levels a rectangle (at height h, or the middle height of what's there). */
+    flat(x0, z0, x1, z1, h = null) {
+      const hs = []
+      for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) if (at(x, z) != null) hs.push(at(x, z))
+      hs.sort((p, q) => p - q)
+      const v = h ?? hs[hs.length >> 1]
+      for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) if (at(x, z) != null) H[z][x] = v
+    },
+  }
+  fix?.(shape)
+  /** The highest floor in a rectangle (for roofs over a tunnel that slopes, and crates). */
+  const top = (x0, z0, x1, z1) => {
+    let h = 0
+    for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) h = Math.max(h, at(x, z) ?? 0)
+    return h
+  }
+  const g = carve(plan.w, plan.d, (m) => {
+    for (let z = 0; z < plan.d; z++)
+      for (let x = 0; x < plan.w; x++) {
+        const h = at(x, z)
+        if (h != null) m.room(x, z, x + 1, z + 1, h, h < 1.8 ? 'path' : 'ground')
+      }
+    // crates: one high on their own, stacked a bit higher in bigger piles
+    for (const [x0, z0, x1, z1] of plan.crates) m.box(x0, z0, x1, z1, top(x0, z0, x1, z1) + ((x1 - x0) * (z1 - z0) >= 4 ? 1.6 : 1.1))
+    build?.(m, top)
+  })
+  return { ...g, floorAt: at }
+}
+
+// ============================================================================================
+// Dust 2, 1:1: T spawn at the bottom, CT spawn at the top. A is top right (long A up the east
+// side, short A over catwalk from mid), B is top left (through the tunnels, or B doors from CT mid).
 // ============================================================================================
 function dust2() {
-  const g = carve(96, 100, (m) => {
-    // T spawn and the ramp down to top mid ("suicide")
-    m.room(40, 84, 62, 97, 1.5)
-    m.room(40, 72, 56, 80, 0)
-    m.ramp(44, 80, 52, 86, 0, 1.5, 'z')
-    // Mid, xbox, mid doors, CT mid
-    m.room(43, 28, 51, 72, 0, 'path')
-    m.box(45, 60, 47, 62, 1.1)
-    m.room(44, 24, 50, 28, 0, 'path')
-    m.roof(44, 24, 50, 28, 3.6)
-    m.room(38, 10, 54, 24, 0)
-    // CT spawn (up a ramp from CT mid) and its way onto A
-    m.ramp(54, 12, 60, 22, 0, 1.5, 'x')
-    m.room(60, 4, 74, 22, 1.5)
-    m.room(74, 8, 76, 16, 1.75, 'path')
-    // A site, goose, the default boxes, A car
-    m.room(76, 4, 94, 30, 2.0, 'path')
-    m.room(91, 1, 95, 4, 2.0, 'path')
-    m.box(84, 12, 87, 15, 3.1)
-    m.box(85, 13, 86, 14, 4.0)
-    m.box(79, 20, 81, 24, 3.4, 'car')
-    m.box(91, 22, 94, 24, 3.0, 'low')
-    // A ramp, long A (with blue), the bottom of long, pit, long doors, outside long
-    m.ramp(80, 30, 94, 36, 2.0, 1.0, 'z')
-    m.room(82, 36, 94, 60, 1.0)
-    m.box(84, 54, 87, 59, 3.6, 'metal')
-    m.room(74, 60, 94, 68, 1.0)
-    m.ramp(88, 60, 94, 64, 1.0, -0.5, 'z')
-    m.room(88, 64, 94, 76, -0.5)
-    m.room(74, 68, 80, 76, 1.0, 'path')
-    m.roof(74, 70, 80, 74, 3.8)
-    m.room(68, 76, 80, 84, 1.0)
-    m.ramp(62, 84, 72, 92, 1.5, 1.0, 'x')
-    // Catwalk (with the low wall you see mid over), its stairs, short A
-    m.room(53, 26, 60, 46, 2.0, 'path')
-    m.box(51, 28, 53, 46, 3.0, 'low')
-    m.ramp(51, 46, 60, 50, 0, 2.0, 'x')
-    m.room(60, 26, 76, 32, 2.0, 'path')
-    m.box(66, 26, 68, 28, 3.1)
-    // Lower tunnels, the tunnel stairs, upper tunnels, outside tunnels
-    m.room(30, 38, 43, 44, 0, 'path')
-    m.roof(30, 38, 43, 44, 3.2)
-    m.ramp(30, 44, 36, 52, 0, 1.0, 'z')
-    m.roof(30, 44, 36, 52, 4.2)
-    m.room(10, 52, 36, 62, 1.0, 'path')
-    m.roof(10, 52, 36, 62, 4.4)
-    m.room(22, 62, 34, 78, 1.0)
-    m.room(26, 78, 36, 90, 1.0)
-    m.ramp(36, 84, 42, 92, 1.0, 1.5, 'x')
-    m.box(24, 66, 26, 69, 2.1)
-    // B tunnels out onto B site
-    m.room(10, 36, 18, 52, 1.0, 'path')
-    m.roof(10, 36, 18, 52, 4.4)
-    m.ramp(10, 30, 18, 36, 0, 1.0, 'z')
-    m.roof(10, 32, 18, 36, 4.0)
-    // B site: platform, car, the big boxes by the tunnel, B doors to CT mid
-    m.room(4, 4, 34, 30, 0)
-    m.room(6, 4, 20, 9, 1.0, 'step')
-    m.ramp(6, 9, 20, 11, 1.0, 0, 'z')
-    m.box(26, 6, 30, 10, 1.4, 'car')
-    m.box(19, 22, 22, 25, 1.7)
-    m.box(19, 22, 20, 23, 2.6)
-    m.box(5, 24, 7, 27, 1.1)
-    m.room(34, 14, 38, 20, 0, 'path')
-    m.roof(34, 14, 38, 20, 3.6)
+  const g = fromPlan(DUST2, {
+    fix(s) {
+      s.flat(30, 99, 51, 108) // T spawn
+      s.ramp(44, 92, 58, 102, 'z') // down from T spawn towards top mid
+      s.ramp(12, 81, 25, 91, 'z') // T spawn down to outside tunnels
+      s.ramp(5, 65, 26, 73, 'z') // outside tunnels up to upper tunnels
+      s.ramp(24, 47, 34, 57, 'x') // the stairs down to lower tunnels
+      s.ramp(64, 33, 73, 42, 'z') // short A stairs
+      s.ramp(62, 17, 73, 31, 'x') // CT spawn up to A
+      s.flat(82, 14, 93, 24) // A site
+      s.flat(14, 9, 27, 21) // B site
+      s.ramp(3, 17, 26, 24, 'z') // up from the front of B onto the site
+    },
+    build(m, top) {
+      // the tunnels have roofs: upper tunnels, the way down to lower tunnels, and B tunnels
+      m.roof(0, 48, 24, 57, top(0, 48, 24, 57) + 3.4)
+      m.roof(28, 43, 44, 50, top(28, 43, 44, 50) + 3.2)
+      m.roof(5, 36, 12, 48, top(5, 36, 12, 48) + 3.4)
+    },
   })
   return {
     id: 'dust2',
     name: 'Dust 2',
-    blurb: 'Long A, catwalk, the tunnels. Sand in everything.',
+    blurb: 'Long A, catwalk, the tunnels. Sand in everything. Life size.',
     ...g,
     look: 'dust',
     spawns: {
-      T: [[44, 90], [48, 92], [52, 90], [56, 92], [50, 95], [46, 94], [54, 94], [58, 89], [42, 88], [60, 94]],
-      CT: [[64, 8], [68, 10], [64, 14], [70, 16], [66, 18], [72, 6], [62, 12], [70, 12], [66, 6], [72, 20]],
+      T: [[30, 100], [34, 100], [38, 100], [42, 100], [46, 100], [32, 104], [36, 104], [40, 104], [44, 104], [48, 104]],
+      CT: [[62, 19], [65, 19], [68, 19], [62, 23], [65, 23], [68, 23], [62, 27], [65, 27], [68, 27], [70, 21]],
     },
-    buy: { T: r(36, 80, 64, 98), CT: r(54, 3, 76, 23) },
-    sites: { A: r(78, 4, 94, 30), B: r(5, 5, 33, 29) },
-    plant: { A: [[86, 18], [82, 10], [90, 24], [88, 8]], B: [[12, 14], [24, 13], [15, 22], [10, 19]] },
+    buy: { T: r(20, 92, 56, 112), CT: r(56, 14, 76, 32) },
+    sites: { A: r(82, 14, 92, 24), B: r(13, 8, 25, 20) },
+    plant: { A: [[87, 15], [90, 20], [84, 22], [89, 22]], B: [[16, 11], [20, 14], [17, 17], [22, 12]] },
     callouts: [
-      ['Goose', r(90, 1, 95, 6)],
-      ['A Site', r(76, 4, 94, 30)],
-      ['A Ramp', r(80, 30, 94, 36)],
-      ['Pit', r(88, 60, 94, 76)],
-      ['Long A', r(82, 36, 94, 60)],
-      ['Long Doors', r(74, 60, 88, 76)],
-      ['Outside Long', r(62, 76, 80, 92)],
-      ['Short A', r(60, 26, 76, 32)],
-      ['Catwalk', r(51, 26, 60, 50)],
-      ['Mid Doors', r(44, 24, 50, 28)],
-      ['CT Mid', r(38, 10, 54, 24)],
-      ['CT Spawn', r(54, 3, 76, 23)],
-      ['B Doors', r(34, 14, 38, 20)],
-      ['B Platform', r(4, 4, 20, 11)],
-      ['B Site', r(4, 4, 34, 30)],
-      ['B Tunnels', r(10, 30, 18, 52)],
-      ['Upper Tunnels', r(10, 52, 36, 62)],
-      ['Lower Tunnels', r(30, 38, 43, 52)],
-      ['Outside Tunnels', r(22, 62, 42, 92)],
-      ['Xbox', r(43, 56, 51, 64)],
-      ['Top Mid', r(40, 64, 56, 80)],
-      ['Mid', r(43, 28, 51, 72)],
-      ['T Spawn', r(36, 80, 64, 98)],
+      ['Goose', r(92, 4, 101, 12)],
+      ['A Site', r(72, 4, 101, 30)],
+      ['Pit', r(90, 62, 104, 80)],
+      ['A Ramp', r(84, 30, 104, 40)],
+      ['Long Doors', r(70, 60, 90, 80)],
+      ['Long A', r(72, 30, 104, 62)],
+      ['Outside Long', r(56, 80, 80, 100)],
+      ['Short A', r(64, 28, 72, 40)],
+      ['Catwalk', r(53, 40, 72, 50)],
+      ['CT Spawn', r(56, 14, 74, 31)],
+      ['Xbox', r(48, 42, 54, 50)],
+      ['Mid Doors', r(42, 28, 53, 34)],
+      ['CT Mid', r(31, 14, 56, 31)],
+      ['B Doors', r(24, 10, 31, 31)],
+      ['B Site', r(2, 2, 25, 34)],
+      ['B Tunnels', r(4, 34, 14, 48)],
+      ['Lower Tunnels', r(27, 42, 46, 50)],
+      ['Upper Tunnels', r(0, 48, 30, 58)],
+      ['Mid', r(42, 33, 54, 64)],
+      ['Outside Tunnels', r(2, 58, 30, 90)],
+      ['Top Mid', r(38, 62, 58, 82)],
+      ['T Ramp', r(50, 92, 72, 113)],
+      ['T Spawn', r(0, 82, 52, 113)],
     ],
     // How the Terrorists can go at each site (waypoints, from spawn).
     routes: {
       A: [
-        { name: 'Long', path: [[56, 88], [66, 88], [72, 80], [77, 72], [82, 64], [88, 50], [88, 38], [86, 22]] },
-        { name: 'Short', path: [[48, 84], [48, 74], [47, 62], [48, 50], [56, 48], [57, 38], [57, 29], [68, 29], [80, 26]] },
+        { name: 'Long', path: [[44, 100], [55, 100], [62, 92], [70, 82], [76, 70], [86, 64], [94, 50], [92, 35], [87, 20]] },
+        { name: 'Short', path: [[40, 100], [47, 90], [48, 72], [48, 58], [49, 50], [56, 46], [60, 46], [67, 42], [68, 32], [78, 24], [86, 20]] },
       ],
       B: [
-        { name: 'Tunnels', path: [[44, 90], [34, 86], [30, 76], [28, 66], [22, 57], [14, 48], [14, 38], [14, 30], [16, 18]] },
-        { name: 'Mid to B', path: [[48, 84], [47, 66], [47, 48], [44, 41], [34, 41], [33, 50], [22, 57], [14, 46], [14, 32], [18, 18]] },
+        { name: 'Tunnels', path: [[34, 100], [22, 92], [16, 80], [15, 66], [15, 53], [9, 46], [9, 38], [12, 28], [18, 14]] },
+        { name: 'Mid to B', path: [[40, 100], [47, 88], [48, 64], [46, 47], [36, 46], [29, 50], [15, 53], [9, 42], [14, 26], [18, 14]] },
       ],
     },
     // Where the Counter-Terrorists hold, and what they watch.
     holds: {
-      A: [{ at: [86, 31], look: [88, 50] }, { at: [78, 27], look: [64, 29] }, { at: [92, 6], look: [86, 34] }, { at: [72, 13], look: [82, 26] }],
-      B: [{ at: [12, 20], look: [14, 34] }, { at: [24, 6], look: [14, 30] }, { at: [32, 24], look: [14, 32] }, { at: [8, 7], look: [16, 28] }],
-      mid: [{ at: [47, 18], look: [47, 50] }, { at: [57, 34], look: [47, 64] }],
+      A: [{ at: [92, 30], look: [94, 50] }, { at: [76, 28], look: [68, 36] }, { at: [96, 8], look: [90, 32] }, { at: [74, 20], look: [86, 24] }],
+      B: [{ at: [18, 22], look: [9, 40] }, { at: [8, 8], look: [10, 36] }, { at: [22, 28], look: [9, 42] }, { at: [27, 18], look: [16, 30] }],
+      mid: [{ at: [47, 22], look: [48, 55] }, { at: [66, 44], look: [50, 60] }],
     },
     // Where the Terrorists sit after planting, and what they watch.
     posts: {
-      A: [{ at: [88, 33], look: [86, 12] }, { at: [70, 29], look: [80, 18] }, { at: [92, 26], look: [74, 12] }],
-      B: [{ at: [14, 34], look: [16, 16] }, { at: [22, 26], look: [36, 17] }, { at: [8, 12], look: [34, 17] }],
+      A: [{ at: [92, 32], look: [86, 18] }, { at: [70, 34], look: [82, 20] }, { at: [98, 24], look: [74, 20] }],
+      B: [{ at: [9, 40], look: [18, 14] }, { at: [26, 24], look: [34, 20] }, { at: [6, 12], look: [28, 20] }],
     },
-    // Decorations: open double doors (x, z, width, axis the doorway runs along, height of its floor),
-    // palms and awnings.
     props: [
-      { type: 'doors', x: 74, z: 72, w: 6, axis: 'x', y: 1.0, h: 2.8 },
-      { type: 'doors', x: 44, z: 26, w: 6, axis: 'x', y: 0, h: 2.8 },
-      { type: 'doors', x: 36, z: 14, w: 6, axis: 'z', y: 0, h: 2.8 },
-      { type: 'palm', x: 41, z: 95, y: 1.5 },
-      { type: 'palm', x: 61, z: 85, y: 1.5 },
-      { type: 'palm', x: 93, z: 29, y: 2.0 },
-      { type: 'palm', x: 5, z: 29, y: 0 },
+      { type: 'palm', x: 4, z: 100, y: g.floorAt(4, 100) },
+      { type: 'palm', x: 60, z: 108, y: g.floorAt(60, 108) },
+      { type: 'palm', x: 99, z: 26, y: g.floorAt(99, 26) },
+      { type: 'palm', x: 5, z: 30, y: g.floorAt(5, 30) },
     ],
     sky: { top: '#6a9bd8', bottom: '#e2d6ba', fog: '#ddd2b8', sun: '#fff1d6', ground: '#b0956c' },
   }
