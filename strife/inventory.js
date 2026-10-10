@@ -9,6 +9,7 @@ import {
   SKINS, RARITY, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem, skinMaterial, itemKey,
   loadInventory, saveInventory, addItem, toggleEquip, equippedFor, skinDesc, randomSkinFor,
   kindOf, stickerById, musicById, stickerMaterial, stickerUrl, STICKER_GRADE, tradeUpOutcomes, signTradeUp, MUSIC_KITS,
+  agentById, equippedAgents, patternOf,
 } from './skins.js'
 
 const $ = (s, el = document) => el.querySelector(s)
@@ -53,11 +54,20 @@ export function equippedSkins() {
   inv = loadInventory()
   const out = {}
   for (const w of Object.keys(inv.equipped)) {
-    if (w === 'music') continue
+    if (w === 'music' || w.startsWith('agent')) continue
     const d = skinDesc(equippedFor(inv, w))
     if (d) out[w] = d
   }
+  // (and who you play as)
+  const ag = equippedAgents(inv)
+  out.agentT = ag.T
+  out.agentCT = ag.CT
   return out
+}
+/** Your agents for the two sides: { T, CT } (ids, or null). */
+export function myAgents() {
+  inv = loadInventory()
+  return equippedAgents(inv)
 }
 /** Your music kit (the default one if none). */
 export function musicKit() {
@@ -117,7 +127,7 @@ function giveCase() {
   return c.name
 }
 
-const equipKey = (it) => (kindOf(it) === 'music' ? 'music' : kindOf(it) === 'skin' ? skinById[it.skin].weapon : null)
+const equipKey = (it) => (kindOf(it) === 'music' ? 'music' : kindOf(it) === 'agent' ? `agent${agentById[it.agent]?.team}` : kindOf(it) === 'skin' ? skinById[it.skin].weapon : null)
 const isEquipped = (it) => equipKey(it) && inv.equipped[equipKey(it)] === it.uid
 
 // ---------------- The screen
@@ -184,7 +194,7 @@ export function initInventory(opts) {
     else if (act === 'reel-equip') {
       const it = inv.items.find((x) => x.uid === Number(t.dataset.uid))
       if (it && kindOf(it) === 'music') inv.equipped.music = it.uid
-      else if (it && kindOf(it) === 'skin') toggleEquip(inv, it.uid)
+      else if (it && (kindOf(it) === 'skin' || kindOf(it) === 'agent')) toggleEquip(inv, it.uid)
       save()
       closeReel()
       tab = 'items'
@@ -341,7 +351,7 @@ function render() {
 function itemsTab(body) {
   const bar = document.createElement('div')
   bar.className = 'inv-filters'
-  for (const [v, label] of [['all', 'All'], ['pistol', 'Pistols'], ['primary', 'Guns'], ['knife', 'Knives'], ['sticker', 'Stickers'], ['music', 'Music'], ['equipped', 'Equipped']]) {
+  for (const [v, label] of [['all', 'All'], ['pistol', 'Pistols'], ['primary', 'Guns'], ['knife', 'Knives'], ['agent', 'Agents'], ['sticker', 'Stickers'], ['music', 'Music'], ['equipped', 'Equipped']]) {
     const b = document.createElement('button')
     b.dataset.inv = 'filter'
     b.dataset.v = v
@@ -355,7 +365,7 @@ function itemsTab(body) {
   const list = inv.items.filter((it) => {
     const kind = kindOf(it)
     if (want === 'guns-for-stickers') return kind === 'skin' && skinById[it.skin].weapon !== 'knife'
-    if (want === 'sticker' || want === 'music') return kind === want
+    if (want === 'sticker' || want === 'music' || want === 'agent') return kind === want
     if (want === 'equipped') return isEquipped(it)
     if (want === 'all') return true
     if (kind !== 'skin') return false
@@ -417,11 +427,19 @@ function details(it) {
     $('.rar', d).textContent = r.name + (WEAPONS[s.weapon].team ? ` · ${WEAPONS[s.weapon].team === 'T' ? 'Terrorist' : 'Counter-Terrorist'} weapon` : '')
     row('Exterior', wearOf(it.wear).name)
     row('Float', it.wear.toFixed(4))
-    row('Pattern', `#${it.seed}${it.st != null ? ` · StatTrak™ kills: ${it.st}` : ''}`)
+    const pat = patternOf(it)
+    row('Pattern', `#${it.seed}${pat ? ` · ${pat.note}` : ''}`)
+    if (it.st != null) row('StatTrak™', `${it.st} kills`)
     if (it.stickers?.length) row('Stickers', it.stickers.map((k) => stickerById[k]?.name).join(', '))
     btn(eq ? 'Unequip' : `Equip on the ${WEAPONS[s.weapon].name}`, 'equip', eq ? 'ghost' : 'go')
     if (s.weapon !== 'knife' && (it.stickers ?? []).length < 4) btn('🏷️ Apply a sticker', 'apply', 'ghost')
     if (it.stickers?.length) btn('Scrape the last sticker', 'scrape', 'ghost')
+  } else if (kind === 'agent') {
+    const ag = agentById[it.agent]
+    $('.rar', d).textContent = `${r.name} agent · ${ag.team === 'T' ? 'Terrorist' : 'Counter-Terrorist'} side`
+    row('Who', `${ag.name}, ${ag.title}`)
+    row('Wears', `${{ bare: 'No hat', beret: 'A beret', hood: 'A hood', cowboy: 'A cowboy hat', cap: 'A cap', helmet: 'A helmet', gasmask: 'A gas mask', balaclava: 'A balaclava', shemagh: 'A shemagh', beanie: 'A beanie' }[ag.look.head]}${ag.look.shades ? ', shades' : ''}${ag.look.tie ? ', a tie' : ''}`)
+    btn(eq ? 'Unequip' : `Play as ${ag.name} (${ag.team} side)`, 'equip', eq ? 'ghost' : 'go')
   } else if (kind === 'sticker') {
     $('.rar', d).textContent = `${r.name} sticker`
     row('Finish', { paper: 'Paper', holo: 'Holo', foil: 'Foil', gold: 'Gold' }[stickerById[it.sticker]?.style] ?? 'Paper')
@@ -446,7 +464,7 @@ function casesTab(body) {
     el.className = 'case-card'
     el.style.setProperty('--c', c.color)
     el.innerHTML = `<div class="case-box"><span></span></div><h3></h3><p class="case-n"></p><div class="case-skins"></div><button class="go" data-inv="open"></button>`
-    $('.case-box span', el).textContent = c.kind === 'sticker' ? 'Stickers' : c.kind === 'music' ? '♫ Music' : c.name.replace(' Case', '')
+    $('.case-box span', el).textContent = c.kind === 'sticker' ? 'Stickers' : c.kind === 'music' ? '♫ Music' : c.kind === 'agent' ? '🕵 Agents' : c.name.replace(' Case', '')
     $('h3', el).textContent = c.name
     $('.case-n', el).textContent = n ? `You have ${n}` : 'None yet: they drop when you play'
     const sk = $('.case-skins', el)
@@ -459,6 +477,7 @@ function casesTab(body) {
     }
     if (c.kind === 'sticker') for (const id of c.stickers) line(`Sticker | ${stickerById[id].name}`, RARITY[stickerById[id].rarity].color)
     else if (c.kind === 'music') for (const id of c.music) line(`${musicById[id].artist}, ${musicById[id].name}`, RARITY.milspec.color)
+    else if (c.kind === 'agent') for (const id of c.agents) line(`${agentById[id].name} | ${agentById[id].title} (${agentById[id].team})`, RARITY[agentById[id].rarity].color)
     else {
       let gold = false
       for (const id of c.skins) {
@@ -615,13 +634,14 @@ function reveal(it, title = 'You got') {
   $('#reel-title').textContent = title
   $('img', res).src = kindOf(it) === 'skin' ? iconFor(it, 400, 160) : iconFor(it)
   $('h3', res).textContent = itemName(it)
-  $('p', res).textContent = kindOf(it) === 'skin' ? `${r.name} · ${wearOf(it.wear).name} (${it.wear.toFixed(4)})` : r.name
+  const pat = kindOf(it) === 'skin' ? patternOf(it) : null
+  $('p', res).textContent = kindOf(it) === 'skin' ? `${r.name} · ${wearOf(it.wear).name} (${it.wear.toFixed(4)})${pat ? ` · ${pat.note}` : ''}` : kindOf(it) === 'agent' ? `${r.name} agent · ${agentById[it.agent]?.team} side` : r.name
   const eb = $('[data-inv="reel-equip"]', res)
   eb.dataset.uid = it.uid
   eb.hidden = kindOf(it) === 'sticker'
   res.hidden = false
-  const top = kindOf(it) === 'skin' ? skinById[it.skin].rarity : stickerById[it.sticker]?.rarity
-  audio?.play(top === 'covert' || top === 'gold' || top === 'classified' ? 'win' : 'buy')
+  const top = kindOf(it) === 'skin' ? skinById[it.skin].rarity : kindOf(it) === 'agent' ? agentById[it.agent]?.rarity : stickerById[it.sticker]?.rarity
+  audio?.play(top === 'covert' || top === 'gold' || top === 'classified' || patternOf(it)?.gem ? 'win' : 'buy')
   if (kindOf(it) === 'music') audio?.music?.(musicById[it.music], 'mvp')
 }
 function showReveal(it, title) {

@@ -7,12 +7,12 @@ import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP, adsOf } from './weapons.js'
 import { gunIcon } from './icons.js'
-import { skinMaterial, stickerMaterial } from './skins.js'
+import { skinMaterial, stickerMaterial, randomAgent } from './skins.js'
 import { initChat } from './chatui.js'
 import { initRanks } from './rankui.js'
 import { initInvites, isUserId } from './invite.js'
 import { rankBadge } from './ranks.js'
-import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
+import { initInventory, showInventory, myAgents, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
 import { openHub, NetHost, NetClient, makeCode } from './net.js'
 import { track } from './stats.js'
 import { Recorder, Player, clip, saveReplay, listReplays, loadReplay, deleteReplay } from './replay.js'
@@ -267,6 +267,11 @@ function start({ demo = false, practice = false, host = false } = {}) {
   const map = MAPS[settings.map]
   const team = demo ? null : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
   game = new Game({ map, team, mode: demo ? 'competitive' : settings.mode, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
+  // who everyone plays as: you, your agents; a bot, now and then, a random one
+  for (const a of game.actors) {
+    if (a === game.player) a.agents = myAgents()
+    else if (a.isBot && Math.random() < 0.25) a.agents = { T: randomAgent('T'), CT: randomAgent('CT') }
+  }
   if (!demo) {
     rankCtx = rankUi.startMatch(game, settings.map)
     rankUi.tagActors(game)

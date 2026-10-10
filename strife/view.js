@@ -6,6 +6,7 @@ import { buildLevel, buildSky } from './render.js'
 import { WEAPONS, adsOf } from './weapons.js'
 import { buildGun } from './guns.js'
 import { buildSoldier, buildViewArms } from './models.js'
+import { agentLook } from './skins.js'
 import { eyeOf, weaponOf } from './game.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
@@ -173,7 +174,7 @@ function inspectPose(keys, t) {
 }
 
 // ================= Soldiers (models.js) =================
-const soldier = (team, seed) => buildSoldier(team, seed)
+const soldier = (team, seed, look) => buildSoldier(team, seed, look)
 
 // ================= The view =================
 export class View {
@@ -244,8 +245,10 @@ export class View {
     this.smokeClouds = new Map()
   }
   addSoldier(a) {
-    const s = soldier(a.team, a.id * 7 + (a.isBot ? 0 : 1))
+    const look = agentLook(a)
+    const s = soldier(a.team, a.id * 7 + (a.isBot ? 0 : 1), look)
     s.team = a.team
+    s.look = look
     this.scene.add(s.root)
     this.soldiers.set(a.id, s)
   }
@@ -360,8 +363,8 @@ export class View {
     for (const a of game.actors) {
       const s = this.soldiers.get(a.id)
       if (!s) continue
-      if (s.team !== a.team) {
-        // they swapped sides at halftime: new uniform
+      if (s.team !== a.team || s.look !== agentLook(a)) {
+        // they swapped sides at halftime (or changed agent): new uniform
         this.scene.remove(s.root)
         this.addSoldier(a)
         continue
@@ -576,7 +579,7 @@ export class View {
     const w = a && a.alive ? weaponOf(a) : null
     const id = w?.id ?? null
     const slot = a?.inv?.[a.active]
-    const key = id && `${id}|${slot?.silenced}|${slot?.skin?.key ?? ''}`
+    const key = id && `${id}|${slot?.silenced}|${slot?.skin?.key ?? ''}|${a.team}|${a.agents?.[a.team] ?? ''}`
     if (key !== this.vmGunId) {
       this.vm.clear()
       this.vmGunId = key
@@ -588,7 +591,7 @@ export class View {
         // the right hand on the grip; the left on the handguard (or cupping a pistol's grip)
         const right = w.kind === 'knife' ? [0, 0, 0.02] : w.kind === 'grenade' || w.kind === 'bomb' ? [0.01, -0.03, 0.02] : [0, -0.05 * k, 0.03 * k]
         const left = twoHands ? [-0.005, -0.012, fore] : id === 'dualies' ? [-0.22 * k, -0.05 * k, 0.05 * k] : null
-        const arms = buildViewArms(a.team, a.id * 7 + (a.isBot ? 0 : 1), right, left)
+        const arms = buildViewArms(a.team, a.id * 7 + (a.isBot ? 0 : 1), right, left, agentLook(a))
         const holder = new THREE.Group()
         const sc = w.kind === 'rifle' || w.kind === 'sniper' || w.kind === 'heavy' ? 0.64 : w.kind === 'smg' ? 0.72 : w.kind === 'pistol' || w.kind === 'taser' ? 0.8 : 1
         g.scale.setScalar(sc)

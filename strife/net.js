@@ -9,6 +9,7 @@
 
 import { Brain } from './bots.js'
 import { WEAPONS } from './weapons.js'
+import { agentById } from './skins.js'
 
 const ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' }]
 const SNAP_HZ = 20
@@ -361,6 +362,9 @@ export class NetHost {
     actor.botRank ??= actor.rankTier ?? null
     actor.name = String(name || 'Player').slice(0, 20)
     actor.netSkins = skins && typeof skins === 'object' ? skins : {}
+    // who they play as (their agents; anything unknown is the standard look)
+    const ag = (id, team) => (agentById[id]?.team === team ? id : null)
+    actor.agents = { T: ag(actor.netSkins.agentT, 'T'), CT: ag(actor.netSkins.agentCT, 'CT') }
     actor.netQueue = []
     for (const s of ['primary', 'pistol', 'knife']) if (actor.inv[s]) actor.inv[s].skin = actor.netSkins[actor.inv[s].id] ?? null
     return actor
@@ -391,7 +395,7 @@ export class NetHost {
     return { me: me.id, map: this.info.mapId, mode: g.mode, rules: g.rules, roster: this.roster(), code: this.code, host: this.info.name }
   }
   roster() {
-    return this.game.actors.map((a) => ({ id: a.id, name: a.name, team: a.team, bot: a.isBot, human: !a.isBot, rank: a.rankTier ?? null }))
+    return this.game.actors.map((a) => ({ id: a.id, name: a.name, team: a.team, bot: a.isBot, human: !a.isBot, rank: a.rankTier ?? null, ag: a.agents ?? null }))
   }
   rosterChanged() {
     const r = this.roster()
@@ -782,5 +786,6 @@ export function applyRoster(g, roster) {
     a.isBot = r.bot
     a.isPlayer = !r.bot
     a.rankTier = r.rank ?? null
+    a.agents = r.ag ?? null
   }
 }

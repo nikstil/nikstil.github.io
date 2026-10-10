@@ -3,6 +3,7 @@
 
 import * as THREE from './lib/three.min.js'
 import { buildGun } from './guns.js'
+import { buildSoldier } from './models.js'
 
 let r = null
 let scene = null
@@ -58,5 +59,36 @@ export function gunIcon(id, w = 200, h = 80, opts = {}) {
     url = ''
   }
   cache.set(key, url)
+  return url
+}
+
+/** A portrait of an agent (head and shoulders, a little from the side): a data URL. */
+export function agentIcon(team, look, key, w = 150, h = 60) {
+  const ck = `agent|${key}|${w}|${h}`
+  if (cache.has(ck)) return cache.get(ck)
+  let url = ''
+  try {
+    if (!r) setup()
+    r.setSize(w, h, false)
+    const s = buildSoldier(team, 0, look)
+    s.root.rotation.y = Math.PI + 0.45 // facing us, turned a little
+    scene.add(s.root)
+    const aspect = w / h
+    const half = 0.42
+    cam.left = -half * aspect
+    cam.right = half * aspect
+    cam.top = half
+    cam.bottom = -half
+    cam.position.set(0, 1.5, -4)
+    cam.lookAt(0, 1.5, 0)
+    cam.updateProjectionMatrix()
+    r.setClearColor(0x000000, 0)
+    r.render(scene, cam)
+    url = r.domElement.toDataURL('image/png')
+    scene.remove(s.root)
+  } catch {
+    url = ''
+  }
+  cache.set(ck, url)
   return url
 }

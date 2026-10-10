@@ -158,6 +158,7 @@ export class Game {
         const a = makeActor(r.id, r.name, r.team, r.bot)
         a.isPlayer = !r.bot
         a.rankTier = r.rank ?? null
+        a.agents = r.ag ?? null
         this.actors.push(a)
       }
       this.player = this.actors.find((a) => a.id === opts.myId) ?? null

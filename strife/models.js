@@ -174,11 +174,12 @@ const SKINS = ['#c08a62', '#8d5a3b', '#e0b18f', '#a8754f']
 /**
  * A soldier, standing at the origin facing -z. Returns the parts the view animates:
  * { root, hips, torso, neck, legs: [{ thigh, shin }], arms, hand, blob }.
+ * look: an agent's outfit (skins.js AGENTS) instead of one of the side's standard ones.
  */
-export function buildSoldier(team, seed = 0) {
+export function buildSoldier(team, seed = 0, look = null) {
   const T = team === 'T'
-  const outfit = OUTFITS[T ? 'T' : 'CT'][seed % 3]
-  const skin = lam(SKINS[(seed >> 2) % SKINS.length])
+  const outfit = look ?? OUTFITS[T ? 'T' : 'CT'][seed % 3]
+  const skin = lam(outfit.skin ?? SKINS[(seed >> 2) % SKINS.length])
   const jacket = cloth(...outfit.jacket)
   const pants = cloth(...outfit.pants)
   const vest = lam(outfit.vest)
@@ -220,6 +221,11 @@ export function buildSoldier(team, seed = 0) {
     torso.add(mesh(boxG(0.07, 0.03, 0.035), lam('#2b2b2b'), -0.1 + k * 0.1, 0.345, -0.155)) // mags peeking out
   }
   torso.add(mesh(boxG(0.16, 0.06, 0.02), patch, 0, 0.44, -0.145)) // name tape
+  if (outfit.tie) {
+    // a tie (it's a corporate job), down the front of the vest
+    torso.add(mesh(boxG(0.03, 0.03, 0.02), lam(outfit.tie), 0, 0.53, -0.13))
+    torso.add(mesh(boxG(0.045, 0.2, 0.015), lam(outfit.tie), 0, 0.41, -0.15, 0, 0, 0.04))
+  }
   torso.add(mesh(boxG(0.05, 0.13, 0.04), strap, 0.13, 0.42, -0.15)) // radio
   torso.add(mesh(cyl(0.005, 0.005, 0.16, 4), strap, 0.13, 0.55, -0.15)) // antenna
   if (outfit.pack) {
@@ -266,11 +272,33 @@ export function buildSoldier(team, seed = 0) {
     for (const s of [-1, 1]) neck.add(mesh(cyl(0.032, 0.032, 0.02, 12), shiny('#6a8090', 120), s * 0.042, 0.18, -0.115, Math.PI / 2))
     neck.add(mesh(cyl(0.035, 0.04, 0.06, 12), metal, 0, 0.1, -0.13, Math.PI / 2.4))
     neck.add(mesh(geo('helm2', () => new THREE.SphereGeometry(0.125, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.45)), shiny('#262a30', 20), 0, 0.18, 0.015))
+  } else if (h === 'bare') {
+    // just hair
+    neck.add(mesh(geo('hair', () => new THREE.SphereGeometry(0.11, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)), lam(outfit.hair ?? '#3a2a1a'), 0, 0.17, 0.008, -0.12, 0, 0, 1, 1.05, 1.08))
+  } else if (h === 'beret') {
+    neck.add(mesh(geo('hair', () => new THREE.SphereGeometry(0.11, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)), lam(outfit.hair ?? '#2a1e14'), 0, 0.17, 0.008, -0.12, 0, 0, 1, 1.05, 1.08))
+    neck.add(mesh(cyl(0.125, 0.115, 0.04, 16), lam(outfit.hat ?? '#7a1a2a'), 0.015, 0.265, 0.005, -0.08, 0, -0.22))
+    neck.add(mesh(sphere(0.012, 6, 5), shiny('#d9b54a', 80), -0.085, 0.255, -0.06)) // badge
+  } else if (h === 'hood') {
+    const cl = cloth(outfit.hat ?? '#1a1f26', [outfit.hat ?? '#1a1f26'], 'knit')
+    neck.add(mesh(sphere(0.13, 14, 12), cl, 0, 0.18, 0.025, 0, 0, 0, 1, 1.1, 1.08))
+    neck.add(mesh(boxG(0.15, 0.17, 0.04), skin, 0, 0.15, -0.105)) // the face, in the hood's opening
+    for (const s of [-1, 1]) neck.add(mesh(sphere(0.012, 6, 5), lam('#1a1410'), s * 0.038, 0.18, -0.125))
+  } else if (h === 'cowboy') {
+    const felt = lam(outfit.hat ?? '#3a2a1a')
+    neck.add(mesh(cyl(0.2, 0.2, 0.012, 20), felt, 0, 0.25, 0.005, -0.05))
+    neck.add(mesh(cyl(0.085, 0.1, 0.11, 14), felt, 0, 0.31, 0.005, -0.05))
+    neck.add(mesh(cyl(0.101, 0.101, 0.02, 14), lam('#111'), 0, 0.27, 0.005, -0.05)) // band
   } else if (h === 'cap') {
-    neck.add(mesh(geo('cap', () => new THREE.SphereGeometry(0.115, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)), lam('#3d4632'), 0, 0.19, 0.005, 0, 0, 0, 1, 0.9, 1.05))
-    neck.add(mesh(boxG(0.16, 0.012, 0.09), lam('#3d4632'), 0, 0.2, -0.12, -0.1)) // brim
+    neck.add(mesh(geo('cap', () => new THREE.SphereGeometry(0.115, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)), lam(outfit.hat ?? '#3d4632'), 0, 0.19, 0.005, 0, 0, 0, 1, 0.9, 1.05))
+    neck.add(mesh(boxG(0.16, 0.012, 0.09), lam(outfit.hat ?? '#3d4632'), 0, 0.2, -0.12, -0.1)) // brim
     for (const s of [-1, 1]) neck.add(mesh(cyl(0.04, 0.04, 0.03, 12), lam('#222'), s * 0.112, 0.16, 0, 0, 0, Math.PI / 2)) // headset
     neck.add(mesh(cyl(0.006, 0.006, 0.23, 4), lam('#222'), 0, 0.29, 0, 0, 0, Math.PI / 2))
+  }
+  if (outfit.shades) {
+    // sunglasses (agents are cool)
+    neck.add(mesh(boxG(0.17, 0.035, 0.03), shiny('#0a0a0a', 120), 0, 0.18, -0.108))
+    for (const s of [-1, 1]) neck.add(mesh(boxG(0.012, 0.012, 0.11), lam('#111'), s * 0.09, 0.185, -0.055))
   }
 
   // ---- legs
@@ -334,9 +362,9 @@ export function buildSoldier(team, seed = 0) {
  * The arms you see: sleeves, cuffs, gloves with fingers wrapped round the grip, a watch.
  * right/left: [x, y, z] of each hand in the gun's space; left may be null (pistols, knife).
  */
-export function buildViewArms(team, seed, right, left) {
+export function buildViewArms(team, seed, right, left, look = null) {
   const T = team === 'T'
-  const outfit = OUTFITS[T ? 'T' : 'CT'][seed % 3]
+  const outfit = look ?? OUTFITS[T ? 'T' : 'CT'][seed % 3]
   const sleeve = cloth(...outfit.jacket)
   const cuff = lam(outfit.vest)
   const glove = lam('#1d1d1d')
