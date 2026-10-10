@@ -27,6 +27,10 @@ export const RADIO = {
   planting: { text: 'Planting the bomb', place: true },
   blow: { text: 'Get out of there, it’s gonna blow!' },
   nice: { text: 'Nice shot!' },
+  // (said when throwing, not on the menus)
+  smokeout: { text: 'Smoke out!' },
+  flashout: { text: 'Flashbang out!' },
+  fireout: { text: 'Fire in the hole!' },
 }
 /** The three radio menus (Z, X, C), in key order 1-7. */
 export const RADIO_MENUS = {

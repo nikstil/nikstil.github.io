@@ -801,6 +801,7 @@ export class Game {
     victim.hp = 0
     victim.deaths++
     victim.deadAt = this.time
+    victim.killer = attacker && attacker !== victim && attacker.team !== victim.team ? attacker : null
     victim.plant = victim.defuse = 0
     if (this.bomb.defuser === victim) this.bomb.defuser = null
     if (attacker && attacker !== victim) {
