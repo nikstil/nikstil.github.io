@@ -134,90 +134,10 @@ const MAT = Object.fromEntries(MAT_NAMES.map((n, i) => [n, i]))
 const r = (x0, z0, x1, z1, y0 = -INF, y1 = INF) => ({ x0, z0, x1, z1, y0, y1 })
 
 // ============================================================================================
-// Maps from traced floor plans (plans/*.js): 1:1 with the real thing (a cell is a metre; heights
-// come from the overview's colour ramp). The plan gives every cell's floor and the crates; build()
-// adds what an overview can't show, like the roofs over tunnels.
+// Maps from traced plans (plans/*.js): 1:1 with the real thing. A cell is a metre; the walls and
+// crates come from the map's overview, the heights of the floors from its nav mesh.
 // ============================================================================================
-const PLAN_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const unrle = (row) => row.replace(/(\D)(\d*)/g, (_, c, n) => c.repeat(n ? +n : 1))
-function fromPlan(plan, { fix, build } = {}) {
-  const H = plan.rows.map((row) => [...unrle(row)].map((c) => (c === '#' ? null : PLAN_ALPHA.indexOf(c) * 0.2)))
-  const at = (x, z) => H[z]?.[x] ?? null
-  // Fixes for what an overview can't say: a flight of stairs is drawn as a sudden change of
-  // colour, so it traces as a cliff (ramp() makes it a slope again), and markings make a few
-  // bumps (flat() levels an area).
-  const shape = {
-    /** A slope across the rectangle along axis, from the floor at its first row to the floor at its last. */
-    ramp(x0, z0, x1, z1, axis) {
-      const n = axis === 'x' ? x1 - x0 : z1 - z0
-      for (let z = z0; z < z1; z++)
-        for (let x = x0; x < x1; x++) {
-          if (at(x, z) == null) continue
-          // the ends of this line of the ramp (the first and last open cells along it)
-          let a = null
-          let b = null
-          for (let k = 0; k < n && a == null; k++) a = axis === 'x' ? at(x0 + k, z) : at(x, z0 + k)
-          for (let k = n - 1; k >= 0 && b == null; k--) b = axis === 'x' ? at(x0 + k, z) : at(x, z0 + k)
-          const t = ((axis === 'x' ? x - x0 : z - z0) + 0.5) / n
-          H[z][x] = Math.round((a + (b - a) * t) * 20) / 20
-        }
-    },
-    /**
-     * Steps that are really stairs: inside the rectangle, any drop of up to `most` metres becomes a
-     * slope you can walk (the low side rises to meet it, half a metre a cell). Taller drops stay
-     * ledges.
-     */
-    ease(x0, z0, x1, z1, most = 1.8) {
-      const orig = H.map((row) => [...row])
-      for (let pass = 0; pass < 12; pass++) {
-        let changed = false
-        for (let z = z0; z < z1; z++)
-          for (let x = x0; x < x1; x++) {
-            const h = at(x, z)
-            if (h == null) continue
-            for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-              const nx = x + dx
-              const nz = z + dz
-              if (nx < x0 || nz < z0 || nx >= x1 || nz >= z1) continue
-              const n = at(nx, nz)
-              if (n == null || n - h <= 0.5) continue
-              // a ledge as it was traced (not one this has already eased) taller than `most` stays
-              if ((orig[nz][nx] ?? 0) - (orig[z][x] ?? 0) > most) continue
-              H[z][x] = Math.round((n - 0.5) * 20) / 20
-              changed = true
-            }
-          }
-        if (!changed) break
-      }
-    },
-    /** Levels a rectangle (at height h, or the middle height of what's there). */
-    flat(x0, z0, x1, z1, h = null) {
-      const hs = []
-      for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) if (at(x, z) != null) hs.push(at(x, z))
-      hs.sort((p, q) => p - q)
-      const v = h ?? hs[hs.length >> 1]
-      for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) if (at(x, z) != null) H[z][x] = v
-    },
-  }
-  fix?.(shape)
-  /** The highest floor in a rectangle (for roofs over a tunnel that slopes, and crates). */
-  const top = (x0, z0, x1, z1) => {
-    let h = 0
-    for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) h = Math.max(h, at(x, z) ?? 0)
-    return h
-  }
-  const g = carve(plan.w, plan.d, (m) => {
-    for (let z = 0; z < plan.d; z++)
-      for (let x = 0; x < plan.w; x++) {
-        const h = at(x, z)
-        if (h != null) m.room(x, z, x + 1, z + 1, h, h < 1.8 ? 'path' : 'ground')
-      }
-    // crates: one high on their own, stacked a bit higher in bigger piles
-    for (const [x0, z0, x1, z1] of plan.crates) m.box(x0, z0, x1, z1, top(x0, z0, x1, z1) + ((x1 - x0) * (z1 - z0) >= 4 ? 1.6 : 1.1))
-    build?.(m, top)
-  })
-  return { ...g, floorAt: at, crateAt: (x, z) => plan.crates.some(([x0, z0, x1, z1]) => x >= x0 && x < x1 && z >= z0 && z < z1) }
-}
 /**
  * A map from a layered plan (plans/*.js traced from the overview and the map's nav mesh): each
  * cell has its floors (the lowest, then any above it, like Nuke's A over B), maybe a roof, and
@@ -318,27 +238,8 @@ function onFloor(def) {
 // side, short A over catwalk from mid), B is top left (through the tunnels, or B doors from CT mid).
 // ============================================================================================
 function dust2() {
-  const g = fromPlan(DUST2, {
-    fix(s) {
-      s.flat(30, 99, 51, 108) // T spawn
-      s.ramp(44, 92, 58, 102, 'z') // down from T spawn towards top mid
-      s.ramp(12, 81, 25, 91, 'z') // T spawn down to outside tunnels
-      s.ramp(5, 65, 26, 73, 'z') // outside tunnels up to upper tunnels
-      s.ramp(24, 47, 34, 57, 'x') // the stairs down to lower tunnels
-      s.ramp(64, 33, 73, 42, 'z') // short A stairs
-      s.ramp(62, 17, 73, 31, 'x') // CT spawn up to A
-      s.flat(82, 14, 93, 24) // A site
-      s.flat(14, 9, 27, 21) // B site
-      s.ramp(3, 17, 26, 24, 'z') // up from the front of B onto the site
-    },
-    build(m, top) {
-      // the tunnels have roofs: upper tunnels, the way down to lower tunnels, and B tunnels
-      m.roof(0, 48, 24, 57, top(0, 48, 24, 57) + 3.4)
-      m.roof(28, 43, 44, 50, top(28, 43, 44, 50) + 3.2)
-      m.roof(5, 36, 12, 48, top(5, 36, 12, 48) + 3.4)
-    },
-  })
-  return {
+  const g = fromLayers(DUST2, { outdoor: 'ground', floors: { 'Mid Doors': 'path', 'CT Spawn': 'path', 'B Site': 'path', 'A Site': 'path', 'Short Stairs': 'step', 'Tunnel Stairs': 'step' } })
+  return onFloor({
     id: 'dust2',
     name: 'Dust 2',
     blurb: 'Long A, catwalk, the tunnels. Sand in everything. Life size.',
@@ -351,31 +252,6 @@ function dust2() {
     buy: { T: r(20, 92, 56, 112), CT: r(56, 14, 76, 32) },
     sites: { A: r(82, 14, 92, 24), B: r(13, 8, 25, 20) },
     plant: { A: [[87, 15], [90, 20], [84, 22], [89, 22]], B: [[16, 11], [20, 14], [17, 17], [22, 12]] },
-    callouts: [
-      ['Goose', r(92, 4, 101, 12)],
-      ['A Site', r(72, 4, 101, 30)],
-      ['Pit', r(90, 62, 104, 80)],
-      ['A Ramp', r(84, 30, 104, 40)],
-      ['Long Doors', r(70, 60, 90, 80)],
-      ['Long A', r(72, 30, 104, 62)],
-      ['Outside Long', r(56, 80, 80, 100)],
-      ['Short A', r(64, 28, 72, 40)],
-      ['Catwalk', r(53, 40, 72, 50)],
-      ['CT Spawn', r(56, 14, 74, 31)],
-      ['Xbox', r(48, 42, 54, 50)],
-      ['Mid Doors', r(42, 28, 53, 34)],
-      ['CT Mid', r(31, 14, 56, 31)],
-      ['B Doors', r(24, 10, 31, 31)],
-      ['B Site', r(2, 2, 25, 34)],
-      ['B Tunnels', r(4, 34, 14, 48)],
-      ['Lower Tunnels', r(27, 42, 46, 50)],
-      ['Upper Tunnels', r(0, 48, 30, 58)],
-      ['Mid', r(42, 33, 54, 64)],
-      ['Outside Tunnels', r(2, 58, 30, 90)],
-      ['Top Mid', r(38, 62, 58, 82)],
-      ['T Ramp', r(50, 92, 72, 113)],
-      ['T Spawn', r(0, 82, 52, 113)],
-    ],
     // How the Terrorists can go at each site (waypoints, from spawn).
     routes: {
       A: [
@@ -405,7 +281,7 @@ function dust2() {
       { type: 'palm', x: 5, z: 30, y: g.floorAt(5, 30) },
     ],
     sky: { top: '#6a9bd8', bottom: '#e2d6ba', fog: '#ddd2b8', sun: '#fff1d6', ground: '#b0956c' },
-  }
+  })
 }
 
 // ============================================================================================
@@ -414,12 +290,7 @@ function dust2() {
 // from the T side, short and market); mid runs across the middle under window.
 // ============================================================================================
 function mirage() {
-  const g = fromPlan(MIRAGE, {
-    fix(s) {
-      s.ease(84, 44, 108, 72, 3.5) // T ramp: the stairs down from the T side to A ramp
-      s.ease(0, 0, MIRAGE.w, MIRAGE.d)
-    },
-  })
+  const g = fromLayers(MIRAGE, { outdoor: 'path', floors: { 'A Site': 'tile', 'B Site': 'tile', 'T Spawn': 'ground', 'CT Spawn': 'ground' } })
   return onFloor({
     id: 'mirage',
     name: 'Mirage',
@@ -433,29 +304,9 @@ function mirage() {
     buy: { T: r(96, 16, 109, 42), CT: r(16, 60, 36, 82) },
     sites: { A: r(52, 75, 66, 89), B: r(12, 12, 25, 24) },
     plant: { A: [[56, 80], [61, 84], [58, 86], [63, 79]], B: [[14, 15], [20, 20], [22, 15], [16, 21]] },
-    callouts: [
-      ['T Spawn', r(97, 18, 109, 42)],
-      ['T Apartments', r(62, 1, 97, 17)],
-      ['B Apartments', r(9, 1, 62, 12)],
-      ['B Site', r(9, 12, 30, 30)],
-      ['Market', r(8, 30, 30, 46)],
-      ['Window', r(38, 20, 46, 38)],
-      ['Short B', r(30, 12, 46, 40)],
-      ['Top Mid', r(71, 18, 98, 48)],
-      ['Mid', r(43, 37, 75, 48)],
-      ['Underpass', r(48, 47, 60, 60)],
-      ['Connector', r(38, 46, 50, 60)],
-      ['Jungle', r(38, 60, 52, 72)],
-      ['CT Spawn', r(16, 60, 38, 84)],
-      ['Ticket Booth', r(36, 80, 52, 94)],
-      ['A Site', r(50, 66, 72, 94)],
-      ['Palace', r(70, 70, 100, 90)],
-      ['A Ramp', r(76, 48, 98, 70)],
-      ['T Ramp', r(96, 42, 109, 70)],
-    ],
     routes: {
       A: [
-        { name: 'Ramp', path: [[102, 28], [102, 50], [95, 58], [85, 62], [75, 68], [62, 80]] },
+        { name: 'Ramp', path: [[102, 28], [102, 50], [94, 53], [85, 62], [75, 68], [62, 80]] },
         { name: 'Palace', path: [[102, 30], [102, 56], [100, 66], [95, 78], [82, 82], [70, 80], [60, 82]] },
       ],
       B: [
@@ -533,11 +384,7 @@ function nuke() {
 // the right, through apartments and the balcony or up mid; pit, library and arch round it.
 // ============================================================================================
 function inferno() {
-  const g = fromPlan(INFERNO, {
-    fix(s) {
-      s.ease(0, 0, INFERNO.w, INFERNO.d)
-    },
-  })
+  const g = fromLayers(INFERNO, { outdoor: 'ground', floors: { 'A Site': 'path', 'B Site': 'path', Banana: 'path', Pit: 'path' } })
   return onFloor({
     id: 'inferno',
     name: 'Inferno',
@@ -551,22 +398,6 @@ function inferno() {
     buy: { T: r(0, 68, 14, 90), CT: r(98, 26, 112, 50) },
     sites: { A: r(91, 72, 102, 88), B: r(47, 12, 61, 29) },
     plant: { A: [[93, 76], [97, 80], [95, 85], [99, 76]], B: [[50, 16], [55, 20], [52, 25], [58, 15]] },
-    callouts: [
-      ['T Spawn', r(0, 66, 16, 92)],
-      ['B Site', r(44, 8, 64, 32)],
-      ['Coffins', r(56, 2, 74, 14)],
-      ['CT', r(64, 14, 92, 30)],
-      ['Banana', r(42, 32, 58, 70)],
-      ['Second Mid', r(16, 68, 44, 90)],
-      ['Mid', r(44, 70, 80, 82)],
-      ['Apartments', r(30, 82, 80, 112)],
-      ['Arch', r(76, 56, 92, 72)],
-      ['Library', r(100, 88, 117, 112)],
-      ['Pit', r(96, 88, 117, 112)],
-      ['A Site', r(88, 64, 110, 90)],
-      ['Long', r(80, 28, 98, 64)],
-      ['CT Spawn', r(96, 24, 117, 52)],
-    ],
     routes: {
       A: [
         { name: 'Apartments', path: [[6, 78], [20, 90], [38, 96], [55, 100], [70, 102], [82, 96], [94, 82]] },
