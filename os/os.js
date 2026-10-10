@@ -19,23 +19,45 @@
     { id: 'minimal', name: 'Minimalist', blurb: 'Nothing. Beautifully. (2013)', swatch: ['#ffffff', '#000000', '#ffffff'], chrome: '#ffffff', start: 'Start', fonts: 'Inter:wght@300;400;500;600' },
     { id: 'vapor', name: 'Vaporwave', blurb: 'Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ sunsets on a neon grid (199X, forever)', swatch: ['#ff71ce', '#b967ff', '#01cdfe'], chrome: '#2b0f4f', start: 'スタート', fonts: 'VT323' },
     { id: 'glass', name: 'Liquid Glass', blurb: 'Every surface is a lens now (2025)', swatch: ['#7fe3ff', '#ffffff', '#ff9ad5'], chrome: '#5b7cff', start: '' },
+    // unlocked with achievement points (Achievements → Rewards; see /achievements/rewards.js)
+    { id: 'terminal', name: 'Terminal', blurb: 'Green on black, like a hacker in a film (1999, in films)', swatch: ['#050a05', '#33ff66', '#0f3d1a'], chrome: '#050a05', start: 'C:\\>', fonts: 'IBM+Plex+Mono:wght@400;500;600', reward: 'r-theme-terminal', at: 200 },
   ]
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣' },
-    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯' },
-    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨', achievements: '🏅', files: '🗂️', terminal: '📟' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '🗄️', terminal: '⌨️' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷', achievements: '✪', files: '▤', terminal: '>_' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯', achievements: '🏆', files: '📂', terminal: '🖥️' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🏅', files: '🗂️', terminal: '⌨️' },
+    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯', achievements: '🎖️', files: '📁', terminal: '⌨️' },
+    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨', achievements: '💿', files: '📼', terminal: '💾' },
   }
+  ICONS.terminal = { ...ICONS.minimal }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
+  // ================= Rewards (claimed with achievement points on the hub) =================
+  // The same ids as /achievements/rewards.js, which keeps what's claimed under this key.
+  const REWARDS_KEY = 'nikstil-rewards'
+  const WALLPAPER_KEY = 'nikstilos-wallpaper'
+  const WALLPAPERS = [
+    { id: 'dust', name: 'Dust II', reward: 'r-wall-dust', at: 50 },
+    { id: 'lawn', name: 'Front Lawn', reward: 'r-wall-lawn', at: 150 },
+    { id: 'grid', name: 'Midnight Grid', reward: 'r-wall-grid', at: 400 },
+    { id: 'elite', name: 'The Global Elite', reward: 'r-wall-elite', at: 750 },
+  ]
+  const claimedReward = (id) => {
+    try {
+      return !!JSON.parse(localStorage.getItem(REWARDS_KEY))?.claimed?.[id]
+    } catch {
+      return false
+    }
+  }
+  const isLocked = (thing) => !!thing?.reward && !claimedReward(thing.reward)
+  const lockedNote = (name, at) => `${name} unlocks at ${at} achievement points. Claim it in Achievements → Rewards.`
   const GAME_THEME_KEY = 'translatr-theme' // the game's pick, used until you choose one here
   const GAME_SAVE_KEY = 'translatr-save' // same site, so the homepage can read the game's save
   const BOOTED_KEY = 'nikstilos-booted'
@@ -55,6 +77,9 @@
     browser: { title: 'BobbyBrowser', icon: 'browser', width: 900, init: initBrowser },
     mobile: { title: 'LigmaPhone', icon: 'mobile', width: 400, init: initMobile },
     strife: { title: 'COUNTER-STRIFE', icon: 'strife', width: 900, init: initStrife },
+    achievements: { title: 'Achievements', icon: 'achievements', width: 820, init: initAchievements },
+    files: { title: 'File Explorer', icon: 'files', width: 780, init: initFiles },
+    terminal: { title: 'Command Prompt', icon: 'terminal', width: 680, init: initTerminal },
     // Online apps (os/online-apps.js): only shown once the site's online features are switched on.
     leaderboard: { title: 'Leaderboards', icon: 'leaderboard', width: 560, init: (el, win) => online?.init('leaderboard', el, win) },
     messenger: { title: 'nikstil Messenger', icon: 'messenger', width: 700, init: (el, win) => online?.init('messenger', el, win) },
@@ -101,7 +126,8 @@
   }
 
   function applyTheme(id, save = true) {
-    const theme = THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === 'aero')
+    let theme = THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === 'aero')
+    if (isLocked(theme)) theme = THEMES.find((t) => t.id === 'aero')
     document.documentElement.dataset.theme = theme.id
     $('meta[name="theme-color"]').content = theme.chrome
     $('.start-label').textContent = theme.start
@@ -143,12 +169,49 @@
       sw.append(i)
     })
     $('.theme-name', b).textContent = theme.name
+    markLock(b, theme)
     b.addEventListener('click', (e) => {
       closeMenus()
+      if (isLocked(theme)) return msgbox('Themes', lockedNote(`The ${theme.name} theme`, theme.at), '🔒')
       switchTheme(theme.id, originOf(e))
     })
     return b
   }
+  /** A 🔒 on a theme or wallpaper you haven't unlocked yet. */
+  function markLock(b, thing) {
+    const locked = isLocked(thing)
+    b.classList.toggle('is-locked', locked)
+    b.title = locked ? lockedNote(thing.name, thing.at) : ''
+  }
+  // ----- wallpapers
+  function applyWallpaper(id, save = true) {
+    const w = WALLPAPERS.find((x) => x.id === id)
+    if (w && !isLocked(w)) document.documentElement.dataset.wallpaper = w.id
+    else delete document.documentElement.dataset.wallpaper
+    if (save) storage.set(WALLPAPER_KEY, w && !isLocked(w) ? w.id : '')
+    $$('[data-wallpaper-pick]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.wallpaperPick || null) === (document.documentElement.dataset.wallpaper ?? null))))
+  }
+  function wallpaperButton(w) {
+    const b = document.createElement('button')
+    b.className = 'wall-card'
+    b.dataset.wallpaperPick = w ? w.id : ''
+    b.innerHTML = '<span class="wall-thumb" aria-hidden="true"></span><span class="theme-name"></span>'
+    if (w) $('.wall-thumb', b).style.backgroundImage = `url(/os/wallpapers/${w.id}.svg)`
+    else $('.wall-thumb', b).classList.add('is-theme')
+    $('.theme-name', b).textContent = w ? w.name : 'The theme’s own'
+    if (w) markLock(b, w)
+    b.addEventListener('click', () => {
+      if (w && isLocked(w)) return msgbox('Themes', lockedNote(`The ${w.name} wallpaper`, w.at), '🔒')
+      applyWallpaper(w?.id ?? null)
+    })
+    return b
+  }
+  // claimed on the hub (in another tab, or its window here): the locks come off straight away
+  addEventListener('storage', (e) => {
+    if (e.key !== REWARDS_KEY) return
+    for (const b of $$('[data-theme-pick]')) markLock(b, THEMES.find((t) => t.id === b.dataset.themePick))
+    for (const b of $$('[data-wallpaper-pick]')) b.dataset.wallpaperPick && markLock(b, WALLPAPERS.find((w) => w.id === b.dataset.wallpaperPick))
+  })
 
   // ================= Windows =================
   const layer = $('#windows')
@@ -414,6 +477,7 @@
         if (input.multiline) field.rows = 3
         field.maxLength = input.maxLength ?? 500
         field.placeholder = input.placeholder ?? ''
+        if (input.value) field.value = input.value
         field.setAttribute('aria-label', text)
         $('.msg-main', body).append(field)
       }
@@ -553,8 +617,127 @@
   }
 
   /** COUNTER-STRIFE, 5v5 bomb defusal against bots (the page at /strife/). */
+  let strifeQuery = '' // what the next COUNTER-STRIFE window should do (see openStrife)
   function initStrife(el) {
-    $('.strife-frame', el).src = '/strife/?embed'
+    $('.strife-frame', el).src = '/strife/?embed' + (strifeQuery ? `&${strifeQuery}` : '')
+    strifeQuery = ''
+  }
+  /** Opens COUNTER-STRIFE to do something: 'join=ABCD' (a game invite), 'host=1&invite=<user id>'. */
+  function openStrife(query = '') {
+    // Messenger on its own (TRANSLATR™'s bubble): there's no desktop, so a new tab
+    if (embedApp) return void window.open(`/strife/?${query}`, '_blank', 'noopener')
+    const win = open.get('strife')
+    if (win) {
+      $('.strife-frame', win.el).src = `/strife/?embed&${query}`
+      restore(win)
+      return
+    }
+    strifeQuery = query
+    openApp('strife')
+  }
+
+  // ================= File Explorer (os/files.js) =================
+  let filesMod = null
+  const loadFiles = () => (filesMod ??= import('/os/files.js'))
+  let filesStart = null // where the next Explorer window opens
+  const osApi = {
+    openApp: (id) => openApp(id),
+    explore: (path) => explore(path),
+    closeWin: (w) => closeWin(w),
+    msgbox: (...a) => msgbox(...a),
+    askbox: (o) => askbox(o),
+    makeWindow: (o) => makeWindow(o),
+    showMenu: (items, x, y, title, icon) => showMenu(items, x, y, title, icon),
+  }
+  function initFiles(el, win) {
+    let cleanup = null
+    let closed = false
+    win.setTitle = (t) => ($('.win-title', win.el).textContent = t)
+    const start = filesStart
+    filesStart = null
+    loadFiles().then((m) => {
+      if (!closed) cleanup = m.initExplorer(el, win, osApi, start ? { path: start } : {})
+    })
+    return () => {
+      closed = true
+      cleanup?.()
+    }
+  }
+  /** Command Prompt (os/terminal.js): the same drive as File Explorer, typed at. */
+  function initTerminal(el, win) {
+    let cleanup = null
+    let closed = false
+    win.setTitle = (t) => ($('.win-title', win.el).textContent = t)
+    import('/os/terminal.js').then((m) => {
+      if (!closed) cleanup = m.initTerminal(el, win, osApi)
+    })
+    return () => {
+      closed = true
+      cleanup?.()
+    }
+  }
+  /** Opens File Explorer at a path (a new window each time, like the real thing). */
+  function explore(path) {
+    filesStart = path
+    const was = open.get('files')
+    if (was) closeWin(was)
+    return openApp('files')
+  }
+  // Your Desktop folder's files and folders, as desktop icons.
+  function renderDesktopFiles(m) {
+    for (const li of $$('.desk-icons > li[data-file]')) li.remove()
+    const items = m.list(m.DESKTOP) ?? []
+    for (const it of items) {
+      const li = document.createElement('li')
+      li.dataset.file = it.name
+      li.innerHTML = `<button class="desk-icon" data-file=""><span class="di-img" aria-hidden="true"></span><span class="di-label"></span></button>`
+      const icon = $('.desk-icon', li)
+      icon.dataset.file = it.name
+      $('.di-img', li).textContent = it.icon
+      $('.di-label', li).textContent = it.name
+      $('.desk-icons').append(li)
+      wireDeskIcon(icon, () => {
+        if (it.kind === 'dir') explore(it.path)
+        else if (it.kind === 'txt' || it.kind === 'file') {
+          m.markOpened()
+          m.openNotepad(osApi, { name: it.name, text: it.node?.t ?? '', dir: m.DESKTOP })
+        }
+      })
+      icon.addEventListener('contextmenu', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        showMenu(
+          [
+            { label: 'Open', run: () => icon.dispatchEvent(new MouseEvent('dblclick')) },
+            { label: 'Rename', run: async () => {
+              const to = await askbox({ title: 'Rename', text: `New name for “${it.name}”:`, icon: '✏️', input: { value: it.name, maxLength: 80 } })
+              if (to == null) return
+              const why = m.rename(m.DESKTOP, it.name, to)
+              if (why) msgbox('Rename', why, '⚠️')
+            } },
+            { label: 'Delete', danger: true, run: async () => {
+              if (await askbox({ title: 'Delete', text: `Delete “${it.name}”?`, icon: '🗑️', ok: 'Delete' })) m.remove(m.DESKTOP, it.name)
+            } },
+          ],
+          e.clientX,
+          e.clientY,
+          it.name,
+          it.icon,
+        )
+      })
+    }
+    layoutIcons()
+  }
+  loadFiles()
+    .then((m) => {
+      renderDesktopFiles(m)
+      m.onChange(() => renderDesktopFiles(m))
+    })
+    .catch(() => {})
+
+  /** The achievement hub: every game's achievements in one place (the page at /achievements/). */
+  function initAchievements(el) {
+    $('.ach-frame', el).src = '/achievements/?embed'
   }
 
   /** DOOMSCROLL.EXE runs in the window (the page at /doomscroll/, loaded only once it's opened). */
@@ -747,6 +930,7 @@
     { icon: '🧠', name: 'BRAINS FIRST', url: '/touchphone/' },
     { icon: '🟩', name: 'LOGGLE', url: '/loggle/' },
     { icon: '💣', name: 'COUNTER-STRIFE', url: '/strife/' },
+    { icon: '🎖️', name: 'Achievements', url: '/achievements/' },
     { icon: '🎞️', name: 'The GIF', url: '/gif/' },
     { icon: '📚', name: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
     { icon: '🎲', name: 'Random article', url: 'https://en.m.wikipedia.org/wiki/Special:Random' },
@@ -860,7 +1044,10 @@
       card.append(blurb)
       grid.append(card)
     }
+    const walls = $('#wall-grid', el)
+    walls.append(wallpaperButton(null), ...WALLPAPERS.map(wallpaperButton))
     applyTheme(document.documentElement.dataset.theme, false) // mark the current one
+    applyWallpaper(document.documentElement.dataset.wallpaper ?? null, false)
   }
 
   function initBin(el) {
@@ -914,7 +1101,7 @@
   let justDragged = 0 // (a drag ends in a click on the dragged icon: that click mustn't select or open it)
   let draggedIcons = []
   const wasDragged = (icon) => Date.now() - justDragged < 300 && draggedIcons.includes(icon)
-  const iconKey = (icon) => icon.dataset.app ?? `link:${$('.di-label', icon).textContent}`
+  const iconKey = (icon) => icon.dataset.app ?? (icon.dataset.file != null ? `file:${icon.dataset.file}` : `link:${$('.di-label', icon).textContent}`)
   const visibleIcons = () => $$('.desk-icon').filter((i) => !i.closest('li').hidden)
   const select = (icons, add = false) => $$('.desk-icon').forEach((i) => i.classList.toggle('is-selected', icons.includes(i) || (add && i.classList.contains('is-selected'))))
 
@@ -929,7 +1116,7 @@
     icon.addEventListener('dblclick', () => !coarsePointer && !wasDragged(icon) && launch())
     if (!coarsePointer) icon.addEventListener('pointerdown', (e) => startIconDrag(icon, e))
   }
-  for (const icon of $$('.desk-icon')) wireDeskIcon(icon, () => openApp(icon.dataset.app))
+  for (const icon of $$('.desk-icon')) wireDeskIcon(icon, () => (icon.dataset.app === 'pc' ? explore([]) : openApp(icon.dataset.app)))
 
   // ----- where the icons are
   const loadPositions = () => {
@@ -1162,7 +1349,17 @@
     const action = e.target.closest('[data-action]')?.dataset.action
     if (!action) return
     closeMenus()
-    if (action === 'folder') msgbox('New folder', 'Creating folders requires nikstilOS Pro. Upgrade for $4.99/month. (Kidding. There is no Pro.)', '📁')
+    if (action === 'folder' || action === 'textfile')
+      loadFiles().then(async (m) => {
+        const name = action === 'folder' ? m.newFolder(m.DESKTOP) : m.newText(m.DESKTOP)
+        if (!name) return
+        const to = await askbox({ title: action === 'folder' ? 'New folder' : 'New text document', text: 'Name:', icon: action === 'folder' ? '📁' : '📄', input: { value: name, maxLength: 80 } })
+        if (to != null && to !== name) {
+          const why = m.rename(m.DESKTOP, name, to)
+          if (why) msgbox('Rename', why, '⚠️')
+        }
+      })
+    if (action === 'explorer') explore([])
     if (action === 'sort') sortIcons()
     if (action === 'refresh') {
       desktop.classList.remove('is-refreshing')
@@ -1218,17 +1415,21 @@
     return items
   }
   function showAppMenu(win, x, y) {
-    closeMenus()
     focusWin(win)
+    const inPhone = !$('.mp-bar', win.el)?.hidden && $('.mp-bar-title', win.el)?.textContent
+    showMenu(appMenuItems(win), x, y, $('.win-title', win.el).textContent + (inPhone ? ` · ${inPhone}` : ''), APPS[win.id]?.icon ?? 'pc')
+  }
+  /** A right-click menu: items are { label, run, disabled, danger } or 'sep'. */
+  function showMenu(items, x, y, title, icon) {
+    closeMenus()
     appMenu.replaceChildren()
     const head = document.createElement('div')
     head.className = 'ctx-head'
     head.innerHTML = '<span aria-hidden="true"></span><b></b>'
-    setIcon($('span', head), APPS[win.id]?.icon ?? 'pc')
-    const inPhone = !$('.mp-bar', win.el)?.hidden && $('.mp-bar-title', win.el)?.textContent
-    $('b', head).textContent = $('.win-title', win.el).textContent + (inPhone ? ` · ${inPhone}` : '')
+    setIcon($('span', head), icon)
+    $('b', head).textContent = title
     appMenu.append(head)
-    for (const it of appMenuItems(win)) {
+    for (const it of items) {
       if (it === 'sep') {
         appMenu.append(document.createElement('hr'))
         continue
@@ -1412,6 +1613,8 @@
       $$,
       open,
       openApp,
+      openStrife,
+      makeWindow: (o) => makeWindow(o),
       closeWin,
       focusWin,
       restore,
@@ -1506,6 +1709,7 @@
       const saved = storage.get(THEME_KEY) || storage.get(GAME_THEME_KEY)
       const fallback = THEMES.some((t) => t.id === site.defaultTheme) ? site.defaultTheme : 'aero'
       applyTheme(THEMES.some((t) => t.id === saved) ? saved : fallback, false)
+      applyWallpaper(storage.get(WALLPAPER_KEY), false)
       layoutIcons()
       const onlineReady = Promise.resolve(online?.start()).catch(() => {})
       if (APPS[embedApp]) {
@@ -1523,6 +1727,18 @@
         const deep = location.hash.slice(1)
         if (APPS[deep]) openApp(deep)
         welcome()
+        // Achievement toasts for progress made in any game on the site (they share this storage).
+        import('/achievements/list.js')
+          .then((m) => {
+            const run = () => {
+              m.toast(m.check())
+              m.sync?.() // signed in: onto the player's profile too
+            }
+            run()
+            setInterval(run, 6000)
+            addEventListener('storage', run)
+          })
+          .catch(() => {})
         // First time here: sign in, make an account, or carry on as a guest.
         onlineReady.then(() => !APPS[deep] && online?.firstVisit())
       })

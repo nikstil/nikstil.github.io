@@ -42,6 +42,8 @@
     ['phone', '🧠'],
     ['loggle', '🟩'],
     ['strife', '💣'],
+    ['achievements', '🎖️'],
+    ['files', '📁'],
     ['browser', '🧭'],
     ['mobile', '📱'],
     ['leaderboard', '🏆'],
@@ -69,6 +71,8 @@
       phone: { label: 'BRAINS FIRST', title: 'BRAINS FIRST', hidden: false },
       loggle: { label: 'LOGGLE', title: 'LOGGLE', hidden: false },
       strife: { label: 'COUNTER-STRIFE', title: 'COUNTER-STRIFE', hidden: false },
+      achievements: { label: 'Achievements', title: 'Achievements', hidden: false },
+      files: { label: 'File Explorer', title: 'File Explorer', hidden: false },
       browser: { label: 'BobbyBrowser', title: 'BobbyBrowser', hidden: false },
       mobile: { label: 'LigmaPhone', title: 'LigmaPhone', hidden: false },
       leaderboard: { label: 'Leaderboards', title: 'Leaderboards', hidden: false },
@@ -1212,6 +1216,21 @@
           runs.replaceChildren(h('p', { class: 'note note-bad' }, online.errorText(err)))
         }
       }
+      const rankWho = h('input', { type: 'text', placeholder: 'Username', spellcheck: false })
+      const resetRank = async () => {
+        const name = rankWho.value.trim()
+        if (!name) return
+        const p = await online.findPlayer(name, { includeBanned: true }).catch(() => null)
+        if (!p) return toast(`Nobody called “${name}”.`, true)
+        if (!confirm(`Reset ${p.username}’s COUNTER-STRIFE rank? Their rating goes back to the start.`)) return
+        try {
+          await online.admin.strifeReset(p.id)
+          toast(`${p.username}’s rank was reset.`)
+          rankWho.value = ''
+        } catch (err) {
+          toast(online.errorText(err), true)
+        }
+      }
       const banBy = async (banned) => {
         const name = who.value.trim()
         if (!name) return
@@ -1234,6 +1253,14 @@
           h('label', { class: 'grow' }, h('span', { class: 'sr-only' }, 'Username'), who),
           h('button', { class: 'btn btn-danger', type: 'button', onclick: () => banBy(true) }, 'Ban'),
           h('button', { class: 'btn', type: 'button', onclick: () => banBy(false) }, 'Unban'),
+        ),
+        h('h3', {}, 'Reset a COUNTER-STRIFE rank'),
+        h('p', { class: 'hint' }, 'Takes a player off the ranks leaderboard and back to the start (for a rating that can’t be real).'),
+        h(
+          'div',
+          { class: 'item-line' },
+          h('label', { class: 'grow' }, h('span', { class: 'sr-only' }, 'Username'), rankWho),
+          h('button', { class: 'btn btn-danger', type: 'button', onclick: resetRank }, 'Reset rank'),
         ),
       )
       loadReports()

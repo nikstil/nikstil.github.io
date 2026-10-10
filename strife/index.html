@@ -4,23 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>COUNTER-STRIFE · nikstil.com</title>
-  <meta name="description" content="COUNTER-STRIFE: 5v5 bomb defusal against bots, in your browser. Dust 2 and Mirage, buy menu, recoil, smokes, flashes and the bomb.">
+  <meta name="description" content="COUNTER-STRIFE: 5v5 bomb defusal in your browser, against bots or friends online. Six maps (Dust 2, Mirage, Nuke, Inferno, Overpass, Vertigo), five modes, ranks from Silver to Global Elite, the full CS arsenal, skins, stickers and cases, chat and radio commands, smokes, flashes, molotovs and the bomb.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="nikstil.com">
   <meta property="og:url" content="https://nikstil.com/strife/">
   <meta property="og:title" content="COUNTER-STRIFE">
-  <meta property="og:description" content="5v5 bomb defusal against bots, in your browser. Dust 2 and Mirage. Plant it, or defuse it.">
+  <meta property="og:description" content="5v5 bomb defusal in your browser, against bots or friends online. Six maps, five modes, ranks from Silver to Global Elite. Plant it, or defuse it.">
   <meta property="og:image" content="https://nikstil.com/strife/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="COUNTER-STRIFE: a tactical shooter on Dust 2 and Mirage">
+  <meta property="og:image:alt" content="COUNTER-STRIFE: a tactical shooter on six classic maps">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="COUNTER-STRIFE">
-  <meta name="twitter:description" content="5v5 bomb defusal against bots, in your browser. Dust 2 and Mirage. Plant it, or defuse it.">
+  <meta name="twitter:description" content="5v5 bomb defusal in your browser, against bots or friends online. Six maps, five modes, ranks from Silver to Global Elite. Plant it, or defuse it.">
   <meta name="twitter:image" content="https://nikstil.com/strife/og-image.png">
   <meta name="theme-color" content="#0f1216">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%230f1216'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='40'%3E💣%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="/strife/style.css">
+  <script src="/online/online.js" defer></script>
   <script type="module" src="/strife/app.js"></script>
 </head>
 <body>
@@ -42,6 +43,7 @@
         <div class="team-alive ct" id="alive-ct"></div>
       </div>
 
+      <div class="mode-info" id="mode-info"></div>
       <ol class="killfeed" id="killfeed" aria-live="polite"></ol>
 
       <div class="crosshair" id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
@@ -70,8 +72,26 @@
       </div>
 
       <div class="spectate" id="spectate" hidden></div>
+      <div class="net-badge" id="net-badge" hidden></div>
+      <div class="killcam" id="killcam" hidden><b>KILLCAM</b><span id="killcam-who"></span><button data-do="killcam-skip">Skip ▸</button></div>
       <div class="banner" id="banner" hidden><b id="banner-title"></b><span id="banner-sub"></span><em id="banner-mvp"></em></div>
     </div>
+
+    <!-- ===== Replay controls ===== -->
+    <section class="replay" id="replay" hidden aria-label="Replay">
+      <div class="rp-top"><b>REPLAY</b><span id="rp-title"></span><button class="ghost small" data-do="replay-exit">✕ Exit</button></div>
+      <div class="rp-bar">
+        <button class="rp-btn" id="rp-back" title="Back 10 s">⏪</button>
+        <button class="rp-btn" id="rp-play" title="Play / pause (Space)">❚❚</button>
+        <button class="rp-btn" id="rp-fwd" title="Forward 10 s">⏩</button>
+        <input type="range" id="rp-seek" min="0" max="1000" value="0" aria-label="Position">
+        <span class="rp-time" id="rp-time">0:00</span>
+        <select id="rp-speed" aria-label="Speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+        <select id="rp-follow" aria-label="Camera"></select>
+        <button class="rp-btn" id="rp-view" title="First / third person (V)">👁</button>
+      </div>
+      <div class="rp-rounds"><span>Rounds</span><div id="rp-rounds"></div></div>
+    </section>
 
     <!-- ===== Buy menu ===== -->
     <section class="panel buy" id="buy" hidden aria-label="Buy menu">
@@ -102,13 +122,25 @@
       <button class="tb buy-btn" data-t="buy">$</button>
       <button class="tb score-btn" data-t="score">☰</button>
       <button class="tb pause-btn" data-t="pause">❚❚</button>
+      <button class="tb radio-btn" data-t="radio" aria-label="Radio">📻</button>
+      <button class="tb chat-btn" data-t="chat" aria-label="Chat">💬</button>
     </div>
+
+    <!-- ===== Chat and radio (above the touch controls, so they can be tapped) ===== -->
+    <div class="chat" id="chat"><ol class="chat-log" id="chat-log" aria-live="polite"></ol><form class="chat-form" id="chat-form" hidden><span id="chat-to">All:</span><input id="chat-in" maxlength="120" autocomplete="off" enterkeyhint="send" aria-label="Chat message"></form></div>
+    <div class="radio-menu" id="radio-menu" hidden></div>
 
     <!-- ===== Menus ===== -->
     <section class="menu main-menu" id="menu">
       <div class="menu-side">
         <h1 class="logo">COUNTER<span>-</span>STRIFE</h1>
-        <p class="tag">5v5 bomb defusal against bots</p>
+        <p class="tag">5v5 bomb defusal, against bots or online</p>
+        <div class="rank-card" id="rank-card"></div>
+        <div class="menu-section">
+          <h2>Mode</h2>
+          <div class="seg seg-mode" id="seg-mode"></div>
+          <p class="mode-blurb" id="mode-blurb"></p>
+        </div>
         <div class="menu-section">
           <h2>Map</h2>
           <div class="maps" id="maps"></div>
@@ -127,7 +159,7 @@
             </div>
           </div>
         </div>
-        <div class="menu-section row-2">
+        <div class="menu-section row-2" id="row-match">
           <div>
             <h2>Match</h2>
             <div class="seg" id="seg-length">
@@ -143,12 +175,15 @@
         </div>
         <div class="menu-buttons">
           <button class="go" data-do="play">▶ Play</button>
+          <button class="go online-btn" data-do="online">🌐 Online</button>
           <button class="ghost" data-do="practice" title="Walk the map with no bots">Walk the map</button>
+          <button class="ghost" data-do="inventory">Inventory</button>
+          <button class="ghost" data-do="replays">Replays</button>
           <button class="ghost" data-do="settings">Settings</button>
           <button class="ghost" data-do="controls">Controls</button>
         </div>
         <p class="record" id="record"></p>
-        <p class="fine">Fan-made, unofficial: recreations of two classic bomb-defusal maps, built from scratch. Every model, texture and sound is new.</p>
+        <p class="fine">Fan-made, unofficial: recreations of six classic bomb-defusal maps, built from scratch. Every model, texture and sound is new.</p>
       </div>
     </section>
 
@@ -156,6 +191,8 @@
       <div class="menu-card">
         <h2>Paused</h2>
         <button class="go" data-do="resume">Resume</button>
+        <button class="ghost host-only" data-do="invite">📨 Invite friends</button>
+        <button class="ghost net-only" data-do="trade">🤝 Trade with a player</button>
         <button class="ghost" data-do="settings">Settings</button>
         <button class="ghost" data-do="controls">Controls</button>
         <button class="ghost danger" data-do="quit">Leave match</button>
@@ -175,6 +212,8 @@
           <select id="set-cross"><option value="#4dff6a">Green</option><option value="#ffffff">White</option><option value="#29e5ff">Cyan</option><option value="#ffe14d">Yellow</option><option value="#ff4d6d">Pink</option></select>
         </label>
         <label class="setting check"><input type="checkbox" id="set-invert"><span>Invert mouse</span></label>
+        <label class="setting check"><input type="checkbox" id="set-killcam"><span>Killcam (watch how you died)</span></label>
+        <label class="setting check"><input type="checkbox" id="set-radio-voice"><span>Radio voices (read the radio out loud)</span></label>
         <button class="go" data-do="back">Done</button>
       </div>
     </section>
@@ -197,6 +236,8 @@
           <dt>G</dt><dd>Drop your gun (or the bomb)</dd>
           <dt>B</dt><dd>Buy menu (in spawn, early in the round)</dd>
           <dt>Tab</dt><dd>Scoreboard</dd>
+          <dt>Y / U</dt><dd>Chat to everyone / your team (type “rush b” and your bots go B)</dd>
+          <dt>Z / X</dt><dd>Radio: commands the bots follow (follow me, hold, regroup…) and reports</dd>
           <dt>M</dt><dd>Sound on / off</dd>
           <dt>Esc</dt><dd>Pause</dd>
         </dl>
@@ -208,14 +249,77 @@
       <div class="menu-card wide">
         <h2 id="over-title">Victory</h2>
         <p class="over-score" id="over-score"></p>
+        <div class="over-rank" id="over-rank" hidden></div>
+        <p class="over-drop" id="over-drop"></p>
         <div class="over-board" id="over-board"></div>
         <div class="menu-buttons">
           <button class="go" data-do="again">Play again</button>
+          <button class="ghost" data-do="watch-replay" id="over-replay" hidden>🎬 Watch replay</button>
+          <button class="ghost" data-do="inventory">Inventory</button>
           <button class="ghost" data-do="quit">Main menu</button>
         </div>
       </div>
     </section>
 
+    <section class="menu online" id="online" hidden>
+      <div class="menu-card wide">
+        <h2>Play online</h2>
+        <p class="on-where" id="on-where"></p>
+        <label class="setting"><span>Your name</span><input id="on-name" maxlength="20" autocomplete="nickname" spellcheck="false"></label>
+        <div class="on-box">
+          <h3>Host a game</h3>
+          <p>Uses the map, side and match length from the main menu. Bots fill the empty places, and a friend who joins takes a bot’s place.</p>
+          <button class="go" data-do="host">Host a game</button>
+        </div>
+        <div class="on-box">
+          <h3>Join a game</h3>
+          <div class="on-code"><input id="on-code" placeholder="CODE" maxlength="4" autocomplete="off" spellcheck="false"><button class="go" data-do="join">Join</button></div>
+          <ul class="on-rooms" id="on-rooms"></ul>
+          <p class="on-status" id="on-status" aria-live="polite"></p>
+        </div>
+        <button class="ghost" data-do="online-back">Back</button>
+      </div>
+    </section>
+
+    <section class="menu ranks" id="ranks" hidden>
+      <div class="menu-card wide ranks-card">
+        <header class="inv-head"><h2>Ranks</h2><button class="x" data-do="back" aria-label="Close">✕</button></header>
+        <div class="ranks-body" id="ranks-body"></div>
+      </div>
+    </section>
+
+    <section class="menu replays" id="replays" hidden>
+      <div class="menu-card wide">
+        <h2>Replays</h2>
+        <p class="muted-note">Your last five matches are kept in this browser. Watch them from anyone’s eyes, or from above.</p>
+        <ul class="rp-list" id="rp-list"></ul>
+        <div class="menu-buttons"><label class="ghost file-btn">📂 Open a replay file<input type="file" id="rp-file" accept=".json,application/json" hidden></label><button class="ghost" data-do="back">Back</button></div>
+      </div>
+    </section>
+
+    <section class="menu inventory" id="inventory" hidden>
+      <div class="menu-card inv-card-wrap">
+        <header class="inv-head">
+          <h2>Inventory</h2>
+          <div class="inv-tabs"><button data-inv="tab" data-v="items">Items</button><button data-inv="tab" data-v="cases">Cases</button><button data-inv="tab" data-v="tradeup">Trade Up</button><button data-inv="trade" hidden>🤝 Trade</button></div>
+          <div class="inv-wallet"><span title="Credits: 1 per kill, 3 per round won, more for winning the match">ⓒ <b id="inv-credits">0</b></span><span title="Keys open cases">🔑 <b id="inv-keys">0</b></span><button class="ghost small" data-inv="key">Buy key (ⓒ 25)</button></div>
+          <button class="x" data-do="back" aria-label="Close">✕</button>
+        </header>
+        <p class="inv-note" id="inv-note"></p>
+        <div class="inv-body" id="inv-body"></div>
+      </div>
+      <div class="reel" id="reel" hidden>
+        <h2 id="reel-title">Opening…</h2>
+        <div class="reel-window" id="reel-window"><div class="reel-strip" id="reel-strip"></div><i class="reel-line"></i></div>
+        <div class="reel-result" id="reel-result" hidden>
+          <img alt=""><h3></h3><p></p>
+          <div class="menu-buttons"><button class="go" data-inv="reel-equip">Equip it</button><button class="ghost" data-inv="reel-close">Keep it</button></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="trade" id="trade" hidden></div>
+    <div class="trade" id="invite" hidden></div>
     <div class="loading" id="loading" hidden><span>Loading…</span></div>
     <a class="home-link" href="/" title="Back to nikstil.com">nikstil.com</a>
     <p class="nogl" id="nogl" hidden>COUNTER-STRIFE needs WebGL, which this browser has switched off.</p>

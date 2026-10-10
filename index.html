@@ -55,6 +55,7 @@
     <span class="wp-bubble" style="left:78%;top:16%;width:54px;height:54px"></span>
     <span class="wp-bubble" style="left:90%;top:52%;width:84px;height:84px"></span>
     <div class="wp-noise"></div>
+    <div class="wp-custom"></div>
   </div>
 
   <main class="desktop" id="desktop" aria-label="Desktop">
@@ -65,6 +66,7 @@
       <li><button class="desk-icon" data-app="gif"><span class="di-img" data-icon="gif" aria-hidden="true">🎞️</span><span class="di-label">The GIF</span></button></li>
       <li><button class="desk-icon" data-app="themes"><span class="di-img" data-icon="themes" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
       <li><button class="desk-icon" data-app="mobile"><span class="di-img" data-icon="mobile" aria-hidden="true">📱</span><span class="di-label">LigmaPhone</span></button></li>
+      <li><button class="desk-icon" data-app="achievements"><span class="di-img" data-icon="achievements" aria-hidden="true">🎖️</span><span class="di-label">Achievements</span></button></li>
       <li><button class="desk-icon" data-app="bin"><span class="di-img" data-icon="bin" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
       <li data-online="leaderboard" hidden><button class="desk-icon" data-app="leaderboard"><span class="di-img" data-icon="leaderboard" aria-hidden="true">🏆</span><span class="di-label">Leaderboards</span></button></li>
       <li data-online="messenger" hidden><button class="desk-icon" data-app="messenger"><span class="di-img" data-icon="messenger" aria-hidden="true">💬</span><span class="di-label">Messenger</span></button></li>
@@ -96,7 +98,10 @@
           <li><button class="sm-item" role="menuitem" data-app="translatr"><span data-icon="translatr" aria-hidden="true">🌐</span> <span class="sm-label">TRANSLATR™</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="gif"><span data-icon="gif" aria-hidden="true">🎞️</span> <span class="sm-label">The GIF</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="mobile"><span data-icon="mobile" aria-hidden="true">📱</span> <span class="sm-label">LigmaPhone</span></button></li>
-          <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">This PC</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="files"><span data-icon="files" aria-hidden="true">📁</span> <span class="sm-label">File Explorer</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="terminal"><span data-icon="terminal" aria-hidden="true">⌨️</span> <span class="sm-label">Command Prompt</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="achievements"><span data-icon="achievements" aria-hidden="true">🎖️</span> <span class="sm-label">Achievements</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">About this PC</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
           <li data-online="leaderboard" hidden><button class="sm-item" role="menuitem" data-app="leaderboard"><span data-icon="leaderboard" aria-hidden="true">🏆</span> <span class="sm-label">Leaderboards</span></button></li>
           <li data-online="messenger" hidden><button class="sm-item" role="menuitem" data-app="messenger"><span data-icon="messenger" aria-hidden="true">💬</span> <span class="sm-label">Messenger</span></button></li>
@@ -120,6 +125,8 @@
     <button class="ctx-item" role="menuitem" data-action="refresh">Refresh</button>
     <button class="ctx-item" role="menuitem" data-action="fullscreen" hidden><span class="fs-label">Full screen</span></button>
     <button class="ctx-item" role="menuitem" data-action="folder">New folder</button>
+    <button class="ctx-item" role="menuitem" data-action="textfile">New text document</button>
+    <button class="ctx-item" role="menuitem" data-action="explorer">File Explorer</button>
     <hr>
     <button class="ctx-item" role="menuitem" data-app="pc">About nikstilOS</button>
   </div>
@@ -229,6 +236,23 @@
     <div class="win-foot"><span class="status br-status">Home</span></div>
   </template>
 
+  <template id="app-terminal">
+    <div class="win-body term"><div class="term-out" role="log" aria-live="polite"></div><form class="term-line"><span class="term-prompt"></span><input class="term-in" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Command"></form></div>
+  </template>
+
+  <template id="app-files">
+    <div class="win-body fx"></div>
+    <div class="win-foot"><span class="status muted fx-status"></span></div>
+  </template>
+
+  <template id="app-achievements">
+    <div class="win-body ach-win"><iframe class="ach-frame" title="Achievements"></iframe></div>
+    <div class="win-foot">
+      <span class="status muted">Worked out from your saves in this browser</span>
+      <a class="btn" href="/achievements/" target="_blank" rel="noopener">⛶ Full page</a>
+    </div>
+  </template>
+
   <template id="app-strife">
     <div class="win-body strife-win"><iframe class="strife-frame" title="COUNTER-STRIFE" allow="fullscreen; autoplay"></iframe></div>
     <div class="win-foot">
@@ -296,8 +320,11 @@
 
   <template id="app-themes">
     <div class="win-body themes">
-      <p class="muted">Pick a look. They’re the same eight as TRANSLATR™’s, so a pick in one shows up in the other.</p>
+      <p class="muted">Pick a look. They’re the same as TRANSLATR™’s, so a pick in one shows up in the other (and one more you unlock with achievement points).</p>
       <div class="theme-grid" id="theme-grid"></div>
+      <h3 class="wall-head">Wallpaper</h3>
+      <p class="muted">Unlock more with achievement points (Achievements → Rewards).</p>
+      <div class="wall-grid" id="wall-grid"></div>
     </div>
   </template>
 
@@ -320,13 +347,13 @@
   <template id="app-leaderboard">
     <div class="win-body lb">
       <div class="lb-bar">
-        <label class="lb-mode-pick"><span class="sr-only">Mode</span><select class="lb-mode"><option value="speedrun">🏁 Speedrun</option><option value="daily">📅 Daily Challenge</option></select></label>
+        <label class="lb-mode-pick"><span class="sr-only">Mode</span><select class="lb-mode"><option value="speedrun">🏁 Speedrun</option><option value="daily">📅 Daily Challenge</option><option value="strife">💣 COUNTER-STRIFE ranks</option></select></label>
         <label class="lb-pick"><span class="sr-only">Board</span><select class="lb-board"></select></label>
         <button class="btn lb-refresh" title="Refresh" aria-label="Refresh">⟳</button>
       </div>
       <div class="lb-wrap">
         <table class="lb-table">
-          <thead><tr><th class="lb-rank">#</th><th>Player</th><th class="lb-time">Time</th><th class="lb-ending">Ending</th><th class="lb-when">When</th></tr></thead>
+          <thead class="lb-head"><tr><th class="lb-rank">#</th><th>Player</th><th class="lb-time">Time</th><th class="lb-ending">Ending</th><th class="lb-when">When</th></tr></thead>
           <tbody></tbody>
         </table>
         <p class="lb-empty muted" hidden></p>
@@ -362,6 +389,8 @@
           <img class="avatar msgr-with-pic" width="28" height="28" alt="">
           <b class="msgr-with"></b>
           <span class="msgr-tools">
+            <button class="btn msgr-play" title="Host a COUNTER-STRIFE game and invite them">💣 Play</button>
+            <button class="btn msgr-profile">Profile</button>
             <button class="btn msgr-block"></button>
             <button class="btn msgr-report">Report</button>
           </span>
@@ -411,6 +440,7 @@
         <div class="acct-card">
           <img class="acct-avatar avatar" width="52" height="52" alt="Your profile picture">
           <div><b class="acct-name"></b><small class="muted acct-since"></small></div>
+          <button type="button" class="btn acct-profile">View my profile</button>
         </div>
         <fieldset class="acct-pics">
           <legend>Profile picture</legend>

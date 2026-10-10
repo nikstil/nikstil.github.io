@@ -2,10 +2,20 @@
 
 import * as THREE from './lib/three.min.js'
 import { MAPS, MAP_LIST } from './maps.js'
-import { Game, eyeOf, weaponOf, dirOf } from './game.js'
+import { Game, MODES, MODE_LIST, ARMS_LADDER, eyeOf, weaponOf, dirOf } from './game.js'
 import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP } from './weapons.js'
+import { gunIcon } from './icons.js'
+import { skinMaterial, stickerMaterial } from './skins.js'
+import { initChat } from './chatui.js'
+import { initRanks } from './rankui.js'
+import { initInvites, isUserId } from './invite.js'
+import { rankBadge } from './ranks.js'
+import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
+import { openHub, NetHost, NetClient, makeCode } from './net.js'
+import { track } from './stats.js'
+import { Recorder, Player, clip, saveReplay, listReplays, loadReplay, deleteReplay } from './replay.js'
 import { DIFFICULTY } from './bots.js'
 import * as audio from './audio.js'
 
@@ -44,11 +54,14 @@ const settings = {
   quality: coarse ? 'low' : 'medium',
   cross: '#4dff6a',
   invert: false,
+  killcam: true,
+  radioVoice: true,
   map: 'dust2',
   team: 'auto',
   diff: 1,
   length: 9,
   size: 5,
+  mode: 'competitive',
   ...(store.get(SKEY) ?? {}),
 }
 if (q.get('map') && MAPS[q.get('map')]) settings.map = q.get('map')
@@ -100,20 +113,28 @@ let mode = 'menu' // 'menu' (a bot match plays behind it) | 'play'
 let paused = false
 let watched = null // whose eyes we're looking through
 let radarImg = null
+let radarLow = null
 const look = { yaw: 0, pitch: 0 }
 let camY = null
 let orbit = 0
 
 function hooks() {
   return {
+    chat(d) {
+      if (mode === 'play') chatUi.chat(d)
+    },
+    radio(d) {
+      if (mode === 'play') chatUi.radio(d)
+    },
     sound(name, at, o) {
       if (mode !== 'play') return
       const self = o.who && o.who === watched
+      if (!at && o.who && !self) return // someone else's menu clicks and buys
       audio.play(name, { at: self ? null : at, gain: (o.gain ?? 1) * (self && name.startsWith('step') ? 0.5 : 1), range: o.range ?? 40 })
     },
     tracer({ a, from, to, w }) {
       if (!view) return
-      if (a === watched && mode === 'play') view.kick(w)
+      if (a === watched && mode === 'play') view.kick(w, !!a.inv[a.active]?.silenced)
       else view.muzzle(a)
       if (a !== watched || Math.random() < 0.5) view.tracer(from, to, a === watched)
     },
@@ -131,15 +152,28 @@ function hooks() {
       addKillfeed(e)
       if (e.victim === game.player) {
         deathInfo = e
+        if (e.attacker && e.attacker !== e.victim && !game.respawns && !game.practice) {
+          const killerId = e.attacker.id
+          const deathT = game.time
+          setTimeout(() => mode === 'play' && game.time - deathT < 6 && startKillcam(killerId, deathT), 1100)
+        }
         record.deaths++
       }
-      if (e.attacker === game.player && e.victim.team !== game.player.team) record.kills++
+      if (!game.practice) track.kill(e, game.player, game)
+      if (e.attacker === game.player && e.victim.team !== game.player.team) {
+        record.kills++
+        if (!game.practice) rewardKill(e.weaponId)
+      }
     },
     knife({ a }) {
       if (a === watched) view?.slash()
     },
+    mode({ a, text }) {
+      if (a === game.player) say(text, 1.2)
+    },
     detonate({ nade }) {
-      if (nade.type !== 'smoke') view?.explosion(nade.pos, nade.type)
+      if (nade.type === 'he' || nade.type === 'flash') view?.explosion(nade.pos, nade.type)
+      else if (nade.type === 'fire') view?.explosion(nade.pos, 'fire')
     },
     explode({ pos }) {
       view?.explosion(pos, 'bomb')
@@ -152,6 +186,8 @@ function hooks() {
     },
     roundStart() {
       if (mode !== 'play') return
+      track.roundStart()
+      if (!game.respawns && !game.practice) audio.music(musicKit(), 'start')
       hideBanner()
       deathInfo = null
       spectIdx = 0
@@ -167,15 +203,27 @@ function hooks() {
     },
     roundEnd({ winner, reason, mvp, over }) {
       if (mode !== 'play') return
-      const reasons = { elimination: winner === 'T' ? 'All Counter-Terrorists are dead' : 'All Terrorists are dead', bomb: 'The bomb exploded', defuse: 'The bomb has been defused', time: 'Time ran out: the bomb was never planted' }
+      const reasons = { elimination: winner === 'T' ? 'All Counter-Terrorists are dead' : 'All Terrorists are dead', bomb: 'The bomb exploded', defuse: 'The bomb has been defused', time: game.respawns ? 'Time is up: most kills wins' : 'Time ran out: the bomb was never planted', kills: `First to ${game.rules.killsToWin} kills`, armsrace: `${mvp?.name ?? 'Someone'} went through every gun and won with the knife` }
       showBanner(winner, reasons[reason], mvp ? `MVP: ${mvp.name}${mvp === game.player ? ' (you!)' : ''}` : '')
       if (game.player) audio.play(winner === game.player.team ? 'win' : 'lose')
+      if (game.player && !game.practice) track.roundEnd({ winner, mvp }, game.player, !!net)
+      if (game.player && mvp === game.player && !game.practice) {
+        setTimeout(() => audio.music(musicKit(), 'mvp'), 600)
+        rewardMvp()
+      }
+      if (game.player && !game.practice && !over) {
+        const got = rewardRound(winner === game.player.team)
+        if (got) setTimeout(() => say(`Case drop: you received a ${got}`, 3), 1500)
+      }
       if (over) setTimeout(matchOver, 3500)
     },
-    planted({ site }) {
+    planted(e) {
+      const { site } = e
+      if (mode === 'play' && !game.practice) track.planted(e, game.player)
       if (mode === 'play') say(`The bomb has been planted at ${site}`, 3, true)
     },
-    defused() {
+    defused(e) {
+      if (mode === 'play' && !game.practice) track.defused(e, game.player)
       if (mode === 'play') say('The bomb has been defused', 3)
     },
     bombDropped() {
@@ -184,6 +232,20 @@ function hooks() {
     bombPicked({ a }) {
       if (mode === 'play' && a === game.player) say('You picked up the bomb', 2)
     },
+    respawn({ a }) {
+      if (a !== game.player) return
+      deathInfo = null
+      camY = null
+      look.yaw = a.yaw
+      look.pitch = 0
+      watched = a
+    },
+    levelUp({ a, level }) {
+      if (a !== game.player || mode !== 'play') return
+      const id = ARMS_LADDER[Math.min(level, ARMS_LADDER.length - 1)]
+      say(`Level ${level + 1}: ${WEAPONS[id].name}`, 1.6)
+      audio.play('buy')
+    },
     halftime() {
       if (mode === 'play') say('Halftime: switching sides', 4)
     },
@@ -191,17 +253,36 @@ function hooks() {
 }
 
 /** Starts a match (or the menu's background bot match, `demo`). */
-function start({ demo = false, practice = false } = {}) {
-  view?.dispose()
+function start({ demo = false, practice = false, host = false } = {}) {
+  // walking out of a ranked match (to the menu, or into another) counts as a loss
+  rankUi.abandon(rankCtx)
+  rankCtx = null
+  if (!host || !net) endNet()
   const map = MAPS[settings.map]
   const team = demo ? null : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
-  game = new Game({ map, team, size: demo ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, rules: { roundsToWin: settings.length }, hooks: hooks() })
+  game = new Game({ map, team, mode: demo ? 'competitive' : settings.mode, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
+  if (!demo) {
+    rankCtx = rankUi.startMatch(game, settings.map)
+    rankUi.tagActors(game)
+  }
+  $('#pause [data-do="quit"]').textContent = rankCtx ? 'Leave match (counts as a loss)' : 'Leave match'
+  attachView(map, demo)
+}
+/** A new view (renderer scene) for the current game. */
+function attachView(map, demo = false) {
+  view?.dispose()
   const qq = QUALITY[settings.quality] ?? QUALITY.medium
   view = new View(renderer, { shadows: qq.shadows && renderer.shadowMap.enabled, shadowSize: qq.shadowSize })
+  view.skinMat = skinMaterial
+  view.stickerMat = stickerMaterial
   view.load(game)
   resize()
   radarImg = radarImage(map)
+  radarLow = map.radarSplit != null ? radarImage(map, true) : null
   mode = demo ? 'menu' : 'play'
+  rec = !demo && !game.practice ? new Recorder(game) : null
+  if (rec) recordInto(game)
+  killcam = null
   watched = game.player
   if (game.player) {
     look.yaw = game.player.yaw
@@ -210,13 +291,366 @@ function start({ demo = false, practice = false } = {}) {
   camY = null
   killfeed.length = 0
   $('#killfeed').replaceChildren()
+  chatUi.clear()
   hideBanner()
   document.body.classList.toggle('playing', !demo)
 }
 
+// ================= Killcam and replays =================
+let rec = null // the Recorder for the match being played
+let killcam = null // { player, killer, until }
+let replay = null // { player, data, follow, fp, orbit }
+let lastReplay = null
+const REC_EVENTS = ['tracer', 'impact', 'detonate', 'explode', 'kill', 'roundEnd', 'hit']
+/** Every recordable event also goes into the recording. */
+function recordInto(g) {
+  const orig = g.hooks
+  const hooks = { ...orig }
+  for (const name of REC_EVENTS)
+    hooks[name] = (d) => {
+      orig[name]?.(d)
+      if (rec?.game === g) rec.event(name, d)
+    }
+  g.hooks = hooks
+}
+/** Effects for a playback (the killcam, a replay) through the current view. */
+const replayFx = () => ({
+  tracer: (from, to) => view?.tracer(from, to, false),
+  impact: (at, n, soft) => view?.impact(at, n, soft),
+  explosion: (at, type) => view?.explosion(at, type),
+  blood: (at) => view?.blood(at, null),
+  sound: (name, at) => audio.play(name, { at, range: 75, gain: 0.8 }),
+  kill: (e) => mode === 'replay' && addKillfeed(e),
+})
+function startKillcam(killerId, deathT) {
+  if (!rec || !settings.killcam) return
+  const data = clip(rec, deathT - 5.2, deathT + 0.6)
+  if (data.frames.length < 10) return
+  const player = new Player(data, game.map, replayFx())
+  player.seek(player.t0)
+  const killer = player.ghost.actors[killerId]
+  if (!killer) return
+  killcam = { player, killer }
+  document.body.classList.add('killcam-on')
+  const kc = $('#killcam')
+  kc.hidden = false
+  $('#killcam-who').textContent = killer.name
+}
+function endKillcam() {
+  killcam = null
+  document.body.classList.remove('killcam-on')
+  $('#killcam').hidden = true
+}
+async function startReplay(data) {
+  const map = MAPS[data.meta.map]
+  if (!map) return
+  paused = false
+  releaseMouse()
+  const player = new Player(data, map, replayFx())
+  view?.dispose()
+  const qq = QUALITY[settings.quality] ?? QUALITY.medium
+  view = new View(renderer, { shadows: qq.shadows && renderer.shadowMap.enabled, shadowSize: qq.shadowSize })
+  view.skinMat = skinMaterial
+  view.stickerMat = stickerMaterial
+  view.load(player.ghost)
+  resize()
+  radarImg = radarImage(map)
+  radarLow = map.radarSplit != null ? radarImage(map, true) : null
+  const me = data.roster.find((r) => r.me)
+  replay = { player, data, follow: me ? me.id : -1, fp: true, orbit: 0 }
+  mode = 'replay'
+  killfeed.length = 0
+  $('#killfeed').replaceChildren()
+  chatUi.clear()
+  show(null)
+  $('#hud').hidden = false
+  document.body.classList.add('replaying')
+  $('#replay').hidden = false
+  const sel = $('#rp-follow')
+  sel.replaceChildren(new Option('Overview (from above)', '-1'))
+  for (const r of data.roster) sel.append(new Option(`${r.name}${r.me ? ' (you)' : ''} · ${r.team}`, String(r.id)))
+  sel.value = String(replay.follow)
+  $('#rp-title').textContent = `${map.name} · ${MODES[data.meta.mode]?.name ?? 'Competitive'} · ${new Date(data.meta.date).toLocaleString()} · ${data.meta.score?.T ?? 0}–${data.meta.score?.CT ?? 0}`
+  const rounds = $('#rp-rounds')
+  rounds.replaceChildren()
+  for (const r of player.rounds()) {
+    const b = document.createElement('button')
+    b.textContent = r.round
+    b.title = `Round ${r.round}`
+    b.addEventListener('click', () => player.seek(r.t))
+    rounds.append(b)
+  }
+}
+/** The Replays screen: the last few matches, and replay files. */
+async function openReplays() {
+  backTo = 'menu'
+  show('replays')
+  const ul = $('#rp-list')
+  ul.replaceChildren()
+  const list = await listReplays()
+  if (!list.length) {
+    const li = document.createElement('li')
+    li.className = 'empty'
+    li.textContent = 'No replays yet: finish a match and it’ll be here.'
+    ul.append(li)
+  }
+  for (const r of list) {
+    const m = r.meta
+    const li = document.createElement('li')
+    li.innerHTML = '<div><b></b><small></small></div><button class="go small">▶ Watch</button><button class="ghost small">⬇</button><button class="ghost small">🗑</button>'
+    $('b', li).textContent = `${MAPS[m.map]?.name ?? m.map} · ${MODES[m.mode]?.name ?? 'Competitive'}`
+    $('small', li).textContent = `${new Date(m.date).toLocaleString()} · ${m.score?.T ?? 0}–${m.score?.CT ?? 0} · ${m.rounds ?? '?'} rounds`
+    const [watch, dl, del] = li.querySelectorAll('button')
+    watch.addEventListener('click', async () => startReplay(await loadReplay(r.id)))
+    dl.title = 'Download the replay file'
+    dl.addEventListener('click', async () => {
+      const data = await loadReplay(r.id)
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }))
+      a.download = `counter-strife-${m.map}-${new Date(m.date).toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+    })
+    del.title = 'Delete'
+    del.addEventListener('click', async () => {
+      await deleteReplay(r.id)
+      openReplays()
+    })
+    ul.append(li)
+  }
+}
+$('#rp-file').addEventListener('change', async (e) => {
+  const f = e.target.files?.[0]
+  if (!f) return
+  try {
+    const data = JSON.parse(await f.text())
+    if (!data?.frames?.length || !data.meta?.map) throw new Error('not a replay')
+    startReplay(data)
+  } catch {
+    alertBox('That file isn’t a COUNTER-STRIFE replay.')
+    show('menu')
+  }
+  e.target.value = ''
+})
+// replay controls
+$('#rp-play').addEventListener('click', () => replay && (replay.player.playing = !replay.player.playing || (replay.player.time >= replay.player.t1 ? (replay.player.seek(replay.player.t0), true) : true)))
+$('#rp-back').addEventListener('click', () => replay && replay.player.seek(replay.player.time - 10))
+$('#rp-fwd').addEventListener('click', () => replay && replay.player.seek(replay.player.time + 10))
+$('#rp-seek').addEventListener('input', (e) => replay && replay.player.seek(replay.player.t0 + (Number(e.target.value) / 1000) * replay.player.duration))
+$('#rp-speed').addEventListener('change', (e) => replay && (replay.player.speed = Number(e.target.value)))
+$('#rp-follow').addEventListener('change', (e) => replay && (replay.follow = Number(e.target.value)))
+$('#rp-view').addEventListener('click', () => replay && (replay.fp = !replay.fp))
+addEventListener('keydown', (e) => {
+  if (mode !== 'replay' || !replay || e.target.closest?.('input, select')) return
+  if (e.code === 'Space') $('#rp-play').click()
+  else if (e.code === 'KeyV') replay.fp = !replay.fp
+  else if (e.code === 'ArrowLeft') replay.player.seek(replay.player.time - 5)
+  else if (e.code === 'ArrowRight') replay.player.seek(replay.player.time + 5)
+  else if (e.code === 'Escape') endReplay()
+  else if (e.code === 'Tab' || e.code === 'KeyQ' || e.code === 'KeyE') {
+    // next / previous player
+    const ids = [-1, ...replay.data.roster.map((r) => r.id)]
+    const k = ids.indexOf(replay.follow)
+    replay.follow = ids[(k + (e.code === 'KeyQ' ? ids.length - 1 : 1)) % ids.length]
+    $('#rp-follow').value = String(replay.follow)
+  } else return
+  e.preventDefault()
+})
+function endReplay() {
+  replay = null
+  document.body.classList.remove('replaying')
+  $('#replay').hidden = true
+  start({ demo: true })
+  show('menu')
+  syncMenu()
+}
+function replayCamera(dt) {
+  const p = replay.player
+  const g = p.ghost
+  const a = g.actors[replay.follow]
+  if (!a) {
+    replay.orbit += dt * 0.06
+    const cx = g.map.w / 2
+    const cz = g.map.d / 2
+    return { x: cx + Math.sin(replay.orbit) * 48, y: 46, z: cz + Math.cos(replay.orbit) * 48, yaw: replay.orbit, pitch: -0.72, fov: 62, who: null }
+  }
+  const eye = eyeOf(a)
+  if (replay.fp && a.alive) return { x: eye.x, y: eye.y, z: eye.z, yaw: a.yaw, pitch: a.pitch, fov: settings.fov, who: a }
+  // third person: behind and a little above
+  const back = dirOf(a.yaw, 0)
+  return { x: eye.x - back.x * 2.6, y: eye.y + 0.7, z: eye.z - back.z * 2.6, yaw: a.yaw, pitch: -0.18, fov: settings.fov, who: null }
+}
+function updateReplayHud() {
+  const p = replay.player
+  const g = p.ghost
+  const now = p.time - p.t0
+  $('#rp-time').textContent = `${fmtTime(now)} / ${fmtTime(p.duration)}`
+  const range = $('#rp-seek')
+  if (document.activeElement !== range) range.value = String(Math.round((now / Math.max(1, p.duration)) * 1000))
+  $('#rp-play').textContent = p.playing ? '❚❚' : '▶'
+  setText('score-t', String(g.score.T))
+  setText('score-ct', String(g.score.CT))
+  setText('clock', g.phase === 'live' && g.phaseEnd !== Infinity ? fmtTime(Math.max(0, g.phaseEnd - g.time)) : '–')
+  setText('alive-t', '')
+  setText('alive-ct', '')
+  const a = g.actors[replay.follow]
+  setText('place', a ? `${a.name} · ${a.alive ? a.hp + ' HP' : 'dead'}` : 'Overview')
+}
+
+// ================= Online =================
+let hudBuyT = 0
+let net = null // NetHost or NetClient
+let hub = null
+let lobby = null
+const lobbyId = Math.random().toString(36).slice(2, 10)
+async function getHub() {
+  hub ??= await openHub()
+  return hub
+}
+function netName() {
+  const v = String($('#on-name')?.value || settings.netName || '').trim().slice(0, 20)
+  return v || 'Player' + Math.floor(1000 + Math.random() * 9000)
+}
+async function openOnline() {
+  show('online')
+  if (!settings.netName) settings.netName = window.nikstilOnline?.profile?.username || 'Player' + Math.floor(1000 + Math.random() * 9000)
+  $('#on-name').value = settings.netName
+  $('#on-status').textContent = 'Connecting…'
+  const h = await getHub()
+  $('#on-where').textContent = h.kind === 'online' ? 'Games on nikstil.com, open to everyone.' : 'Online play isn’t available right now, so this finds games in other tabs of this browser.'
+  $('#on-status').textContent = ''
+  closeLobby()
+  lobby = h.join('lobby', lobbyId, { role: 'browser' }, { onMembers: renderRooms })
+  renderRooms([])
+}
+function closeLobby() {
+  lobby?.leave()
+  lobby = null
+}
+function renderRooms(list) {
+  const ul = $('#on-rooms')
+  ul.replaceChildren()
+  const hosts = list.filter((m) => m.role === 'host' && m.code)
+  if (!hosts.length) {
+    const li = document.createElement('li')
+    li.className = 'empty'
+    li.textContent = 'No open games right now. Host one!'
+    ul.append(li)
+  }
+  for (const m of hosts) {
+    const li = document.createElement('li')
+    li.innerHTML = '<b></b><span></span><button class="go small" data-do="join-room">Join</button>'
+    $('b', li).textContent = `${m.name}’s game`
+    $('span', li).textContent = `${m.map} · ${m.humans} player${m.humans === 1 ? '' : 's'} · round ${m.round || 1} · code ${m.code}`
+    $('button', li).dataset.code = m.code
+    ul.append(li)
+  }
+}
+async function hostGame() {
+  settings.netName = netName()
+  saveSettings()
+  closeLobby()
+  const h = await getHub()
+  $('#loading').hidden = false
+  await new Promise((done) =>
+    setTimeout(() => {
+      start({ host: true })
+      net = new NetHost(h, game, { code: makeCode(), name: settings.netName, mapId: settings.map, onSay: (t) => say(t, 3), onPeople: (list) => list.length && track.hostedWithFriend(), onTrade: (from, m) => onTradeMessage(from, m) })
+      tradeHookup()
+      document.body.classList.add('hosting')
+      $('#loading').hidden = true
+      paused = false
+      show(null)
+      grab()
+      say(`Hosting: friends can join with the code ${net.code} (Esc → Invite friends)`, 5)
+      done()
+    }, 30),
+  )
+}
+async function joinGame(code) {
+  code = String(code || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4)
+  if (code.length !== 4) {
+    $('#on-status').textContent = 'A game code is four letters.'
+    return
+  }
+  settings.netName = netName()
+  saveSettings()
+  const h = await getHub()
+  $('#on-status').textContent = `Joining ${code}…`
+  endNet()
+  net = new NetClient(h, {
+    code,
+    name: settings.netName,
+    team: settings.team,
+    skins: equippedSkins(),
+    rank: rankUi.myTier(),
+    onWelcome: (w) => startClient(w),
+    onEnd: (why) => {
+      const wasPlaying = mode === 'play'
+      net = null
+      if (wasPlaying) {
+        paused = false
+        start({ demo: true })
+        show('menu')
+        syncMenu()
+        alertBox(why)
+      } else $('#on-status').textContent = why
+    },
+    onSay: (t) => say(t, 3),
+    onTrade: (from, m) => onTradeMessage(from, m),
+  })
+  tradeHookup()
+}
+/** The host said hello: build their match on our side. */
+function startClient(w) {
+  closeLobby()
+  const map = MAPS[w.map] ?? MAPS.dust2
+  settings.map = w.map in MAPS ? w.map : 'dust2'
+  game = new Game({ map, mode: w.mode, roster: w.roster, myId: w.me, netRole: 'client', rules: w.rules, hooks: hooks(), skinFor })
+  attachView(map)
+  chatUi.clear()
+  document.body.classList.add('playing')
+  paused = false
+  show(null)
+  grab()
+  say(`Joined ${w.host}’s game (${w.code})`, 3)
+  return game
+}
+/** Lets the inventory trade with the other people in this online game. */
+function tradeHookup() {
+  document.body.classList.add('online')
+  setTradeApi({
+    partners: () => game.actors.filter((a) => !a.isBot && a !== game.player).map((a) => ({ id: a.id, name: a.name })),
+    send: (to, m) => net?.sendTrade(to, m),
+    // the trade window needs the mouse: pause (the online game itself keeps going)
+    onOpen: () => {
+      if (mode !== 'play' || paused) return
+      document.exitPointerLock?.()
+      pause()
+    },
+  })
+}
+function endNet() {
+  setTradeApi(null)
+  document.body.classList.remove('online', 'hosting')
+  inviteUi.close()
+  if (net) {
+    const n = net
+    net = null
+    n.close?.()
+  }
+}
+function alertBox(text) {
+  const p = $('#record')
+  p.textContent = text
+  p.classList.add('warn')
+  setTimeout(() => p.classList.remove('warn'), 6000)
+}
+
 // ================= Menus =================
 function show(id) {
-  for (const s of ['menu', 'pause', 'settings', 'controls', 'over']) $('#' + s).hidden = s !== id
+  for (const s of ['menu', 'pause', 'settings', 'controls', 'over', 'inventory', 'online', 'replays', 'ranks']) $('#' + s).hidden = s !== id
+  if (id === 'menu') rankUi.renderCard()
   $('#hud').hidden = id === 'menu' || mode !== 'play'
   $('#touch').hidden = !coarse || mode !== 'play' || !!id
 }
@@ -263,6 +697,15 @@ function buildMenu() {
     )
   seg('#seg-team', 'team')
   seg('#seg-diff', 'diff', true)
+  const modes = $('#seg-mode')
+  modes.replaceChildren()
+  for (const id of MODE_LIST) {
+    const b = document.createElement('button')
+    b.dataset.v = id
+    b.textContent = MODES[id].name
+    modes.append(b)
+  }
+  seg('#seg-mode', 'mode')
   seg('#seg-length', 'length', true)
   seg('#seg-size', 'size', true)
   syncMenu()
@@ -274,6 +717,12 @@ function syncMenu() {
   mark('#seg-diff', settings.diff)
   mark('#seg-length', settings.length)
   mark('#seg-size', settings.size)
+  mark('#seg-mode', settings.mode)
+  const md = MODES[settings.mode] ?? MODES.competitive
+  $('#mode-blurb').textContent = md.blurb
+  // match length and team size only mean something in some modes
+  $('#seg-length').parentElement.hidden = !!md.respawn
+  $('#seg-size').parentElement.hidden = !!md.size
   $('#record').textContent = record.wins + record.losses ? `Record: ${record.wins} won, ${record.losses} lost · ${record.kills} kills, ${record.deaths} deaths` : ''
 }
 function syncSettings() {
@@ -286,6 +735,8 @@ function syncSettings() {
   $('#set-quality').value = settings.quality
   $('#set-cross').value = settings.cross
   $('#set-invert').checked = settings.invert
+  $('#set-killcam').checked = settings.killcam
+  $('#set-radio-voice').checked = settings.radioVoice
   $('#crosshair').style.setProperty('--c', settings.cross)
 }
 $('#set-sens').addEventListener('input', (e) => ((settings.sens = Number(e.target.value)), saveSettings(), syncSettings()))
@@ -298,6 +749,8 @@ $('#set-vol').addEventListener('input', (e) => {
 })
 $('#set-cross').addEventListener('change', (e) => ((settings.cross = e.target.value), saveSettings(), syncSettings()))
 $('#set-invert').addEventListener('change', (e) => ((settings.invert = e.target.checked), saveSettings()))
+$('#set-killcam').addEventListener('change', (e) => ((settings.killcam = e.target.checked), saveSettings()))
+$('#set-radio-voice').addEventListener('change', (e) => ((settings.radioVoice = e.target.checked), saveSettings()))
 $('#set-quality').addEventListener('change', (e) => {
   settings.quality = e.target.value
   saveSettings()
@@ -320,6 +773,19 @@ document.addEventListener('click', (e) => {
   if (!b) return
   audio.unlockAudio()
   const act = b.dataset.do
+  if (act === 'again' && net instanceof NetHost) {
+    start({ host: true })
+    net.setGame(game)
+    paused = false
+    show(null)
+    grab()
+    return
+  }
+  if (act === 'again' && net instanceof NetClient) {
+    say('Waiting for the host to start the next match…', 4)
+    show(null)
+    return
+  }
   if (act === 'play' || act === 'practice' || act === 'again') {
     $('#loading').hidden = false
     setTimeout(() => {
@@ -336,10 +802,38 @@ document.addEventListener('click', (e) => {
   } else if (act === 'controls') {
     backTo = mode === 'play' ? 'pause' : 'menu'
     show('controls')
+  } else if (act === 'inventory') {
+    backTo = !$('#over').hidden ? 'over' : 'menu'
+    showInventory()
+    show('inventory')
   } else if (act === 'back') show(backTo)
   else if (act === 'resume') resume()
-  else if (act === 'quit') {
+  else if (act === 'online') openOnline()
+  else if (act === 'trade' && net) {
+    backTo = 'pause'
+    showInventory()
+    show('inventory')
+    openTradePicker()
+  }
+  else if (act === 'watch-replay' && lastReplay) startReplay(lastReplay)
+  else if (act === 'replays') openReplays()
+  else if (act === 'invite') inviteUi.open()
+  else if (act === 'ranks') {
+    backTo = 'menu'
+    show('ranks')
+    rankUi.openBoard()
+  }
+  else if (act === 'replay-exit') endReplay()
+  else if (act === 'killcam-skip') endKillcam()
+  else if (act === 'host') hostGame()
+  else if (act === 'join') joinGame($('#on-code').value)
+  else if (act === 'join-room') joinGame(b.dataset.code)
+  else if (act === 'online-back') {
+    closeLobby()
+    show('menu')
+  } else if (act === 'quit') {
     paused = false
+    releaseMouse()
     start({ demo: true })
     show('menu')
     syncMenu()
@@ -363,6 +857,16 @@ function matchOver() {
   const won = me && game.winner === me.team
   if (me) won ? record.wins++ : record.losses++
   store.set(RKEY, record)
+  if (rec && rec.game === game && rec.frames.length > 30) {
+    lastReplay = rec.data()
+    saveReplay(lastReplay)
+  }
+  $('#over-replay').hidden = !lastReplay
+  const got = me ? rewardMatch(won, me.mvps ?? 0) : ''
+  rankUi.hideResult()
+  if (rankCtx) rankUi.finishMatch(rankCtx, game)
+  if (me) track.matchOver(won, settings.map, game.difficulty, game.mode, game.mode === 'armsrace' && (me.arLevel ?? 0) >= ARMS_LADDER.length)
+  $('#over-drop').textContent = got ? `Case drop: ${got} · open it from Inventory` : ''
   $('#over-title').textContent = won ? 'Victory' : 'Defeat'
   $('#over-title').className = won ? 'win' : 'loss'
   hideBanner()
@@ -393,6 +897,27 @@ const edge = { jump: false, reload: false, slot: null, alt: false, drop: false, 
 let mouseFire = false
 let tabHeld = false
 const touch = { mx: 0, mz: 0, fire: false, use: false, crouch: false }
+// inviting Messenger friends into the game you're hosting
+const inviteUi = initInvites({ code: () => (net instanceof NetHost ? net.code : null) })
+// ranks: the menu card, ranked matches, the Ranks page
+const rankUi = initRanks({ difficultyName: (i) => DIFFICULTY[i].name })
+let rankCtx = null // the ranked match being played, if it is one
+addEventListener('pagehide', () => {
+  if (rankCtx && game?.phase !== 'over') rankUi.abandon(rankCtx)
+})
+// the chat box and the radio menus (they take the keyboard while open)
+const chatUi = initChat({
+  game: () => game,
+  net: () => net,
+  playing: () => mode === 'play' && !paused && !!game?.player,
+  settings,
+  audio,
+  onOpen: () => {
+    keys.clear()
+    mouseFire = false
+  },
+  onClose: () => {},
+})
 let locked = false
 let wantLock = false
 
@@ -408,7 +933,7 @@ function releaseMouse() {
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === renderer?.domElement
   // Losing the mouse mid-game (Esc) pauses, unless we let it go on purpose (buy menu, etc).
-  if (!locked && wantLock && mode === 'play' && !buyOpen && !paused) pause()
+  if (!locked && wantLock && mode === 'play' && !buyOpen && !paused && !chatUi.busy) pause()
 })
 stage.addEventListener('mousedown', (e) => {
   audio.unlockAudio()
@@ -469,6 +994,7 @@ addEventListener('keydown', (e) => {
     if (e.code === 'Escape' && !$('#pause').hidden) resume()
     return
   }
+  if (!buyOpen && chatUi.key(e)) return
   if (buyOpen && /^Digit[0-9]$/.test(e.code)) {
     buyKey(Number(e.code.slice(5)))
     return
@@ -500,6 +1026,7 @@ addEventListener('blur', () => {
 document.addEventListener('visibilitychange', () => document.hidden && pause())
 
 /** The human's commands for one tick. */
+const testInput = {} // (for automated tests)
 function playerCmd() {
   const a = game.player
   const k = (c) => keys.has(c)
@@ -523,6 +1050,7 @@ function playerCmd() {
     drop: edge.drop,
     pickup: edge.pickup,
   }
+  Object.assign(cmd, testInput)
   edge.jump = edge.reload = edge.alt = edge.drop = edge.pickup = false
   edge.slot = null
   if (!a.alive) {
@@ -570,13 +1098,17 @@ function renderBuy() {
       n++
       const b = document.createElement('button')
       b.className = 'buy-item'
-      const owned = (WEAPONS[id] && (a.inv[WEAPONS[id].slot]?.id === id || a.inv.grenades.includes(id))) || (id === 'kit' && a.kit) || (id === 'vesthelm' && a.helmet && a.armor >= 100) || (id === 'vest' && a.armor >= 100)
+      const owned = (WEAPONS[id] && (a.inv[WEAPONS[id].slot]?.id === id || (WEAPONS[id].slot === 'grenade' && a.inv.grenades.filter((x) => x === id).length >= (WEAPONS[id].carry ?? 1)))) || (id === 'kit' && a.kit) || (id === 'vesthelm' && a.helmet && a.armor >= 100) || (id === 'vest' && a.armor >= 100)
       b.classList.toggle('owned', !!owned)
       b.disabled = a.money < (id === 'vesthelm' && a.armor >= 100 ? 350 : it.price) || !!owned
-      b.innerHTML = `<b></b><span></span><small></small>`
-      $('b', b).textContent = `${ci === buyCat ? n + '. ' : ''}${it.name}`
+      b.innerHTML = `<i></i><b></b><span></span><small></small>`
+      const pic = WEAPONS[id] ? gunIcon(id, 160, 56) : ''
+      if (pic) $('i', b).style.backgroundImage = `url(${pic})`
+      else $('i', b).textContent = id === 'kit' ? '🧰' : '🦺'
+      $('b', b).textContent = `${ci === buyCat && n <= 10 ? (n % 10) + '. ' : ''}${it.name}`
       $('span', b).textContent = `$${it.price}`
-      $('small', b).textContent = WEAPONS[id]?.dmg ? `${WEAPONS[id].dmg} dmg · ${WEAPONS[id].mag} rounds${WEAPONS[id].auto ? ' · auto' : ''}` : ''
+      const W = WEAPONS[id]
+      $('small', b).textContent = W?.mag ? `${W.pellets > 1 ? W.pellets + '×' : ''}${W.dmg} dmg · ${W.mag} rds${W.auto ? ' · auto' : ''}${W.zoom ? ' · scope' : ''}${W.modes === 'burst' ? ' · burst' : ''}${W.modes === 'silencer' || W.silenced ? ' · silenced' : ''}${W.reward && W.reward !== 300 ? ` · kill $${W.reward}` : ''}` : W?.kind === 'grenade' ? (W.carry ? `carry ${W.carry}` : '') : ''
       b.dataset.id = id
       b.addEventListener('click', () => doBuy(id))
       col.append(b)
@@ -598,7 +1130,8 @@ function buyKey(n) {
     if (n >= 1 && n <= SHOP.length) buyCat = n - 1
   } else {
     const items = SHOP[buyCat].items.filter((id) => !itemDef(id).team || itemDef(id).team === game.player.team)
-    if (items[n - 1]) doBuy(items[n - 1])
+    const k = n === 0 ? 9 : n - 1
+    if (items[k]) doBuy(items[k])
     buyCat = -1
   }
   renderBuy()
@@ -672,6 +1205,8 @@ if (coarse) {
       if (t === 'buy') toggleBuy()
       if (t === 'score') tabHeld = !tabHeld
       if (t === 'pause') pause()
+      if (t === 'radio') chatUi.toggleRadio()
+      if (t === 'chat') chatUi.openChat(false)
     })
     const up = () => {
       if (t !== 'crouch') b.classList.remove('on')
@@ -686,7 +1221,7 @@ if (coarse) {
 
 // ================= HUD =================
 const hud = {}
-for (const id of ['clock', 'score-t', 'score-ct', 'alive-t', 'alive-ct', 'money', 'hp', 'armor', 'clip', 'reserve', 'weapon-name', 'nades', 'kit', 'bomb-carry', 'place', 'hint', 'progress', 'progress-bar', 'center-msg', 'spectate', 'crosshair', 'scope', 'flashbang', 'damage', 'hitmarker', 'scoreboard'])
+for (const id of ['mode-info', 'clock', 'score-t', 'score-ct', 'alive-t', 'alive-ct', 'money', 'hp', 'armor', 'clip', 'reserve', 'weapon-name', 'nades', 'kit', 'bomb-carry', 'place', 'hint', 'progress', 'progress-bar', 'center-msg', 'spectate', 'crosshair', 'scope', 'flashbang', 'damage', 'hitmarker', 'scoreboard'])
   hud[id] = $('#' + id)
 const last = {}
 const setText = (id, v) => {
@@ -778,13 +1313,33 @@ function fmtTime(s) {
 let radarT = 0
 let sbT = 0
 function updateHud(dt) {
+  const nb = $('#net-badge')
+  nb.hidden = !net
+  if (net) {
+    nb.textContent = net instanceof NetHost ? `Hosting · code ${net.code} · ${net.peers.size + 1} player${net.peers.size ? 's' : ''}` : `Online · ${net.mode === 'relay' ? 'relayed' : net.mode === 'p2p' ? 'direct' : 'connecting'}`
+    // online, the buy menu fills in when the host's answer comes back
+    if (buyOpen && net instanceof NetClient && (hudBuyT = (hudBuyT ?? 0) + dt) > 0.25) {
+      hudBuyT = 0
+      renderBuy()
+    }
+  }
   const g = game
   const me = g.player
   const w = watched
   const now = g.time
+  // what the mode is about
+  let info = ''
+  if (g.mode === 'armsrace' && w) {
+    const lv = Math.min(w.arLevel ?? 0, ARMS_LADDER.length - 1)
+    const next = ARMS_LADDER[lv + 1]
+    info = `Level ${lv + 1}/${ARMS_LADDER.length} · ${WEAPONS[ARMS_LADDER[lv]].name}${next ? ` · next: ${WEAPONS[next].name}` : ' · knife kill to win!'}`
+  } else if (g.mode === 'deathmatch') info = `Deathmatch · first team to ${g.rules.killsToWin} kills · B for any gun, free`
+  else if (g.mode === 'retakes' && g.bomb.site) info = `Retake ${g.bomb.site} · ${{ full: 'full buy', force: 'force buy', pistol: 'pistols' }[g.retakeCard] ?? ''}`
+  else if (g.mode === 'wingman') info = `Wingman · ${Object.keys(g.sites).join('')} site only`
+  setText('mode-info', info)
   // clock and scores
   const bombPlanted = g.bomb.state === 'planted'
-  setText('clock', g.practice ? '∞' : bombPlanted ? '💣' : g.phase === 'freeze' ? fmtTime(g.phaseEnd - now) : fmtTime(g.roundTimeLeft))
+  setText('clock', g.practice ? '∞' : bombPlanted && !g.respawns ? '💣' : g.phase === 'freeze' ? fmtTime(g.phaseEnd - now) : fmtTime(g.roundTimeLeft))
   hud.clock.classList.toggle('bomb', bombPlanted)
   hud.clock.classList.toggle('low', !bombPlanted && g.phase === 'live' && g.roundTimeLeft < 15)
   setText('score-t', String(g.score.T))
@@ -814,7 +1369,7 @@ function updateHud(dt) {
     const nk = w.inv.grenades.join(',') + w.active
     if (last.nades !== nk) {
       last.nades = nk
-      hud.nades.innerHTML = w.inv.grenades.map((id, k) => `<span class="${w.active === 'grenade' && k === 0 ? 'on' : ''}">${WEAPONS[id].name.replace(' Grenade', '').replace('Flashbang', 'Flash')}</span>`).join('')
+      hud.nades.innerHTML = w.inv.grenades.map((id, k) => `<span class="${w.active === 'grenade' && k === 0 ? 'on' : ''}">${WEAPONS[id].name.replace(' Grenade', '').replace('Flashbang', 'Flash').replace('Incendiary', 'Incend.')}</span>`).join('')
     }
   }
   if (me) {
@@ -828,7 +1383,8 @@ function updateHud(dt) {
       setText('money', m)
     }
   }
-  setText('place', w ? g.world.calloutAt(w.pos.x, w.pos.z) : '')
+  setText('place', w ? g.world.calloutAt(w.pos.x, w.pos.z, w.pos.y) : '')
+  chatUi.tick()
   // hints and progress
   let hint = ''
   let prog = null
@@ -852,7 +1408,10 @@ function updateHud(dt) {
   if (performance.now() > msgUntil) setText('center-msg', '')
   else last['center-msg'] = null
   // spectating / death
-  if (me && !me.alive && !g.practice) {
+  if (me && !me.alive && g.respawns) {
+    hud.spectate.hidden = false
+    hud.spectate.textContent = g.phase === 'over' ? '' : `Respawning in ${Math.max(0, Math.ceil((me.respawnAt ?? 0) - now))}…`
+  } else if (me && !me.alive && !g.practice) {
     hud.spectate.hidden = false
     const killer = deathInfo?.attacker && deathInfo.attacker !== me ? `Killed by ${deathInfo.attacker.name} (${WEAPONS[deathInfo.weaponId]?.name ?? deathInfo.weaponId}${deathInfo.headshot ? ', headshot' : ''})` : 'You died'
     const sp = watched && watched !== me ? `Spectating ${watched.name}` : 'Spectating'
@@ -898,6 +1457,48 @@ function updateHud(dt) {
     }
   }
 }
+/** The radar during a replay: everyone, both teams, around whoever you follow (or the whole map). */
+function drawReplayRadar(cam) {
+  const c = $('#radar')
+  const g = c.getContext('2d')
+  const S = c.width
+  g.clearRect(0, 0, S, S)
+  if (!radarImg) return
+  const ghost = replay.player.ghost
+  const a = ghost.actors[replay.follow]
+  const cx = a ? a.pos.x : ghost.map.w / 2
+  const cz = a ? a.pos.z : ghost.map.d / 2
+  const scale = a ? 2.4 : (S / Math.max(ghost.map.w, ghost.map.d)) * 0.95
+  g.save()
+  g.beginPath()
+  g.arc(S / 2, S / 2, S / 2 - 1, 0, 7)
+  g.clip()
+  g.translate(S / 2, S / 2)
+  if (a) g.rotate(a.yaw)
+  g.scale(scale, scale)
+  g.translate(-cx, -cz)
+  const rimg = radarLow && a && a.pos.y < ghost.map.radarSplit ? radarLow : radarImg
+  g.globalAlpha = 0.9
+  g.drawImage(rimg, 0, 0, rimg.width / 8, rimg.height / 8)
+  g.globalAlpha = 1
+  for (const b of ghost.actors) {
+    if (!b.alive) continue
+    g.beginPath()
+    g.arc(b.pos.x, b.pos.z, b === a ? 2.2 : 1.6, 0, 7)
+    g.fillStyle = b.team === 'T' ? '#e3ac48' : '#6fa8e0'
+    g.fill()
+    g.lineWidth = b === a ? 0.8 : 0.4
+    g.strokeStyle = b === a ? '#fff' : '#000'
+    g.stroke()
+  }
+  if (ghost.bomb.pos && (ghost.bomb.state === 'planted' || ghost.bomb.state === 'dropped')) {
+    g.font = '5px sans-serif'
+    g.textAlign = 'center'
+    g.textBaseline = 'middle'
+    g.fillText('💣', ghost.bomb.pos.x, ghost.bomb.pos.z)
+  }
+  g.restore()
+}
 function drawRadar() {
   const c = $('#radar')
   const g = c.getContext('2d')
@@ -915,7 +1516,8 @@ function drawRadar() {
   g.scale(scale, scale)
   g.translate(-me.pos.x, -me.pos.z)
   g.globalAlpha = 0.9
-  g.drawImage(radarImg, 0, 0, radarImg.width / 8, radarImg.height / 8)
+  const rimg = radarLow && me.pos.y < game.map.radarSplit ? radarLow : radarImg
+  g.drawImage(rimg, 0, 0, rimg.width / 8, rimg.height / 8)
   g.globalAlpha = 1
   const now = game.time
   const myTeam = me.team
@@ -963,15 +1565,15 @@ function drawScoreboard() {
     const table = $(`#sb-${t.toLowerCase()}`)
     const rows = game.actors.filter((a) => a.team === t).sort((a, b) => b.kills - a.kills)
     const showMoney = game.player?.team === t
-    let html = `<tr><th>Player</th>${showMoney ? '<th>$</th>' : ''}<th>K</th><th>A</th><th>D</th><th>★</th></tr>`
+    let html = `<tr><th></th><th>Player</th>${showMoney ? '<th>$</th>' : ''}<th>K</th><th>A</th><th>D</th><th>★</th></tr>`
     for (const a of rows) {
       const n = a.name.replace(/[<>&"]/g, '')
-      html += `<tr class="${a.alive ? '' : 'dead'} ${a === game.player ? 'me' : ''}"><td>${a.inv.bomb ? '💣 ' : ''}${n}${a.alive ? '' : ' ✝'}</td>${showMoney ? `<td>$${a.money}</td>` : ''}<td>${a.kills}</td><td>${a.assists}</td><td>${a.deaths}</td><td>${a.mvps || ''}</td></tr>`
+      html += `<tr class="${a.alive ? '' : 'dead'} ${a === game.player ? 'me' : ''}"><td class="sb-rank">${rankBadge(a.rankTier ?? null, { title: true })}</td><td>${a.inv.bomb ? '💣 ' : ''}${net && a.isBot ? '<small class="bot">BOT</small> ' : ''}${n}${a.alive ? '' : ' ✝'}</td>${showMoney ? `<td>$${a.money}</td>` : ''}<td>${a.kills}</td><td>${a.assists}</td><td>${a.deaths}</td><td>${a.mvps || ''}</td></tr>`
     }
     table.innerHTML = html
     $(`#sb-${t.toLowerCase()}-score`).textContent = game.score[t]
   }
-  $('#sb-foot').textContent = `${MAPS[settings.map].name} · Round ${game.round} · first to ${game.rules.roundsToWin} · bots: ${DIFFICULTY[game.difficulty].name}`
+  $('#sb-foot').textContent = `${MAPS[settings.map].name} · Round ${game.round} · first to ${game.rules.roundsToWin} · bots: ${DIFFICULTY[game.difficulty].name}${net instanceof NetHost ? ` · online, code ${net.code}` : net ? ' · online' : ''}`
 }
 
 // ================= Camera =================
@@ -1009,6 +1611,33 @@ function cameraFor(dt) {
 }
 
 // ================= The loop =================
+/** One tick of the match (and, online, of the connection). */
+function step() {
+  const cmd = mode === 'play' && game.player ? (paused ? { yaw: look.yaw, pitch: look.pitch } : playerCmd()) : null
+  game.update(STEP, cmd)
+  net?.tick(STEP, cmd ?? {})
+  rec?.tick(STEP)
+}
+// A hosted match keeps going when its tab is in the background (timers in a worker aren't slowed down).
+let bgTicker = null
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && net instanceof NetHost) {
+    try {
+      bgTicker ??= new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'text/javascript' })))
+      let last = performance.now()
+      bgTicker.onmessage = () => {
+        const now = performance.now()
+        let n = Math.min(12, Math.round((now - last) / 1000 / STEP))
+        last = now
+        while (n-- > 0) step()
+      }
+    } catch {}
+  } else if (bgTicker) {
+    bgTicker.terminate()
+    bgTicker = null
+    lastT = performance.now()
+  }
+})
 let acc = 0
 let lastT = performance.now()
 function frame(t) {
@@ -1016,16 +1645,47 @@ function frame(t) {
   const dt = Math.min(0.1, (t - lastT) / 1000)
   lastT = t
   if (!game || !view) return
-  const live = !paused || mode === 'menu'
+  if (mode === 'replay' && replay) {
+    replay.player.step(dt)
+    const cam = replayCamera(dt)
+    view.update(dt, replay.player.ghost, cam.who)
+    if (cam.who) view.updateViewmodel(dt, cam.who, replay.player.ghost)
+    view.render(cam, !!cam.who)
+    audio.setListener(cam.x, cam.y, cam.z, cam.yaw)
+    updateReplayHud()
+    drawReplayRadar(cam)
+    return
+  }
+  const live = !paused || mode === 'menu' || !!net
   if (live) {
     acc += dt
     let n = 0
     while (acc >= STEP && n < 6) {
-      game.update(STEP, mode === 'play' && game.player ? playerCmd() : null)
+      step()
       acc -= STEP
       n++
     }
     if (n === 6) acc = 0
+  }
+  if (game.player?.netTeleport) {
+    game.player.netTeleport = false
+    look.yaw = game.player.yaw
+    look.pitch = 0
+  }
+  if (killcam && mode === 'play') {
+    // through the killer's eyes, the last few seconds
+    const p = killcam.player
+    p.step(dt)
+    const k = killcam.killer
+    const e = eyeOf(k)
+    const cam = { x: e.x, y: e.y, z: e.z, yaw: k.yaw, pitch: k.pitch, fov: settings.fov }
+    view.update(dt, p.ghost, k)
+    view.updateViewmodel(dt, k, p.ghost)
+    view.render(cam, k.alive)
+    audio.setListener(cam.x, cam.y, cam.z, cam.yaw)
+    updateHud(dt)
+    if (!p.playing || (game.player?.alive && !game.respawns)) endKillcam()
+    return
   }
   const cam = cameraFor(dt)
   view.update(dt, game, mode === 'play' ? watched : null)
@@ -1038,12 +1698,35 @@ function frame(t) {
 // ================= Boot =================
 if (makeRenderer()) {
   buildMenu()
+  initInventory({ audio, onChange: () => track.poke(), onGifts: (got) => ($('#record').textContent = `🎁 ${got.join(' · ')}: they’re in your Inventory`) })
   syncSettings()
   start({ demo: true })
   show('menu')
   requestAnimationFrame(frame)
   // ?play starts straight away (the phone and nikstilOS open the menu; this is for links)
   if (q.has('play')) $('[data-do="play"]').click()
+  // ?join=CODE: an invite from Messenger. ?host=1&invite=<user>: Messenger's "Play" button (host,
+  // then send them the invite). Done once: the address forgets them, so a reload doesn't repeat it.
+  const joinCode = String(q.get('join') ?? '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4)
+  const inviteWho = q.get('invite')
+  if (joinCode.length === 4 || q.get('host') === '1') {
+    const u = new URL(location.href)
+    for (const k of ['join', 'host', 'invite']) u.searchParams.delete(k)
+    history.replaceState(null, '', u)
+  }
+  if (joinCode.length === 4)
+    openOnline().then(() => {
+      $('#on-code').value = joinCode
+      joinGame(joinCode)
+    })
+  else if (q.get('host') === '1')
+    openOnline()
+      .then(() => hostGame())
+      .then(async () => {
+        if (!isUserId(inviteWho)) return
+        const err = await inviteUi.sendTo(inviteWho)
+        say(err || 'Invite sent: they can join from Messenger', 5, !!err)
+      })
 }
 // for tests and the curious
-window.strife = { get game() { return game }, get view() { return view }, settings, look }
+window.strife = { get game() { return game }, get view() { return view }, get net() { return net }, settings, look, testInput }

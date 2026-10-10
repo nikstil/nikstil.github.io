@@ -1,4 +1,4 @@
--- nikstil.com online features: accounts, TRANSLATR™ leaderboards and Messenger (DMs).
+-- nikstil.com online features: accounts, TRANSLATR™ leaderboards, COUNTER-STRIFE ranks and Messenger (DMs).
 --
 -- Run this whole file in Supabase: Dashboard → SQL Editor → New query → paste → Run.
 -- It's safe to run again after an update: tables are only created if missing, and functions
@@ -606,6 +606,295 @@ begin
 end;
 $$;
 
+-- ================= COUNTER-STRIFE ranks =================
+-- Ranked matches (Competitive and Wingman against bots) move a rating up and down, the way
+-- strife/ranks.js does it on a device that isn't signed in. Like speedruns, the game tells the
+-- server when a match starts (strife_start) and when it ends (strife_finish), and the server works
+-- out the new rating itself: the match has to last as long as its rounds take, the numbers have to
+-- add up, and walking out of a match counts as a loss. (It's still a browser game, so admins can
+-- put a player back to the start: admin_strife_reset.)
+create table if not exists public.strife_matches (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  mode text not null check (mode in ('competitive', 'wingman')),
+  map text not null check (map ~ '^[a-z0-9]{2,16}$'),
+  difficulty smallint not null check (difficulty between 0 and 3),
+  rounds_to_win smallint not null check (rounds_to_win between 2 and 16),
+  status text not null default 'running' check (status in ('running', 'finished', 'abandoned')),
+  started_at timestamptz not null default now(),
+  finished_at timestamptz,
+  won boolean,
+  rounds_us smallint,
+  rounds_them smallint,
+  kills smallint,
+  deaths smallint,
+  mvps smallint,
+  delta integer,
+  rating_after integer
+);
+create index if not exists strife_matches_by_user on public.strife_matches (user_id, started_at desc);
+
+create table if not exists public.strife_ratings (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  rating integer not null default 1000,
+  matches integer not null default 0,
+  wins integer not null default 0,
+  losses integer not null default 0,
+  kills integer not null default 0,
+  deaths integer not null default 0,
+  mvps integer not null default 0,
+  best_tier smallint not null default 0,
+  updated_at timestamptz not null default now()
+);
+create index if not exists strife_ratings_board on public.strife_ratings (rating desc) where matches >= 3;
+
+/** The skill group (0 = Silver I … 17 = The Global Elite) for a rating: strife/ranks.js RANK_AT. */
+create or replace function public.strife_tier(p_rating integer)
+returns smallint
+language sql
+immutable
+set search_path = ''
+as $$
+  select count(*)::smallint
+  from unnest(array[750, 850, 950, 1050, 1150, 1250, 1350, 1450, 1550, 1650, 1750, 1850, 1950, 2050, 2150, 2250, 2350]) t
+  where p_rating >= t;
+$$;
+
+/** How much a match moves a rating: the same sum as ratingChange() in strife/ranks.js. */
+create or replace function public.strife_delta(p_rating integer, p_matches integer, p_difficulty integer, p_rounds_to_win integer,
+                                               p_won boolean, p_rounds integer, p_kills integer, p_deaths integer)
+returns integer
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  opp numeric := (array[800, 1200, 1600, 2000])[least(greatest(p_difficulty, 0), 3) + 1];
+  k numeric := (case when p_matches < 3 then 48 else 32 end) * least(greatest(p_rounds_to_win / 9.0, 0.5), 1);
+  expected numeric := 1 / (1 + power(10::numeric, (opp - p_rating) / 400.0));
+  perf numeric := least(greatest((p_kills - p_deaths)::numeric / greatest(p_rounds, 1), -1), 1) * 4;
+  d integer := floor(k * ((case when p_won then 1 else 0 end) - expected) + perf + 0.5);
+begin
+  return case when p_won then greatest(d, 3) else least(d, -3) end;
+end;
+$$;
+
+/** Applies a result to the player's rating. Returns the change. */
+create or replace function public.strife_apply(p_user uuid, p_match uuid, p_won boolean, p_rounds_us integer, p_rounds_them integer,
+                                               p_kills integer, p_deaths integer, p_mvps integer, p_status text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  m public.strife_matches;
+  r public.strife_ratings;
+  d integer;
+  v_after integer;
+begin
+  select * into m from public.strife_matches where id = p_match;
+  insert into public.strife_ratings (user_id) values (p_user) on conflict (user_id) do nothing;
+  select * into r from public.strife_ratings where user_id = p_user for update;
+  d := public.strife_delta(r.rating, r.matches, m.difficulty, m.rounds_to_win, p_won, p_rounds_us + p_rounds_them, p_kills, p_deaths);
+  v_after := greatest(0, least(4000, r.rating + d));
+  update public.strife_ratings
+  set rating = v_after,
+      matches = r.matches + 1,
+      wins = r.wins + case when p_won then 1 else 0 end,
+      losses = r.losses + case when p_won then 0 else 1 end,
+      kills = r.kills + p_kills,
+      deaths = r.deaths + p_deaths,
+      mvps = r.mvps + p_mvps,
+      best_tier = case when r.matches + 1 >= 3 then greatest(r.best_tier, public.strife_tier(v_after)) else r.best_tier end,
+      updated_at = now()
+  where user_id = p_user;
+  update public.strife_matches
+  set status = p_status, finished_at = now(), won = p_won, rounds_us = p_rounds_us, rounds_them = p_rounds_them,
+      kills = p_kills, deaths = p_deaths, mvps = p_mvps, delta = d, rating_after = v_after
+  where id = p_match;
+  return d;
+end;
+$$;
+
+create or replace function public.strife_start(p_mode text, p_map text, p_difficulty integer, p_rounds_to_win integer)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := public.require_player();
+  v_old record;
+  mid uuid;
+begin
+  if p_mode is null or p_mode not in ('competitive', 'wingman') then
+    raise exception 'Only Competitive and Wingman matches are ranked.';
+  end if;
+  if p_map is null or p_map !~ '^[a-z0-9]{2,16}$' or p_difficulty is null or p_difficulty not between 0 and 3
+     or p_rounds_to_win is null or p_rounds_to_win not between 2 and 16 then
+    raise exception 'That isn''t a match the server knows how to rank.';
+  end if;
+  if (select count(*) from public.strife_matches where user_id = me and started_at > now() - interval '1 hour') >= 30 then
+    raise exception 'That''s a lot of matches. Take a breather and try again in a bit.';
+  end if;
+  -- a match left unfinished counts as a loss
+  for v_old in select id from public.strife_matches where user_id = me and status = 'running' loop
+    perform public.strife_apply(me, v_old.id, false, 0, 1, 0, 0, 0, 'abandoned');
+  end loop;
+  insert into public.strife_matches (user_id, mode, map, difficulty, rounds_to_win)
+    values (me, p_mode, p_map, p_difficulty, p_rounds_to_win)
+    returning id into mid;
+  return mid;
+end;
+$$;
+
+create or replace function public.strife_finish(p_match uuid, p_won boolean, p_rounds_us integer, p_rounds_them integer,
+                                                p_kills integer, p_deaths integer, p_mvps integer)
+returns table (rating integer, delta integer, tier smallint, matches integer, wins integer, losses integer, board_rank bigint)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := public.require_player();
+  m public.strife_matches;
+  rounds integer;
+  d integer;
+  per_round integer;
+begin
+  select * into m from public.strife_matches where id = p_match and user_id = me and status = 'running' for update;
+  if not found then
+    raise exception 'That match isn''t running any more.';
+  end if;
+  rounds := coalesce(p_rounds_us, -1) + coalesce(p_rounds_them, -1);
+  per_round := case when m.mode = 'wingman' then 2 else 5 end;
+  -- the numbers have to add up: the winner got to the round limit, nobody got more kills than
+  -- there were enemies, or died more than once a round
+  if p_won is null or p_rounds_us < 0 or p_rounds_them < 0 or greatest(p_rounds_us, p_rounds_them) <> m.rounds_to_win
+     or least(p_rounds_us, p_rounds_them) >= m.rounds_to_win or p_won <> (p_rounds_us > p_rounds_them)
+     or p_kills is null or p_kills not between 0 and rounds * per_round
+     or p_deaths is null or p_deaths not between 0 and rounds
+     or p_mvps is null or p_mvps not between 0 and p_rounds_us then
+    raise exception 'Those numbers don''t add up.';
+  end if;
+  -- and it has to have taken as long as that many rounds take (the buy time and the end of
+  -- each round alone come to more than 10 seconds)
+  if now() - m.started_at < make_interval(secs => rounds * 10) then
+    raise exception 'That match was over quicker than its rounds take.';
+  end if;
+  d := public.strife_apply(me, p_match, p_won, p_rounds_us, p_rounds_them, p_kills, p_deaths, p_mvps, 'finished');
+  perform public.notify_leaderboard('strife', null);
+  return query
+    select r.rating, d, public.strife_tier(r.rating), r.matches, r.wins, r.losses,
+           case when r.matches >= 3 then 1 + (select count(*) from public.strife_ratings o
+                                                join public.profiles p on p.id = o.user_id and not p.banned
+                                                where o.matches >= 3 and o.rating > r.rating) end
+    from public.strife_ratings r
+    where r.user_id = me;
+end;
+$$;
+
+create or replace function public.strife_leaderboard(p_limit integer default 50)
+returns table (rank bigint, user_id uuid, username text, avatar text, rating integer, tier smallint, wins integer, losses integer)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select rank() over (order by r.rating desc), r.user_id, p.username, p.avatar, r.rating, public.strife_tier(r.rating), r.wins, r.losses
+  from public.strife_ratings r
+  join public.profiles p on p.id = r.user_id and not p.banned
+  where r.matches >= 3
+  order by r.rating desc, r.updated_at
+  limit least(greatest(coalesce(p_limit, 50), 1), 100);
+$$;
+
+/** Anyone's rank (for profiles), or the caller's with no argument. Nothing until they've played. */
+create or replace function public.strife_rating(p_user uuid default null)
+returns table (rating integer, tier smallint, matches integer, wins integer, losses integer, kills integer, deaths integer, mvps integer, best_tier smallint, board_rank bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select r.rating, public.strife_tier(r.rating), r.matches, r.wins, r.losses, r.kills, r.deaths, r.mvps, r.best_tier,
+         case when r.matches >= 3 then 1 + (select count(*) from public.strife_ratings o
+                                              join public.profiles p on p.id = o.user_id and not p.banned
+                                              where o.matches >= 3 and o.rating > r.rating) end
+  from public.strife_ratings r
+  where r.user_id = coalesce(p_user, auth.uid());
+$$;
+
+create or replace function public.admin_strife_reset(p_user uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Admins only.' using errcode = '42501';
+  end if;
+  delete from public.strife_ratings where user_id = p_user;
+  update public.strife_matches set status = 'abandoned', finished_at = coalesce(finished_at, now()) where user_id = p_user and status = 'running';
+  perform public.notify_leaderboard('strife', null);
+end;
+$$;
+
+-- ================= Profiles: achievements and the rest =================
+-- Which achievements a player has unlocked (the ids from achievements/list.js), so other players
+-- can see them on their profile. The site sends them from whichever device the player is on; they
+-- only ever add up (a fresh device can't wipe them), and an admin reset is a ban away.
+alter table public.profiles add column if not exists achievements text[] not null default '{}';
+
+create or replace function public.sync_achievements(p_ids text[])
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := public.require_player();
+  n integer;
+begin
+  update public.profiles p
+  set achievements = (
+    select coalesce(array_agg(e order by e), '{}')
+    from (select distinct e from unnest(p.achievements || coalesce(p_ids, '{}')) e where e ~ '^[a-z0-9-]{2,32}$' limit 400) x
+  )
+  where p.id = me
+  returning cardinality(p.achievements) into n;
+  return n;
+end;
+$$;
+
+/** Everything a player's profile shows: who they are, their achievements, their rank, their best run. */
+create or replace function public.player_profile(p_user uuid)
+returns table (id uuid, username text, avatar text, created_at timestamptz, achievements text[], endings integer,
+               strife_rating integer, strife_tier smallint, strife_matches integer, strife_wins integer, strife_losses integer, strife_rank bigint,
+               best_time_ms integer, best_ending text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.id, p.username, p.avatar, p.created_at, p.achievements, cardinality(p.endings_done),
+         r.rating, case when r.rating is not null then public.strife_tier(r.rating) end, r.matches, r.wins, r.losses,
+         case when r.matches >= 3 then 1 + (select count(*) from public.strife_ratings o
+                                              join public.profiles q on q.id = o.user_id and not q.banned
+                                              where o.matches >= 3 and o.rating > r.rating) end,
+         b.time_ms, b.ending
+  from public.profiles p
+  left join public.strife_ratings r on r.user_id = p.id
+  left join lateral (
+    select x.time_ms, x.ending from public.runs x
+    where x.user_id = p.id and x.status = 'finished' and x.mode = 'speedrun'
+    order by x.time_ms limit 1
+  ) b on true
+  where p.id = p_user and not p.banned;
+$$;
+
 -- ================= Row Level Security =================
 -- Tables are read-only from the website except where a policy says otherwise: every other write
 -- goes through the functions above.
@@ -615,8 +904,10 @@ alter table public.runs enable row level security;
 alter table public.messages enable row level security;
 alter table public.blocks enable row level security;
 alter table public.reports enable row level security;
+alter table public.strife_matches enable row level security;
+alter table public.strife_ratings enable row level security;
 
-revoke all on public.profiles, public.runs, public.messages, public.blocks, public.reports from anon, authenticated;
+revoke all on public.profiles, public.runs, public.messages, public.blocks, public.reports, public.strife_matches, public.strife_ratings from anon, authenticated;
 grant select on public.profiles to anon, authenticated;
 grant update (allow_dms, avatar) on public.profiles to authenticated;
 grant select on public.runs, public.messages to authenticated;
@@ -640,7 +931,7 @@ drop policy if exists "Players manage their own blocks" on public.blocks;
 create policy "Players manage their own blocks" on public.blocks for all to authenticated
   using (blocker = (select auth.uid())) with check (blocker = (select auth.uid()));
 
--- (reports: no policies, so only the admin functions can read them.)
+-- (reports and the COUNTER-STRIFE tables: no policies, so only the functions above can read them.)
 
 -- Functions: nobody by default, then exactly who needs each one.
 revoke execute on function
@@ -663,7 +954,17 @@ revoke execute on function
   public.admin_recent_runs(integer),
   public.admin_set_run_removed(uuid, boolean, text),
   public.delete_account(),
-  public.note_endings(text[])
+  public.note_endings(text[]),
+  public.strife_tier(integer),
+  public.strife_delta(integer, integer, integer, integer, boolean, integer, integer, integer),
+  public.strife_apply(uuid, uuid, boolean, integer, integer, integer, integer, integer, text),
+  public.strife_start(text, text, integer, integer),
+  public.strife_finish(uuid, boolean, integer, integer, integer, integer, integer),
+  public.strife_leaderboard(integer),
+  public.strife_rating(uuid),
+  public.admin_strife_reset(uuid),
+  public.sync_achievements(text[]),
+  public.player_profile(uuid)
 from public, anon, authenticated;
 grant execute on function public.leaderboard(text, date, integer) to anon, authenticated;
 grant execute on function public.my_rank(text, date) to authenticated;
@@ -681,6 +982,13 @@ grant execute on function public.admin_resolve_report(bigint) to authenticated;
 grant execute on function public.admin_set_banned(uuid, boolean) to authenticated;
 grant execute on function public.admin_recent_runs(integer) to authenticated;
 grant execute on function public.admin_set_run_removed(uuid, boolean, text) to authenticated;
+grant execute on function public.strife_start(text, text, integer, integer) to authenticated;
+grant execute on function public.strife_finish(uuid, boolean, integer, integer, integer, integer, integer) to authenticated;
+grant execute on function public.strife_leaderboard(integer) to anon, authenticated;
+grant execute on function public.strife_rating(uuid) to anon, authenticated;
+grant execute on function public.admin_strife_reset(uuid) to authenticated;
+grant execute on function public.sync_achievements(text[]) to authenticated;
+grant execute on function public.player_profile(uuid) to anon, authenticated;
 
 -- ================= Realtime =================
 -- New messages are pushed to the recipient's browser (Realtime checks the policies above, so

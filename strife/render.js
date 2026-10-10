@@ -2,7 +2,8 @@
 // so there are no image files), the level mesh, sky, sun and shadows, and the radar image.
 
 import * as THREE from './lib/three.min.js'
-import { MAT_NAMES, WALL_H } from './maps.js'
+import { MAT_NAMES, WALL_H, INF, MAXS } from './maps.js'
+import { decorate } from './detail.js'
 
 // ================= Textures =================
 function rng(seed) {
@@ -197,6 +198,62 @@ const LOOKS = {
     wood: { paint: 'planks', base: '#7d5634', wear: '#5a3a20', size: 2 },
     trim: { paint: 'plaster', base: '#d9c7a1', size: 3 },
   },
+  nuke: {
+    wall: { paint: 'blocks', base: '#c9cdd0', mortar: '#a9aeb2', rows: 3, cols: 2, size: 3 },
+    ground: { paint: 'sand', base: '#8e9294', size: 6 },
+    path: { paint: 'tiles', base: '#b9bcbd', mortar: '#9a9ea0', n: 2, size: 3 },
+    step: { paint: 'tiles', base: '#a8acad', mortar: '#7d8183', n: 2, size: 2 },
+    crate: { paint: 'crate', base: '#5f7f5a', size: 1.1 },
+    door: { paint: 'planks', base: '#c9a227', wear: '#6b6b6b', size: 2.8 },
+    metal: { paint: 'ribs', base: '#3f6f9a', size: 2.6 },
+    car: { paint: 'body', base: '#d8d2c0', size: 1.8 },
+    low: { paint: 'blocks', base: '#d2d6d8', mortar: '#a9aeb2', rows: 2, cols: 2, size: 1.5 },
+    tile: { paint: 'tiles', base: '#d9dedf', alt: '#c3cfd2', mortar: '#9aa6aa', n: 4, size: 2.4 },
+    wood: { paint: 'planks', base: '#8a6a44', wear: '#5a4026', size: 2 },
+    trim: { paint: 'plaster', base: '#e0e4e6', band: '#c9a227', size: 3 },
+  },
+  inferno: {
+    wall: { paint: 'plaster', base: '#dcc39a', band: '#8a4a32', size: 4 },
+    ground: { paint: 'tiles', base: '#9a8a76', alt: '#8d7e6b', mortar: '#6f6252', n: 6, size: 3 },
+    path: { paint: 'tiles', base: '#a89580', alt: '#9c8a75', mortar: '#776753', n: 5, size: 3 },
+    step: { paint: 'tiles', base: '#a2917c', mortar: '#7a6a56', n: 2, size: 2 },
+    crate: { paint: 'crate', base: '#8a5a32', size: 1.1 },
+    door: { paint: 'planks', base: '#5a3a22', wear: '#3a2414', size: 2.8 },
+    metal: { paint: 'ribs', base: '#6b6f5a', size: 2.6 },
+    car: { paint: 'body', base: '#8c3a2c', size: 1.6 },
+    low: { paint: 'blocks', base: '#b8644a', mortar: '#8a4a36', rows: 4, cols: 3, size: 1.5 },
+    tile: { paint: 'tiles', base: '#b8643c', alt: '#c87a4c', mortar: '#7a3e22', n: 4, size: 2.4 },
+    wood: { paint: 'planks', base: '#6e4a2c', wear: '#4a2f1a', size: 2 },
+    trim: { paint: 'plaster', base: '#e6d6b8', band: '#4a6b3a', size: 3 },
+  },
+  overpass: {
+    wall: { paint: 'blocks', base: '#b7b4a8', mortar: '#99968b', rows: 2, cols: 1, size: 3.4 },
+    ground: { paint: 'sand', base: '#7f8a62', size: 6 },
+    path: { paint: 'tiles', base: '#a9a79c', alt: '#9d9b90', mortar: '#7f7d73', n: 2, size: 3 },
+    step: { paint: 'tiles', base: '#a3a196', mortar: '#7a786e', n: 2, size: 2 },
+    crate: { paint: 'crate', base: '#6a7a5a', size: 1.1 },
+    door: { paint: 'planks', base: '#3d5a7a', wear: '#6b6b6b', size: 2.8 },
+    metal: { paint: 'ribs', base: '#5a6a72', size: 2.6 },
+    car: { paint: 'body', base: '#c9b23a', size: 1.6 },
+    low: { paint: 'blocks', base: '#c2bfb3', mortar: '#99968b', rows: 2, cols: 2, size: 1.5 },
+    tile: { paint: 'tiles', base: '#5f7a82', alt: '#6b8890', mortar: '#4a5f66', n: 3, size: 2.4 },
+    wood: { paint: 'planks', base: '#7a5a3a', wear: '#5a4026', size: 2 },
+    trim: { paint: 'plaster', base: '#d8d6cc', band: '#5a7a4a', size: 3 },
+  },
+  vertigo: {
+    wall: { paint: 'blocks', base: '#c4c0b8', mortar: '#a19d95', rows: 2, cols: 1, size: 3 },
+    ground: { paint: 'sand', base: '#a8a49c', size: 6 },
+    path: { paint: 'tiles', base: '#b4b0a8', alt: '#aaa69e', mortar: '#8c8880', n: 2, size: 3 },
+    step: { paint: 'tiles', base: '#aca8a0', mortar: '#868278', n: 2, size: 2 },
+    crate: { paint: 'crate', base: '#7a7a72', size: 1.1 },
+    door: { paint: 'planks', base: '#d9a227', wear: '#6b6b6b', size: 2.8 },
+    metal: { paint: 'ribs', base: '#d07a2a', size: 2.6 },
+    car: { paint: 'body', base: '#d9b52a', size: 1.6 },
+    low: { paint: 'blocks', base: '#cfcbc3', mortar: '#a19d95', rows: 2, cols: 2, size: 1.5 },
+    tile: { paint: 'tiles', base: '#c9c5bd', alt: '#bdb9b1', mortar: '#9a968e', n: 4, size: 2.4 },
+    wood: { paint: 'planks', base: '#a07a4a', wear: '#7a5a30', size: 2 },
+    trim: { paint: 'plaster', base: '#e0ddd6', band: '#d07a2a', size: 3 },
+  },
   mirage: {
     wall: { paint: 'plaster', base: '#e6d4b0', band: '#b99b72', size: 4 },
     ground: { paint: 'sand', base: '#cdb08a', size: 6 },
@@ -235,9 +292,28 @@ function makeTexture(spec, seed, anisotropy) {
 export function buildLevel(map, renderer, quality) {
   const look = LOOKS[map.look]
   const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy())
-  const { w, d, floor, ceil, mat } = map
-  const F = (x, z) => (x < 0 || z < 0 || x >= w || z >= d ? WALL_H : floor[z * w + x])
-  const C = (x, z) => (x < 0 || z < 0 || x >= w || z >= d ? Infinity : ceil[z * w + x])
+  const { w, d } = map
+  const spans = (x, z) => {
+    if (x < 0 || z < 0 || x >= w || z >= d) return null
+    const c = z * w + x
+    const out = []
+    for (let k = 0; k < map.sc[c]; k++) out.push([map.sb[c * MAXS + k], map.st[c * MAXS + k], map.sm[c * MAXS + k]])
+    return out
+  }
+  const solidAt = (x, z, y) => {
+    const sp = spans(x, z)
+    return !sp || sp.some(([b, t]) => y > b && y < t)
+  }
+  /** The open gaps in a column: [bottom, top, roofed?]. */
+  const gaps = (sp) => {
+    const out = []
+    for (let k = 0; k < sp.length; k++) {
+      const lo = sp[k][1]
+      const hi = k + 1 < sp.length ? sp[k + 1][0] : INF
+      if (hi > lo) out.push([lo, hi, k + 1 < sp.length])
+    }
+    return out
+  }
   const buckets = MAT_NAMES.map(() => ({ pos: [], nor: [], uv: [], col: [] }))
   const rand = rng(7)
   const quad = (b, verts, normal, uvs, cols) => {
@@ -250,111 +326,83 @@ export function buildLevel(map, renderer, quality) {
     }
   }
   const size = (m) => look[MAT_NAMES[m]].size
+  const STEP_MAT = MAT_NAMES.indexOf('step')
+  const groundish = new Set([MAT_NAMES.indexOf('ground'), MAT_NAMES.indexOf('path')])
+  const LOW = -9 // nothing is ever seen below this (Nuke B sits at -5)
   for (let z = 0; z < d; z++)
     for (let x = 0; x < w; x++) {
-      const i = z * w + x
-      const h = floor[i]
-      const m = mat[i]
-      const indoor = ceil[i] < 1e5
-      const solid = h >= WALL_H - 0.01
-      const lit = indoor ? 0.62 : 1
-      // Top face
-      if (!solid) {
-        const s = size(m)
-        const corner = (ox, oz) => {
-          let occ = 0
-          for (const [a, b] of [[ox - 1, oz - 1], [ox, oz - 1], [ox - 1, oz], [ox, oz]]) if (F(x + a, z + b) > h + 0.3) occ++
-          return lit * (1 - occ * 0.14) * (0.95 + rand() * 0.08)
-        }
-        const c00 = corner(0, 0)
-        const c10 = corner(1, 0)
-        const c11 = corner(1, 1)
-        const c01 = corner(0, 1)
-        quad(
-          buckets[m],
-          [[x, h, z], [x, h, z + 1], [x + 1, h, z + 1], [x + 1, h, z]],
-          [0, 1, 0],
-          [[x / s, z / s], [x / s, (z + 1) / s], [(x + 1) / s, (z + 1) / s], [(x + 1) / s, z / s]],
-          [c00, c01, c11, c10],
-        )
-      }
-      // Sides facing lower neighbours
-      for (const [nx, nz, ax, az] of [[1, 0, 1, 0], [-1, 0, 0, 0], [0, 1, 0, 1], [0, -1, 0, 0]]) {
-        const hn = F(x + nx, z + nz)
-        if (hn >= h - 0.01) continue
-        if (x + nx < 0 || z + nz < 0 || x + nx >= w || z + nz >= d) continue
-        const top = solid ? WALL_H : h
-        const bottom = hn
-        const sm = solid ? 0 : m === MAT_NAMES.indexOf('ground') || m === MAT_NAMES.indexOf('path') ? MAT_NAMES.indexOf('step') : m
-        const s = size(sm)
-        const nIndoor = C(x + nx, z + nz) < 1e5
-        const k = nIndoor ? 0.62 : 1
-        // the edge's two end points
-        let p0
-        let p1
-        if (nx) {
-          const ex = x + ax
-          p0 = nx > 0 ? [ex, z] : [ex, z + 1]
-          p1 = nx > 0 ? [ex, z + 1] : [ex, z]
-        } else {
-          const ez = z + az
-          p0 = nz > 0 ? [x + 1, ez] : [x, ez]
-          p1 = nz > 0 ? [x, ez] : [x + 1, ez]
-        }
-        const u0 = (nx ? p0[1] : p0[0]) / s
-        const u1 = (nx ? p1[1] : p1[0]) / s
-        const lo = k * 0.68
-        const hi = k * (top - bottom > 2.5 ? 1 : 0.92)
-        quad(
-          buckets[sm],
-          [[p0[0], bottom, p0[1]], [p0[0], top, p0[1]], [p1[0], top, p1[1]], [p1[0], bottom, p1[1]]],
-          [nx, 0, nz],
-          [[u0, bottom / s], [u0, top / s], [u1, top / s], [u1, bottom / s]],
-          [lo, hi, hi, lo],
-        )
-      }
-      // Ceiling, and the wall above a doorway where the neighbour's ceiling is higher
-      if (indoor && !solid) {
-        const c = ceil[i]
-        const s = size(0)
-        quad(
-          buckets[0],
-          [[x, c, z], [x + 1, c, z], [x + 1, c, z + 1], [x, c, z + 1]],
-          [0, -1, 0],
-          [[x / s, z / s], [(x + 1) / s, z / s], [(x + 1) / s, (z + 1) / s], [x / s, (z + 1) / s]],
-          [0.5, 0.5, 0.5, 0.5],
-        )
-        for (const [nx, nz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const fn = F(x + nx, z + nz)
-          if (fn >= WALL_H - 0.01) continue
-          const cn = C(x + nx, z + nz)
-          if (cn <= c + 0.01) continue
-          const top = Math.min(cn, WALL_H)
-          if (top <= c) continue
-          // the face looks out of this cell, toward the neighbour
-          let p0
-          let p1
-          if (nx) {
-            const ex = nx > 0 ? x + 1 : x
-            p0 = nx > 0 ? [ex, z] : [ex, z + 1]
-            p1 = nx > 0 ? [ex, z + 1] : [ex, z]
-          } else {
-            const ez = nz > 0 ? z + 1 : z
-            p0 = nz > 0 ? [x + 1, ez] : [x, ez]
-            p1 = nz > 0 ? [x, ez] : [x + 1, ez]
+      const col = spans(x, z)
+      col.forEach(([b, t, m], k) => {
+        const roofed = k + 1 < col.length
+        const lit = roofed ? 0.62 : 1
+        // Top face (a floor, a crate top, a slab you walk on)
+        if (t < WALL_H - 0.01) {
+          const s = size(m)
+          const corner = (ox, oz) => {
+            let occ = 0
+            for (const [a2, b2] of [[ox - 1, oz - 1], [ox, oz - 1], [ox - 1, oz], [ox, oz]]) if (solidAt(x + a2, z + b2, t + 0.25)) occ++
+            return lit * (1 - occ * 0.14) * (0.95 + rand() * 0.08)
           }
-          const u0 = (nx ? p0[1] : p0[0]) / s
-          const u1 = (nx ? p1[1] : p1[0]) / s
-          const k = cn < 1e5 ? 0.62 : 1
           quad(
-            buckets[0],
-            [[p0[0], c, p0[1]], [p0[0], top, p0[1]], [p1[0], top, p1[1]], [p1[0], c, p1[1]]],
-            [nx, 0, nz],
-            [[u0, c / s], [u0, top / s], [u1, top / s], [u1, c / s]],
-            [k * 0.8, k, k, k * 0.8],
+            buckets[m],
+            [[x, t, z], [x, t, z + 1], [x + 1, t, z + 1], [x + 1, t, z]],
+            [0, 1, 0],
+            [[x / s, z / s], [x / s, (z + 1) / s], [(x + 1) / s, (z + 1) / s], [(x + 1) / s, z / s]],
+            [corner(0, 0), corner(0, 1), corner(1, 1), corner(1, 0)],
           )
         }
-      }
+        // Bottom face (a ceiling, the underside of an upper floor)
+        if (b > LOW && b < WALL_H) {
+          const s = size(0)
+          quad(
+            buckets[0],
+            [[x, b, z], [x + 1, b, z], [x + 1, b, z + 1], [x, b, z + 1]],
+            [0, -1, 0],
+            [[x / s, z / s], [(x + 1) / s, z / s], [(x + 1) / s, (z + 1) / s], [x / s, (z + 1) / s]],
+            [0.5, 0.5, 0.5, 0.5],
+          )
+        }
+        // Sides: wherever the neighbour has air next to this solid
+        const lo = Math.max(b, LOW)
+        const hi = Math.min(t, WALL_H)
+        if (hi <= lo) return
+        const tall = t >= WALL_H - 0.01 || t >= INF / 2
+        const sm = tall ? 0 : groundish.has(m) ? STEP_MAT : m
+        const s = size(sm)
+        for (const [nx, nz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const ncol = spans(x + nx, z + nz)
+          if (!ncol) continue
+          for (const [g0, g1, capped] of gaps(ncol)) {
+            const a0 = Math.max(lo, g0)
+            const a1 = Math.min(hi, g1)
+            if (a1 - a0 < 0.005) continue
+            let p0
+            let p1
+            if (nx) {
+              const ex = nx > 0 ? x + 1 : x
+              p0 = nx > 0 ? [ex, z] : [ex, z + 1]
+              p1 = nx > 0 ? [ex, z + 1] : [ex, z]
+            } else {
+              const ez = nz > 0 ? z + 1 : z
+              p0 = nz > 0 ? [x + 1, ez] : [x, ez]
+              p1 = nz > 0 ? [x, ez] : [x + 1, ez]
+            }
+            const u0 = (nx ? p0[1] : p0[0]) / s
+            const u1 = (nx ? p1[1] : p1[0]) / s
+            const kk = capped ? 0.62 : 1
+            const bottomShade = a0 <= g0 + 0.01 ? 0.68 : 0.8 // darker where it meets the floor
+            const loC = kk * bottomShade
+            const hiC = kk * (a1 - a0 > 2.5 ? 1 : 0.92)
+            quad(
+              buckets[sm],
+              [[p0[0], a0, p0[1]], [p0[0], a1, p0[1]], [p1[0], a1, p1[1]], [p1[0], a0, p1[1]]],
+              [nx, 0, nz],
+              [[u0, a0 / s], [u0, a1 / s], [u1, a1 / s], [u1, a0 / s]],
+              [loC, hiC, hiC, loC],
+            )
+          }
+        }
+      })
     }
   const group = new THREE.Group()
   const textures = {}
@@ -373,6 +421,7 @@ export function buildLevel(map, renderer, quality) {
     group.add(mesh)
   })
   for (const p of map.props ?? []) group.add(buildProp(p, look, textures, aniso))
+  group.add(decorate(map, map.look))
   return { group, textures, look }
 }
 
@@ -478,50 +527,111 @@ export function buildSky(map, quality) {
     sun.shadow.needsUpdate = true
   }
   group.add(hemi, sun, sun.target)
-  return { group, sun, hemi, fog: new THREE.Fog(sky.fog, 50, 260) }
+  if (map.skyline) group.add(skyline(map))
+  return { group, sun, hemi, fog: new THREE.Fog(sky.fog, map.skyline ? 80 : 50, map.skyline ? 420 : 260) }
+}
+
+/** Vertigo: the city far below, and the other towers around. */
+function skyline(map) {
+  const g = new THREE.Group()
+  const rand = rng(31)
+  const win = document.createElement('canvas')
+  win.width = 64
+  win.height = 128
+  const c = win.getContext('2d')
+  c.fillStyle = '#5d6a78'
+  c.fillRect(0, 0, 64, 128)
+  for (let y = 4; y < 128; y += 8)
+    for (let x = 4; x < 64; x += 8) {
+      c.fillStyle = rand() < 0.25 ? '#e8e0b8' : rand() < 0.5 ? '#3a4656' : '#7f93a8'
+      c.fillRect(x, y, 5, 5)
+    }
+  const tex = new THREE.CanvasTexture(win)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  const mats = ['#8a96a4', '#9aa3ad', '#7d8794', '#a8a49a'].map((col) => new THREE.MeshLambertMaterial({ color: col, map: tex }))
+  const cx = map.w / 2
+  const cz = map.d / 2
+  for (let k = 0; k < 70; k++) {
+    const a = rand() * Math.PI * 2
+    const dist = 90 + rand() * 220
+    const w = 14 + rand() * 26
+    const h = 60 + rand() * 170
+    const top = -150 + h
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * (0.7 + rand() * 0.6)), mats[k % mats.length])
+    b.position.set(cx + Math.cos(a) * dist, top - h / 2, cz + Math.sin(a) * dist)
+    b.rotation.y = rand() * 0.6
+    g.add(b)
+  }
+  // the streets, a long way down
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.MeshLambertMaterial({ color: '#56606a' }))
+  ground.rotation.x = -Math.PI / 2
+  ground.position.set(cx, -150, cz)
+  g.add(ground)
+  // the outside of our own tower, going down
+  const tower = new THREE.Mesh(new THREE.BoxGeometry(map.w - 2, 140, map.d - 2), new THREE.MeshLambertMaterial({ color: '#9aa0a8', map: tex }))
+  tower.position.set(cx, -12 - 70, cz)
+  tex.repeat.set(6, 8)
+  g.add(tower)
+  return g
 }
 
 // ================= Radar =================
-/** A top-down picture of the map for the radar (8 px a metre). */
-export function radarImage(map) {
+/**
+ * A top-down picture of the map for the radar (8 px a metre). Maps with a basement (Nuke) have
+ * two: `lower` shows the floors below map.radarSplit, the default the ones above.
+ */
+export function radarImage(map, lower = false) {
   const S = 8
   const c = document.createElement('canvas')
   c.width = map.w * S
   c.height = map.d * S
   const g = c.getContext('2d')
-  const { w, d, floor, ceil } = map
+  const { w, d } = map
+  const split = map.radarSplit ?? -INF
+  // the floor to show in each cell (NaN: none)
+  const floorOf = new Float32Array(w * d).fill(NaN)
+  const roofed = new Uint8Array(w * d)
+  for (let i = 0; i < w * d; i++) {
+    for (let k = map.sc[i] - 1; k >= 0; k--) {
+      const t = map.st[i * MAXS + k]
+      if (t >= WALL_H - 0.1) continue
+      const above = k + 1 < map.sc[i] ? map.sb[i * MAXS + k + 1] : INF
+      if (above - t < 1.6) continue
+      if (lower ? t >= split : t < split && map.radarSplit !== undefined) continue
+      floorOf[i] = t
+      roofed[i] = above < INF / 2 ? 1 : 0
+      break
+    }
+  }
+  const has = (x, z) => x >= 0 && z >= 0 && x < w && z < d && !Number.isNaN(floorOf[z * w + x])
   for (let z = 0; z < d; z++)
     for (let x = 0; x < w; x++) {
-      const h = floor[z * w + x]
-      if (h >= WALL_H - 0.01) continue
-      const l = Math.round(70 + Math.max(-1, Math.min(4, h)) * 18)
-      g.fillStyle = ceil[z * w + x] < 1e5 ? `rgb(${l - 14},${l - 10},${l + 6})` : `rgb(${l + 8},${l + 4},${l - 6})`
+      if (!has(x, z)) continue
+      const h = floorOf[z * w + x]
+      const l = Math.round(70 + Math.max(-1, Math.min(4, h - (lower ? split - 3 : 0))) * 18)
+      g.fillStyle = roofed[z * w + x] ? `rgb(${l - 14},${l - 10},${l + 6})` : `rgb(${l + 8},${l + 4},${l - 6})`
       g.fillRect(x * S, z * S, S, S)
     }
-  // Outline the walkable area
   g.strokeStyle = 'rgba(255,255,255,0.55)'
   g.lineWidth = 2
   g.beginPath()
   for (let z = 0; z < d; z++)
     for (let x = 0; x < w; x++) {
-      const solid = floor[z * w + x] >= WALL_H - 0.01
-      if (solid) continue
-      const edge = (ox, oz) => {
-        const nx = x + ox
-        const nz = z + oz
-        return nx < 0 || nz < 0 || nx >= w || nz >= d || floor[nz * w + nx] >= WALL_H - 0.01
-      }
-      if (edge(-1, 0)) (g.moveTo(x * S, z * S), g.lineTo(x * S, (z + 1) * S))
-      if (edge(1, 0)) (g.moveTo((x + 1) * S, z * S), g.lineTo((x + 1) * S, (z + 1) * S))
-      if (edge(0, -1)) (g.moveTo(x * S, z * S), g.lineTo((x + 1) * S, z * S))
-      if (edge(0, 1)) (g.moveTo(x * S, (z + 1) * S), g.lineTo((x + 1) * S, (z + 1) * S))
+      if (!has(x, z)) continue
+      if (!has(x - 1, z)) (g.moveTo(x * S, z * S), g.lineTo(x * S, (z + 1) * S))
+      if (!has(x + 1, z)) (g.moveTo((x + 1) * S, z * S), g.lineTo((x + 1) * S, (z + 1) * S))
+      if (!has(x, z - 1)) (g.moveTo(x * S, z * S), g.lineTo((x + 1) * S, z * S))
+      if (!has(x, z + 1)) (g.moveTo(x * S, (z + 1) * S), g.lineTo((x + 1) * S, (z + 1) * S))
     }
   g.stroke()
-  // Bomb site letters
+  // Bomb site letters (on the floor they're on)
   g.font = `bold ${S * 7}px system-ui, sans-serif`
   g.textAlign = 'center'
   g.textBaseline = 'middle'
   for (const [k, rr] of Object.entries(map.sites)) {
+    const mid = ((rr.y0 ?? -INF) + (rr.y1 ?? INF)) / 2
+    if (map.radarSplit !== undefined && rr.y0 !== undefined && rr.y0 > -INF / 2 && (lower ? mid >= split : mid < split)) continue
     g.fillStyle = 'rgba(255,90,60,0.18)'
     g.fillRect(rr.x0 * S, rr.z0 * S, (rr.x1 - rr.x0) * S, (rr.z1 - rr.z0) * S)
     g.fillStyle = 'rgba(255,120,90,0.9)'

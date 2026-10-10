@@ -1,4 +1,4 @@
-// nikstil.com online: accounts, TRANSLATR™ leaderboards and Messenger, on Supabase.
+// nikstil.com online: accounts, TRANSLATR™ leaderboards, COUNTER-STRIFE ranks and Messenger, on Supabase.
 // Shared by the desktop (os/online-apps.js), the game page (online/translatr-bridge.js) and the
 // admin page. Exposes window.nikstilOnline.
 //
@@ -248,6 +248,60 @@
     }
   }
 
+  // ================= Profiles =================
+  /** Adds achievement ids to the signed-in player's profile (they only ever add up). */
+  async function syncAchievements(ids) {
+    if (!profile) return null
+    const c = await connect()
+    const { data, error } = await c.rpc('sync_achievements', { p_ids: ids })
+    if (error) throw error
+    return data
+  }
+  /** A player's public profile: achievements, COUNTER-STRIFE rank, best TRANSLATR™ run. */
+  async function playerProfile(userId) {
+    const c = await connect()
+    const { data, error } = await c.rpc('player_profile', { p_user: userId })
+    if (error) throw error
+    return data?.[0] ?? null
+  }
+
+  // ================= COUNTER-STRIFE ranks =================
+  // A ranked match: the server is told when it starts and when it ends, and works out the rating.
+  async function strifeStart(mode, map, difficulty, roundsToWin) {
+    const c = await connect()
+    const { data, error } = await c.rpc('strife_start', { p_mode: mode, p_map: map, p_difficulty: difficulty, p_rounds_to_win: roundsToWin })
+    if (error) throw error
+    return data
+  }
+  /** r: { won, roundsUs, roundsThem, kills, deaths, mvps }. Returns { rating, delta, tier, matches, wins, losses, board_rank }. */
+  async function strifeFinish(matchId, r) {
+    const c = await connect()
+    const { data, error } = await c.rpc('strife_finish', {
+      p_match: matchId,
+      p_won: !!r.won,
+      p_rounds_us: r.roundsUs | 0,
+      p_rounds_them: r.roundsThem | 0,
+      p_kills: r.kills | 0,
+      p_deaths: r.deaths | 0,
+      p_mvps: r.mvps | 0,
+    })
+    if (error) throw error
+    return data?.[0] ?? null
+  }
+  async function strifeLeaderboard(limit = 50) {
+    const c = await connect()
+    const { data, error } = await c.rpc('strife_leaderboard', { p_limit: limit })
+    if (error) throw error
+    return data
+  }
+  /** Someone's rank (yours with no id), or null if they haven't played a ranked match. */
+  async function strifeRating(userId = null) {
+    const c = await connect()
+    const { data, error } = await c.rpc('strife_rating', { p_user: userId })
+    if (error) throw error
+    return data?.[0] ?? null
+  }
+
   async function startRun(mode, gameStartedAt, day = null) {
     const c = await connect()
     const { data, error } = await c.rpc('start_run', { p_mode: mode, p_game_started_at: gameStartedAt ?? null, p_day: day })
@@ -421,6 +475,7 @@
     setBanned: (user, banned) => admin.call('admin_set_banned', { p_user: user, p_banned: banned }),
     recentRuns: (limit = 100) => admin.call('admin_recent_runs', { p_limit: limit }),
     setRunRemoved: (run, removed, note = null) => admin.call('admin_set_run_removed', { p_run: run, p_removed: removed, p_note: note }),
+    strifeReset: (user) => admin.call('admin_strife_reset', { p_user: user }),
   }
 
   // ================= Errors =================
@@ -464,6 +519,12 @@
     watchLeaderboard,
     startRun,
     finishRun,
+    syncAchievements,
+    playerProfile,
+    strifeStart,
+    strifeFinish,
+    strifeLeaderboard,
+    strifeRating,
     findPlayers,
     findPlayer,
     playerName,

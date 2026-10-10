@@ -57,6 +57,16 @@
       "title": "COUNTER-STRIFE",
       "hidden": false
     },
+    "achievements": {
+      "label": "Achievements",
+      "title": "Achievements",
+      "hidden": false
+    },
+    "files": {
+      "label": "File Explorer",
+      "title": "File Explorer",
+      "hidden": false
+    },
     "browser": {
       "label": "BobbyBrowser",
       "title": "BobbyBrowser",

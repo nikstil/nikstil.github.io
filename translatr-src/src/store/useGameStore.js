@@ -86,6 +86,17 @@ import {
   skillStatus,
 } from '../lib/economy'
 
+/** Leaves something for COUNTER-STRIFE (/strife/), whose inventory unpacks 'strife-gifts'. */
+function giveStrife(gift) {
+  try {
+    const list = JSON.parse(localStorage.getItem('strife-gifts') || '[]')
+    list.push({ ...gift, from: 'TRANSLATR™', at: Date.now() })
+    localStorage.setItem('strife-gifts', JSON.stringify(list.slice(-50)))
+  } catch {
+    // no storage: the key is lost (like real microtransactions)
+  }
+}
+
 // The economy selectors live in lib/economy.js (shared with the balance simulator); components
 // keep importing them from here.
 export * from '../lib/economy'
@@ -2021,6 +2032,8 @@ export const useGameStore = create(
         if (def.grantsRelic) next.items = [...s.items, { uid: makeId(), itemId: RELIC.id }]
         if (def.refillStamina) Object.assign(next, { stamina: getMaxStamina(s), staminaTs: Date.now() })
         if (def.clearsDebt) next.loan = null
+        // COUNTER-STRIFE keys: the game (same site, same storage) unpacks these from 'strife-gifts'
+        if (def.strifeKeys) giveStrife({ keys: def.strifeKeys })
         // Streak Insurance™: pretend you claimed yesterday, so today continues the streak.
         if (def.repairsStreak) next.streak = { ...s.streak, lastDay: dayBefore(localDay()) }
         set(next)
