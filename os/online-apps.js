@@ -99,7 +99,7 @@
       const choice = await os.choicebox({
         title: 'Welcome to nikstil.com',
         icon: '👋',
-        text: 'Sign in to get your TRANSLATR™ runs on the leaderboards and chat in Messenger. Or just look around: nothing here needs an account.',
+        text: 'Sign in to put your TRANSLATR™ runs and COUNTER-STRIFE rank on the leaderboards, show off your achievements on your profile and chat in Messenger. Or just look around: nothing here needs an account.',
         choices: [
           { label: 'Continue as guest', value: 'guest' },
           { label: 'Create account', value: 'up' },
@@ -498,7 +498,7 @@
         const ok = await os.askbox({
           title: 'Delete account',
           icon: '⚠️',
-          text: `Delete ${me.username} for good? Your leaderboard times, messages and blocks all go with it. This can’t be undone.`,
+          text: `Delete ${me.username} for good? Your profile, leaderboard times, COUNTER-STRIFE rank, messages and blocks all go with it. This can’t be undone.`,
           ok: 'Delete it',
         })
         if (!ok) return

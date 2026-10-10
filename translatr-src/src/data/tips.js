@@ -61,7 +61,7 @@ export const TIPS = [
   'Tip: The Dev IRS has never lost an audit. It has also never been audited.',
   'Tip: The interface speaks Pirate now. Control Panel → Display → Language. Arr.',
   'Tip: The Arcade, DoomFeed™ and a browser all live on the LigmaPhone™. The phone lives in the Premium Store.',
-  'Tip: DOOMSCROLL.EXE has five levels. The sixth is your inbox.',
+  'Tip: DOOMSCROLL.EXE has fifteen levels in three episodes. The sixteenth is your inbox.',
   'Tip: Premium Latin™ has exactly one grammar rule. We charge $10 a word for it.',
   'Tip: Every theme is a different decade. The ads are the same in all of them.',
   'Tip: The Arcade pays out in real in-game money. The platform fee is also real.',

@@ -1,5 +1,5 @@
 // nikstilOS: the nikstil.com homepage. A tiny desktop: double-click icons to open windows, drag
-// them by the title bar, minimize them to the taskbar, switch between ten themes. No framework
+// them by the title bar, minimize them to the taskbar, switch between ten themes (and one more you unlock). No framework
 // and no build step; window contents live in <template>s in index.html, and /site.json (edited on
 // the admin page, /nikstil/) overrides the text in them.
 ;(() => {
@@ -583,6 +583,13 @@
       }
     }
     if (text(site.pc?.note) !== null) $('.pc-note', el).textContent = site.pc.note
+    // "Themes installed": the real count (unless the admin page wrote something that isn't a number)
+    for (const dt of $$('.pc-specs dt', el)) {
+      const dd = dt.nextElementSibling
+      if (dt.textContent.trim() !== 'Themes installed' || !/^\s*\d+\s*$/.test(dd?.textContent ?? '')) continue
+      const locked = THEMES.filter(isLocked).length
+      dd.textContent = `${THEMES.length - locked}${locked ? ` (+${locked} to unlock)` : ''}`
+    }
   }
 
   function initGif(el) {
