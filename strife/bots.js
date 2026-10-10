@@ -5,6 +5,7 @@
 
 import { eyeOf, chestOf, headOf, dirOf, weaponOf } from './game.js'
 import { WEAPONS } from './weapons.js'
+import { GRAVITY } from './world.js'
 
 export const DIFFICULTY = [
   // err: how far off (metres, at the target) the aim wanders before it settles
@@ -21,6 +22,70 @@ const angleTo = (from, to) => ({
   yaw: Math.atan2(-(to.x - from.x), -(to.z - from.z)),
   pitch: Math.atan2(to.y - from.y, Math.hypot(to.x - from.x, to.z - from.z)),
 })
+
+// ================= Throwing grenades where you mean to =================
+const FUSE = { he: 1.6, flash: 1.6, smoke: 1.8, fire: 2.0, decoy: 2.0 }
+/**
+ * Where a grenade thrown from eye e (yaw, pitch; lob: underhand) ends up: where it comes to rest
+ * (a smoke), where it first lands (a molotov), or where it is when it goes off (a flash, an HE).
+ * The same flight as Game.throwNade and Game.stepNades.
+ */
+export function nadeFlight(world, e, yaw, pitch, lob, type) {
+  const d = dirOf(yaw, pitch + 0.12)
+  const speed = lob ? 9 : 17
+  const p = { x: e.x + d.x * 0.5, y: e.y + d.y * 0.5 - 0.1, z: e.z + d.z * 0.5 }
+  const v = { x: d.x * speed, y: d.y * speed + (lob ? 2 : 2.5), z: d.z * speed }
+  const h = 1 / 60
+  let still = 0
+  for (let t = 0; t < 4; t += h) {
+    v.y -= GRAVITY * h
+    const sp = Math.hypot(v.x, v.y, v.z)
+    if (sp > 1e-4) {
+      const dx = v.x / sp
+      const dy = v.y / sp
+      const dz = v.z / sp
+      const dist = sp * h
+      const hit = world.trace(p.x, p.y, p.z, dx, dy, dz, dist + 0.06)
+      if (hit) {
+        const tt = Math.max(0, hit.t - 0.06)
+        p.x += dx * tt
+        p.y += dy * tt
+        p.z += dz * tt
+        const vn = v.x * hit.nx + v.y * hit.ny + v.z * hit.nz
+        v.x = (v.x - 2 * vn * hit.nx) * 0.55
+        v.y = (v.y - 2 * vn * hit.ny) * 0.45
+        v.z = (v.z - 2 * vn * hit.nz) * 0.55
+        if (hit.ny > 0.5) {
+          v.x *= 0.7
+          v.z *= 0.7
+          if (type === 'fire') return { ...p, t }
+        }
+      } else {
+        p.x += dx * dist
+        p.y += dy * dist
+        p.z += dz * dist
+      }
+    }
+    still = Math.hypot(v.x, v.y, v.z) < 0.6 ? still + h : 0
+    if ((type === 'he' || type === 'flash') && t >= FUSE[type]) return { ...p, t }
+    if (type !== 'he' && type !== 'flash' && type !== 'fire' && t >= FUSE[type] && still > 0.4) return { ...p, t }
+  }
+  return { ...p, t: 4 }
+}
+/** How to throw a grenade (type: its nade) from eye e to end up near p: { yaw, pitch, lob, err } or null. */
+export function aimThrow(world, e, p, type, within = 3) {
+  const yaw = Math.atan2(-(p.x - e.x), -(p.z - e.z))
+  let best = null
+  const tryOne = (pitch, lob) => {
+    const l = nadeFlight(world, e, yaw, pitch, lob, type)
+    const err = Math.hypot(l.x - p.x, l.z - p.z) + Math.abs(l.y - p.y) * 0.5
+    if (!best || err < best.err) best = { yaw, pitch, lob, err }
+  }
+  for (const lob of [false, true]) for (let pitch = -0.5; pitch <= 1.25; pitch += 0.125) tryOne(pitch, lob)
+  if (best) for (const dp of [-0.06, -0.03, 0.03, 0.06]) tryOne(best.pitch + dp, best.lob)
+  return best && best.err <= within ? best : null
+}
+const RADIO_FOR = { smoke: 'smokeout', flash: 'flashout', molotov: 'fireout', incendiary: 'fireout', he: 'fireout' }
 
 /** The Terrorists' plan for a round, and where each Counter-Terrorist holds. */
 export function planRound(g) {
@@ -56,7 +121,7 @@ export function planRound(g) {
   const cts = g.actors.filter((a) => a.team === 'CT' && a.isBot).sort(() => Math.random() - 0.5)
   const hold = {}
   cts.forEach((a, k) => (hold[a.id] = spots[k % spots.length]))
-  return { site, assign, execAt: rush ? 0 : 14 + Math.random() * 30, hold, rotated: { A: false, B: false } }
+  return { site, assign, execAt: rush ? 0 : 14 + Math.random() * 30, hold, rotated: { A: false, B: false }, staged: new Set(), util: { smoked: [], molly: false, flash: false }, lineups: new Map(), utilUntil: 0, pushAt: 0, switched: false, retake: null }
 }
 
 export class Brain {
@@ -99,6 +164,13 @@ export class Brain {
     this.rotateAt = 0
     this.area = null
     this.threw = false
+    this.utilUsed = false
+    this.utilTried = false
+    this.lineup = null
+    this.waitAt = null
+    this.dodgeUntil = 0
+    this.trade = null
+    this.heard = null
     this.holdLook = null
     this.peek = 0
     this.lastHurt = null
@@ -173,9 +245,24 @@ export class Brain {
       if (dist < n.loud && !this.target) {
         this.lookAt = { x: n.x, y: n.y + 1.2, z: n.z }
         this.lookUntil = now + 1.6
+        this.heard = { pos: { x: n.x, y: n.y, z: n.z }, at: now }
       }
     }
     this.noiseSeen = noises.length
+    // A teammate just died near me, and I didn't see who did it: go and trade them (attacking), or
+    // (defending: holding a spot) keep it and aim where they'll come from.
+    if (!this.target && !g.respawns && !this.trade && now > (this.lookUntil ?? 0)) {
+      for (const m of g.actors) {
+        if (m.alive || m.team !== a.team || m === a || !m.killer?.alive || now - (m.deadAt ?? -9) > 2.5) continue
+        if (Math.hypot(m.pos.x - a.pos.x, m.pos.z - a.pos.z) > 22) continue
+        if (a.inv.bomb && g.bomb.state !== 'planted') continue // the bomb carrier doesn't go chasing
+        const k = m.killer.pos
+        if (a.team === 'T' || g.bomb.state === 'planted') this.trade = { x: k.x, y: k.y, z: k.z, until: now + 4 }
+        this.lookAt = { x: k.x, y: k.y + 1.4, z: k.z }
+        this.lookUntil = now + 4
+        break
+      }
+    }
   }
 
   // ================= Buying =================
@@ -185,7 +272,6 @@ export class Brain {
     const T = team === 'T'
     const firstRound = g.round === 1 || (g.halftimeDone && g.round === g.halftimeAt + 1)
     const mates = g.actors.filter((b) => b.team === team)
-    const teamMoney = mates.reduce((s, b) => s + b.money, 0) / Math.max(1, mates.length)
     const has = a.inv.primary
     const tryBuy = (id) => g.buy(a, id) === ''
     // Each bot has its favourites, so a team doesn't all carry the same thing.
@@ -207,8 +293,10 @@ export class Brain {
       else if (r < 0.9) tryBuy('flash') && tryBuy('flash')
       else tryBuy(T ? 'flash' : 'kit')
     } else {
-      const eco = !has && teamMoney < 2600 && a.money < 3700
-      if (!eco) {
+      // The team buys together: everyone full-buys, everyone forces, or everyone saves.
+      const plan = this.teamBuy()
+      const rich = a.money >= 5200 // (enough to buy properly on a save round anyway)
+      if (plan === 'full' || rich || (plan === 'force' && has)) {
         const awpers = mates.filter((b) => b.inv.primary?.id === 'awp').length
         if (!has) {
           let pick = null
@@ -219,16 +307,53 @@ export class Brain {
           if (pick) tryBuy(pick)
         }
         if (a.armor < 100 || !a.helmet) tryBuy(a.money >= 1000 ? 'vesthelm' : 'vest')
-        if (!T && a.money >= 400 && Math.random() < 0.6) tryBuy('kit')
-        if (a.money >= 300 && Math.random() < 0.7) tryBuy('smoke')
-        if (a.money >= 400 && Math.random() < 0.45) tryBuy(T ? 'molotov' : 'incendiary')
-        if (a.money >= 300 && Math.random() < 0.45) tryBuy('he')
-        if (a.money >= 200 && Math.random() < 0.4) tryBuy('flash')
+        if (!T && a.money >= 400 && Math.random() < 0.7) tryBuy('kit')
+        // utility, in the order it gets used: smokes and fire for the site, flashes to go in on
+        if (a.money >= 300) tryBuy('smoke')
+        if (a.money >= 500) tryBuy(T ? 'molotov' : 'incendiary')
+        if (a.money >= 200) tryBuy('flash')
+        if (a.money >= 300 && Math.random() < 0.5) tryBuy('he')
         if (a.money >= 1500 && Math.random() < 0.08) tryBuy('zeus')
-      } else if (a.money >= 1500 && Math.random() < 0.5) tryBuy(Math.random() < 0.6 ? 'deagle' : T ? 'tec9' : 'fiveseven')
+      } else if (plan === 'force') {
+        // whatever gets you a fighting chance: an SMG or a shotgun (or a cheap rifle), and armour
+        const pick = choose(T ? [['galil', 2], ['mac10', 4], ['ump45', 2], ['xm1014', 1], ['sawedoff', 0.6]] : [['famas', 2], ['mp9', 4], ['ump45', 2], ['mag7', 1], ['mp5', 0.8]])
+        if (pick && a.money >= WEAPONS[pick].price + 650) tryBuy(pick)
+        else if (a.money >= 700) tryBuy(T ? 'tec9' : 'fiveseven')
+        if (a.money >= 650) tryBuy('vest')
+        if (a.money >= 200) tryBuy('flash')
+      }
+      // saving: a better pistol at most (keep the money for a proper buy next round)
+      else if (a.money >= 1500 && Math.random() < 0.5) tryBuy(Math.random() < 0.6 ? 'deagle' : T ? 'tec9' : 'fiveseven')
       else if (a.money >= 500 && Math.random() < 0.3) tryBuy('p250')
     }
     if (a.inv.primary) g.switchTo(a, 'primary', true)
+  }
+
+  /**
+   * The team's buy this round, decided once (by whichever bot buys first): 'full' when there's
+   * money for rifles and utility, 'force' when the round can't be given up (match point, the last
+   * one before half-time, the other team saving), else 'eco' (save).
+   */
+  teamBuy() {
+    const { g, a } = this
+    const team = a.team
+    g.teamBuys ??= {}
+    const known = g.teamBuys[team]
+    if (known?.round === g.round) return known.plan
+    const mates = g.actors.filter((b) => b.team === team)
+    const needy = mates.filter((b) => !b.inv.primary)
+    const avg = needy.length ? needy.reduce((s, b) => s + b.money, 0) / needy.length : 9999
+    const other = team === 'T' ? 'CT' : 'T'
+    const toWin = g.rules.roundsToWin
+    const critical = g.score[other] >= toWin - 1 || g.score[team] >= toWin - 1 || (!g.halftimeDone && g.round === g.halftimeAt)
+    const theirs = g.actors.filter((b) => b.team === other)
+    const theyreBroke = theirs.length && theirs.reduce((s, b) => s + b.money, 0) / theirs.length < 1800
+    let plan = 'eco'
+    if (avg >= 3500) plan = 'full'
+    else if ((critical || theyreBroke || (g.lossStreak?.[team] ?? 0) >= 3) && avg >= 1600) plan = 'force'
+    else if (avg >= 2600) plan = 'force'
+    g.teamBuys[team] = { round: g.round, plan }
+    return plan
   }
 
   // ================= Moving =================
@@ -239,7 +364,8 @@ export class Brain {
     const gx = this.goal.x
     const gz = this.goal.z
     const gy = this.goal.y
-    const sameFloor = gy == null || Math.abs(g.world.floorAt(gx, gz, gy + 1) - a.pos.y) < 1.6
+    // (on a ladder, you're only there once you're off it at the right height)
+    const sameFloor = gy == null ? !a.onLadder : Math.abs(g.world.floorAt(gx, gz, gy + 1) - a.pos.y) < (a.onLadder ? 0.3 : 1.6)
     if (sameFloor && Math.hypot(gx - a.pos.x, gz - a.pos.z) < (this.goal.r ?? 0.8)) return { fx: 0, fz: 0, arrived: true }
     if (!this.path || !this.pathGoal || this.pathGoal.y !== gy || Math.hypot(this.pathGoal.x - gx, this.pathGoal.z - gz) > 1.5) {
       this.path = g.world.path(a.pos.x, a.pos.z, a.pos.y + 0.5, gx, gz, gy == null ? 50 : gy + 1)
@@ -248,7 +374,9 @@ export class Brain {
       if (!this.path) return { fx: 0, fz: 0, arrived: true }
     }
     while (this.pathIdx < this.path.length - 1 && Math.hypot(this.path[this.pathIdx][0] - a.pos.x, this.path[this.pathIdx][1] - a.pos.z) < 0.7 && Math.abs((this.path[this.pathIdx][2] ?? a.pos.y) - a.pos.y) < 1.6) this.pathIdx++
-    const [tx, tz] = this.path[Math.min(this.pathIdx, this.path.length - 1)]
+    const [tx, tz, ty] = this.path[Math.min(this.pathIdx, this.path.length - 1)]
+    // a ladder: climb toward the next point (it's well above or below)
+    const climb = ty != null && Math.abs(ty - a.pos.y) > 0.3 && g.world.ladderAt(a.pos, 0.4) ? Math.sign(ty - a.pos.y) : 0
     let fx = tx - a.pos.x
     let fz = tz - a.pos.z
     const l = Math.hypot(fx, fz) || 1
@@ -265,8 +393,8 @@ export class Brain {
         fz += (dz / dd) * 0.6
       }
     }
-    // stuck? jump, then find another way
-    this.stuckT += dt
+    // stuck? jump, then find another way (not halfway up a ladder: climbing isn't stuck)
+    this.stuckT = a.onLadder ? 0 : this.stuckT + dt
     if (this.stuckT > 1.2) {
       const moved = this.lastPos ? Math.hypot(a.pos.x - this.lastPos.x, a.pos.z - this.lastPos.z) : 9
       this.lastPos = { ...a.pos }
@@ -277,7 +405,7 @@ export class Brain {
         this.pathGoal = null
       }
     }
-    return { fx, fz, arrived: false, ahead: { x: tx, z: tz } }
+    return { fx, fz, arrived: false, ahead: { x: tx, z: tz }, climb }
   }
   setGoal(x, z, r = 0.8, y = null) {
     if (this.goal && this.goal.y === y && Math.hypot(this.goal.x - x, this.goal.z - z) < 0.3) return
@@ -350,6 +478,14 @@ export class Brain {
     const { g, a } = this
     if (this.ord && this.orders()) return {}
     if (g.respawns) return this.roam()
+    if (this.trade) {
+      if (g.time > this.trade.until || this.target || g.bomb.state === 'planted') this.trade = null
+      else {
+        this.setGoal(this.trade.x, this.trade.z, 3, this.trade.y)
+        this.holdLook = { x: this.trade.x, y: this.trade.y + 1.4, z: this.trade.z }
+        return {}
+      }
+    }
     const m = g.map
     const plan = g.plan
     const now = g.time
@@ -364,6 +500,14 @@ export class Brain {
         return {}
       }
       if (b.state === 'planted') {
+        // someone's on the bomb: burn them off it (you can hear a defuse from anywhere near)
+        if (b.defuser && !this.utilUsed && Math.hypot(b.pos.x - a.pos.x, b.pos.z - a.pos.z) < 32) {
+          const nade = ['molotov', 'he'].find((n) => a.inv.grenades.includes(n))
+          if (nade) {
+            this.utilUsed = true
+            return { throwAt: { x: b.pos.x, y: b.pos.y, z: b.pos.z, nade, within: 2.5 } }
+          }
+        }
         const posts = m.posts[b.site]
         const k = g.actors.filter((x) => x.team === 'T').indexOf(a) % posts.length
         const p = posts[k]
@@ -384,20 +528,73 @@ export class Brain {
       const pts = as.route.path
       const late = g.roundTimeLeft < 30
       const stage = Math.max(0, pts.length - 3)
+      // They're stacked on our site (three or more seen there) before we've gone in: hit the other one.
+      if (!plan.switched && !as.lurk && liveFor < plan.execAt + 4 && Object.keys(g.sites).length > 1 && this.stacked(plan.site) >= 3) {
+        plan.switched = true
+        const other = plan.site === 'A' ? 'B' : 'A'
+        if (g.chatter?.goSite(other)) {
+          if (g.chatter.free('T')) g.chat(a, `they're stacked ${plan.site}, going ${other}`, true)
+          return {}
+        }
+      }
+      // A throw lined up: step over to where it goes from, then throw (the flash last: the push goes when it pops).
+      if (this.lineup && this.wp === stage) {
+        const u = this.lineup
+        if (liveFor > plan.utilUntil || late) {
+          this.lineup = null
+          plan.lineups.delete(a.id)
+        } else if (Math.hypot(u.from.x - a.pos.x, u.from.z - a.pos.z) > (this.steerArrived ? 1.2 : 0.45)) {
+          this.setGoal(u.from.x, u.from.z, 0.3)
+          this.holdLook = null
+          return {}
+        } else {
+          const others = [...plan.lineups].some(([id, n]) => id !== a.id && n !== 'flash')
+          if (u.nade !== 'flash' || !others) {
+            this.lineup = null
+            plan.lineups.delete(a.id)
+            if (u.nade === 'flash') plan.pushAt = liveFor + 1.4
+            this.waitAt = { x: a.pos.x, z: a.pos.z, y: a.pos.y } // (wait for the go here, not back where it was)
+            // (not quite on the spot, with a teammate on it: aim again from here)
+            if (Math.hypot(u.from.x - a.pos.x, u.from.z - a.pos.z) > 0.3) delete u.sol
+            return { throwAt: u }
+          }
+          this.holdLook = { x: u.x, y: a.pos.y + 1.5, z: u.z }
+          return {}
+        }
+      }
       if (this.wp < pts.length) {
         const [x, z, wy] = pts[this.wp]
-        if (Math.hypot(x + 0.5 - a.pos.x, z + 0.5 - a.pos.z) < 2.2 && (wy == null || Math.abs(a.pos.y - wy) < 1.6)) {
-          if (this.wp === stage && liveFor < plan.execAt && !late && !as.lurk) {
-            // wait for the go
-            this.goTo(pts[this.wp], 1.2)
-            const [nx, nz] = pts[Math.min(pts.length - 1, this.wp + 1)]
-            this.holdLook = { x: nx, y: a.pos.y + 1.5, z: nz }
-            return {}
-          }
-          if (this.wp === stage && !this.threw && a.inv.grenades.includes('smoke') && Math.random() < 0.6) {
-            this.threw = true
-            const [px, pz] = pts[pts.length - 1]
-            return { throwAt: { x: px, z: pz, nade: 'smoke' } }
+        const there = Math.hypot(x + 0.5 - a.pos.x, z + 0.5 - a.pos.z) < 2.2 && (wy == null || Math.abs(a.pos.y - wy) < 1.6)
+        const thrownFrom = this.wp === stage && this.waitAt && Math.hypot(this.waitAt.x - a.pos.x, this.waitAt.z - a.pos.z) < 1.5
+        if (there || thrownFrom) {
+          if (this.wp === stage && !late && !as.lurk) {
+            plan.staged.add(a.id)
+            // Go together: when it's time, everyone (on the way in) is here, and the flash has popped.
+            const mates = g.actors.filter((t) => t.team === 'T' && t.alive && t.isBot && plan.assign[t.id] && !plan.assign[t.id].lurk)
+            const ready = mates.every((t) => plan.staged.has(t.id))
+            // the utility goes in first: wait (a few seconds at most) for what's still to be thrown
+            for (const id of plan.lineups.keys()) if (!g.actors[id]?.alive) plan.lineups.delete(id)
+            const throwing = plan.lineups.size > 0 && liveFor < plan.utilUntil
+            const go = Math.max(plan.execAt, plan.pushAt, ready ? 0 : Math.min(plan.execAt + 10, liveFor + 0.5), throwing ? liveFor + 0.5 : 0)
+            if (liveFor < go) {
+              if (thrownFrom) this.setGoal(this.waitAt.x, this.waitAt.z, 1.2, this.waitAt.y)
+              else this.goTo(pts[this.wp], 1.2)
+              const [nx, nz] = pts[Math.min(pts.length - 1, this.wp + 1)]
+              this.holdLook = { x: nx, y: a.pos.y + 1.5, z: nz }
+              // the last few seconds before the go: smoke their spots, burn a corner, flash it
+              if ((ready || liveFor > plan.execAt + 6) && liveFor > plan.execAt - 3 && !this.utilTried) {
+                this.lineup = this.executeUtility(plan.site, pts, stage)
+                if (this.lineup) {
+                  plan.lineups.set(a.id, this.lineup.nade)
+                  plan.utilUntil = Math.max(plan.utilUntil, liveFor + 6)
+                }
+              }
+              return {}
+            }
+            if (this.lineup) {
+              this.lineup = null
+              plan.lineups.delete(a.id)
+            }
           }
           this.wp++
         }
@@ -435,6 +632,32 @@ export class Brain {
         this.holdLook = null
         return {}
       }
+      // The retake: wait just off the site until there are two of you (or time's short), smoke
+      // where they'll be sitting, then flash it and go in together.
+      const cts = g.actors.filter((x) => x.team === 'CT' && x.alive)
+      plan.retake ??= { go: false, flashed: false }
+      const r = plan.retake
+      const close = cts.filter((x) => Math.hypot(b.pos.x - x.pos.x, b.pos.z - x.pos.z) < 22)
+      const need = (a.kit ? 5 : 10) + 8
+      // (only worth waiting for someone already close, and not for long)
+      const coming = cts.some((x) => x !== a && !close.includes(x) && Math.hypot(x.pos.x - a.pos.x, x.pos.z - a.pos.z) < 16)
+      r.waitUntil ??= now + 4
+      if (!r.go && (close.length >= Math.min(2, cts.length) || !coming || now > r.waitUntil || left < need + dist / 5 + 6)) r.go = true
+      if (!r.go && dist < 22) {
+        this.setGoal(a.pos.x, a.pos.z, 3, a.pos.y)
+        this.holdLook = { x: b.pos.x, y: a.pos.y + 1.5, z: b.pos.z }
+        if (!this.utilUsed && a.inv.grenades.includes('smoke')) {
+          this.utilUsed = true
+          const posts = m.posts[b.site] ?? []
+          const p = posts.map((q) => q.at).sort((u, v) => Math.hypot(u[0] - a.pos.x, u[1] - a.pos.z) - Math.hypot(v[0] - a.pos.x, v[1] - a.pos.z))[0]
+          if (p) return { throwAt: { x: p[0] + 0.5, z: p[1] + 0.5, y: g.world.floorAt(p[0] + 0.5, p[1] + 0.5, (p[2] ?? 50) + 1), nade: 'smoke', within: 4 } }
+        }
+        return {}
+      }
+      if (r.go && !r.flashed && dist < 24 && dist > 6 && a.inv.grenades.includes('flash')) {
+        r.flashed = true
+        return { throwAt: { x: b.pos.x, z: b.pos.z, y: b.pos.y + 2.2, nade: 'flash', within: 4 } }
+      }
       this.setGoal(b.pos.x, b.pos.z, 0.6, b.pos.y)
       this.holdLook = null
       const near = Math.hypot(b.pos.x - a.pos.x, b.pos.z - a.pos.z) < 1.5 && Math.abs(b.pos.y - a.pos.y) < 1.5
@@ -448,16 +671,38 @@ export class Brain {
       this.goTo(spot.at)
       this.holdLook = { x: spot.look[0] + 0.5, y: a.pos.y + 1.5, z: spot.look[1] + 0.5 }
     }
-    // Rotate when the Terrorists show up somewhere else.
+    // Terrorists coming at us (a teammate saw them, or I heard them): slow them down with fire,
+    // an HE, or (three or more of them) a smoke on the way in.
+    if (!this.utilUsed && liveFor > 4) {
+      const range = (q) => Math.hypot(q.pos.x - a.pos.x, q.pos.z - a.pos.z) > 8 && Math.hypot(q.pos.x - a.pos.x, q.pos.z - a.pos.z) < 26
+      const fresh = g.intel.CT.filter((q) => now - q.at < 2.5 && range(q))
+      if (!fresh.length && this.heard && now - this.heard.at < 1.5 && range(this.heard)) fresh.push({ ...this.heard, id: -1 })
+      if (fresh.length) {
+        const many = new Set(fresh.map((q) => q.id)).size >= 3
+        const nade = ['incendiary', 'he', ...(many ? ['smoke'] : [])].find((n) => a.inv.grenades.includes(n))
+        if (nade) {
+          this.utilUsed = true
+          const q = fresh[fresh.length - 1].pos
+          return { throwAt: { x: q.x, z: q.z, y: g.world.floorAt(q.x, q.z, q.y + 0.5), nade, within: 4 } }
+        }
+      }
+    }
+    // Rotate when the Terrorists show up somewhere else, but one of us stays to anchor this site
+    // (unless it's obviously everyone).
     const hot = this.hotSite()
-    if (hot && plan.hold[a.id]?.area !== hot) {
-      if (!this.rotateAt) this.rotateAt = now + 1.5 + Math.random() * 4
-      if (now > this.rotateAt) {
-        this.area = hot
-        const spots = m.holds[hot]
-        const s = spots[a.id % spots.length]
-        this.goTo(s.at)
-        this.holdLook = { x: s.look[0] + 0.5, y: a.pos.y + 1.5, z: s.look[1] + 0.5 }
+    const mine = plan.hold[a.id]?.area
+    if (hot && mine !== hot.site) {
+      const anchors = g.actors.filter((x) => x.team === 'CT' && x.alive && x.isBot && plan.hold[x.id]?.area === mine).sort((p, q) => p.id - q.id)
+      const anchor = mine !== 'mid' && anchors[0] === a && hot.n < 4
+      if (!anchor) {
+        if (!this.rotateAt) this.rotateAt = now + 1.5 + Math.random() * 4
+        if (now > this.rotateAt) {
+          this.area = hot.site
+          const spots = m.holds[hot.site]
+          const s = spots[a.id % spots.length]
+          this.goTo(s.at)
+          this.holdLook = { x: s.look[0] + 0.5, y: a.pos.y + 1.5, z: s.look[1] + 0.5 }
+        }
       }
     }
     return {}
@@ -498,19 +743,109 @@ export class Brain {
     }
     return { x: best[0] + 0.5, z: best[1] + 0.5, y: best[2] ?? null }
   }
+  /** How many different Counter-Terrorists the Terrorists have seen on (or right by) a site lately. */
+  stacked(site) {
+    const { g } = this
+    const rr = g.map.sites[site]
+    const ids = new Set()
+    for (const s of g.intel.T) {
+      if (g.time - s.at > 8) continue
+      if (s.pos.x > rr.x0 - 8 && s.pos.x < rr.x1 + 8 && s.pos.z > rr.z0 - 8 && s.pos.z < rr.z1 + 8) ids.add(s.id)
+    }
+    return ids.size
+  }
+  /**
+   * Before the push: what this Terrorist throws (once), and from where: a smoke cutting off a spot
+   * the Counter-Terrorists hold (two smokes at most), a molotov into another, or the flash to go in
+   * on. It throws from somewhere between where it waits and the way in, wherever the throw works.
+   * Null: nothing it can get there.
+   */
+  executeUtility(site, pts, stage) {
+    const { g, a } = this
+    const w = g.world
+    const plan = g.plan
+    this.utilTried = true
+    const has = (n) => a.inv.grenades.includes(n)
+    const holds = g.map.holds[site] ?? []
+    const st = pts[stage]
+    const en = pts[Math.min(pts.length - 1, stage + 1)]
+    const lvl = (p) => (p[2] ?? 50) + 1
+    // where it could throw from (eye height), and the points on the line from the way in to a hold
+    const spots = [0, 0.5, 1]
+      .map((f) => {
+        const x = st[0] + 0.5 + (en[0] - st[0]) * f
+        const z = st[1] + 0.5 + (en[1] - st[1]) * f
+        return { x, y: w.floorAt(x, z, lvl(st)) + 1.6, z }
+      })
+      .filter((e) => e.y > -100)
+    const along = (h, fs) => {
+      const hy = w.floorAt(h.at[0] + 0.5, h.at[1] + 0.5, lvl(h.at))
+      return fs
+        .map((f) => {
+          const x = en[0] + 0.5 + (h.at[0] - en[0]) * f
+          const z = en[1] + 0.5 + (h.at[1] - en[1]) * f
+          return { x, y: w.floorAt(x, z, hy + 1.5), z }
+        })
+        .filter((p) => Math.abs(p.y - hy) < 3)
+    }
+    const lineup = (nade, targets) => {
+      for (const e of spots) for (const p of targets) {
+        const sol = aimThrow(w, e, p, WEAPONS[nade].nade, 3)
+        if (sol) return { ...p, nade, sol, from: { x: e.x, z: e.z } }
+      }
+      return null
+    }
+    if (has('smoke') && plan.util.smoked.length < 2) {
+      for (const h of holds) {
+        if (plan.util.smoked.includes(h)) continue
+        const u = lineup('smoke', along(h, [1, 0.8, 0.6, 0.45, 0.3]))
+        if (!u) continue
+        plan.util.smoked.push(h)
+        return u
+      }
+    }
+    if (has('molotov') && !plan.util.molly) {
+      for (const h of [...holds].reverse()) {
+        if (plan.util.smoked.includes(h)) continue
+        const u = lineup('molotov', along(h, [1, 0.85]))
+        if (!u) continue
+        plan.util.molly = true
+        return u
+      }
+    }
+    if (has('flash') && !plan.util.flash) {
+      // over the way in, a little above head height, so it pops in their faces
+      const ey = w.floorAt(en[0] + 0.5, en[1] + 0.5, lvl(en))
+      const u = lineup('flash', [{ x: en[0] + 0.5, y: ey + 2.2, z: en[1] + 0.5 }])
+      if (u) {
+        plan.util.flash = true
+        return u
+      }
+    }
+    return null
+  }
+  /** A teammate's flash is about to pop over there: look away. */
+  dodge(p) {
+    this.dodgeUntil = this.g.time + 1.9
+    this.dodgeFrom = p
+  }
   /** A site the Terrorists have been seen at in the last few seconds (by any teammate). */
   hotSite() {
     const { g } = this
     const now = g.time
     const count = { A: 0, B: 0 }
+    const who = { A: new Set(), B: new Set() }
     for (const s of g.intel.CT) {
       if (now - s.at > 6) continue
       for (const [k, rr] of Object.entries(g.map.sites)) {
-        if (s.pos.x > rr.x0 - 12 && s.pos.x < rr.x1 + 12 && s.pos.z > rr.z0 - 12 && s.pos.z < rr.z1 + 12) count[k]++
+        if (s.pos.x > rr.x0 - 12 && s.pos.x < rr.x1 + 12 && s.pos.z > rr.z0 - 12 && s.pos.z < rr.z1 + 12) {
+          count[k]++
+          who[k].add(s.id)
+        }
       }
     }
-    if (count.A >= 2 && count.A >= count.B) return 'A'
-    if (count.B >= 2) return 'B'
+    if (count.A >= 2 && count.A >= count.B) return { site: 'A', n: who.A.size }
+    if (count.B >= 2) return { site: 'B', n: who.B.size }
     return null
   }
 
@@ -614,6 +949,7 @@ export class Brain {
       const s = this.steer(dt)
       this.steerArrived = s.arrived
       wish = { fx: s.fx, fz: s.fz }
+      if (s.climb) cmd.climb = s.climb
       if (this.jumpNext) {
         cmd.jump = true
         this.jumpNext = false
@@ -642,18 +978,32 @@ export class Brain {
         wish = { fx: 0, fz: 0 }
       }
       if (obj.throwAt) this.throwAt(cmd, obj.throwAt)
+      // a teammate's flash is about to go off: turn your back on it
+      if (now < this.dodgeUntil && this.dodgeFrom) {
+        const ang = angleTo(eyeOf(a), this.dodgeFrom)
+        cmd.yaw = ang.yaw + Math.PI
+        cmd.pitch = 0
+        wish = { fx: 0, fz: 0 }
+      }
       // walk quietly when holding still nearby the enemy... and when retaking with the bomb ticking, run.
       cmd.walk = false
     }
+    if (this.throwing && t?.alive) this.throwing = null // (not with someone shooting at you)
     if (this.throwing) {
+      // stand, take it out, aim it so it lands where it should (worked out once), throw
       const nade = this.throwing
+      wish = { fx: 0, fz: 0 }
       if (a.active !== 'grenade') cmd.slot = 'grenade'
       else if (a.inv.grenades[0] !== nade.nade) cmd.slot = 'grenade'
-      else if (now > a.switchEnd) {
-        const ang = angleTo(eyeOf(a), { x: nade.x, y: a.pos.y + 1.6, z: nade.z })
-        cmd.yaw = ang.yaw
-        cmd.pitch = 0.32
-        cmd.fire = true
+      else if (now > a.switchEnd && now >= a.nextFire && !a.trigger) {
+        nade.sol ??= aimThrow(g.world, eyeOf(a), nade, WEAPONS[nade.nade].nade, nade.within ?? 3.5)
+        if (nade.sol) {
+          cmd.yaw = nade.sol.yaw
+          cmd.pitch = nade.sol.pitch
+          if (nade.sol.lob) cmd.alt = true
+          else cmd.fire = true
+          this.thrown(nade)
+        }
         this.throwing = null
       }
       if (now > (this.throwGiveUp ?? 0)) this.throwing = null
@@ -672,6 +1022,12 @@ export class Brain {
   throwAt(cmd, t) {
     if (!this.a.inv.grenades.includes(t.nade)) return
     this.throwing = t
-    this.throwGiveUp = this.g.time + 2
+    this.throwGiveUp = this.g.time + 2.5
+  }
+  /** Just threw it: say so, and if it's a flash, the team nearby looks away. */
+  thrown(nade) {
+    const { g, a } = this
+    if (nade.nade === 'flash') for (const b of g.actors) if (b.alive && b.team === a.team && b.brain && Math.hypot(b.pos.x - a.pos.x, b.pos.z - a.pos.z) < 22) b.brain.dodge({ x: nade.x, y: nade.y, z: nade.z })
+    if (RADIO_FOR[nade.nade] && g.chatter?.free(a.team, 1.5)) g.radio(a, RADIO_FOR[nade.nade])
   }
 }
