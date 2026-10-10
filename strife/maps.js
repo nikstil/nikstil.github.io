@@ -8,6 +8,8 @@
 // Coordinates: x goes east, z goes south, y up, all in metres from the map's top-left corner.
 
 import DUST2 from './plans/dust2.js'
+import MIRAGE from './plans/mirage.js'
+import INFERNO from './plans/inferno.js'
 
 export const WALL_H = 12
 export const INF = 1e6
@@ -156,6 +158,34 @@ function fromPlan(plan, { fix, build } = {}) {
           H[z][x] = Math.round((a + (b - a) * t) * 20) / 20
         }
     },
+    /**
+     * Steps that are really stairs: inside the rectangle, any drop of up to `most` metres becomes a
+     * slope you can walk (the low side rises to meet it, half a metre a cell). Taller drops stay
+     * ledges.
+     */
+    ease(x0, z0, x1, z1, most = 1.8) {
+      const orig = H.map((row) => [...row])
+      for (let pass = 0; pass < 12; pass++) {
+        let changed = false
+        for (let z = z0; z < z1; z++)
+          for (let x = x0; x < x1; x++) {
+            const h = at(x, z)
+            if (h == null) continue
+            for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+              const nx = x + dx
+              const nz = z + dz
+              if (nx < x0 || nz < z0 || nx >= x1 || nz >= z1) continue
+              const n = at(nx, nz)
+              if (n == null || n - h <= 0.5) continue
+              // a ledge as it was traced (not one this has already eased) taller than `most` stays
+              if ((orig[nz][nx] ?? 0) - (orig[z][x] ?? 0) > most) continue
+              H[z][x] = Math.round((n - 0.5) * 20) / 20
+              changed = true
+            }
+          }
+        if (!changed) break
+      }
+    },
     /** Levels a rectangle (at height h, or the middle height of what's there). */
     flat(x0, z0, x1, z1, h = null) {
       const hs = []
@@ -182,7 +212,31 @@ function fromPlan(plan, { fix, build } = {}) {
     for (const [x0, z0, x1, z1] of plan.crates) m.box(x0, z0, x1, z1, top(x0, z0, x1, z1) + ((x1 - x0) * (z1 - z0) >= 4 ? 1.6 : 1.1))
     build?.(m, top)
   })
-  return { ...g, floorAt: at }
+  return { ...g, floorAt: at, crateAt: (x, z) => plan.crates.some(([x0, z0, x1, z1]) => x >= x0 && x < x1 && z >= z0 && z < z1) }
+}
+/**
+ * Puts every point a plan map's bots and rules use (spawns, plant spots, holds, posts, route
+ * waypoints, palms) on open floor: the nearest cell that's floor and not a crate, if it isn't.
+ */
+function onFloor(def) {
+  const ok = (x, z) => def.floorAt(x, z) != null && !def.crateAt(x, z) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => def.floorAt(x + dx, z + dz) != null)
+  const snap = (p) => {
+    if (ok(p[0], p[1])) return p
+    for (let rr = 1; rr < 8; rr++)
+      for (let dz = -rr; dz <= rr; dz++)
+        for (let dx = -rr; dx <= rr; dx++) if (Math.max(Math.abs(dx), Math.abs(dz)) === rr && ok(p[0] + dx, p[1] + dz)) return [p[0] + dx, p[1] + dz, ...p.slice(2)]
+    return p
+  }
+  for (const t of ['T', 'CT']) def.spawns[t] = def.spawns[t].map(snap)
+  for (const s of ['A', 'B']) def.plant[s] = def.plant[s].map(snap)
+  for (const list of [...Object.values(def.holds), ...Object.values(def.posts)]) for (const h of list) h.at = snap(h.at)
+  for (const list of Object.values(def.routes)) for (const rt of list) rt.path = rt.path.map(snap)
+  for (const p of def.props ?? []) {
+    if (p.type !== 'palm') continue
+    ;[p.x, p.z] = snap([p.x, p.z])
+    p.y = def.floorAt(p.x, p.z)
+  }
+  return def
 }
 
 // ============================================================================================
@@ -281,141 +335,76 @@ function dust2() {
 }
 
 // ============================================================================================
-// Mirage: T spawn on the east, CT spawn on the west. A is bottom left (ramp, palace, jungle),
-// B is top left (apartments, short, market), and mid runs across the middle up to window.
+// Mirage, 1:1: T spawn on the east, CT spawn bottom left. A is bottom middle (A ramp from the T
+// side, palace, jungle and connector from mid, ticket booth and CT); B is top left (apartments
+// from the T side, short and market); mid runs across the middle under window.
 // ============================================================================================
 function mirage() {
-  const g = carve(100, 92, (m) => {
-    // T spawn, top mid, mid
-    m.room(80, 34, 97, 62, 1.0)
-    m.ramp(70, 40, 80, 48, 0, 1.0, 'x')
-    m.room(31, 38, 70, 48, 0, 'path')
-    m.box(56, 38, 58, 40, 1.1)
-    m.box(46, 46, 49, 48, 1.1)
-    // Window (the sniper's nest, with a sill you can crouch-jump through) and its stairs
-    m.room(22, 36, 30, 46, 2.5, 'tile')
-    m.roof(22, 36, 30, 46, 5.5)
-    m.box(30, 39, 31, 45, 3.5, 'low')
-    m.roof(30, 39, 31, 45, 5.0)
-    m.ramp(16, 40, 22, 44, 0, 2.5, 'x', 'wood')
-    m.roof(16, 40, 22, 44, 5.5)
-    // Connector and jungle, down to A
-    m.room(36, 48, 42, 60, 0, 'tile')
-    m.roof(36, 48, 42, 60, 3.6)
-    m.room(30, 60, 42, 66, 0, 'path')
-    m.box(30, 60, 32, 62, 1.1)
-    // A site: triple, firebox, default, sandwich; the ticket booth on the CT side
-    m.room(16, 66, 46, 88, 0, 'path')
-    m.room(4, 62, 16, 88, 0)
-    m.box(6, 70, 11, 76, 3.0, 'trim')
-    m.box(30, 72, 33, 75, 1.7)
-    m.box(31, 73, 33, 75, 2.6)
-    m.box(22, 80, 24, 82, 1.1)
-    m.box(28, 76, 30, 78, 1.1)
-    m.box(26, 84, 30, 85, 1.0, 'low')
-    // A ramp, tetris, T ramp
-    m.ramp(46, 70, 54, 80, 0, 1.0, 'x')
-    m.room(54, 66, 66, 80, 1.0, 'step')
-    m.box(58, 68, 61, 71, 2.1)
-    m.room(66, 62, 84, 70, 1.0)
-    // Palace: courtyard, stairs, the hall, and its exit stairs down onto A
-    m.room(86, 62, 94, 74, 1.0)
-    m.ramp(86, 74, 94, 81, 1.0, 2.5, 'z', 'wood')
-    m.room(60, 81, 94, 88, 2.5, 'tile')
-    m.roof(60, 81, 94, 88, 5.8)
-    m.room(46, 81, 60, 88, 2.5, 'tile')
-    m.roof(50, 81, 60, 88, 5.8)
-    m.ramp(38, 81, 46, 88, 0, 2.5, 'x', 'wood')
-    // CT spawn, the way up to B ("arch"), market
-    m.room(4, 40, 16, 62, 0)
-    m.room(6, 28, 14, 40, 0, 'path')
-    m.room(16, 28, 24, 38, 0, 'tile')
-    m.roof(16, 28, 24, 38, 3.4)
-    m.room(14, 38, 18, 41, 0, 'tile')
-    m.roof(14, 38, 18, 41, 3.4)
-    // B site: van, bench, boxes
-    m.room(6, 6, 30, 28, 0)
-    m.box(20, 10, 25, 13, 1.8, 'car')
-    m.box(12, 22, 15, 23, 0.6, 'wood')
-    m.box(14, 10, 16, 12, 1.1)
-    m.box(7, 7, 9, 9, 1.1)
-    // Short (the catwalk from mid to B)
-    m.ramp(31, 30, 37, 38, 1.0, 0, 'z')
-    m.room(31, 22, 37, 30, 1.0, 'step')
-    m.ramp(28, 22, 31, 28, 0, 1.0, 'x')
-    // B apartments: in from T spawn, up the stairs, along the hall, down onto B
-    m.room(76, 30, 84, 34, 1.0, 'wood')
-    m.roof(76, 30, 84, 34, 4.6)
-    m.ramp(76, 18, 84, 30, 3.0, 1.0, 'z', 'wood')
-    m.roof(76, 18, 84, 30, 6.0)
-    m.room(37, 10, 84, 18, 3.0, 'wood')
-    m.roof(37, 10, 84, 18, 6.2)
-    m.ramp(30, 10, 37, 18, 0, 3.0, 'x', 'wood')
-    m.roof(31, 10, 37, 18, 6.2)
+  const g = fromPlan(MIRAGE, {
+    fix(s) {
+      s.ease(84, 44, 108, 72, 3.5) // T ramp: the stairs down from the T side to A ramp
+      s.ease(0, 0, MIRAGE.w, MIRAGE.d)
+    },
   })
-  return {
+  return onFloor({
     id: 'mirage',
     name: 'Mirage',
-    blurb: 'Palace, ramp, window, apartments. Bring a smoke for window.',
+    blurb: 'Palace, jungle, window, apartments. Life size.',
     ...g,
     look: 'mirage',
     spawns: {
-      T: [[86, 44], [90, 48], [86, 52], [92, 56], [88, 40], [94, 44], [90, 38], [84, 58], [94, 52], [88, 56]],
-      CT: [[8, 46], [12, 50], [8, 54], [12, 44], [10, 58], [6, 50], [14, 56], [6, 42], [14, 48], [8, 60]],
+      T: [[100, 23], [103, 23], [106, 24], [100, 27], [103, 27], [106, 28], [100, 31], [103, 31], [105, 33], [101, 34]],
+      CT: [[21, 66], [24, 66], [27, 66], [21, 70], [24, 70], [27, 70], [21, 74], [24, 74], [27, 74], [30, 70]],
     },
-    buy: { T: r(78, 32, 98, 64), CT: r(3, 38, 17, 63) },
-    sites: { A: r(17, 67, 45, 88), B: r(7, 7, 30, 27) },
-    plant: { A: [[30, 80], [24, 76], [36, 76], [20, 84]], B: [[16, 16], [25, 18], [12, 12], [10, 20]] },
+    buy: { T: r(96, 16, 109, 42), CT: r(16, 60, 36, 82) },
+    sites: { A: r(52, 75, 66, 89), B: r(12, 12, 25, 24) },
+    plant: { A: [[56, 80], [61, 84], [58, 86], [63, 79]], B: [[14, 15], [20, 20], [22, 15], [16, 21]] },
     callouts: [
-      ['Window', r(16, 36, 31, 46)],
-      ['Top Mid', r(70, 38, 80, 48)],
-      ['Mid', r(31, 38, 70, 48)],
-      ['Connector', r(36, 48, 42, 60)],
-      ['Jungle', r(30, 60, 42, 66)],
-      ['Ticket Booth', r(4, 62, 16, 88)],
-      ['A Ramp', r(46, 66, 54, 80)],
-      ['Tetris', r(54, 66, 66, 80)],
-      ['T Ramp', r(66, 62, 86, 70)],
-      ['Palace', r(38, 74, 94, 88)],
-      ['A Site', r(16, 66, 46, 88)],
-      ['Short', r(28, 22, 37, 38)],
-      ['Market', r(14, 28, 24, 41)],
-      ['B Apartments', r(30, 10, 84, 34)],
-      ['B Site', r(6, 6, 30, 28)],
-      ['CT Spawn', r(4, 28, 16, 62)],
-      ['T Spawn', r(80, 32, 98, 64)],
+      ['T Spawn', r(97, 18, 109, 42)],
+      ['T Apartments', r(62, 1, 97, 17)],
+      ['B Apartments', r(9, 1, 62, 12)],
+      ['B Site', r(9, 12, 30, 30)],
+      ['Market', r(8, 30, 30, 46)],
+      ['Window', r(38, 20, 46, 38)],
+      ['Short B', r(30, 12, 46, 40)],
+      ['Top Mid', r(71, 18, 98, 48)],
+      ['Mid', r(43, 37, 75, 48)],
+      ['Underpass', r(48, 47, 60, 60)],
+      ['Connector', r(38, 46, 50, 60)],
+      ['Jungle', r(38, 60, 52, 72)],
+      ['CT Spawn', r(16, 60, 38, 84)],
+      ['Ticket Booth', r(36, 80, 52, 94)],
+      ['A Site', r(50, 66, 72, 94)],
+      ['Palace', r(70, 70, 100, 90)],
+      ['A Ramp', r(76, 48, 98, 70)],
+      ['T Ramp', r(96, 42, 109, 70)],
     ],
     routes: {
       A: [
-        { name: 'Ramp', path: [[86, 52], [82, 64], [72, 66], [60, 73], [50, 75], [36, 78]] },
-        { name: 'Palace', path: [[90, 58], [90, 70], [90, 78], [80, 84], [56, 84], [42, 84], [30, 80]] },
-        { name: 'Connector', path: [[84, 44], [74, 44], [56, 43], [39, 44], [39, 54], [36, 63], [28, 70]] },
+        { name: 'Ramp', path: [[102, 28], [102, 50], [95, 58], [85, 62], [75, 68], [62, 80]] },
+        { name: 'Palace', path: [[102, 30], [102, 56], [100, 66], [95, 78], [82, 82], [70, 80], [60, 82]] },
       ],
       B: [
-        { name: 'Apartments', path: [[84, 40], [80, 32], [80, 22], [70, 14], [50, 14], [34, 14], [20, 16]] },
-        { name: 'Short', path: [[84, 44], [74, 44], [50, 43], [34, 40], [34, 32], [34, 26], [22, 20]] },
+        { name: 'Apartments', path: [[101, 24], [92, 12], [75, 8], [55, 6], [35, 6], [22, 10], [18, 16]] },
+        { name: 'Short', path: [[100, 30], [86, 34], [72, 42], [55, 40], [44, 34], [34, 26], [24, 20]] },
       ],
     },
     holds: {
-      A: [{ at: [24, 72], look: [52, 74] }, { at: [34, 82], look: [50, 84] }, { at: [38, 68], look: [38, 52] }, { at: [18, 78], look: [46, 76] }],
-      B: [{ at: [12, 10], look: [34, 14] }, { at: [22, 25], look: [34, 30] }, { at: [8, 20], look: [32, 14] }],
-      mid: [{ at: [26, 41], look: [60, 43] }, { at: [39, 57], look: [39, 46] }],
+      A: [{ at: [58, 76], look: [80, 62] }, { at: [52, 86], look: [80, 82] }, { at: [44, 68], look: [70, 80] }, { at: [64, 88], look: [76, 64] }],
+      B: [{ at: [16, 22], look: [30, 8] }, { at: [24, 26], look: [36, 30] }, { at: [12, 14], look: [30, 22] }],
+      mid: [{ at: [44, 42], look: [70, 42] }, { at: [42, 56], look: [44, 40] }],
     },
     posts: {
-      A: [{ at: [44, 76], look: [20, 70] }, { at: [38, 64], look: [24, 78] }, { at: [52, 84], look: [16, 72] }],
-      B: [{ at: [34, 14], look: [10, 30] }, { at: [34, 26], look: [12, 18] }, { at: [26, 8], look: [10, 34] }],
+      A: [{ at: [80, 64], look: [60, 82] }, { at: [76, 80], look: [56, 80] }, { at: [44, 64], look: [58, 82] }],
+      B: [{ at: [30, 8], look: [16, 20] }, { at: [32, 30], look: [18, 18] }, { at: [26, 40], look: [18, 20] }],
     },
     props: [
-      { type: 'awning', x: 31, z: 47.6, w: 8, axis: 'x', y: 2.6, color: '#2f8f83' },
-      { type: 'awning', x: 52, z: 38.4, w: 10, axis: 'x', y: 2.8, color: '#b8452f', flip: true },
-      { type: 'awning', x: 6, z: 27.6, w: 6, axis: 'x', y: 2.4, color: '#c9a227' },
-      { type: 'awning', x: 46, z: 87.6, w: 6, axis: 'x', y: 2.6, color: '#2f5f9f' },
-      { type: 'palm', x: 95, z: 35, y: 1.0 },
-      { type: 'palm', x: 5, z: 87, y: 0 },
-      { type: 'palm', x: 29, z: 7, y: 0 },
+      { type: 'palm', x: 104, z: 40, y: g.floorAt(104, 40) },
+      { type: 'palm', x: 22, z: 78, y: g.floorAt(22, 78) },
+      { type: 'palm', x: 10, z: 28, y: g.floorAt(10, 28) },
     ],
     sky: { top: '#76a6dc', bottom: '#f2e0c6', fog: '#efdec6', sun: '#ffe9c8', ground: '#b3936d' },
-  }
+  })
 }
 
 // ============================================================================================
@@ -547,127 +536,69 @@ function nuke() {
 }
 
 // ============================================================================================
-// Inferno: a hill town. T spawn at the bottom; B (with Construction and Coffins) up Banana to the
-// north-west; A to the east, reached through the Apartments (upstairs, out on the Balcony),
-// through Mid and Short, or the Arch and Library. CT spawn at the top.
+// Inferno, 1:1: T spawn bottom left, CT spawn on the right. B is at the top, up banana; A is on
+// the right, through apartments and the balcony or up mid; pit, library and arch round it.
 // ============================================================================================
 function inferno() {
-  const g = carve(100, 100, (m) => {
-    // T spawn, Second Oranges, T Mid
-    m.room(30, 84, 56, 98, 0)
-    m.room(44, 70, 52, 84, 0, 'path')
-    // Banana: the bottom, the long curving climb, the car, the sandbags, the mouth onto B
-    m.room(16, 78, 30, 86, 0, 'path')
-    m.ramp(16, 56, 24, 78, 1.0, 0, 'z')
-    m.room(14, 36, 26, 56, 1.0, 'path')
-    m.box(18, 44, 20, 48, 2.3, 'car')
-    m.box(22, 38, 26, 40, 1.9, 'low')
-    m.room(16, 30, 26, 36, 1.25, 'path')
-    // B site: Construction (roofed), Coffins, New Box, the fountain, Dark
-    m.room(8, 6, 36, 30, 1.5)
-    m.roof(8, 6, 16, 14, 4.4)
-    m.box(24, 10, 28, 12, 2.5, 'wood')
-    m.box(18, 22, 20, 24, 2.6)
-    m.box(28, 20, 31, 23, 2.1, 'low')
-    // CT: the long road from CT spawn to B
-    m.room(36, 10, 60, 18, 1.5, 'path')
-    // Mid, Top Mid, Short, the Arch and Library
-    m.room(42, 48, 58, 70, 0.5, 'path')
-    m.box(48, 58, 50, 61, 1.6)
-    m.room(46, 36, 56, 48, 0.75, 'path')
-    m.room(56, 44, 66, 50, 1.0, 'path')
-    m.room(56, 36, 64, 44, 1.0, 'path')
-    m.roof(56, 36, 64, 44, 3.8)
-    m.room(60, 34, 64, 36, 1.25, 'path')
-    m.roof(60, 34, 64, 36, 4.0)
-    m.room(60, 24, 66, 34, 1.5, 'tile')
-    m.roof(60, 24, 66, 34, 4.4)
-    // Apartments: up the stairs from T spawn, along the upstairs halls, out on the Balcony
-    m.room(56, 88, 60, 92, 0, 'path')
-    m.roof(56, 88, 60, 92, 3.2)
-    m.ramp(60, 84, 68, 92, 0, 3.5, 'x')
-    m.roof(60, 84, 68, 92, 6.6)
-    m.room(68, 80, 78, 92, 3.5, 'tile')
-    m.roof(68, 80, 78, 92, 6.6)
-    m.room(70, 60, 78, 80, 3.5, 'tile')
-    m.roof(70, 60, 78, 80, 6.6)
-    m.room(72, 52, 80, 60, 3.5, 'wood')
-    m.ramp(80, 52, 84, 60, 1.5, 3.5, 'z')
-    // A site: the truck, Graveyard, the default box, Pit
-    m.room(66, 24, 94, 52, 1.5, 'path')
-    m.box(70, 28, 74, 34, 3.2, 'car')
-    m.box(88, 30, 92, 34, 2.4, 'low')
-    m.box(80, 38, 82, 40, 2.5)
-    m.ramp(88, 52, 94, 56, 1.5, -0.5, 'z')
-    m.room(86, 56, 96, 64, -0.5)
-    // CT spawn, and CT side down to A
-    m.room(60, 4, 92, 20, 1.5)
-    m.room(72, 20, 90, 24, 1.5, 'path')
+  const g = fromPlan(INFERNO, {
+    fix(s) {
+      s.ease(0, 0, INFERNO.w, INFERNO.d)
+    },
   })
-  return {
+  return onFloor({
     id: 'inferno',
     name: 'Inferno',
-    blurb: 'Banana, Apartments, the Balcony, Coffins. Hold Banana or lose B.',
+    blurb: 'Banana, Apartments, the Balcony, Coffins. Hold Banana or lose B. Life size.',
     ...g,
     look: 'inferno',
-    wingman: 'B',
     spawns: {
-      T: [[34, 90], [38, 92], [42, 90], [46, 92], [50, 90], [36, 95], [40, 96], [44, 95], [48, 96], [52, 94]],
-      CT: [[64, 8], [68, 10], [72, 8], [76, 12], [80, 8], [84, 12], [66, 16], [70, 14], [78, 16], [86, 16]],
+      T: [[4, 74], [7, 74], [4, 77], [7, 77], [4, 80], [7, 80], [4, 83], [7, 83], [9, 76], [9, 80]],
+      CT: [[104, 31], [107, 31], [104, 35], [107, 35], [104, 39], [107, 39], [104, 43], [107, 43], [105, 46], [101, 37]],
     },
-    buy: { T: r(30, 78, 56, 98), CT: r(58, 3, 93, 21) },
-    sites: { A: r(66, 24, 94, 52), B: r(8, 6, 36, 30) },
-    plant: { A: [[80, 34], [76, 44], [86, 28], [90, 46]], B: [[20, 16], [14, 26], [32, 14], [24, 18]] },
+    buy: { T: r(0, 68, 14, 90), CT: r(98, 26, 112, 50) },
+    sites: { A: r(91, 72, 102, 88), B: r(47, 12, 61, 29) },
+    plant: { A: [[93, 76], [97, 80], [95, 85], [99, 76]], B: [[50, 16], [55, 20], [52, 25], [58, 15]] },
     callouts: [
-      ['Construction', r(8, 6, 16, 14)],
-      ['Coffins', r(22, 8, 30, 14)],
-      ['B Site', r(8, 6, 36, 30)],
-      ['Banana', r(14, 30, 26, 78)],
-      ['CT', r(36, 10, 60, 18)],
-      ['Library', r(60, 24, 66, 36)],
-      ['Arch', r(56, 36, 64, 44)],
-      ['Short', r(56, 44, 66, 50)],
-      ['Pit', r(86, 52, 96, 64)],
-      ['Truck', r(68, 26, 76, 36)],
-      ['Graveyard', r(86, 28, 94, 36)],
-      ['A Site', r(66, 24, 94, 52)],
-      ['Balcony', r(72, 52, 84, 60)],
-      ['Apartments', r(56, 60, 78, 92, 2.5, 10)],
-      ['Top Mid', r(46, 36, 56, 48)],
-      ['Mid', r(42, 48, 58, 70)],
-      ['T Mid', r(44, 70, 52, 84)],
-      ['T Ramp', r(16, 78, 30, 86)],
-      ['CT Spawn', r(60, 4, 92, 24)],
-      ['T Spawn', r(30, 84, 56, 98)],
+      ['T Spawn', r(0, 66, 16, 92)],
+      ['B Site', r(44, 8, 64, 32)],
+      ['Coffins', r(56, 2, 74, 14)],
+      ['CT', r(64, 14, 92, 30)],
+      ['Banana', r(42, 32, 58, 70)],
+      ['Second Mid', r(16, 68, 44, 90)],
+      ['Mid', r(44, 70, 80, 82)],
+      ['Apartments', r(30, 82, 80, 112)],
+      ['Arch', r(76, 56, 92, 72)],
+      ['Library', r(100, 88, 117, 112)],
+      ['Pit', r(96, 88, 117, 112)],
+      ['A Site', r(88, 64, 110, 90)],
+      ['Long', r(80, 28, 98, 64)],
+      ['CT Spawn', r(96, 24, 117, 52)],
     ],
     routes: {
       A: [
-        { name: 'Apartments', path: [[52, 90], [58, 90], [64, 88], [70, 86, 3.5], [74, 70, 3.5], [76, 56, 3.5], [82, 54], [80, 44]] },
-        { name: 'Mid', path: [[46, 88], [48, 76], [50, 66], [52, 46], [60, 47], [70, 46], [76, 42]] },
-        { name: 'Arch', path: [[48, 86], [47, 64], [50, 42], [60, 40], [62, 35], [63, 30], [72, 36]] },
+        { name: 'Apartments', path: [[6, 78], [20, 90], [38, 96], [55, 100], [70, 102], [82, 96], [94, 82]] },
+        { name: 'Mid', path: [[6, 78], [25, 76], [45, 77], [60, 77], [75, 75], [86, 72], [95, 78]] },
       ],
       B: [
-        { name: 'Banana', path: [[34, 90], [24, 82], [20, 66], [20, 50], [21, 40], [21, 32], [20, 18]] },
-        { name: 'Banana car', path: [[36, 92], [24, 82], [20, 62], [16, 46], [24, 34], [28, 24]] },
+        { name: 'Banana', path: [[6, 76], [25, 72], [40, 70], [48, 60], [50, 46], [53, 34], [54, 22]] },
+        { name: 'Banana car', path: [[8, 74], [30, 70], [46, 64], [47, 50], [49, 38], [50, 26], [56, 18]] },
       ],
     },
     holds: {
-      A: [{ at: [76, 46], look: [78, 58] }, { at: [70, 38], look: [60, 46] }, { at: [90, 38], look: [80, 56] }, { at: [84, 26], look: [62, 30] }],
-      B: [{ at: [14, 22], look: [20, 42] }, { at: [30, 12], look: [21, 38] }, { at: [24, 8], look: [21, 36] }],
-      mid: [{ at: [62, 40], look: [50, 62] }, { at: [52, 40], look: [48, 72] }],
+      A: [{ at: [96, 74], look: [80, 76] }, { at: [92, 86], look: [80, 100] }, { at: [100, 70], look: [84, 64] }, { at: [104, 84], look: [90, 96] }],
+      B: [{ at: [52, 28], look: [50, 46] }, { at: [58, 18], look: [52, 40] }, { at: [48, 14], look: [50, 40] }],
+      mid: [{ at: [86, 70], look: [60, 77] }, { at: [80, 60], look: [70, 76] }],
     },
     posts: {
-      A: [{ at: [68, 46], look: [80, 30] }, { at: [76, 56, 3.5], look: [80, 36] }, { at: [86, 48], look: [78, 24] }],
-      B: [{ at: [21, 38], look: [20, 14] }, { at: [16, 26], look: [34, 14] }, { at: [34, 24], look: [12, 10] }],
+      A: [{ at: [82, 76], look: [96, 78] }, { at: [80, 98], look: [94, 82] }, { at: [104, 98], look: [96, 80] }],
+      B: [{ at: [52, 40], look: [54, 20] }, { at: [66, 20], look: [52, 18] }, { at: [62, 8], look: [52, 22] }],
     },
     props: [
-      { type: 'doors', x: 56, z: 88, w: 4, axis: 'z', y: 0, h: 2.8 },
-      { type: 'palm', x: 31, z: 97, y: 0 },
-      { type: 'palm', x: 9, z: 29, y: 1.5 },
-      { type: 'awning', x: 44, z: 70, w: 8, y: 2.6, color: '#8a3b2a' },
+      { type: 'palm', x: 12, z: 88, y: 0 },
+      { type: 'palm', x: 100, z: 50, y: 0 },
     ],
     sky: { top: '#6f9fd6', bottom: '#f0d8b0', fog: '#ecd6b4', sun: '#ffe2b8', ground: '#a07a58' },
-  }
+  })
 }
 
 // ============================================================================================
