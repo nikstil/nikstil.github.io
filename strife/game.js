@@ -11,6 +11,7 @@ export const CROUCH_H = 1.37
 export const EYE = 1.63
 export const CROUCH_EYE = 1.17
 const JUMP_V = 7.4
+const CLIMB_V = 3.4 // metres a second up or down a ladder
 const ACCEL = 5.5
 const FRICTION = 5.2
 const STOP_SPEED = 2.0
@@ -1232,7 +1233,42 @@ export class Game {
       wz /= wl
     }
     const wishSpeed = max * Math.min(1, wl)
-    if (a.onGround) {
+    // Ladders: push into one to climb (forward goes up, or down when you look down; back the other
+    // way); walking off the top onto one, you grab it; jump to let go.
+    const lad = !frozen && this.time >= (a.ladderOff ?? 0) ? w.ladderAt(a.pos) : null
+    a.onLadder = false
+    if (lad) {
+      const look = dirOf(a.yaw, 0)
+      const fwd = wx * look.x + wz * look.z
+      const toward = wx * lad.exit[0] + wz * lad.exit[1]
+      const climb = cmd.climb ?? (Math.abs(fwd) > 0.3 ? Math.sign(fwd) * (a.pitch < -0.5 ? -1 : 1) : 0)
+      const onIt = a.pos.y > lad.from + 0.05 || (climb > 0 && (cmd.climb != null || toward > 0.3))
+      if (onIt && cmd.jump) {
+        // let go, off backwards
+        a.ladderOff = this.time + 0.5
+        v.x = -lad.exit[0] * 2.5
+        v.z = -lad.exit[1] * 2.5
+        v.y = 2.5
+      } else if (onIt) {
+        a.onLadder = true
+        let vy = climb * CLIMB_V
+        if (vy > 0 && a.pos.y >= lad.to - 0.02) vy = 0
+        v.y = vy
+        // no wandering off sideways halfway up: only at the foot, or at the top to step off
+        const ends = a.pos.y >= lad.to - 0.5 || a.pos.y <= lad.from + 0.3
+        v.x = ends ? wx * Math.min(max, 2.4) : 0
+        v.z = ends ? wz * Math.min(max, 2.4) : 0
+        a.stepDist += Math.abs(vy) * dt
+        if (a.stepDist > 1.2) {
+          a.stepDist = 0
+          this.sound('step' + Math.floor(Math.random() * 4), a.pos, { who: a, range: 18, gain: a.isPlayer ? 0.3 : 0.7 })
+          this.noise(a.pos, a.team, 14)
+        }
+      }
+    }
+    if (a.onLadder) {
+      // (climbing: the world moves us without gravity)
+    } else if (a.onGround) {
       const sp = Math.hypot(v.x, v.z)
       if (sp > 0) {
         const drop = Math.max(sp, STOP_SPEED) * FRICTION * dt

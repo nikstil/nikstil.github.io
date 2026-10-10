@@ -143,7 +143,7 @@ const unrle = (row) => row.replace(/(\D)(\d*)/g, (_, c, n) => c.repeat(n ? +n : 
  * cell has its floors (the lowest, then any above it, like Nuke's A over B), maybe a roof, and
  * the crates; the callouts are the nav mesh's place names. build() adds anything else.
  */
-function fromLayers(plan, { build, indoor = 'tile', outdoor = 'ground', upper = 'path', floors = {}, blocks = 'metal', rails = 'low' } = {}) {
+function fromLayers(plan, { build, indoor = 'tile', outdoor = 'ground', upper = 'path', floors = {}, blocks = 'metal', rails = 'low', ladders = [] } = {}) {
   const dec = (c) => plan.BASE + plan.H.indexOf(c) * plan.STEP
   const grid = (rows) => rows.map((row) => [...unrle(row)])
   const G = grid(plan.ground)
@@ -181,6 +181,8 @@ function fromLayers(plan, { build, indoor = 'tile', outdoor = 'ground', upper = 
         if (roofed) m.roof(x, z, x + 1, z + 1, dec(R[z][x]))
       }
     for (const [x0, z0, x1, z1, top, kind] of plan.crates) m.box(x0, z0, x1, z1, top, [undefined, blocks, rails][kind ?? 0])
+    // a ladder's shaft is open from its foot to well over its top (through any floor or roof)
+    for (const l of ladders) m.hollow(l.at[0], l.at[1], l.at[0] + 1, l.at[1] + 1, l.from + 0.01, l.to + 2.4)
     build?.(m)
   })
   return {
@@ -188,6 +190,7 @@ function fromLayers(plan, { build, indoor = 'tile', outdoor = 'ground', upper = 
     floorAt: (x, z) => floorsAt(x, z)[0] ?? null,
     floorsAt,
     crateAt,
+    ladders,
     callouts: plan.callouts.map(([name, x0, z0, x1, z1, y0, y1]) => [name, r(x0, z0, x1, z1, y0, y1)]),
   }
 }
@@ -290,7 +293,10 @@ function dust2() {
 // from the T side, short and market); mid runs across the middle under window.
 // ============================================================================================
 function mirage() {
-  const g = fromLayers(MIRAGE, { outdoor: 'path', floors: { 'A Site': 'tile', 'B Site': 'tile', 'T Spawn': 'ground', 'CT Spawn': 'ground' } })
+  const g = fromLayers(MIRAGE, {
+    // the ladder room: up from the room over the underpass to the top of the ladder
+    ladders: [{ at: [44, 29], from: 5.0, to: 7.8, exit: [0, 1] }],
+    outdoor: 'path', floors: { 'A Site': 'tile', 'B Site': 'tile', 'T Spawn': 'ground', 'CT Spawn': 'ground' } })
   return onFloor({
     id: 'mirage',
     name: 'Mirage',
@@ -339,7 +345,14 @@ function mirage() {
 // from CT, or drop down the vents from A.
 // ============================================================================================
 function nuke() {
-  const g = fromLayers(NUKE, { floors: { Roof: 'metal', 'Hut Roof': 'metal', Silo: 'metal', Rafters: 'metal', Heaven: 'metal', Catwalk: 'metal', Crane: 'metal' } })
+  const g = fromLayers(NUKE, {
+    // up from A to the rafters and heaven, from outside onto the roof, and up the silo
+    ladders: [
+      { at: [103, 38], from: 0, to: 7.32, exit: [1, 0] },
+      { at: [71, 34], from: 0, to: 6.25, exit: [1, 0] },
+      { at: [87, 66], from: 0, to: 9.14, exit: [-1, 0] },
+    ],
+    floors: { Roof: 'metal', 'Hut Roof': 'metal', Silo: 'metal', Rafters: 'metal', Heaven: 'metal', Catwalk: 'metal', Crane: 'metal' } })
   return onFloor({
     id: 'nuke',
     name: 'Nuke',
@@ -480,7 +493,10 @@ function overpass() {
 // railings there's nothing but air.
 // ============================================================================================
 function vertigo() {
-  const g = fromLayers(VERTIGO, { outdoor: 'path', floors: { Scaffolding: 'wood', 'B Platform': 'wood', 'A Platform': 'wood', Crane: 'metal' } })
+  const g = fromLayers(VERTIGO, {
+    // from the tunnels on the floor below up through the floor to the top, by mid
+    ladders: [{ at: [36, 45], from: -7.31, to: 0, exit: [0, 1] }],
+    outdoor: 'path', floors: { Scaffolding: 'wood', 'B Platform': 'wood', 'A Platform': 'wood', Crane: 'metal' } })
   const T = -7.31 // the floor below
   return onFloor({
     id: 'vertigo',

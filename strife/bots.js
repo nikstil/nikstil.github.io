@@ -239,7 +239,8 @@ export class Brain {
     const gx = this.goal.x
     const gz = this.goal.z
     const gy = this.goal.y
-    const sameFloor = gy == null || Math.abs(g.world.floorAt(gx, gz, gy + 1) - a.pos.y) < 1.6
+    // (on a ladder, you're only there once you're off it at the right height)
+    const sameFloor = gy == null ? !a.onLadder : Math.abs(g.world.floorAt(gx, gz, gy + 1) - a.pos.y) < (a.onLadder ? 0.3 : 1.6)
     if (sameFloor && Math.hypot(gx - a.pos.x, gz - a.pos.z) < (this.goal.r ?? 0.8)) return { fx: 0, fz: 0, arrived: true }
     if (!this.path || !this.pathGoal || this.pathGoal.y !== gy || Math.hypot(this.pathGoal.x - gx, this.pathGoal.z - gz) > 1.5) {
       this.path = g.world.path(a.pos.x, a.pos.z, a.pos.y + 0.5, gx, gz, gy == null ? 50 : gy + 1)
@@ -248,7 +249,9 @@ export class Brain {
       if (!this.path) return { fx: 0, fz: 0, arrived: true }
     }
     while (this.pathIdx < this.path.length - 1 && Math.hypot(this.path[this.pathIdx][0] - a.pos.x, this.path[this.pathIdx][1] - a.pos.z) < 0.7 && Math.abs((this.path[this.pathIdx][2] ?? a.pos.y) - a.pos.y) < 1.6) this.pathIdx++
-    const [tx, tz] = this.path[Math.min(this.pathIdx, this.path.length - 1)]
+    const [tx, tz, ty] = this.path[Math.min(this.pathIdx, this.path.length - 1)]
+    // a ladder: climb toward the next point (it's well above or below)
+    const climb = ty != null && Math.abs(ty - a.pos.y) > 0.3 && g.world.ladderAt(a.pos, 0.4) ? Math.sign(ty - a.pos.y) : 0
     let fx = tx - a.pos.x
     let fz = tz - a.pos.z
     const l = Math.hypot(fx, fz) || 1
@@ -265,8 +268,8 @@ export class Brain {
         fz += (dz / dd) * 0.6
       }
     }
-    // stuck? jump, then find another way
-    this.stuckT += dt
+    // stuck? jump, then find another way (not halfway up a ladder: climbing isn't stuck)
+    this.stuckT = a.onLadder ? 0 : this.stuckT + dt
     if (this.stuckT > 1.2) {
       const moved = this.lastPos ? Math.hypot(a.pos.x - this.lastPos.x, a.pos.z - this.lastPos.z) : 9
       this.lastPos = { ...a.pos }
@@ -277,7 +280,7 @@ export class Brain {
         this.pathGoal = null
       }
     }
-    return { fx, fz, arrived: false, ahead: { x: tx, z: tz } }
+    return { fx, fz, arrived: false, ahead: { x: tx, z: tz }, climb }
   }
   setGoal(x, z, r = 0.8, y = null) {
     if (this.goal && this.goal.y === y && Math.hypot(this.goal.x - x, this.goal.z - z) < 0.3) return
@@ -614,6 +617,7 @@ export class Brain {
       const s = this.steer(dt)
       this.steerArrived = s.arrived
       wish = { fx: s.fx, fz: s.fz }
+      if (s.climb) cmd.climb = s.climb
       if (this.jumpNext) {
         cmd.jump = true
         this.jumpNext = false

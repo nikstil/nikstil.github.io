@@ -20,7 +20,18 @@ export class World {
     this.smokes = [] // { x, y, z, r, until } (set by the game: smoke blocks sight)
     this.fires = [] // { x, y, z, r, until } (molotovs)
     this.buildCallouts()
+    // Ladders: a shaft cell, climbed from a floor at `from` to one at `to` in the cell beside it (exit)
+    this.ladders = (map.ladders ?? []).map((l) => ({ ...l, x: l.at[0], z: l.at[1] }))
     this.buildNav()
+  }
+  /** The ladder whose shaft a body at p is in (within the shaft, a little over its top), or null. */
+  ladderAt(p, pad = 0.15) {
+    for (const l of this.ladders) {
+      if (p.x < l.x - pad || p.x > l.x + 1 + pad || p.z < l.z - pad || p.z > l.z + 1 + pad) continue
+      if (p.y < l.from - 0.3 || p.y > l.to + 0.35) continue
+      return l
+    }
+    return null
   }
 
   inside(ix, iz) {
@@ -84,7 +95,7 @@ export class World {
   move(b, dt) {
     const p = b.pos
     const v = b.vel
-    const step = b.onGround ? STEP : 0
+    const step = b.onGround || b.onLadder ? STEP : 0
     const hops = Math.max(1, Math.ceil((Math.max(Math.abs(v.x), Math.abs(v.z)) * dt) / 0.25))
     for (let k = 0; k < hops; k++) {
       const dx = (v.x * dt) / hops
@@ -107,6 +118,23 @@ export class World {
           v.z = 0
         }
       }
+    }
+    // On a ladder: no gravity, just the climb; standing on whatever's under you at the foot or the top.
+    if (b.onLadder) {
+      p.y += v.y * dt
+      const ground = this.groundUnder(p.x, p.z, b.r, p.y + 0.02)
+      if (p.y <= ground) {
+        p.y = ground
+        if (v.y < 0) v.y = 0
+        b.onGround = true
+      } else b.onGround = false
+      // (head room: in the shaft itself; the floor you're climbing up to overhangs it)
+      const top = this.ceilOver(p.x, p.z, 0.05, p.y + 0.05)
+      if (p.y + b.h > top) {
+        p.y = Math.max(ground, top - b.h)
+        if (v.y > 0) v.y = 0
+      }
+      return 0
     }
     // Vertical: walk up and down stairs, fall off ledges, land.
     const ground = this.groundUnder(p.x, p.z, b.r, p.y + (b.onGround ? STEP + 0.01 : 0.02))
@@ -262,6 +290,24 @@ export class World {
         this.cost[node] = near ? 1.6 : 0
       }
     this.astar = { g: new Float32Array(n), f: new Float32Array(n), from: new Int32Array(n), mark: new Uint32Array(n), closed: new Uint32Array(n), gen: 0, heap: new Int32Array(n * 4), size: 0 }
+    // Ladders link the place at their foot to the one at the top, both ways (slower than walking).
+    this.links = new Map()
+    const nodeAt = (x, z, y) => {
+      if (!this.inside(x, z)) return -1
+      const c = z * w + x
+      for (let k = 0; k < S; k++) if (this.walk[c * S + k] && Math.abs(this.navH[c * S + k] - y) < 0.35) return c * S + k
+      return -1
+    }
+    for (const l of this.ladders) {
+      const foot = nodeAt(l.x, l.z, l.from)
+      const top = nodeAt(l.x + l.exit[0], l.z + l.exit[1], l.to)
+      if (foot < 0 || top < 0) continue
+      const cost = 2 + Math.abs(l.to - l.from) * 1.5
+      for (const [a, b] of [[foot, top], [top, foot]]) {
+        if (!this.links.has(a)) this.links.set(a, [])
+        this.links.get(a).push({ j: b, cost })
+      }
+    }
   }
   /** The node in cell (x, z) you can walk to from `node` (same floor, within a step), or -1. */
   stepTo(node, x, z) {
@@ -385,6 +431,16 @@ export class World {
           A.from[j] = i
           push(j)
         }
+      for (const { j, cost } of this.links.get(i) ?? []) {
+        if (A.closed[j] === gen) continue
+        const ng = A.g[i] + cost
+        if (A.mark[j] === gen && ng >= A.g[j]) continue
+        A.mark[j] = gen
+        A.g[j] = ng
+        A.f[j] = ng + hfun(j)
+        A.from[j] = i
+        push(j)
+      }
     }
     if (!found) return null
     const nodes = []

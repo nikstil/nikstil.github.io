@@ -421,6 +421,7 @@ export function buildLevel(map, renderer, quality) {
     group.add(mesh)
   })
   for (const p of map.props ?? []) group.add(buildProp(p, look, textures, aniso))
+  for (const l of map.ladders ?? []) group.add(buildLadder(l))
   group.add(decorate(map, map.look))
   return { group, textures, look }
 }
@@ -482,6 +483,34 @@ function buildProp(p, look, textures, aniso) {
     a.position.set(p.x + p.w / 2, p.y, p.z + (p.flip ? 0.7 : -0.7))
     a.castShadow = true
     g.add(a)
+  }
+  return g
+}
+
+/** A ladder: two rails and rungs against the face you climb, from its foot to a metre over its top. */
+function buildLadder(l) {
+  const g = new THREE.Group()
+  const metal = new THREE.MeshLambertMaterial({ color: '#70757b' })
+  const [ex, ez] = l.exit
+  const cx = l.at[0] + 0.5 + ex * 0.4
+  const cz = l.at[1] + 0.5 + ez * 0.4
+  const h = l.to - l.from + 1
+  // across the face
+  const sx = -ez
+  const sz = ex
+  for (const side of [-0.27, 0.27]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, h, 0.06), metal)
+    rail.position.set(cx + sx * side, l.from + h / 2, cz + sz * side)
+    rail.castShadow = true
+    g.add(rail)
+  }
+  for (let y = l.from + 0.3; y < l.from + h - 0.1; y += 0.3) {
+    const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.54, 6), metal)
+    // (a cylinder stands up: lay it along the face)
+    if (ex) rung.rotation.set(Math.PI / 2, 0, 0)
+    else rung.rotation.set(0, 0, Math.PI / 2)
+    rung.position.set(cx, y, cz)
+    g.add(rung)
   }
   return g
 }
