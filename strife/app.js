@@ -5,7 +5,7 @@ import { MAPS, MAP_LIST } from './maps.js'
 import { Game, MODES, MODE_LIST, ARMS_LADDER, eyeOf, weaponOf, dirOf } from './game.js'
 import { View } from './view.js'
 import { radarImage } from './render.js'
-import { WEAPONS, GEAR, SHOP } from './weapons.js'
+import { WEAPONS, GEAR, SHOP, adsOf } from './weapons.js'
 import { gunIcon } from './icons.js'
 import { skinMaterial, stickerMaterial } from './skins.js'
 import { initChat } from './chatui.js'
@@ -56,6 +56,7 @@ const settings = {
   invert: false,
   killcam: true,
   radioVoice: true,
+  aimToggle: false, // aim down the sights: hold right mouse (or click once to aim, again to stop)
   map: 'dust2',
   team: 'auto',
   diff: 1,
@@ -737,6 +738,7 @@ function syncSettings() {
   $('#set-invert').checked = settings.invert
   $('#set-killcam').checked = settings.killcam
   $('#set-radio-voice').checked = settings.radioVoice
+  $('#set-aim-toggle').checked = settings.aimToggle
   $('#crosshair').style.setProperty('--c', settings.cross)
 }
 $('#set-sens').addEventListener('input', (e) => ((settings.sens = Number(e.target.value)), saveSettings(), syncSettings()))
@@ -751,6 +753,11 @@ $('#set-cross').addEventListener('change', (e) => ((settings.cross = e.target.va
 $('#set-invert').addEventListener('change', (e) => ((settings.invert = e.target.checked), saveSettings()))
 $('#set-killcam').addEventListener('change', (e) => ((settings.killcam = e.target.checked), saveSettings()))
 $('#set-radio-voice').addEventListener('change', (e) => ((settings.radioVoice = e.target.checked), saveSettings()))
+$('#set-aim-toggle').addEventListener('change', (e) => {
+  settings.aimToggle = e.target.checked
+  aimLatch = mouseAim = false
+  saveSettings()
+})
 $('#set-quality').addEventListener('change', (e) => {
   settings.quality = e.target.value
   saveSettings()
@@ -893,10 +900,25 @@ function matchOver() {
 
 // ================= Input =================
 const keys = new Set()
-const edge = { jump: false, reload: false, slot: null, alt: false, drop: false, pickup: false }
+const edge = { jump: false, reload: false, slot: null, alt: false, mode: false, drop: false, pickup: false }
 let mouseFire = false
+// aiming down the sights: right mouse held, or (toggle setting, touch) switched on
+let mouseAim = false
+let aimLatch = false
+let aimGun = null // the gun it was switched on for (switching guns lowers the sights)
 let tabHeld = false
 const touch = { mx: 0, mz: 0, fire: false, use: false, crouch: false }
+/** Right mouse (or the touch ◎): aim down the sights with a gun that has them; otherwise its other use. */
+function altDown(latch) {
+  const a = game?.player
+  const w = a?.alive ? weaponOf(a) : null
+  if (!latch) mouseAim = true // (held: it counts for whatever gun is out, even one you switch to)
+  if (!adsOf(w)) edge.alt = true
+  else if (latch) {
+    aimLatch = !aimLatch
+    aimGun = a.inv[a.active]
+  }
+}
 // inviting Messenger friends into the game you're hosting
 const inviteUi = initInvites({ code: () => (net instanceof NetHost ? net.code : null) })
 // ranks: the menu card, ranked matches, the Ranks page
@@ -943,10 +965,15 @@ stage.addEventListener('mousedown', (e) => {
     return
   }
   if (e.button === 0) mouseFire = true
-  if (e.button === 2) edge.alt = true
+  if (e.button === 1) {
+    e.preventDefault()
+    edge.mode = true
+  }
+  if (e.button === 2) altDown(settings.aimToggle)
 })
 addEventListener('mouseup', (e) => {
   if (e.button === 0) mouseFire = false
+  if (e.button === 2) mouseAim = false
 })
 stage.addEventListener('contextmenu', (e) => e.preventDefault())
 addEventListener('mousemove', (e) => {
@@ -964,12 +991,19 @@ addEventListener(
 function turn(dx, dy, scale) {
   const a = game?.player
   const w = a && weaponOf(a)
-  const zoom = w?.zoom && a.scope ? w.zoom[a.scope - 1] / 90 : 1
+  const zoom = w?.zoom && a.scope ? w.zoom[a.scope - 1] / 90 : adsZoom(a, w)
   const k = settings.sens * 0.0011 * scale * zoom
   look.yaw -= dx * k
   look.pitch -= dy * k * (settings.invert ? -1 : 1)
   look.pitch = Math.max(-1.5, Math.min(1.5, look.pitch))
   if (!a?.alive && deathInfo && dx * dx > 0) spectTurn = true
+}
+/** How far aiming down the sights has zoomed the view in (1: not at all). */
+function adsZoom(a, w) {
+  const ads = adsOf(w)
+  if (!ads || !a?.ads) return 1
+  const t = a.ads * a.ads * (3 - 2 * a.ads)
+  return 1 - (1 - ads.fov) * t
 }
 function cycleWeapon(dir) {
   const a = game.player
@@ -1006,6 +1040,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyQ') edge.slot = 'last'
   if (e.code === 'KeyG') edge.drop = true
   if (e.code === 'KeyE') edge.pickup = true
+  if (e.code === 'KeyF') edge.mode = true
   if (SLOT_KEYS[e.code]) edge.slot = SLOT_KEYS[e.code]
   if (e.code === 'KeyB') toggleBuy()
   if (e.code === 'Escape') {
@@ -1021,6 +1056,7 @@ addEventListener('keyup', (e) => {
 addEventListener('blur', () => {
   keys.clear()
   mouseFire = false
+  mouseAim = false
   tabHeld = false
 })
 document.addEventListener('visibilitychange', () => document.hidden && pause())
@@ -1044,6 +1080,8 @@ function playerCmd() {
     walk: k('ShiftLeft') || k('ShiftRight'),
     fire: (mouseFire || touch.fire) && !buyOpen,
     alt: edge.alt,
+    mode: edge.mode,
+    aim: (mouseAim || aimLatch) && !buyOpen,
     use: k('KeyE') || touch.use,
     reload: edge.reload,
     slot: edge.slot,
@@ -1051,7 +1089,9 @@ function playerCmd() {
     pickup: edge.pickup,
   }
   Object.assign(cmd, testInput)
-  edge.jump = edge.reload = edge.alt = edge.drop = edge.pickup = false
+  edge.jump = edge.reload = edge.alt = edge.mode = edge.drop = edge.pickup = false
+  // a switched-on aim lasts until you switch guns (or die)
+  if (aimLatch && (!a.alive || a.inv[a.active] !== aimGun)) aimLatch = false
   edge.slot = null
   if (!a.alive) {
     cmd.fire = false
@@ -1198,7 +1238,8 @@ if (coarse) {
       if (t === 'use') touch.use = true
       if (t === 'jump') edge.jump = true
       if (t === 'reload') edge.reload = true
-      if (t === 'alt') edge.alt = true
+      if (t === 'alt') altDown(true)
+      if (t === 'mode') edge.mode = true
       if (t === 'swap') cycleWeapon(1)
       if (t === 'nade') edge.slot = 'grenade'
       if (t === 'crouch') touch.crouch = !touch.crouch
@@ -1209,7 +1250,8 @@ if (coarse) {
       if (t === 'chat') chatUi.openChat(false)
     })
     const up = () => {
-      if (t !== 'crouch') b.classList.remove('on')
+      if (t === 'alt') b.classList.toggle('on', aimLatch)
+      else if (t !== 'crouch') b.classList.remove('on')
       else b.classList.toggle('on', touch.crouch)
       if (t === 'fire') touch.fire = false
       if (t === 'use') touch.use = false
@@ -1221,6 +1263,8 @@ if (coarse) {
 
 // ================= HUD =================
 const hud = {}
+const touchAlt = $('.tb.alt')
+const touchMode = $('.tb.mode')
 for (const id of ['mode-info', 'clock', 'score-t', 'score-ct', 'alive-t', 'alive-ct', 'money', 'hp', 'armor', 'clip', 'reserve', 'weapon-name', 'nades', 'kit', 'bomb-carry', 'place', 'hint', 'progress', 'progress-bar', 'center-msg', 'spectate', 'crosshair', 'scope', 'flashbang', 'damage', 'hitmarker', 'scoreboard'])
   hud[id] = $('#' + id)
 const last = {}
@@ -1425,7 +1469,13 @@ function updateHud(dt) {
   const wpn = w && weaponOf(w)
   const scoped = !!(wpn?.zoom && w.scope)
   hud.scope.hidden = !scoped
-  hud.crosshair.classList.toggle('off', scoped || (wpn?.kind === 'sniper' && !scoped) || !w?.alive)
+  // down the sights, the sights are the crosshair
+  hud.crosshair.classList.toggle('off', scoped || (wpn?.kind === 'sniper' && !scoped) || !w?.alive || (w.ads ?? 0) > 0.55)
+  if (touchAlt) {
+    touchAlt.classList.toggle('on', aimLatch)
+    touchMode.hidden = !wpn?.modes || !w?.alive
+    touchMode.textContent = wpn?.modes === 'burst' ? '3×' : 'SIL'
+  }
   if (wpn && w) {
     const spd = Math.hypot(w.vel.x, w.vel.z)
     const gap = 3 + (wpn.moveSpread ?? 0.03) * Math.min(1, spd / (wpn.speed || 6)) * 160 + (w.onGround ? 0 : 10) + Math.min(10, w.recoil * 1.2)
@@ -1593,7 +1643,7 @@ function cameraFor(dt) {
     if (camY === null || !me.onGround) camY = e.y
     else camY += (e.y - camY) * Math.min(1, dt * 16)
     const w = weaponOf(me)
-    const fov = w?.zoom && me.scope ? (w.zoom[me.scope - 1] / 90) * settings.fov : settings.fov
+    const fov = w?.zoom && me.scope ? (w.zoom[me.scope - 1] / 90) * settings.fov : adsZoom(me, w) * settings.fov
     return { x: e.x, y: camY, z: e.z, yaw: look.yaw + me.punch.yaw, pitch: look.pitch + me.punch.pitch, fov }
   }
   // dead: watch a teammate (or anyone left)

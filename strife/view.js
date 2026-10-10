@@ -3,7 +3,7 @@
 
 import * as THREE from './lib/three.min.js'
 import { buildLevel, buildSky } from './render.js'
-import { WEAPONS } from './weapons.js'
+import { WEAPONS, adsOf } from './weapons.js'
 import { buildGun } from './guns.js'
 import { buildSoldier, buildViewArms } from './models.js'
 import { eyeOf, weaponOf } from './game.js'
@@ -105,6 +105,7 @@ export function gunModel(id, detail = 1, opts = {}) {
   const g = new THREE.Group()
   g.add(inner)
   g.userData.muzzle = (inner.userData.muzzle ?? 0.3) * sc
+  g.userData.sight = (inner.userData.sight ?? 0.05) * sc
   return g
 }
 
@@ -532,6 +533,7 @@ export class View {
         this.vm.add(holder)
         this.vmGun = g
         this.vmHolder = holder
+        this.vmSight = g.userData.sight * sc
         // muzzle flash sprite at the barrel
         const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.tex.flash, color: '#ffe8b0', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
         flash.scale.setScalar(0.28)
@@ -564,13 +566,19 @@ export class View {
     const h = this.vmHolder
     const crouchDip = a.crouch * 0.01
     const kind = WEAPONS[id].kind
-    const base = kind === 'pistol' || kind === 'taser' ? [0.12, -0.12, -0.36] : kind === 'knife' ? [0.15, -0.15, -0.34] : kind === 'grenade' || kind === 'bomb' ? [0.14, -0.15, -0.36] : [0.11, -0.115, -0.34]
+    const hip = kind === 'pistol' || kind === 'taser' ? [0.12, -0.12, -0.36] : kind === 'knife' ? [0.15, -0.15, -0.34] : kind === 'grenade' || kind === 'bomb' ? [0.14, -0.15, -0.36] : [0.11, -0.115, -0.34]
+    // down the sights: the gun comes up to the middle, its line of sight on the crosshair, and steadies
+    const u = adsOf(WEAPONS[id]) ? (a.ads ?? 0) : 0
+    const ads = u * u * (3 - 2 * u)
+    const aimed = [id === 'dualies' ? 0.09 : 0, -this.vmSight - 0.004, kind === 'pistol' ? -0.3 : -0.25]
+    const base = hip.map((v, i) => lerp(v, aimed[i], ads))
+    const steady = 1 - 0.8 * ads
     h.position.set(
-      base[0] + Math.sin(st.bob) * 0.008 * bobA + st.swayX,
-      base[1] - Math.abs(Math.cos(st.bob)) * 0.007 * bobA + st.swayY - (1 - st.draw) * 0.25 - rl * 0.1 - crouchDip,
-      base[2] + st.kick * 0.035,
+      base[0] + (Math.sin(st.bob) * 0.008 * bobA + st.swayX) * steady,
+      base[1] + (-Math.abs(Math.cos(st.bob)) * 0.007 * bobA + st.swayY) * steady - (1 - st.draw) * 0.25 - rl * 0.1 - crouchDip * steady,
+      base[2] + st.kick * lerp(0.035, 0.02, ads),
     )
-    h.rotation.set(st.kick * 0.1 + rl * 0.5 - (1 - st.draw) * 0.6, 0.06 + st.swayX * 2 + Math.sin(st.slash * Math.PI) * 0.8, rl * 0.4 + Math.sin(st.slash * Math.PI) * -0.6)
+    h.rotation.set(st.kick * lerp(0.1, 0.03, ads) + rl * 0.5 - (1 - st.draw) * 0.6, (0.06 + st.swayX * 2) * (1 - ads) + Math.sin(st.slash * Math.PI) * 0.8, rl * 0.4 + Math.sin(st.slash * Math.PI) * -0.6)
     if (st.flash > 0) {
       st.flash -= dt
       this.vmFlash.visible = st.flash > 0

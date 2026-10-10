@@ -2,7 +2,7 @@
 // sound go through `hooks` (see app.js), so a whole match can also run headless (for tests).
 
 import { World, GRAVITY } from './world.js'
-import { WEAPONS, GEAR, ECONOMY, MAX_GRENADES, applyDamage } from './weapons.js'
+import { WEAPONS, GEAR, ECONOMY, MAX_GRENADES, applyDamage, adsOf } from './weapons.js'
 import { Brain, planRound } from './bots.js'
 import { Chatter, RADIO } from './radio.js'
 
@@ -68,6 +68,8 @@ export function makeActor(id, name, team, isBot) {
     lastShot: -9,
     trigger: false,
     scope: 0,
+    ads: 0, // 0 (from the hip) to 1 (looking down the sights)
+    aiming: false,
     punch: { yaw: 0, pitch: 0 },
     flashUntil: 0,
     flashFull: 0,
@@ -267,6 +269,7 @@ export class Game {
       a.h = STAND_H
       a.onGround = true
       a.scope = 0
+      a.ads = 0
       a.flashUntil = 0
       a.plant = a.defuse = 0
       a.reloadEnd = a.switchEnd = 0
@@ -358,6 +361,7 @@ export class Game {
     a.h = STAND_H
     a.onGround = true
     a.scope = 0
+    a.ads = 0
     a.flashUntil = a.flashFull = 0
     a.reloadEnd = a.switchEnd = 0
     a.recoil = 0
@@ -524,6 +528,7 @@ export class Game {
     if (slot !== a.active) a.lastActive = a.active
     a.active = slot
     a.scope = 0
+    a.ads = 0
     a.reloadEnd = 0
     a.switchEnd = this.time + (slot === 'knife' ? 0.35 : 0.6)
     a.recoil = 0
@@ -556,7 +561,7 @@ export class Game {
     s.clip += take
     s.reserve -= take
   }
-  /** Right mouse: scope (AWP), or the knife's heavy stab. */
+  /** Right mouse: scope (AWP), the knife's heavy stab, or an underhand throw. (Other guns aim down the sights.) */
   alt(a) {
     const w = weaponOf(a)
     if (!w) return
@@ -564,19 +569,24 @@ export class Game {
       a.scope = (a.scope + 1) % (w.zoom.length + 1)
       this.sound('click', null, { who: a })
     }
+    if (w.kind === 'knife' && this.time >= a.nextFire) this.knife(a, true)
+    if (w.kind === 'grenade' && this.time >= a.nextFire && this.time >= a.switchEnd) this.throwNade(a, true)
+  }
+  /** F (or middle mouse): burst fire on or off (Glock, FAMAS), or the silencer (USP-S, M4A1-S). */
+  fireMode(a) {
+    const w = weaponOf(a)
     const s = a.inv[a.active]
-    if (w.modes === 'burst' && s) {
+    if (!w || !s) return
+    if (w.modes === 'burst') {
       s.burst = !s.burst
       this.emit('mode', { a, text: s.burst ? 'Switched to burst-fire mode' : w.kind === 'pistol' ? 'Switched to semi-automatic' : 'Switched to automatic' })
       this.sound('click', null, { who: a })
     }
-    if (w.modes === 'silencer' && s && this.time >= a.reloadEnd && this.time >= a.switchEnd) {
+    if (w.modes === 'silencer' && this.time >= a.reloadEnd && this.time >= a.switchEnd) {
       s.silenced = !s.silenced
       a.switchEnd = this.time + 1.3 // screwing it on or off
       this.emit('mode', { a, text: s.silenced ? 'Silencer on' : 'Silencer off', silencer: true })
     }
-    if (w.kind === 'knife' && this.time >= a.nextFire) this.knife(a, true)
-    if (w.kind === 'grenade' && this.time >= a.nextFire && this.time >= a.switchEnd) this.throwNade(a, true)
   }
   /** Pull the trigger (held = still holding it from before). */
   fire(a, held) {
@@ -619,16 +629,20 @@ export class Game {
     s.clip--
     // How inaccurate: base, moving, in the air, crouched, scoped.
     const hs = Math.hypot(a.vel.x, a.vel.z)
+    const ads = a.ads ?? 0
     let spread = w.zoom ? (a.scope ? w.scopedSpread : w.spread) : w.spread
     if (s.burst) spread *= w.kind === 'pistol' ? 1.6 : 0.8
     if (w.modes === 'silencer' && !s.silenced) spread *= 1.35
     if (w.settles) spread *= Math.max(0.2, 1 - a.recoil / 14)
-    spread += w.moveSpread * smooth(0.34, 1, hs / w.speed)
+    spread *= 1 - 0.4 * ads // down the sights: tighter
+    spread += w.moveSpread * smooth(0.34, 1, hs / w.speed) * (1 - 0.3 * ads)
     if (!a.onGround) spread += w.airSpread
     if (a.crouch > 0.5 && a.onGround) spread *= 0.72
     if (now - a.lastShot > Math.max(0.35, 2 / w.rate)) a.recoil = 0
     const k = Math.min(Math.floor(a.recoil), w.recoil.length - 1)
-    const [ry, rp] = w.recoil[k]
+    const rk = 1 - 0.2 * ads // and a little easier to hold down
+    const ry = w.recoil[k][0] * rk
+    const rp = w.recoil[k][1] * rk
     a.recoil += 1
     a.lastShot = now
     // The view kicks up with the spray (aim punch), half as much as the bullets climb.
@@ -637,10 +651,11 @@ export class Game {
     const eye = eyeOf(a)
     // A shotgun's pellets share one aim point, each with its own scatter.
     const ang0 = Math.random() * Math.PI * 2
-    const mag0 = w.pellets > 1 ? Math.sqrt(Math.random()) * (spread - w.spread) : 0
+    const pellet = w.spread * (1 - 0.25 * ads)
+    const mag0 = w.pellets > 1 ? Math.sqrt(Math.random()) * Math.max(0, spread - pellet) : 0
     for (let p = 0; p < w.pellets; p++) {
       const ang = Math.random() * Math.PI * 2
-      const mag = w.pellets > 1 ? Math.sqrt(Math.random()) * w.spread : Math.sqrt(Math.random()) * spread
+      const mag = w.pellets > 1 ? Math.sqrt(Math.random()) * pellet : Math.sqrt(Math.random()) * spread
       const yaw = a.yaw + ry + Math.cos(ang) * mag + Math.cos(ang0) * mag0
       const pitch = a.pitch + rp + Math.sin(ang) * mag + Math.sin(ang0) * mag0
       this.shoot(a, eye, dirOf(yaw, pitch), w, p > 0)
@@ -1180,6 +1195,7 @@ export class Game {
     const wpn = weaponOf(a)
     let max = wpn?.speed ?? 6.1
     if (wpn?.zoom && a.scope) max = wpn.scopedSpeed
+    if (a.ads) max *= 1 - 0.3 * a.ads
     if (a.crouching && a.onGround) max *= 0.34
     else if (cmd.walk) max *= 0.52
     if (this.time < a.slowUntil) max *= 0.55
@@ -1370,6 +1386,11 @@ export class Game {
       this.reload(a)
     }
     if (cmd.alt) this.alt(a)
+    if (cmd.mode) this.fireMode(a)
+    // aiming down the sights: held, and not while reloading, drawing, planting or defusing
+    const ads = adsOf(weaponOf(a))
+    a.aiming = !!cmd.aim && !!ads && this.time >= a.reloadEnd && this.time >= a.switchEnd && a.plant === 0 && this.bomb.defuser !== a
+    a.ads = ads ? Math.max(0, Math.min(1, a.ads + (a.aiming ? dt : -dt) / ads.time)) : 0
     if (a.burstLeft > 0 && this.time >= a.burstNext) {
       const sl = a.inv[a.active]
       const w = weaponOf(a)
@@ -1423,7 +1444,7 @@ export class Game {
       return c
     }
     const l = a.netLast ?? {}
-    return { yaw: l.yaw, pitch: l.pitch, fire: l.fire, use: l.use, st: l.st, crouch: l.crouch, walk: l.walk }
+    return { yaw: l.yaw, pitch: l.pitch, fire: l.fire, use: l.use, st: l.st, crouch: l.crouch, walk: l.walk, aim: l.aim }
   }
   /** Host: a remote player moves themselves; we take their word for it (within reason). */
   remoteMove(a, cmd, dt) {
