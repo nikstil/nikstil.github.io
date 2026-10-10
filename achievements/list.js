@@ -34,6 +34,9 @@ export function readSaves() {
     strifeRecord: read('strife-record') ?? {},
     strifeInv: read('strife-inventory') ?? null,
     strifeRank: strifeRank(),
+    feats: read('nikstilos-feats') ?? {},
+    kevin: read('kevin-gotchi'),
+    arg: Number(read('nikstilos-arg')) || 0,
   }
 }
 
@@ -148,6 +151,31 @@ export const ACHIEVEMENTS = [
   { id: 'site-cmd', game: 'site', icon: '⌨️', name: 'I’m In', desc: 'Run a command in the Command Prompt.', points: 5, check: () => B(read('nikstilos-terminal')?.runs) },
   { id: 'site-eggs', game: 'site', icon: '🥚', name: 'Easter Egg Hunter', desc: 'Find 5 hidden commands in the Command Prompt.', points: 20, check: () => P((read('nikstilos-terminal')?.found ?? []).length, 5) },
   { id: 'site-explorer', game: 'site', icon: '🗂️', name: 'Snooping Around', desc: 'Open a file in the File Explorer.', points: 5, check: () => B(read('nikstilos-files')?.opened) },
+  // BloatOS's toys: the Task Manager, gravity, the desk plant, other visitors, the printer, dial-up
+  { id: 'site-explorer-kill', game: 'site', icon: '💀', name: 'Have You Tried Ending It?', desc: 'End explorer.exe in the Task Manager.', points: 10, check: (s) => B(s.feats.explorerKilled) },
+  { id: 'site-bsod', game: 'site', icon: '🟦', name: ':(', desc: 'Cause a blue screen.', points: 10, check: (s) => B(s.feats.bsod) },
+  { id: 'site-speedreboot', game: 'site', icon: '⚡', name: 'Speedrun Reboot', desc: 'Type the stop code before the blue screen finishes.', points: 15, check: (s) => B(s.feats.speedReboot) },
+  { id: 'site-algo', game: 'site', icon: '🤖', name: 'It Learned', desc: 'End TheAlgorithm four times.', points: 10, check: (s) => P(n(s.feats.algoKills), 4) },
+  { id: 'site-hr', game: 'site', icon: '🗂️', name: 'HR Has Been Notified', desc: 'Try to end HR.', points: 5, check: (s) => B(s.feats.brendaTried) },
+  { id: 'site-gravity', game: 'site', icon: '🪐', name: 'What Goes Up', desc: 'Turn gravity on.', points: 5, check: (s) => B(s.feats.gravity) },
+  { id: 'site-yeet', game: 'site', icon: '🥏', name: 'Yeet', desc: 'Throw a window (or an icon) across the screen.', points: 10, check: (s) => B(s.feats.thrown) },
+  { id: 'site-shake', game: 'site', icon: '🫨', name: 'Shake It Off', desc: 'Shake a window until things fall out.', points: 10, check: (s) => B(s.feats.shaken) },
+  { id: 'site-plant', game: 'site', icon: '🪴', name: 'Green Thumb', desc: 'Water the desk plant on seven different days.', points: 20, check: (s) => P(n(s.feats.plantDays), 7) },
+  { id: 'site-bonk', game: 'site', icon: '🧟', name: 'Bonk', desc: 'Bonk 25 zombies off your desktop.', points: 15, check: (s) => P(n(s.feats.zombiesBonked), 25) },
+  { id: 'site-wave', game: 'site', icon: '🛡️', name: 'Lawn Defender', desc: 'Get through a zombie invasion.', points: 10, check: (s) => B(s.feats.wavesSurvived) },
+  { id: 'site-ghosts', game: 'site', icon: '👻', name: 'Not Alone', desc: 'See another visitor’s cursor on the desktop.', points: 5, check: (s) => B(s.feats.ghostsSeen) },
+  { id: 'site-plane', game: 'site', icon: '✈️', name: 'Air Mail', desc: 'Throw a paper plane at someone.', points: 5, check: (s) => B(s.feats.planes) },
+  { id: 'site-unjam', game: 'site', icon: '🖨️', name: 'PC LOAD LETTER', desc: 'Unjam the printer.', points: 10, check: (s) => B(s.feats.unjammed) },
+  { id: 'site-receipt', game: 'site', icon: '🧾', name: 'Itemised', desc: 'Print the receipt of everything you’ve done here.', points: 5, check: (s) => B(s.feats.printed) },
+  { id: 'site-dialup', game: 'site', icon: '📞', name: 'Screeeech', desc: 'Get online with dial-up in BobbyBrowser.', points: 5, check: (s) => B(s.feats.dialup) },
+  { id: 'site-haunted', game: 'site', icon: '🕯️', name: 'It Followed You Home', desc: 'Follow DO_NOT_OPEN.txt all the way to the end.', points: 25, secret: true, check: (s) => B(s.arg >= 5) },
+  // KEVIN-GOTCHI™ and NASDANK (on the phone)
+  { id: 'site-kevin-manager', game: 'site', icon: '👔', name: 'Middle Management', desc: 'Get Kevin promoted to Manager.', points: 20, check: (s) => B(s.kevin && s.kevin.xp >= 2000) },
+  { id: 'site-kevin-ceo', game: 'site', icon: '👑', name: 'Kevin, CEO', desc: 'Get Kevin all the way to CEO.', points: 40, check: (s) => B(s.kevin?.ceo) },
+  { id: 'site-kevin-quit', game: 'site', icon: '📨', name: 'Two Weeks’ Notice', desc: 'Let an intern quit.', points: 5, secret: true, check: (s) => B(s.kevin && (s.kevin.quit || s.kevin.gen > 1)) },
+  { id: 'site-stonks', game: 'site', icon: '📈', name: 'Stonks', desc: 'Make ⓒ 50 on a single NASDANK sale.', points: 15, check: (s) => B(s.feats.stonksBigWin) },
+  { id: 'site-not-stonks', game: 'site', icon: '📉', name: 'Not Stonks', desc: 'Lose ⓒ 50 on a single NASDANK sale.', points: 10, check: (s) => B(s.feats.stonksBigLoss) },
+  { id: 'site-trader', game: 'site', icon: '💹', name: 'Day Trader', desc: 'Make 20 trades on NASDANK.', points: 10, check: (s) => P(n(s.feats.stonksTrades), 20) },
   { id: 'site-games', game: 'site', icon: '🕹️', name: 'Sampler Platter', desc: 'Earn an achievement in four different games.', points: 20, meta: true },
   { id: 'site-half', game: 'site', icon: '🌗', name: 'Halfway There', desc: 'Unlock half of all achievements.', points: 50, meta: true },
 ]

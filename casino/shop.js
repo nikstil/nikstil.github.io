@@ -8,6 +8,7 @@ import { itemValue, skinValue } from '../strife/items.js'
 import { WEAPONS } from '../strife/weapons.js'
 import { openCreditStore, pretendSpent } from '../strife/credits.js'
 import { winSound, click } from './sound.js'
+import * as arg from '../os/arg.js'
 
 export const BUY_MARKUP = 1.15
 export const SELL_RATE = 0.8
@@ -193,7 +194,14 @@ export function mountFree(el) {
       winSound(false)
       toast('Code NIKSTIL: ⓒ 5 added. Tell your friends (please).', 'win')
       input.value = ''
-    } else toast('Code not found. Have you tried NIKSTIL?', 'err')
+    } else if (code === arg.FINAL_CODE && arg.step() >= 4) {
+      if (!arg.reach(5)) return toast('It already followed you home.', 'err')
+      credit(13)
+      winSound(true)
+      toast('👻 The house is haunted now. ⓒ 13 added. Check your Themes on the desktop.', 'win')
+      input.value = ''
+    } else if (code === arg.FINAL_CODE) toast('Code not found. (Not yet.)', 'err')
+    else toast('Code not found. Have you tried NIKSTIL?', 'err')
   })
   el.addEventListener('click', (e) => {
     const t = e.target.closest('button')

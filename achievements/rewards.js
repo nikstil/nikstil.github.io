@@ -1,4 +1,4 @@
-// Rewards for achievement points, claimed on the hub (/achievements/): nikstilOS wallpapers and a
+// Rewards for achievement points, claimed on the hub (/achievements/): BloatOS wallpapers and a
 // theme, and COUNTER-STRIFE cases, keys and a knife. What's claimed lives in this browser, like the
 // achievements; COUNTER-STRIFE things go into 'strife-gifts', which its inventory unpacks.
 
@@ -7,7 +7,7 @@ const GIFTS = 'strife-gifts'
 
 export const REWARDS = [
   { id: 'r-case', at: 25, icon: '📦', name: 'A case and a key', desc: 'A Synergy Case for COUNTER-STRIFE, and the key to open it.', gift: { cases: ['synergy'], keys: 1 } },
-  { id: 'r-wall-dust', at: 50, icon: '🏜️', name: 'Wallpaper: Dust II', desc: 'A desert afternoon for the nikstilOS desktop.', wallpaper: 'dust' },
+  { id: 'r-wall-dust', at: 50, icon: '🏜️', name: 'Wallpaper: Dust II', desc: 'A desert afternoon for the BloatOS desktop.', wallpaper: 'dust' },
   { id: 'r-keys', at: 100, icon: '🔑', name: 'Two keys and a sticker capsule', desc: 'For COUNTER-STRIFE.', gift: { keys: 2, cases: ['capsule'] } },
   { id: 'r-wall-lawn', at: 150, icon: '🌱', name: 'Wallpaper: Front Lawn', desc: 'Freshly mown. Zombie-free (for now).', wallpaper: 'lawn' },
   { id: 'r-theme-terminal', at: 200, icon: '🖥️', name: 'Theme: Terminal', desc: 'Green on black, the whole desktop. Like a hacker in a film.', theme: 'terminal' },

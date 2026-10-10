@@ -471,9 +471,9 @@
     }
   }
 
-  // ================= Messenger bubble =================
+  // ================= Yapper bubble =================
   // A chat button in the bottom-right corner: in the game's taskbar tray (#nk-tray-slot) so it never
-  // covers anything, or floating if the page has no tray. It opens nikstil Messenger
+  // covers anything, or floating if the page has no tray. It opens Yapper
   // (nikstil.com/?embed=messenger) in a little panel over the game, with an unread count, and a
   // full-screen button.
   function messengerBubble() {
@@ -499,14 +499,14 @@
     document.head.append(style)
     const bubble = document.createElement('button')
     bubble.id = 'nk-msgr-bubble'
-    bubble.title = 'nikstil Messenger'
-    bubble.setAttribute('aria-label', 'nikstil Messenger')
+    bubble.title = 'Yapper'
+    bubble.setAttribute('aria-label', 'Yapper')
     bubble.innerHTML = '💬<span id="nk-msgr-badge" hidden></span>'
     const panel = document.createElement('section')
     panel.id = 'nk-msgr-panel'
     panel.hidden = true
-    panel.setAttribute('aria-label', 'nikstil Messenger')
-    panel.innerHTML = '<div id="nk-msgr-head"><span>💬 nikstil Messenger</span><button class="nk-full" title="Full screen" aria-label="Full screen">⛶</button><button class="nk-close" title="Close" aria-label="Close">✕</button></div>'
+    panel.setAttribute('aria-label', 'Yapper')
+    panel.innerHTML = '<div id="nk-msgr-head"><span>💬 Yapper</span><button class="nk-full" title="Full screen" aria-label="Full screen">⛶</button><button class="nk-close" title="Close" aria-label="Close">✕</button></div>'
     document.body.append(bubble, panel)
     // Into the taskbar tray when there is one (and back in if the taskbar is redrawn).
     const dock = () => {
@@ -524,7 +524,7 @@
     const showBadge = () => {
       badge.hidden = !unread
       badge.textContent = unread > 99 ? '99+' : String(unread)
-      bubble.setAttribute('aria-label', unread ? `nikstil Messenger (${unread} unread)` : 'nikstil Messenger')
+      bubble.setAttribute('aria-label', unread ? `Yapper (${unread} unread)` : 'Yapper')
     }
     function toggle(open = panel.hidden) {
       panel.hidden = !open
@@ -532,10 +532,10 @@
       if (!panel.querySelector('iframe')) {
         const frame = document.createElement('iframe')
         frame.src = '/?embed=messenger'
-        frame.title = 'nikstil Messenger'
+        frame.title = 'Yapper'
         panel.append(frame)
       }
-      unread = 0 // the Messenger itself shows what's unread from here
+      unread = 0 // the Yapper itself shows what's unread from here
       showBadge()
     }
     bubble.addEventListener('click', () => toggle())

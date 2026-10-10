@@ -2,7 +2,7 @@
 // `chrome` is the browser UI colour (meta theme-color); `cursor` picks the cursor set.
 
 // In order of the era each one comes from: a short history of interface design, ending with the
-// internet being nostalgic about all of it. Luna, Aqua and Vaporwave are the nikstilOS themes
+// internet being nostalgic about all of it. Luna, Aqua and Vaporwave are the BloatOS themes
 // (nikstil.com); the ids match, so a pick carries over between the two.
 export const THEMES = [
   { id: 'retro', name: 'Retro 95', blurb: 'Beige boxes, pixels, a 56k modem (1995)', swatch: ['#008080', '#cfc8b6', '#000080'], chrome: '#008080', cursor: 'pixel' },

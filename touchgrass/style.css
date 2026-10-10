@@ -208,7 +208,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .help { text-align: center; font-size: 12px; color: #12300f; font-weight: 600; }
 
-/* Inside nikstilOS (an iframe window): just the game */
+/* Inside BloatOS (an iframe window): just the game */
 html.embed body { --pad: 0px; padding: 0; background: #2c6b2f; }
 html.embed .frame { width: min(100vw, calc((100dvh - 52px) * 960 / 620)); margin: 0 auto; }
 html.embed .bar .home-link, html.embed .help { display: none; }

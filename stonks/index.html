@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NASDANK · nikstil.com</title>
+  <meta name="description" content="NASDANK: the stock exchange of the nikstil.com cast. Buy shares in Kevin, Brenda, the CEO Dog and TheAlgorithm with COUNTER-STRIFE credits.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="nikstil.com">
+  <meta property="og:url" content="https://nikstil.com/stonks/">
+  <meta property="og:title" content="NASDANK">
+  <meta property="og:description" content="Buy shares in Kevin (Sales), Brenda (HR), the CEO Dog and TheAlgorithm. Stonks only go up (they don't).">
+  <meta property="og:image" content="https://nikstil.com/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0b0f0c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0f0c'/%3E%3Cpath d='M8 48 L24 32 L34 40 L56 14' stroke='%2333e07a' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <style>
+    :root { --bg: #0b0f0c; --panel: #121914; --panel2: #18211b; --line: #243028; --ink: #e6efe8; --muted: #8aa093; --up: #33e07a; --down: #ff5c5c; --gold: #f5c542; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(11, 15, 12, 0.94); border-bottom: 1px solid var(--line); }
+    .logo { font: 900 20px/1 "Arial Black", Impact, system-ui, sans-serif; letter-spacing: 1px; }
+    .logo span { color: var(--up); }
+    .grow { flex: 1; }
+    .bal { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 5px 10px; font-weight: 700; white-space: nowrap; }
+    .bal b { color: var(--gold); }
+    .tape { overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--line); background: #070a08; font: 600 12.5px/28px ui-monospace, Menlo, Consolas, monospace; }
+    .tape div { display: inline-block; padding-left: 100%; animation: tape 45s linear infinite; }
+    .tape span { margin-right: 28px; }
+    @keyframes tape { to { transform: translateX(-100%); } }
+    nav { display: flex; gap: 4px; padding: 8px 12px; }
+    nav button { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 12px; font-weight: 700; color: var(--muted); }
+    nav button.sel { color: var(--ink); border-color: var(--up); }
+    main { padding: 0 12px 16px; max-width: 760px; margin: 0 auto; }
+    .list { display: grid; gap: 6px; }
+    .row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 84px 78px; align-items: center; gap: 8px; padding: 9px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; text-align: left; width: 100%; }
+    .row:hover { border-color: #33503d; }
+    .row .ic { font-size: 22px; }
+    .row b { display: block; }
+    .row small { color: var(--muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row canvas { width: 84px; height: 30px; }
+    .px { text-align: right; font-variant-numeric: tabular-nums; }
+    .px b { font-size: 14px; }
+    .up { color: var(--up); }
+    .down { color: var(--down); }
+    .detail { display: grid; gap: 10px; }
+    .dhead { display: flex; align-items: center; gap: 10px; }
+    .dhead .ic { font-size: 34px; }
+    .dhead h2 { margin: 0; font-size: 18px; }
+    .dhead .big { margin-left: auto; text-align: right; }
+    .dhead .big b { font-size: 24px; font-variant-numeric: tabular-nums; }
+    .chart { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+    .chart canvas { width: 100%; height: 200px; display: block; }
+    .seg { display: flex; gap: 4px; margin-bottom: 6px; }
+    .seg button { border: 1px solid var(--line); background: var(--panel2); border-radius: 7px; padding: 4px 10px; font-weight: 700; color: var(--muted); }
+    .seg button.sel { color: var(--ink); border-color: var(--up); }
+    .trade { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 8px; }
+    .trade label { display: flex; align-items: center; gap: 6px; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 0 10px; height: 40px; }
+    .trade input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--ink); font: 700 16px system-ui, sans-serif; }
+    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .buy, .sell { border: 0; border-radius: 10px; padding: 11px; font-weight: 800; }
+    .buy { background: var(--up); color: #04210f; }
+    .sell { background: var(--down); color: #2b0606; }
+    .buy:disabled, .sell:disabled { opacity: 0.45; cursor: default; }
+    .hold { color: var(--muted); font-size: 13px; }
+    .msg { min-height: 20px; font-size: 13px; }
+    .back { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 5px 10px; }
+    .news { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .news li { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: 8px; padding: 8px 10px; }
+    .news li.up { border-left-color: var(--up); color: var(--ink); }
+    .news li.down { border-left-color: var(--down); color: var(--ink); }
+    .sum { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; margin-bottom: 10px; }
+    .sum div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+    .sum small { display: block; color: var(--muted); font-size: 11.5px; }
+    .sum b { font-size: 16px; }
+    .muted { color: var(--muted); }
+    footer { color: var(--muted); font-size: 12px; padding: 4px 12px 16px; max-width: 760px; margin: 0 auto; }
+    footer a { color: var(--muted); }
+    html.embed footer a { display: none; }
+  </style>
+</head>
+<body>
+  <header><div class="logo">NAS<span>DANK</span></div><div class="grow"></div><div class="bal" title="Your COUNTER-STRIFE credits">ⓒ <b id="bal">0</b></div></header>
+  <div class="tape" aria-hidden="true"><div id="tape"></div></div>
+  <nav><button data-tab="market" class="sel">Market</button><button data-tab="mine">My stonks</button><button data-tab="news">News</button></nav>
+  <main id="app"></main>
+  <footer>Prices move all the time, for everyone at once. Paid for with COUNTER-STRIFE credits (pretend, like the companies). 1% fee on every trade. Not financial advice. Not finance. <a href="/">nikstil.com</a></footer>
+  <script type="module">
+    import { TICKERS, byId, price, series, change, headlines } from './market.js'
+    if (new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embed')
+    const FEE = 0.01
+    const PKEY = 'nasdank-portfolio'
+    const app = document.getElementById('app')
+    let tab = 'market'
+    let open = null
+    let span = 3600000
+    let msg = ''
+    const read = (k, d) => {
+      try {
+        return JSON.parse(localStorage.getItem(k)) ?? d
+      } catch {
+        return d
+      }
+    }
+    const write = (k, v) => {
+      try {
+        localStorage.setItem(k, JSON.stringify(v))
+      } catch {}
+    }
+    const r2 = (v) => Math.round(v * 100) / 100
+    const fmt = (v, d = 2) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })
+    const pc = (c) => `${c >= 0 ? '▲' : '▼'} ${Math.abs(c * 100).toFixed(2)}%`
+    const inv = () => read('strife-inventory', { items: [], equipped: {}, credits: 0, keys: 1, cases: { synergy: 1 }, nextUid: 1, opened: 0 })
+    const credits = () => inv().credits ?? 0
+    function setCredits(v) {
+      const i = inv()
+      i.credits = r2(v)
+      write('strife-inventory', i)
+    }
+    const port = () => read(PKEY, { h: {}, trades: 0, realised: 0 })
+    function feat(name, value = true) {
+      const f = read('nikstilos-feats', {})
+      if (value === true) f[name] = true
+      else f[name] = Math.max(f[name] ?? 0, value)
+      write('nikstilos-feats', f)
+    }
+
+    function spark(canvas, data, up) {
+      const dpr = Math.min(2, devicePixelRatio || 1)
+      const w = canvas.clientWidth
+      const h = canvas.clientHeight
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+      const g = canvas.getContext('2d')
+      g.scale(dpr, dpr)
+      const lo = Math.min(...data)
+      const hi = Math.max(...data)
+      const Y = (v) => h - 3 - ((v - lo) / (hi - lo || 1)) * (h - 6)
+      g.beginPath()
+      data.forEach((v, i) => (i ? g.lineTo : g.moveTo).call(g, (i / (data.length - 1)) * w, Y(v)))
+      g.strokeStyle = up ? '#33e07a' : '#ff5c5c'
+      g.lineWidth = 1.6
+      g.stroke()
+      return { Y, lo, hi, g, w, h }
+    }
+    function bigChart(canvas, data) {
+      const up = data[data.length - 1] >= data[0]
+      const { g, w, h, lo, hi } = spark(canvas, data, up)
+      g.lineTo(w, h)
+      g.lineTo(0, h)
+      g.closePath()
+      const grad = g.createLinearGradient(0, 0, 0, h)
+      grad.addColorStop(0, up ? 'rgba(51,224,122,.25)' : 'rgba(255,92,92,.25)')
+      grad.addColorStop(1, 'rgba(0,0,0,0)')
+      g.fillStyle = grad
+      g.fill()
+      g.fillStyle = '#8aa093'
+      g.font = '11px system-ui, sans-serif'
+      g.fillText(fmt(hi), 4, 12)
+      g.fillText(fmt(lo), 4, h - 4)
+    }
+
+    function render() {
+      document.getElementById('bal').textContent = fmt(credits())
+      document.getElementById('tape').innerHTML = TICKERS.map((k) => {
+        const c = change(k.id, 3600000)
+        return `<span>${k.icon} ${k.id} ${fmt(price(k.id))} <b class="${c >= 0 ? 'up' : 'down'}">${pc(c)}</b></span>`
+      }).join('')
+      document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('sel', b.dataset.tab === tab))
+      if (open) return detail()
+      if (tab === 'news') return news()
+      if (tab === 'mine') return mine()
+      market()
+    }
+    function market() {
+      app.innerHTML = `<div class="list">${TICKERS.map((k) => {
+        const c = change(k.id, 86400000)
+        return `<button class="row" data-open="${k.id}"><span class="ic">${k.icon}</span><span><b>${k.id}</b><small>${k.name}</small></span><canvas data-spark="${k.id}"></canvas><span class="px"><b>${fmt(price(k.id))}</b><br><small class="${c >= 0 ? 'up' : 'down'}">${pc(c)}</small></span></button>`
+      }).join('')}</div><p class="muted" style="font-size:12px">24-hour change. KEVN trades on your own Kevin’s mood (that’s insider trading, but he’ll never know).</p>`
+      app.querySelectorAll('[data-spark]').forEach((c) => spark(c, series(c.dataset.spark, 86400000, 48), change(c.dataset.spark, 86400000) >= 0))
+    }
+    function detail() {
+      const k = byId[open]
+      const p = price(k.id)
+      const c = change(k.id, span)
+      const h = port().h[k.id]
+      const value = h ? h.sh * p : 0
+      app.innerHTML = `<div class="detail"><div><button class="back" data-back>← Market</button></div>
+        <div class="dhead"><span class="ic">${k.icon}</span><div><h2>${k.id}</h2><small class="muted">${k.name}</small></div><div class="big"><b>${fmt(p)}</b><br><small class="${c >= 0 ? 'up' : 'down'}">${pc(c)}</small></div></div>
+        <div class="chart"><div class="seg">${[['1H', 3600000], ['1D', 86400000], ['1W', 604800000]].map(([l, s]) => `<button data-span="${s}" class="${s === span ? 'sel' : ''}">${l}</button>`).join('')}</div><canvas class="big-chart"></canvas></div>
+        <div class="trade"><label>ⓒ <input type="number" min="0.01" step="0.01" value="10" inputmode="decimal" aria-label="Credits to spend or sell"></label>
+          <div class="btns"><button class="buy" data-buy>Buy</button><button class="sell" data-sell ${h ? '' : 'disabled'}>Sell</button></div>
+          <div class="hold">${h ? `You hold ${fmt(h.sh, 4)} shares, worth ⓒ ${fmt(value)} (paid ⓒ ${fmt(h.cost)}: <b class="${value >= h.cost ? 'up' : 'down'}">${value >= h.cost ? '+' : '−'}ⓒ ${fmt(Math.abs(value - h.cost))}</b>). <button class="back" data-sellall>Sell all</button>` : 'You don’t own any. Yet.'}</div>
+          <div class="msg">${msg}</div></div></div>`
+      bigChart(app.querySelector('.big-chart'), series(k.id, span, 90))
+    }
+    function mine() {
+      const pf = port()
+      const rows = Object.entries(pf.h).filter(([, h]) => h.sh > 1e-9)
+      const value = rows.reduce((s, [id, h]) => s + h.sh * price(id), 0)
+      const cost = rows.reduce((s, [, h]) => s + h.cost, 0)
+      app.innerHTML = `<div class="sum"><div><small>Portfolio</small><b>ⓒ ${fmt(value)}</b></div><div><small>Unrealised</small><b class="${value >= cost ? 'up' : 'down'}">${value >= cost ? '+' : '−'}ⓒ ${fmt(Math.abs(value - cost))}</b></div><div><small>Realised</small><b class="${pf.realised >= 0 ? 'up' : 'down'}">${pf.realised >= 0 ? '+' : '−'}ⓒ ${fmt(Math.abs(pf.realised))}</b></div><div><small>Trades</small><b>${pf.trades}</b></div></div>
+        <div class="list">${rows.length ? rows.map(([id, h]) => { const v = h.sh * price(id); return `<button class="row" data-open="${id}"><span class="ic">${byId[id].icon}</span><span><b>${id}</b><small>${fmt(h.sh, 4)} shares</small></span><span></span><span class="px"><b>ⓒ ${fmt(v)}</b><br><small class="${v >= h.cost ? 'up' : 'down'}">${v >= h.cost ? '+' : '−'}${fmt(Math.abs(v - h.cost))}</small></span></button>` }).join('') : '<p class="muted">No stonks yet. Pick one in the Market. Past performance is not indicative of anything.</p>'}</div>`
+    }
+    function news() {
+      const list = headlines()
+      app.innerHTML = `<ul class="news">${list.length ? list.map((n) => `<li class="${n.c >= 0 ? 'up' : 'down'}">${byId[n.id].icon} ${n.text}</li>`).join('') : '<li>A quiet hour on NASDANK. Suspiciously quiet.</li>'}</ul>`
+    }
+
+    function trade(kind, amount) {
+      const k = byId[open]
+      const p = price(k.id)
+      const pf = port()
+      const h = pf.h[k.id] ?? { sh: 0, cost: 0 }
+      if (kind === 'buy') {
+        if (!(amount > 0)) return (msg = 'Enter an amount.')
+        if (credits() + 1e-9 < amount) return (msg = 'Not enough credits.')
+        setCredits(credits() - amount)
+        const sh = (amount * (1 - FEE)) / p
+        h.sh += sh
+        h.cost = r2(h.cost + amount)
+        pf.h[k.id] = h
+        msg = `Bought ${fmt(sh, 4)} ${k.id} at ${fmt(p)}.`
+      } else {
+        if (!h.sh) return (msg = 'You don’t own any.')
+        const sh = Math.min(h.sh, amount === Infinity ? h.sh : amount / p)
+        const got = r2(sh * p * (1 - FEE))
+        const costPart = h.cost * (sh / h.sh)
+        h.sh -= sh
+        h.cost = r2(h.cost - costPart)
+        if (h.sh < 1e-9) delete pf.h[k.id]
+        else pf.h[k.id] = h
+        setCredits(credits() + got)
+        pf.realised = r2(pf.realised + got - costPart)
+        msg = `Sold ${fmt(sh, 4)} ${k.id} for ⓒ ${fmt(got)} (${got >= costPart ? 'profit' : 'loss'} ⓒ ${fmt(Math.abs(got - costPart))}).`
+        if (got - costPart >= 50) feat('stonksBigWin')
+        if (costPart - got >= 50) feat('stonksBigLoss')
+      }
+      pf.trades++
+      write(PKEY, pf)
+      feat('stonksTrades', pf.trades)
+    }
+    document.querySelector('nav').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tab]')
+      if (!b) return
+      tab = b.dataset.tab
+      open = null
+      render()
+    })
+    app.addEventListener('click', (e) => {
+      const b = e.target.closest('button')
+      if (!b) return
+      if (b.dataset.open) {
+        open = b.dataset.open
+        msg = ''
+      }
+      if ('back' in b.dataset) open = null
+      if (b.dataset.span) span = Number(b.dataset.span)
+      const amount = Number(app.querySelector('.trade input')?.value)
+      if ('buy' in b.dataset) trade('buy', amount)
+      if ('sell' in b.dataset) trade('sell', amount)
+      if ('sellall' in b.dataset) trade('sell', Infinity)
+      render()
+    })
+    render()
+    // prices tick: refresh the numbers every few seconds (not while you're typing an amount)
+    setInterval(() => document.activeElement?.tagName !== 'INPUT' && render(), 5000)
+    addEventListener('storage', (e) => e.key === 'strife-inventory' && (document.getElementById('bal').textContent = fmt(credits())))
+  </script>
+</body>
+</html>

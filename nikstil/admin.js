@@ -1,4 +1,4 @@
-// nikstilOS Control Panel (nikstil.com/nikstil/). Edits /site.json, the settings the desktop
+// BloatOS Control Panel (nikstil.com/nikstil/). Edits /site.json, the settings the desktop
 // (os/os.js) reads on every visit, and publishes it by committing to the site's GitHub repo.
 //
 // About the log-on: this is a static site, so the user name and password are checked in the
@@ -43,6 +43,10 @@
     ['loggle', '🟩'],
     ['strife', '💣'],
     ['casino', '🎰'],
+    ['taskmgr', '📊'],
+    ['printer', '🖨️'],
+    ['kevin', '👔'],
+    ['stonks', '📈'],
     ['achievements', '🎖️'],
     ['files', '📁'],
     ['terminal', '⌨️'],
@@ -74,19 +78,23 @@
       loggle: { label: 'LOGGLE', title: 'LOGGLE', hidden: false },
       strife: { label: 'COUNTER-STRIFE', title: 'COUNTER-STRIFE', hidden: false },
       casino: { label: 'SKINSINK.GG', title: 'SKINSINK.GG', hidden: false },
+      taskmgr: { label: 'Task Manager', title: 'Task Manager', hidden: false },
+      printer: { label: 'Printer', title: 'Printer', hidden: false },
+      kevin: { label: 'KEVIN-GOTCHI™', title: 'KEVIN-GOTCHI™', hidden: false },
+      stonks: { label: 'NASDANK', title: 'NASDANK', hidden: false },
       achievements: { label: 'Achievements', title: 'Achievements', hidden: false },
       files: { label: 'File Explorer', title: 'File Explorer', hidden: false },
       terminal: { label: 'Command Prompt', title: 'Command Prompt', hidden: false },
       browser: { label: 'BobbyBrowser', title: 'BobbyBrowser', hidden: false },
       mobile: { label: 'LigmaPhone', title: 'LigmaPhone', hidden: false },
       leaderboard: { label: 'Leaderboards', title: 'Leaderboards', hidden: false },
-      messenger: { label: 'Messenger', title: 'nikstil Messenger', hidden: false },
+      messenger: { label: 'Yapper', title: 'Yapper', hidden: false },
       account: { label: 'Account', title: 'Account', hidden: false },
     },
     links: [],
     pc: {
       rows: [
-        ['Edition', 'nikstilOS Ultimate'],
+        ['Edition', 'BloatOS Ultimate'],
         ['Version', '2026, build 1'],
         ['Memory', '640 KB (ought to be enough for anybody)'],
         ['System type', '8-bit operating system on a 64-bit browser'],
@@ -585,7 +593,7 @@
   function renderDesktop() {
     return [
       h('h2', {}, 'Desktop icons'),
-      h('p', { class: 'intro' }, 'Rename the icons, change their window titles, or hide them. Hidden apps also leave the Start menu (links like nikstil.com/#gif still open them). Leaderboards, Messenger and Account only show once Online is set up.'),
+      h('p', { class: 'intro' }, 'Rename the icons, change their window titles, or hide them. Hidden apps also leave the Start menu (links like nikstil.com/#gif still open them). Leaderboards, Yapper and Account only show once Online is set up.'),
       h('div', { class: 'app-head', 'aria-hidden': 'true' }, h('span'), h('span', {}, 'Icon label'), h('span', { class: 'app-title' }, 'Window title'), h('span', {}, 'Show')),
       h(
         'div',
@@ -982,14 +990,14 @@
     function showState() {
       const on = !!(o.url?.trim() && o.key?.trim()) && !isSecretKey(o.key)
       state.classList.toggle('is-ok', on)
-      state.lastChild.textContent = on ? 'Switched on (once published): Leaderboards and Messenger show on the desktop.' : 'Switched off: the online apps stay hidden until there’s a key.'
+      state.lastChild.textContent = on ? 'Switched on (once published): Leaderboards and Yapper show on the desktop.' : 'Switched off: the online apps stay hidden until there’s a key.'
     }
     showState()
     const adminSql = "update public.profiles set is_admin = true where username = 'nikstil';"
     const code = (t) => h('code', {}, t)
     return [
       h('h2', {}, 'Online'),
-      h('p', { class: 'intro' }, 'Accounts, the TRANSLATR™ leaderboards and nikstil Messenger. They run on your Supabase project; this site only holds its address and public key.'),
+      h('p', { class: 'intro' }, 'Accounts, the TRANSLATR™ leaderboards and Yapper. They run on your Supabase project; this site only holds its address and public key.'),
       state,
       h(
         'div',

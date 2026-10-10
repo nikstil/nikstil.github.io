@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KEVIN-GOTCHI™ · nikstil.com</title>
+  <meta name="description" content="KEVIN-GOTCHI™: a pet intern. Coffee, snacks, praise and meetings; get him promoted to CEO before he quits.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="nikstil.com">
+  <meta property="og:url" content="https://nikstil.com/kevin/">
+  <meta property="og:title" content="KEVIN-GOTCHI™">
+  <meta property="og:description" content="A pet intern. Keep him caffeinated, fed and praised, and he might make CEO before he quits.">
+  <meta property="og:image" content="https://nikstil.com/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#ffd84d">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ffd84d'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='38'%3E%F0%9F%91%94%3C/text%3E%3C/svg%3E">
+  <style>
+    :root { --bg: #fff6d6; --card: #fffdf4; --ink: #2b2416; --muted: #7d7055; --line: #e8dcb4; --accent: #f2b705; --good: #3fae5a; --bad: #e0564a; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { background: radial-gradient(circle at 50% 0, #fff 0, var(--bg) 60%); color: var(--ink); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; }
+    header { width: 100%; max-width: 460px; display: flex; align-items: center; gap: 8px; padding: 12px 16px 4px; }
+    h1 { margin: 0; font: 900 20px/1 "Arial Black", Impact, system-ui, sans-serif; letter-spacing: 1px; }
+    h1 small { font: 600 11px/1 system-ui, sans-serif; color: var(--muted); letter-spacing: 0; display: block; margin-top: 3px; }
+    header .grow { flex: 1; }
+    .home { color: var(--muted); font-size: 12px; }
+    html.embed .home { display: none; }
+    main { width: 100%; max-width: 460px; padding: 6px 16px 20px; display: grid; gap: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px; box-shadow: 0 2px 0 var(--line); }
+    .who { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .who b { font-size: 18px; }
+    .who span { color: var(--muted); font-size: 13px; }
+    .stage { position: relative; height: 210px; display: grid; place-items: center; overflow: hidden; border-radius: 12px; background: linear-gradient(#e9f4ff, #fdfbf2 60%, #e6dcc0 61%, #d8cba5); }
+    .desk { position: absolute; bottom: 14px; left: 50%; width: 200px; height: 18px; margin-left: -100px; background: #9a6a3c; border-radius: 4px; box-shadow: 0 6px 0 #7a5230; }
+    .desk::after { content: "💻"; position: absolute; right: 18px; bottom: 14px; font-size: 26px; }
+    .desk::before { content: "☕"; position: absolute; left: 16px; bottom: 14px; font-size: 20px; }
+    .kevin { position: relative; display: grid; justify-items: center; line-height: 1; animation: bob 2.4s ease-in-out infinite; margin-bottom: 34px; }
+    .kevin .face { font-size: 86px; }
+    .kevin .tie { font-size: 50px; margin-top: -14px; }
+    .kevin.zz { animation: none; transform: rotate(-12deg) translateY(10px); }
+    .kevin.jitter { animation: jitter 0.12s linear infinite; }
+    .kevin.gone { opacity: 0.25; filter: grayscale(1); animation: none; }
+    @keyframes bob { 50% { transform: translateY(-6px); } }
+    @keyframes jitter { 25% { transform: translate(2px, -1px); } 75% { transform: translate(-2px, 1px); } }
+    .say { position: absolute; top: 12px; right: 14px; max-width: 58%; background: #fff; border: 1px solid var(--line); border-radius: 14px 14px 4px 14px; padding: 7px 10px; font-size: 13px; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+    .ceo-badge { position: absolute; top: 12px; left: 12px; background: var(--accent); border-radius: 99px; padding: 3px 9px; font-weight: 800; font-size: 12px; }
+    .bars { display: grid; gap: 7px; }
+    .bar { display: grid; grid-template-columns: 92px 1fr 34px; align-items: center; gap: 8px; font-size: 13px; }
+    .bar .track { height: 12px; border-radius: 99px; background: #efe6c9; overflow: hidden; }
+    .bar .track i { display: block; height: 100%; border-radius: inherit; background: var(--good); transition: width 0.4s; }
+    .bar.low .track i { background: var(--bad); }
+    .bar.xp .track i { background: #7a8cff; }
+    .bar output { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .acts button { border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 10px 4px; font: inherit; font-weight: 700; cursor: pointer; display: grid; justify-items: center; gap: 2px; color: var(--ink); }
+    .acts button span { font-size: 24px; }
+    .acts button:hover:not(:disabled) { border-color: var(--accent); background: #fffbe6; }
+    .acts button:disabled { opacity: 0.45; cursor: default; }
+    .note { min-height: 20px; text-align: center; font-size: 13.5px; }
+    .note.err { color: var(--bad); }
+    .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--muted); max-height: 160px; overflow: auto; }
+    .log li b { color: var(--ink); font-weight: 600; }
+    .letter { font-family: Georgia, "Times New Roman", serif; background: #fff; padding: 16px; border-radius: 6px; border: 1px solid var(--line); line-height: 1.6; }
+    .go { border: 0; background: var(--accent); color: #2b2416; font: inherit; font-weight: 800; padding: 11px 16px; border-radius: 12px; cursor: pointer; width: 100%; }
+    h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header><h1>KEVIN-GOTCHI™<small>Your very own intern</small></h1><div class="grow"></div><a class="home" href="/">nikstil.com</a></header>
+  <main id="app"></main>
+  <script type="module">
+    import { load, save, hire, advance, act, mood, ACTIONS, TITLES, titleIndex, asleep } from './state.js'
+    if (new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embed')
+    const app = document.getElementById('app')
+    let s = load()
+    let note = ''
+    let noteErr = false
+    const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+    const ago = (t) => {
+      const m = Math.round((Date.now() - t) / 60000)
+      return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`
+    }
+    function render() {
+      if (!s) {
+        app.innerHTML = `<div class="card"><h2>Now hiring</h2><p>An intern. Unpaid (exposure only). Needs coffee, snacks and the occasional “great job”. Work him hard enough and he’ll make CEO; neglect him and he’ll quit.</p><button class="go" data-hire>Hire Kevin</button></div>`
+        return
+      }
+      advance(s)
+      save(s)
+      if (s.quit) {
+        app.innerHTML = `<div class="card"><h2>A letter on your desk</h2><div class="letter">Dear Manager,<br><br>${esc(s.quit.letter)}<br><br>Regards,<br>${esc(s.name)} (${esc(s.title)})</div></div>
+          <button class="go" data-hire>Hire a new intern</button>`
+        return
+      }
+      const m = mood(s)
+      const ti = titleIndex(s.xp)
+      const next = TITLES[ti + 1]
+      const lo = TITLES[ti][1]
+      const xpPct = next ? ((s.xp - lo) / (next[1] - lo)) * 100 : 100
+      const sleeping = asleep(s)
+      const bar = (label, v, cls = '') => `<div class="bar ${v < 25 ? 'low' : ''} ${cls}"><span>${label}</span><div class="track"><i style="width:${v.toFixed(0)}%"></i></div><output>${v.toFixed(0)}</output></div>`
+      app.innerHTML = `
+        <div class="card"><div class="who"><b>${esc(s.name)}</b><span>${esc(s.title)} · day ${Math.floor((Date.now() - s.hired) / 86400000) + 1}</span></div></div>
+        <div class="stage">${s.ceo ? '<span class="ceo-badge">👑 CEO</span>' : ''}<div class="say">${esc(m.say)}</div>
+          <div class="kevin ${sleeping ? 'zz' : ''} ${m.face === '😵‍💫' ? 'jitter' : ''}"><span class="face">${m.face}</span><span class="tie">👔</span></div><div class="desk"></div></div>
+        <div class="card bars">${bar('☕ Energy', s.energy)}${bar('🍕 Fed', s.fed)}${bar('🙂 Morale', s.morale)}${bar(next ? `📈 → ${next[0]}` : '📈 Top job', Math.min(100, xpPct), 'xp')}</div>
+        <div class="acts">${Object.entries(ACTIONS).map(([k, a]) => `<button data-act="${k}" ${sleeping ? 'disabled' : ''}><span>${a.icon}</span>${a.label}</button>`).join('')}</div>
+        ${sleeping ? '<button class="go" data-act="wake">☀️ Wake him up</button>' : ''}
+        <p class="note ${noteErr ? 'err' : ''}">${esc(note)}</p>
+        <div class="card"><h2>What happened</h2><ul class="log">${(s.log ?? []).map((l) => `<li><b>${ago(l.at)}</b> · ${esc(l.text)}</li>`).join('')}</ul></div>`
+    }
+    app.addEventListener('click', (e) => {
+      const b = e.target.closest('button')
+      if (!b) return
+      if ('hire' in b.dataset) {
+        s = hire((s?.gen ?? 0) + 1)
+        note = 'Welcome aboard, Kevin.'
+        noteErr = false
+        return render()
+      }
+      if (b.dataset.act) {
+        const wasCeo = s.ceo
+        const r = act(s, b.dataset.act)
+        note = r.error ?? r.text
+        noteErr = !!r.error
+        if (s.ceo && !wasCeo) {
+          // his first act as CEO: letting you go (with a severance package, in COUNTER-STRIFE credits)
+          try {
+            const inv = JSON.parse(localStorage.getItem('strife-inventory')) ?? { items: [], equipped: {}, credits: 0, keys: 1, cases: { synergy: 1 }, nextUid: 1, opened: 0 }
+            inv.credits = Math.round(((inv.credits ?? 0) + 100) * 100) / 100
+            localStorage.setItem('strife-inventory', JSON.stringify(inv))
+          } catch {}
+          note = '👑 Kevin is CEO! His first decision: firing you. Severance: ⓒ 100 in your COUNTER-STRIFE inventory.'
+        }
+        render()
+      }
+    })
+    render()
+    setInterval(render, 30000)
+    addEventListener('storage', (e) => e.key === 'kevin-gotchi' && ((s = load()), render()))
+  </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 // Builds TRANSLATR™ into the repository's translatr/ folder (nikstil.com/translatr/), and fills
-// nikstilOS in with a few facts from the game: its eight themes' cursor sets (os/cursors.css) and the
+// BloatOS in with a few facts from the game: its eight themes' cursor sets (os/cursors.css) and the
 // numbers on the TRANSLATR™ window (index.html's game-facts).
 //
-// This folder (translatr-src/) lives inside the nikstil.github.io repository; nikstilOS itself
+// This folder (translatr-src/) lives inside the nikstil.github.io repository; BloatOS itself
 // (index.html, os/) and the shared DOOMSCROLL modules (doomscroll/) are edited in place there.
 // Usage: npm run build:site
 
@@ -56,4 +56,4 @@ const assets = await readdir(join(out, 'assets'))
 const hidden = assets.filter((f) => f.startsWith('_'))
 if (hidden.length) throw new Error(`Jekyll would ignore: ${hidden.join(', ')}`)
 
-console.log(`✓ translatr/ built (${assets.length} assets); nikstilOS facts ${JSON.stringify(facts)}`)
+console.log(`✓ translatr/ built (${assets.length} assets); BloatOS facts ${JSON.stringify(facts)}`)

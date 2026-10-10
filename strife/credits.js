@@ -1,4 +1,4 @@
-// Buying credits with pretend money. Five packs and a pretend checkout ("nikstilPay™"): no card
+// Buying credits with pretend money. Five packs and a pretend checkout ("FakePal™"): no card
 // details, nothing is charged, it's all made up. The credits go straight into your COUNTER-STRIFE
 // inventory (the one SKINSINK.GG uses too). Used by the inventory screen and the casino.
 
@@ -112,7 +112,7 @@ export function openCreditStore(opts = {}) {
     card.querySelector('.cs-pack')?.focus()
   }
   function checkout(p) {
-    card.innerHTML = `<h2>nikstilPay™</h2><p class="cs-sub">Checkout. The money is pretend; so is the bank.</p>
+    card.innerHTML = `<h2>FakePal™</h2><p class="cs-sub">Checkout. The money is pretend; so is the bank.</p>
       <div class="cs-pay">
         <div class="cs-row"><span>ⓒ ${num(p.credits)} credits</span><b>${money(p.price)}</b></div>
         <div class="cs-card"><span aria-hidden="true">💳</span><span><b>Pretend Bank</b> card •••• 0000<br><small>Not a real card. There's nothing to type in.</small></span></div>
