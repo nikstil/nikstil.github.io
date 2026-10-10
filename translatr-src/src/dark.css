@@ -154,7 +154,6 @@
     border-color: rgb(0 0 0 / 0.75);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12), 0 14px 34px -8px rgb(0 0 0 / 0.8), 0 0 22px -4px var(--mood, transparent);
   }
-  html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .gadget-orb { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2), 0 0 18px var(--mood, transparent); }
   html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .gadget-title { color: #e3eefa; text-shadow: 0 0 6px #000; }
   html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .balloon { background: linear-gradient(180deg, #1f2938, #161e29); border-color: #3a4a5f; box-shadow: 0 8px 22px -6px rgb(0 0 0 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.06); }
   html:is([data-theme="aero"], [data-theme="luna"], [data-theme="aqua"])[data-mode="dark"] .doom-tab-btn { color: rgb(226 235 245 / 0.7); }
@@ -328,7 +327,6 @@
   html[data-theme="luna"][data-mode="dark"] .show-desktop { border-left-color: #000; background: linear-gradient(180deg, #2a2d33, #16171a); }
   html[data-theme="luna"][data-mode="dark"] .start-btn { background: linear-gradient(180deg, #4a9a4a 0%, #2e7a2e 12%, #266c26 50%, #1b541b 100%); }
   html[data-theme="luna"][data-mode="dark"] .cmdbar { background: linear-gradient(180deg, #2b2d31, #1d1e21); border-bottom-color: #000; box-shadow: 0 2px 8px rgb(0 0 0 / 0.5); }
-  html[data-theme="luna"][data-mode="dark"] .doom-tab { border-color: #000; background: linear-gradient(180deg, #5a5d63 0%, #2c2e33 8%, #1a1b1e 88%, #000 100%); }
   html[data-theme="luna"][data-mode="dark"] .mail-row.is-unread { box-shadow: inset 3px 0 0 #5b8def; }
 
   /* ------------------------------------------------------------------
@@ -362,7 +360,6 @@
   html[data-theme="aqua"][data-mode="dark"] .task-window:hover { border-color: rgb(0 0 0 / 0.6); background: linear-gradient(180deg, #58585e, #3e3e44); }
   html[data-theme="aqua"][data-mode="dark"] .show-desktop { border-left-color: rgb(255 255 255 / 0.1); background: rgb(255 255 255 / 0.06); }
   html[data-theme="aqua"][data-mode="dark"] .cmdbar { background: linear-gradient(180deg, rgb(58 58 62 / 0.94), rgb(36 36 40 / 0.94)); border-bottom-color: #000; box-shadow: 0 1px 8px rgb(0 0 0 / 0.5); }
-  html[data-theme="aqua"][data-mode="dark"] .doom-tab { color: #f2f2f7; border-color: rgb(0 0 0 / 0.6); }
 
   /* ------------------------------------------------------------------
      VAPORWAVE: MIDNIGHT VAPOR. Every surface is a variable, so this mostly swaps them.

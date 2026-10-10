@@ -72,18 +72,49 @@ export function nadeFlight(world, e, yaw, pitch, lob, type) {
   }
   return { ...p, t: 4 }
 }
+/**
+ * Working out a throw is a search (a few dozen simulated flights), so it runs a step at a time:
+ * one flight per step, as many as fit in this tick's share of time (Brain.think), and what it
+ * finds is remembered for the map (the walls don't move) so the next round's throws cost nothing.
+ */
+const AIM_MS = 2.5 // per game tick, for every bot's searches together
+const PATH_MS = 3 // the same for finding paths (one always goes ahead)
+const clock = () => performance.now()
+/** aimThrow, a flight per step (a generator; its value is the answer). */
+export function* aimSearch(world, e, p, type, within = 3) {
+  const q = (v) => Math.round(v * 4)
+  const key = `${type} ${q(e.x)} ${q(e.y)} ${q(e.z)} ${q(p.x)} ${q(p.y)} ${q(p.z)}`
+  const cache = (world.aimCache ??= new Map())
+  let best = cache.get(key)
+  if (best === undefined) {
+    best = null
+    const yaw = Math.atan2(-(p.x - e.x), -(p.z - e.z))
+    const tryOne = (pitch, lob) => {
+      const l = nadeFlight(world, e, yaw, pitch, lob, type)
+      const err = Math.hypot(l.x - p.x, l.z - p.z) + Math.abs(l.y - p.y) * 0.5
+      if (!best || err < best.err) best = { yaw, pitch, lob, err }
+    }
+    for (const lob of [false, true])
+      for (let pitch = -0.5; pitch <= 1.25; pitch += 0.125) {
+        tryOne(pitch, lob)
+        yield
+      }
+    for (const dp of [-0.06, -0.03, 0.03, 0.06]) {
+      tryOne(best.pitch + dp, best.lob)
+      yield
+    }
+    if (cache.size > 5000) cache.clear()
+    cache.set(key, best)
+  }
+  return best && best.err <= within ? best : null
+}
 /** How to throw a grenade (type: its nade) from eye e to end up near p: { yaw, pitch, lob, err } or null. */
 export function aimThrow(world, e, p, type, within = 3) {
-  const yaw = Math.atan2(-(p.x - e.x), -(p.z - e.z))
-  let best = null
-  const tryOne = (pitch, lob) => {
-    const l = nadeFlight(world, e, yaw, pitch, lob, type)
-    const err = Math.hypot(l.x - p.x, l.z - p.z) + Math.abs(l.y - p.y) * 0.5
-    if (!best || err < best.err) best = { yaw, pitch, lob, err }
+  const it = aimSearch(world, e, p, type, within)
+  for (;;) {
+    const r = it.next()
+    if (r.done) return r.value
   }
-  for (const lob of [false, true]) for (let pitch = -0.5; pitch <= 1.25; pitch += 0.125) tryOne(pitch, lob)
-  if (best) for (const dp of [-0.06, -0.03, 0.03, 0.06]) tryOne(best.pitch + dp, best.lob)
-  return best && best.err <= within ? best : null
 }
 const RADIO_FOR = { smoke: 'smokeout', flash: 'flashout', molotov: 'fireout', incendiary: 'fireout', he: 'fireout' }
 
@@ -166,7 +197,9 @@ export class Brain {
     this.threw = false
     this.utilUsed = false
     this.utilTried = false
+    this.utilJob = null
     this.lineup = null
+    this.throwing = null
     this.waitAt = null
     this.dodgeUntil = 0
     this.trade = null
@@ -215,7 +248,7 @@ export class Brain {
       if (now < a.flashFull) continue
       const visible = g.world.sees(e, headOf(t)) || g.world.sees(e, c)
       if (!visible) continue
-      this.seen[t.id] = { at: now, pos: c }
+      this.seen[t.id] = { at: now, pos: c, prev: this.seen[t.id]?.prev } // (prev: when it was last lost sight of)
       g.intel[a.team].push({ pos: c, at: now, id: t.id })
       const score = dist * (t === this.target ? 0.6 : 1) * (t.active === 'bomb' || t.inv.bomb ? 0.9 : 1)
       if (score < bestScore) {
@@ -368,10 +401,26 @@ export class Brain {
     const sameFloor = gy == null ? !a.onLadder : Math.abs(g.world.floorAt(gx, gz, gy + 1) - a.pos.y) < (a.onLadder ? 0.3 : 1.6)
     if (sameFloor && Math.hypot(gx - a.pos.x, gz - a.pos.z) < (this.goal.r ?? 0.8)) return { fx: 0, fz: 0, arrived: true }
     if (!this.path || !this.pathGoal || this.pathGoal.y !== gy || Math.hypot(this.pathGoal.x - gx, this.pathGoal.z - gz) > 1.5) {
-      this.path = g.world.path(a.pos.x, a.pos.z, a.pos.y + 0.5, gx, gz, gy == null ? 50 : gy + 1)
-      this.pathGoal = { x: gx, z: gz, y: gy }
-      this.pathIdx = 1
-      if (!this.path) return { fx: 0, fz: 0, arrived: true }
+      // (no way there a moment ago: don't look again every tick)
+      const f = this.pathFail
+      if (f && g.time < f.until && f.y === gy && Math.hypot(f.x - gx, f.z - gz) < 1.5) return { fx: 0, fz: 0, arrived: true }
+      // Finding a way takes a while on a big map: a few bots a tick (the first always goes ahead),
+      // and the rest carry on the way they were going (or wait) until the next one.
+      let later = false
+      if (g.pathTick !== g.time) {
+        g.pathTick = g.time
+        g.pathEnd = clock() + PATH_MS
+      } else later = clock() > g.pathEnd
+      if (later && !this.path) return { fx: 0, fz: 0, arrived: false }
+      if (!later) {
+        this.path = g.world.path(a.pos.x, a.pos.z, a.pos.y + 0.5, gx, gz, gy == null ? 50 : gy + 1)
+        this.pathGoal = { x: gx, z: gz, y: gy }
+        this.pathIdx = 1
+        if (!this.path) {
+          this.pathFail = { x: gx, z: gz, y: gy, until: g.time + 1 }
+          return { fx: 0, fz: 0, arrived: true }
+        }
+      }
     }
     while (this.pathIdx < this.path.length - 1 && Math.hypot(this.path[this.pathIdx][0] - a.pos.x, this.path[this.pathIdx][1] - a.pos.z) < 0.7 && Math.abs((this.path[this.pathIdx][2] ?? a.pos.y) - a.pos.y) < 1.6) this.pathIdx++
     const [tx, tz, ty] = this.path[Math.min(this.pathIdx, this.path.length - 1)]
@@ -512,7 +561,7 @@ export class Brain {
         const k = g.actors.filter((x) => x.team === 'T').indexOf(a) % posts.length
         const p = posts[k]
         this.goTo(p.at)
-        this.holdLook = { x: p.look[0], y: a.pos.y + 1.5, z: p.look[1] }
+        this.holdLook = { x: p.look[0] + 0.5, y: a.pos.y + 1.5, z: p.look[1] + 0.5 }
         return {}
       }
       if (b.state === 'dropped') {
@@ -580,19 +629,27 @@ export class Brain {
               if (thrownFrom) this.setGoal(this.waitAt.x, this.waitAt.z, 1.2, this.waitAt.y)
               else this.goTo(pts[this.wp], 1.2)
               const [nx, nz] = pts[Math.min(pts.length - 1, this.wp + 1)]
-              this.holdLook = { x: nx, y: a.pos.y + 1.5, z: nz }
+              this.holdLook = { x: nx + 0.5, y: a.pos.y + 1.5, z: nz + 0.5 }
               // the last few seconds before the go: smoke their spots, burn a corner, flash it
               if ((ready || liveFor > plan.execAt + 6) && liveFor > plan.execAt - 3 && !this.utilTried) {
-                this.lineup = this.executeUtility(plan.site, pts, stage)
-                if (this.lineup) {
-                  plan.lineups.set(a.id, this.lineup.nade)
-                  plan.utilUntil = Math.max(plan.utilUntil, liveFor + 6)
+                this.utilTried = true
+                this.utilJob = this.executeUtility(plan.site, pts, stage)
+                plan.lineups.set(a.id, 'aiming') // (the push waits while it works out a throw)
+                plan.utilUntil = Math.max(plan.utilUntil, liveFor + 6)
+              }
+              if (this.utilJob) {
+                const r = this.think(this.utilJob)
+                if (r.done) {
+                  this.utilJob = null
+                  this.lineup = r.value
+                  if (this.lineup) plan.lineups.set(a.id, this.lineup.nade)
+                  else plan.lineups.delete(a.id)
                 }
               }
               return {}
             }
-            if (this.lineup) {
-              this.lineup = null
+            if (this.lineup || this.utilJob) {
+              this.lineup = this.utilJob = null
               plan.lineups.delete(a.id)
             }
           }
@@ -618,7 +675,7 @@ export class Brain {
       const k = g.actors.filter((x) => x.team === 'T').indexOf(a) % posts.length
       const p = posts[k]
       this.goTo(p.at)
-      this.holdLook = { x: p.look[0], y: a.pos.y + 1.5, z: p.look[1] }
+      this.holdLook = { x: p.look[0] + 0.5, y: a.pos.y + 1.5, z: p.look[1] + 0.5 }
       return {}
     }
     // Counter-Terrorist
@@ -760,11 +817,10 @@ export class Brain {
    * on. It throws from somewhere between where it waits and the way in, wherever the throw works.
    * Null: nothing it can get there.
    */
-  executeUtility(site, pts, stage) {
+  *executeUtility(site, pts, stage) {
     const { g, a } = this
     const w = g.world
     const plan = g.plan
-    this.utilTried = true
     const has = (n) => a.inv.grenades.includes(n)
     const holds = g.map.holds[site] ?? []
     const st = pts[stage]
@@ -788,27 +844,31 @@ export class Brain {
         })
         .filter((p) => Math.abs(p.y - hy) < 3)
     }
-    const lineup = (nade, targets) => {
-      for (const e of spots) for (const p of targets) {
-        const sol = aimThrow(w, e, p, WEAPONS[nade].nade, 3)
-        if (sol) return { ...p, nade, sol, from: { x: e.x, z: e.z } }
-      }
+    const lineup = function* (nade, targets) {
+      for (const e of spots)
+        for (const p of targets) {
+          const sol = yield* aimSearch(w, e, p, WEAPONS[nade].nade, 3)
+          if (sol) return { ...p, nade, sol, from: { x: e.x, z: e.z } }
+        }
       return null
     }
-    if (has('smoke') && plan.util.smoked.length < 2) {
+    // (teammates search at the same time: check again that what's found is still wanted)
+    if (has('smoke')) {
       for (const h of holds) {
+        if (plan.util.smoked.length >= 2) break
         if (plan.util.smoked.includes(h)) continue
-        const u = lineup('smoke', along(h, [1, 0.8, 0.6, 0.45, 0.3]))
-        if (!u) continue
+        const u = yield* lineup('smoke', along(h, [1, 0.8, 0.6, 0.45, 0.3]))
+        if (!u || plan.util.smoked.length >= 2 || plan.util.smoked.includes(h)) continue
         plan.util.smoked.push(h)
         return u
       }
     }
-    if (has('molotov') && !plan.util.molly) {
+    if (has('molotov')) {
       for (const h of [...holds].reverse()) {
+        if (plan.util.molly) break
         if (plan.util.smoked.includes(h)) continue
-        const u = lineup('molotov', along(h, [1, 0.85]))
-        if (!u) continue
+        const u = yield* lineup('molotov', along(h, [1, 0.85]))
+        if (!u || plan.util.molly) continue
         plan.util.molly = true
         return u
       }
@@ -816,13 +876,26 @@ export class Brain {
     if (has('flash') && !plan.util.flash) {
       // over the way in, a little above head height, so it pops in their faces
       const ey = w.floorAt(en[0] + 0.5, en[1] + 0.5, lvl(en))
-      const u = lineup('flash', [{ x: en[0] + 0.5, y: ey + 2.2, z: en[1] + 0.5 }])
-      if (u) {
+      const u = yield* lineup('flash', [{ x: en[0] + 0.5, y: ey + 2.2, z: en[1] + 0.5 }])
+      if (u && !plan.util.flash) {
         plan.util.flash = true
         return u
       }
     }
     return null
+  }
+  /** Runs a search (aimSearch, executeUtility) for as long as this tick has left for them: { done, value }. */
+  think(job) {
+    const g = this.g
+    if (g.aimTick !== g.time) {
+      g.aimTick = g.time
+      g.aimEnd = clock() + AIM_MS
+    }
+    while (clock() < g.aimEnd) {
+      const r = job.next()
+      if (r.done) return r
+    }
+    return { done: false }
   }
   /** A teammate's flash is about to pop over there: look away. */
   dodge(p) {
@@ -990,20 +1063,23 @@ export class Brain {
     }
     if (this.throwing && t?.alive) this.throwing = null // (not with someone shooting at you)
     if (this.throwing) {
-      // stand, take it out, aim it so it lands where it should (worked out once), throw
+      // stand, take it out while working out how to throw it so it lands where it should, throw
       const nade = this.throwing
       wish = { fx: 0, fz: 0 }
-      if (a.active !== 'grenade') cmd.slot = 'grenade'
+      if (nade.sol === undefined) {
+        nade.job ??= aimSearch(g.world, eyeOf(a), nade, WEAPONS[nade.nade].nade, nade.within ?? 3.5)
+        const r = this.think(nade.job)
+        if (r.done) nade.sol = r.value // (null: there's no getting it there from here)
+      }
+      if (nade.sol === null) this.throwing = null
+      else if (a.active !== 'grenade') cmd.slot = 'grenade'
       else if (a.inv.grenades[0] !== nade.nade) cmd.slot = 'grenade'
-      else if (now > a.switchEnd && now >= a.nextFire && !a.trigger) {
-        nade.sol ??= aimThrow(g.world, eyeOf(a), nade, WEAPONS[nade.nade].nade, nade.within ?? 3.5)
-        if (nade.sol) {
-          cmd.yaw = nade.sol.yaw
-          cmd.pitch = nade.sol.pitch
-          if (nade.sol.lob) cmd.alt = true
-          else cmd.fire = true
-          this.thrown(nade)
-        }
+      else if (nade.sol && now > a.switchEnd && now >= a.nextFire && !a.trigger) {
+        cmd.yaw = nade.sol.yaw
+        cmd.pitch = nade.sol.pitch
+        if (nade.sol.lob) cmd.alt = true
+        else cmd.fire = true
+        this.thrown(nade)
         this.throwing = null
       }
       if (now > (this.throwGiveUp ?? 0)) this.throwing = null

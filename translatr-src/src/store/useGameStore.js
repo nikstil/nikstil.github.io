@@ -2523,6 +2523,10 @@ export const useGameStore = create(
             minimized: normalizeMinimized(persisted?.layout?.minimized),
           },
         }
+        // A Daily Challenge saved without its details (an old or damaged save) left a blank page:
+        // they all follow from the day, so work them out again.
+        const d = persisted?.daily
+        if (persisted?.mode === 'daily' && (!d?.day || !Array.isArray(d.mods) || d.seed == null || !d.goal)) merged.daily = { ...dailyFor(d?.day || undefined), counters: d?.counters ?? {} }
         // Very old saves predate skills: grant points for prestiges already earned.
         if (persisted && persisted.skillPoints === undefined) {
           merged.skillPoints = skillPointsFromPrestiges(persisted.prestige ?? 0)

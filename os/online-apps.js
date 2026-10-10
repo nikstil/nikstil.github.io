@@ -145,7 +145,7 @@
     }
     function showUnread() {
       const total = [...unread.values()].reduce((a, b) => a + b, 0)
-      const badge = $('.tray-badge')
+      const badge = $('#msgr-tray .tray-badge')
       badge.hidden = !total
       badge.textContent = total > 99 ? '99+' : String(total)
       const label = total ? `Yapper (${total} unread)` : 'Yapper'

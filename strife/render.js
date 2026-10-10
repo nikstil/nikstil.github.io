@@ -4,6 +4,7 @@
 import * as THREE from './lib/three.min.js'
 import { MAT_NAMES, WALL_H, INF, MAXS } from './maps.js'
 import { decorate } from './detail.js'
+import { mergeGroup } from './models.js'
 
 // ================= Textures =================
 function rng(seed) {
@@ -512,6 +513,9 @@ function buildLadder(l) {
     rung.position.set(cx, y, cz)
     g.add(rung)
   }
+  // (one mesh, not one per rung)
+  mergeGroup(g)
+  for (const m of g.children) m.castShadow = true
   return g
 }
 

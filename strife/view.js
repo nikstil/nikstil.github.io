@@ -5,7 +5,7 @@ import * as THREE from './lib/three.min.js'
 import { buildLevel, buildSky } from './render.js'
 import { WEAPONS, adsOf } from './weapons.js'
 import { buildGun } from './guns.js'
-import { buildSoldier, buildViewArms } from './models.js'
+import { buildSoldier, buildViewArms, mergeGun } from './models.js'
 import { agentLook } from './skins.js'
 import { eyeOf, weaponOf } from './game.js'
 
@@ -100,6 +100,8 @@ const lam = (color) => new THREE.MeshLambertMaterial({ color })
 /** A gun model (for hands, the floor, or first person). Points down -z, trigger at the origin. */
 export function gunModel(id, detail = 1, opts = {}) {
   const inner = buildGun(id, { detail, silenced: opts.silenced, skin: opts.skin, stickers: opts.stickers })
+  // (one in a hand or on the floor never moves its parts: draw it in a few calls)
+  if (detail === 1) mergeGun(inner, `${id}|${!!opts.silenced}|${!!opts.skin}`)
   const k = WEAPONS[id]?.kind
   const sc = k === 'pistol' || k === 'taser' ? 0.82 : k === 'grenade' || k === 'knife' || k === 'bomb' ? 1 : 0.72
   inner.scale.setScalar(sc)
