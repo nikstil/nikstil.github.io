@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>nikstilOS</title>
-  <meta name="description" content="nikstil.com: a tiny retro desktop. Play TRANSLATR™, the world’s most monetized translator, COUNTER-STRIFE, 5v5 bomb defusal with ranks and online play, DOOMSCROLL.EXE, a 1993 shooter about pop-ups, LAWN OF THE DEAD and BRAINS FIRST, lawn vs. zombies from both sides, and LOGGLE, a daily name puzzle. Achievements, Messenger, leaderboards, ten themes, one Recycle Bin.">
+  <title>BloatOS</title>
+  <meta name="description" content="nikstil.com: a tiny retro desktop. Play TRANSLATR™, the world’s most monetized translator, COUNTER-STRIFE, 5v5 bomb defusal with ranks and online play, DOOMSCROLL.EXE, a 1993 shooter about pop-ups, LAWN OF THE DEAD and BRAINS FIRST, lawn vs. zombies from both sides, and LOGGLE, a daily name puzzle. Achievements, Yapper, leaderboards, ten themes, one Recycle Bin.">
   <meta name="theme-color" content="#1a73c4">
   <!-- Link previews (Discord, iMessage, X, WhatsApp…). The image comes from og/render.mjs. -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="nikstil.com">
   <meta property="og:url" content="https://nikstil.com/">
-  <meta property="og:title" content="nikstilOS">
-  <meta property="og:description" content="A tiny retro desktop. TRANSLATR™, COUNTER-STRIFE, DOOMSCROLL.EXE, LAWN OF THE DEAD and more, with achievements, Messenger and ten themes. Double-click things.">
+  <meta property="og:title" content="BloatOS">
+  <meta property="og:description" content="A tiny retro desktop. TRANSLATR™, COUNTER-STRIFE, DOOMSCROLL.EXE, LAWN OF THE DEAD and more, with achievements, Yapper and ten themes. Double-click things.">
   <meta property="og:image" content="https://nikstil.com/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="nikstilOS: a retro desktop with TRANSLATR™ and DOOMSCROLL.EXE open">
+  <meta property="og:image:alt" content="BloatOS: a retro desktop with TRANSLATR™ and DOOMSCROLL.EXE open">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="nikstilOS">
-  <meta name="twitter:description" content="A tiny retro desktop. TRANSLATR™, COUNTER-STRIFE, DOOMSCROLL.EXE, LAWN OF THE DEAD and more, with achievements, Messenger and ten themes. Double-click things.">
+  <meta name="twitter:title" content="BloatOS">
+  <meta name="twitter:description" content="A tiny retro desktop. TRANSLATR™, COUNTER-STRIFE, DOOMSCROLL.EXE, LAWN OF THE DEAD and more, with achievements, Yapper and ten themes. Double-click things.">
   <meta name="twitter:image" content="https://nikstil.com/og-image.png">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <!-- Theme and boot screen before the first paint (no flash). Keep the theme list in step with os.js. -->
@@ -40,6 +40,7 @@
     } catch (e) {}
   </script>
   <link rel="stylesheet" href="/os/os.css">
+  <link rel="stylesheet" href="/os/extras.css">
   <link rel="stylesheet" href="/os/cursors.css">
   <!-- Filled in by scripts/build-site.mjs from the game's own data. -->
   <script type="application/json" id="game-facts">{"endings":9,"items":27,"achievements":107,"themes":10}</script>
@@ -59,7 +60,7 @@
   </div>
 
   <main class="desktop" id="desktop" aria-label="Desktop">
-    <h1 class="sr-only">nikstilOS: the nikstil.com desktop</h1>
+    <h1 class="sr-only">BloatOS: the nikstil.com desktop</h1>
     <ul class="desk-icons">
       <li><button class="desk-icon" data-app="pc"><span class="di-img" data-icon="pc" aria-hidden="true">💻</span><span class="di-label">This PC</span></button></li>
       <li><button class="desk-icon" data-app="translatr"><span class="di-img" data-icon="translatr" aria-hidden="true">🌐</span><span class="di-label">TRANSLATR™</span></button></li>
@@ -67,9 +68,10 @@
       <li><button class="desk-icon" data-app="themes"><span class="di-img" data-icon="themes" aria-hidden="true">🎨</span><span class="di-label">Themes</span></button></li>
       <li><button class="desk-icon" data-app="mobile"><span class="di-img" data-icon="mobile" aria-hidden="true">📱</span><span class="di-label">LigmaPhone</span></button></li>
       <li><button class="desk-icon" data-app="achievements"><span class="di-img" data-icon="achievements" aria-hidden="true">🎖️</span><span class="di-label">Achievements</span></button></li>
+      <li><button class="desk-icon" data-app="printer"><span class="di-img" data-icon="printer" aria-hidden="true">🖨️</span><span class="di-label">Printer</span></button></li>
       <li><button class="desk-icon" data-app="bin"><span class="di-img" data-icon="bin" aria-hidden="true">🗑️</span><span class="di-label">Recycle Bin</span></button></li>
       <li data-online="leaderboard" hidden><button class="desk-icon" data-app="leaderboard"><span class="di-img" data-icon="leaderboard" aria-hidden="true">🏆</span><span class="di-label">Leaderboards</span></button></li>
-      <li data-online="messenger" hidden><button class="desk-icon" data-app="messenger"><span class="di-img" data-icon="messenger" aria-hidden="true">💬</span><span class="di-label">Messenger</span></button></li>
+      <li data-online="messenger" hidden><button class="desk-icon" data-app="messenger"><span class="di-img" data-icon="messenger" aria-hidden="true">💬</span><span class="di-label">Yapper</span></button></li>
     </ul>
   </main>
 
@@ -77,12 +79,13 @@
 
   <nav class="taskbar" aria-label="Taskbar">
     <button class="start-btn" id="start-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="start-menu">
-      <span class="start-orb" aria-hidden="true"><span class="start-glyph">n</span></span>
+      <span class="start-orb" aria-hidden="true"><span class="start-glyph">B</span></span>
       <span class="start-label">Start</span>
     </button>
     <div class="tasks" id="tasks"></div>
     <div class="tray">
-      <button class="tray-btn msgr-tray" id="msgr-tray" aria-label="nikstil Messenger" title="nikstil Messenger" hidden><span data-icon="messenger" aria-hidden="true">💬</span><b class="tray-badge" hidden></b></button>
+      <button class="tray-btn msgr-tray" id="msgr-tray" aria-label="Yapper" title="Yapper" hidden><span data-icon="messenger" aria-hidden="true">💬</span><b class="tray-badge" hidden></b></button>
+      <button class="tray-btn ghost-tray" id="ghost-tray" aria-label="Other visitors" hidden><span aria-hidden="true">👻</span><b class="tray-badge"></b></button>
       <button class="tray-btn" id="fullscreen-btn" aria-label="Full screen" title="Full screen" hidden><svg class="fs-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path class="fs-enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/><path class="fs-exit" d="M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4"/></svg></button>
       <time class="clock" id="clock"></time>
       <button class="show-desktop" id="show-desktop" aria-label="Show desktop" title="Show desktop"></button>
@@ -90,7 +93,7 @@
   </nav>
 
   <div class="start-menu" id="start-menu" role="menu" hidden>
-    <div class="sm-banner" aria-hidden="true">nikstil<b>OS</b></div>
+    <div class="sm-banner" aria-hidden="true">Bloat<b>OS</b></div>
     <div class="sm-main">
       <div class="sm-head"><span class="sm-avatar" data-icon="avatar" aria-hidden="true">🙂</span><span class="sm-user">Guest</span></div>
       <div class="sm-cols">
@@ -101,10 +104,12 @@
           <li><button class="sm-item" role="menuitem" data-app="files"><span data-icon="files" aria-hidden="true">📁</span> <span class="sm-label">File Explorer</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="terminal"><span data-icon="terminal" aria-hidden="true">⌨️</span> <span class="sm-label">Command Prompt</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="achievements"><span data-icon="achievements" aria-hidden="true">🎖️</span> <span class="sm-label">Achievements</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="taskmgr"><span data-icon="taskmgr" aria-hidden="true">📊</span> <span class="sm-label">Task Manager</span></button></li>
+          <li><button class="sm-item" role="menuitem" data-app="printer"><span data-icon="printer" aria-hidden="true">🖨️</span> <span class="sm-label">Printer</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="pc"><span data-icon="pc" aria-hidden="true">💻</span> <span class="sm-label">About this PC</span></button></li>
           <li><button class="sm-item" role="menuitem" data-app="bin"><span data-icon="bin" aria-hidden="true">🗑️</span> <span class="sm-label">Recycle Bin</span></button></li>
           <li data-online="leaderboard" hidden><button class="sm-item" role="menuitem" data-app="leaderboard"><span data-icon="leaderboard" aria-hidden="true">🏆</span> <span class="sm-label">Leaderboards</span></button></li>
-          <li data-online="messenger" hidden><button class="sm-item" role="menuitem" data-app="messenger"><span data-icon="messenger" aria-hidden="true">💬</span> <span class="sm-label">Messenger</span></button></li>
+          <li data-online="messenger" hidden><button class="sm-item" role="menuitem" data-app="messenger"><span data-icon="messenger" aria-hidden="true">💬</span> <span class="sm-label">Yapper</span></button></li>
           <li data-online="account" hidden><button class="sm-item" role="menuitem" data-app="account"><span data-icon="account" aria-hidden="true">👤</span> <span class="sm-label">Account</span></button></li>
           <li><button class="sm-item" role="menuitem" data-action="fullscreen" hidden><span aria-hidden="true"><svg class="fs-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path class="fs-enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/><path class="fs-exit" d="M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4"/></svg></span><span class="fs-label">Full screen</span></button></li>
         </ul>
@@ -128,22 +133,30 @@
     <button class="ctx-item" role="menuitem" data-action="textfile">New text document</button>
     <button class="ctx-item" role="menuitem" data-action="explorer">File Explorer</button>
     <hr>
-    <button class="ctx-item" role="menuitem" data-app="pc">About nikstilOS</button>
+    <button class="ctx-item" role="menuitem" data-action="gravity">🪐 Gravity: off</button>
+    <button class="ctx-item" role="menuitem" data-action="plane" hidden>✈️ Throw a paper plane</button>
+    <button class="ctx-item" role="menuitem" data-app="taskmgr">📊 Task Manager</button>
+    <hr>
+    <button class="ctx-item" role="menuitem" data-app="pc">About BloatOS</button>
   </div>
 
   <div class="ctx-menu app-menu" id="app-menu" role="menu" hidden></div>
 
   <!-- New-message notification (os/online-apps.js) -->
   <button class="balloon" id="balloon" hidden><span class="balloon-title"></span><span class="balloon-text"></span></button>
+  <!-- BloatOS's own notifications (Kevin, the plant, the zombies) -->
+  <button class="balloon notify" id="notify" hidden><span class="balloon-title"></span><span class="balloon-text"></span></button>
+  <!-- After ending explorer.exe in the Task Manager: the way back -->
+  <button class="explorer-rescue" id="explorer-rescue" hidden>💀 explorer.exe has stopped working. <b>Restart it</b></button>
 
   <div class="boot" id="boot" aria-hidden="true">
-    <div class="boot-logo">nikstil<b>OS</b></div>
+    <div class="boot-logo">Bloat<b>OS</b></div>
     <div class="boot-bar"><i></i><i></i><i></i></div>
     <div class="boot-copy">Starting up. Please do not turn off your computer.</div>
   </div>
 
   <div class="shutdown" id="shutdown" role="dialog" aria-label="Shut down" hidden>
-    <p class="shutdown-wait">nikstilOS is shutting down…</p>
+    <p class="shutdown-wait">BloatOS is shutting down…</p>
     <p class="shutdown-safe">It’s now safe to turn off your computer.</p>
     <p class="shutdown-hint">(or click anywhere to turn it back on)</p>
   </div>
@@ -153,9 +166,9 @@
 
   <template id="app-pc">
     <div class="win-body pc">
-      <div class="pc-logo" aria-hidden="true">nikstil<b>OS</b></div>
+      <div class="pc-logo" aria-hidden="true">Bloat<b>OS</b></div>
       <dl class="pc-specs">
-        <dt>Edition</dt><dd>nikstilOS Ultimate</dd>
+        <dt>Edition</dt><dd>BloatOS Ultimate</dd>
         <dt>Version</dt><dd>2026, build 1</dd>
         <dt>Memory</dt><dd>640 KB (ought to be enough for anybody)</dd>
         <dt>System type</dt><dd>8-bit operating system on a 64-bit browser</dd>
@@ -215,6 +228,7 @@
         <label class="sr-only" for="br-url">Address</label>
         <input id="br-url" class="br-url" type="text" spellcheck="false" autocapitalize="none" enterkeyhint="go" placeholder="Search Wikipedia or type an address">
         <button class="btn br-go">Go</button>
+        <button type="button" class="btn br-nav br-speed" title="Connection speed (dial-up)" aria-label="Connection speed">📞 28.8K</button>
         <button type="button" class="btn br-nav br-fx" aria-pressed="true" title="Theme filter (looks like the theme you picked)" aria-label="Theme filter">🎨</button>
         <a class="btn br-nav br-out" href="#" target="_blank" rel="noopener noreferrer" title="Open in a new tab" aria-label="Open in a new tab">↗</a>
       </form>
@@ -285,6 +299,20 @@
     </div>
   </template>
 
+  <template id="app-taskmgr">
+    <div class="win-body tm"></div>
+  </template>
+  <template id="app-printer">
+    <div class="win-body printer"></div>
+  </template>
+  <template id="app-kevin">
+    <div class="win-body kevin-win"><iframe class="kevin-frame" title="KEVIN-GOTCHI™"></iframe></div>
+    <div class="win-foot"><span class="status muted">He texts you when he needs something</span><a class="btn" href="/kevin/" target="_blank" rel="noopener">⛶ Full page</a></div>
+  </template>
+  <template id="app-stonks">
+    <div class="win-body stonks-win"><iframe class="stonks-frame" title="NASDANK"></iframe></div>
+    <div class="win-foot"><span class="status muted">Not financial advice · not finance</span><a class="btn" href="/stonks/" target="_blank" rel="noopener">⛶ Full page</a></div>
+  </template>
   <template id="app-casino">
     <div class="win-body casino-win"><iframe class="casino-frame" title="SKINSINK.GG"></iframe></div>
     <div class="win-foot">

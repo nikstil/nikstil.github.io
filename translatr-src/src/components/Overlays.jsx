@@ -658,7 +658,7 @@ export function Taskbar() {
         <button className="task-btn px-2 text-sm max-sm:hidden" title="Volume mixer" onClick={() => setVolumeOpen((o) => !o)}>
           🎚️
         </button>
-        {/* nikstil Messenger's button goes here (online/translatr-bridge.js), when online play is on */}
+        {/* Yapper's button goes here (online/translatr-bridge.js), when online play is on */}
         <span id="nk-tray-slot" className="flex h-full items-center empty:hidden" />
         <TrophyButton />
         {volumeOpen && (

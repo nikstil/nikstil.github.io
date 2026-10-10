@@ -919,7 +919,7 @@ function altDown(latch) {
     aimGun = a.inv[a.active]
   }
 }
-// inviting Messenger friends into the game you're hosting
+// inviting Yapper friends into the game you're hosting
 const inviteUi = initInvites({ code: () => (net instanceof NetHost ? net.code : null) })
 // ranks: the menu card, ranked matches, the Ranks page
 const rankUi = initRanks({ difficultyName: (i) => DIFFICULTY[i].name })
@@ -1753,9 +1753,9 @@ if (makeRenderer()) {
   start({ demo: true })
   show('menu')
   requestAnimationFrame(frame)
-  // ?play starts straight away (the phone and nikstilOS open the menu; this is for links)
+  // ?play starts straight away (the phone and BloatOS open the menu; this is for links)
   if (q.has('play')) $('[data-do="play"]').click()
-  // ?join=CODE: an invite from Messenger. ?host=1&invite=<user>: Messenger's "Play" button (host,
+  // ?join=CODE: an invite from Yapper. ?host=1&invite=<user>: Yapper's "Play" button (host,
   // then send them the invite). Done once: the address forgets them, so a reload doesn't repeat it.
   const joinCode = String(q.get('join') ?? '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4)
   const inviteWho = q.get('invite')
@@ -1775,7 +1775,7 @@ if (makeRenderer()) {
       .then(async () => {
         if (!isUserId(inviteWho)) return
         const err = await inviteUi.sendTo(inviteWho)
-        say(err || 'Invite sent: they can join from Messenger', 5, !!err)
+        say(err || 'Invite sent: they can join from Yapper', 5, !!err)
       })
 }
 // for tests and the curious

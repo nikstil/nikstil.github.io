@@ -1,7 +1,9 @@
-// File Explorer for nikstilOS: a pretend C: drive. Your own folders and text files (under
-// C:\Users\Guest) are kept in this browser; the rest is read-only: nikstilOS's "system files",
+// File Explorer for BloatOS: a pretend C: drive. Your own folders and text files (under
+// C:\Users\Guest) are kept in this browser; the rest is read-only: BloatOS's "system files",
 // Program Files with a shortcut to every app, the pictures on the site, and the games' real save
 // files (AppData), which open in Notepad. Notepad and a picture viewer come with it.
+
+import * as arg from './arg.js'
 
 const KEY = 'nikstilos-files'
 const $ = (s, el = document) => el.querySelector(s)
@@ -69,6 +71,10 @@ const APP_FILES = [
   ['themes', 'Themes', 'themes.exe'],
   ['files', 'File Explorer', 'explorer.exe'],
   ['terminal', 'Command Prompt', 'cmd.exe'],
+  ['taskmgr', 'Task Manager', 'taskmgr.exe'],
+  ['printer', 'Printer', 'spoolsv.exe'],
+  ['kevin', 'KEVIN-GOTCHI', 'kevin.exe'],
+  ['stonks', 'NASDANK', 'nasdank.exe'],
 ]
 const SAVES = [
   ['translatr-save', 'TRANSLATR™'],
@@ -86,16 +92,21 @@ const SAVES = [
   ['loggle-save', 'LOGGLE'],
   ['nikstil-achievements', 'Achievements'],
   ['nikstil-rewards', 'Achievements'],
-  ['nikstilos-files', 'nikstilOS'],
-  ['nikstilos-icons', 'nikstilOS'],
-  ['nikstilos-terminal', 'nikstilOS'],
+  ['nikstilos-files', 'BloatOS'],
+  ['nikstilos-icons', 'BloatOS'],
+  ['nikstilos-terminal', 'BloatOS'],
+  ['nikstilos-feats', 'BloatOS'],
+  ['nikstilos-plant', 'BloatOS'],
+  ['nikstilos-uptime', 'BloatOS'],
+  ['kevin-gotchi', 'KEVIN-GOTCHI'],
+  ['nasdank-portfolio', 'NASDANK'],
 ]
 const SYS = {
   'kernel.exe': 'Please do not double-click the kernel.',
-  'boot.ini': '[boot loader]\ntimeout=30\ndefault=nikstilOS\n\n[operating systems]\nnikstilOS="nikstilOS Ultimate" /fastdetect /noexecute=optin /vibes=immaculate',
+  'boot.ini': '[boot loader]\ntimeout=30\ndefault=BloatOS\n\n[operating systems]\nBloatOS="BloatOS Ultimate" /fastdetect /noexecute=optin /vibes=immaculate',
   'hosts': '127.0.0.1  localhost\n127.0.0.1  responsibilities.com\n127.0.0.1  inbox-zero.org',
   'win.ini': '[fonts]\nComic Sans=yes\n\n[extensions]\n.txt=notepad.exe\n.gif=animation.gif\n.exe=probably fine',
-  'error.log': '[00:00:01] nikstilOS started\n[00:00:02] user opened TRANSLATR\n[00:00:03] productivity: not found\n[00:00:04] warning: too many tabs\n[00:00:05] error: coffee.dll missing',
+  'error.log': '[00:00:01] BloatOS started\n[00:00:02] user opened TRANSLATR\n[00:00:03] productivity: not found\n[00:00:04] warning: too many tabs\n[00:00:05] error: coffee.dll missing',
 }
 const DOWNLOADS = [
   ['definitely_not_a_virus.exe', '🦠', 'Windows Defender? Never heard of it. Running anyway… just kidding. Nothing happened. Probably.'],
@@ -129,14 +140,14 @@ export function list(path) {
   const key = rest.join('/')
   if (!rest.length)
     return [
-      dir('nikstilOS', P('nikstilOS'), true, '🪟'),
+      dir('BloatOS', P('BloatOS'), true, '🪟'),
       dir('Program Files', P('Program Files'), true),
       dir('Users', P('Users'), true),
       dir('AppData', P('AppData'), true),
     ]
-  if (key === 'nikstilOS') return [dir('System32', P('System32'), true), ...Object.keys(SYS).filter((k) => k === 'boot.ini' || k === 'win.ini').map((n) => sysFile(n, P(n)))]
-  if (key === 'nikstilOS/System32') return [dir('drivers', P('drivers'), true), ...Object.keys(SYS).filter((k) => k !== 'boot.ini' && k !== 'win.ini').map((n) => sysFile(n, P(n)))]
-  if (key === 'nikstilOS/System32/drivers') return [joke('printer.sys', '🖨️', 'PC LOAD LETTER', P('printer.sys')), joke('coffee.dll', '☕', 'coffee.dll is missing. Please insert coffee and try again.', P('coffee.dll'))]
+  if (key === 'BloatOS') return [dir('System32', P('System32'), true), ...Object.keys(SYS).filter((k) => k === 'boot.ini' || k === 'win.ini').map((n) => sysFile(n, P(n)))]
+  if (key === 'BloatOS/System32') return [dir('drivers', P('drivers'), true), ...Object.keys(SYS).filter((k) => k !== 'boot.ini' && k !== 'win.ini').map((n) => sysFile(n, P(n)))]
+  if (key === 'BloatOS/System32/drivers') return [joke('printer.sys', '🖨️', 'PC LOAD LETTER', P('printer.sys')), joke('coffee.dll', '☕', 'coffee.dll is missing. Please insert coffee and try again.', P('coffee.dll'))]
   if (key === 'Program Files') return APP_FILES.map(([id, name]) => dir(name, P(name), true, '📁'))
   if (rest[0] === 'Program Files' && rest.length === 2) {
     const a = APP_FILES.find((x) => x[1] === rest[1])
@@ -163,6 +174,8 @@ export function list(path) {
   if (!node) return null
   const out = node.c.map((x) => (x.k === 'd' ? dir(x.n, P(x.n), false) : { name: x.n, kind: /\.txt$/i.test(x.n) ? 'txt' : 'file', icon: '📄', ro: false, path: P(x.n), node: x, size: sizeOf(x.t), m: x.m }))
   const sub = rest.slice(2).join('/')
+  // it's always there, and it says something different every day (os/arg.js)
+  if (sub === 'Desktop') out.push({ name: 'DO_NOT_OPEN.txt', kind: 'txt', icon: '📄', ro: true, arg: true, path: P('DO_NOT_OPEN.txt'), size: 666 })
   if (sub === 'Pictures') for (const [n, url] of PICTURES) out.push({ name: n, kind: 'img', icon: '🖼️', url, ro: true, path: P(n), size: 0 })
   if (sub === 'Downloads') for (const [n, icon, text] of DOWNLOADS) out.push(joke(n, icon, text, P(n)))
   return out
@@ -211,7 +224,7 @@ export function rename(path, from, to) {
   const it = node.c.find((x) => x.n === from)
   if (!it) return 'It’s gone.'
   if (to !== from && node.c.some((x) => x.n.toLowerCase() === to.toLowerCase())) return 'There is already a file with that name.'
-  if (path.length === 3 && ['Desktop', 'Documents', 'Pictures', 'Downloads', 'Music'].includes(from) && it.k === 'd') return 'That folder belongs to nikstilOS. Leave it be.'
+  if (path.length === 3 && ['Desktop', 'Documents', 'Pictures', 'Downloads', 'Music'].includes(from) && it.k === 'd') return 'That folder belongs to BloatOS. Leave it be.'
   it.n = to
   it.m = now()
   save()
@@ -220,7 +233,7 @@ export function rename(path, from, to) {
 export function remove(path, name) {
   const node = ownNode(path)
   if (!node) return 'Access denied.'
-  if (path.length === 3 && ['Desktop', 'Documents', 'Pictures', 'Downloads', 'Music'].includes(name)) return 'You can’t delete that one. nikstilOS needs it (to feel complete).'
+  if (path.length === 3 && ['Desktop', 'Documents', 'Pictures', 'Downloads', 'Music'].includes(name)) return 'You can’t delete that one. BloatOS needs it (to feel complete).'
   const i = node.c.findIndex((x) => x.n === name)
   if (i < 0) return ''
   node.c.splice(i, 1)
@@ -540,6 +553,10 @@ export function openFile(os, it, dir) {
     if (raw.length > 60000) raw = raw.slice(0, 60000) + '\n\n… (the rest is too long to show)'
     return openNotepad(os, { name: it.name, text: raw, ro: true, note: `${it.game} keeps this in your browser.` })
   }
+  if (it.arg) {
+    arg.reach(1)
+    return openNotepad(os, { name: it.name, text: arg.fileText(), ro: true })
+  }
   if (it.kind === 'txt' || it.kind === 'file') {
     if (it.ro) return openNotepad(os, { name: it.name, text: it.text ?? '', ro: true })
     return openNotepad(os, { name: it.name, text: it.node.t, dir })
@@ -580,7 +597,7 @@ export function openNotepad(os, { name, text, ro = false, dir = null, note = '' 
     }
   })
   saveBtn.addEventListener('click', doSave)
-  win.onClose = () => dirty && doSave() // nikstilOS saves for you; it's that kind of OS
+  win.onClose = () => dirty && doSave() // BloatOS saves for you; it's that kind of OS
   status()
   ta.focus()
   return win

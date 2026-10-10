@@ -1,5 +1,5 @@
-// Inviting friends from nikstil Messenger into the online game you're hosting. The invite is an
-// ordinary message with a link (nikstil.com/strife/?join=CODE): Messenger turns it into a card with
+// Inviting friends from Yapper into the online game you're hosting. The invite is an
+// ordinary message with a link (nikstil.com/strife/?join=CODE): Yapper turns it into a card with
 // a Join button, and anywhere else it's still a link that works.
 
 const $ = (s, el = document) => el.querySelector(s)
@@ -25,7 +25,7 @@ export function initInvites({ code }) {
   async function sendTo(userId) {
     const c = code()
     if (!c) return 'Host a game first.'
-    if (!(await signedIn())) return 'Sign in to nikstil.com (on the desktop) to invite people from Messenger.'
+    if (!(await signedIn())) return 'Sign in to nikstil.com (on the desktop) to invite people from Yapper.'
     try {
       await online().send(userId, inviteText(c))
       sent.add(userId)
@@ -44,10 +44,10 @@ export function initInvites({ code }) {
     const note = $('.invite-note', box)
     const list = $('.invite-list', box)
     const c = code()
-    note.textContent = c ? `They get a message in nikstil Messenger with a Join button (game code ${c}).` : 'Host a game first.'
+    note.textContent = c ? `They get a message in Yapper with a Join button (game code ${c}).` : 'Host a game first.'
     const me = await signedIn()
     if (!me) {
-      list.innerHTML = '<li class="muted">Sign in to nikstil.com (on the desktop) to invite people from Messenger. Or just tell them the code.</li>'
+      list.innerHTML = '<li class="muted">Sign in to nikstil.com (on the desktop) to invite people from Yapper. Or just tell them the code.</li>'
       $('.invite-find', box).hidden = true
       return
     }

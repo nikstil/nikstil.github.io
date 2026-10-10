@@ -62,6 +62,26 @@
       "title": "SKINSINK.GG",
       "hidden": false
     },
+    "taskmgr": {
+      "label": "Task Manager",
+      "title": "Task Manager",
+      "hidden": false
+    },
+    "printer": {
+      "label": "Printer",
+      "title": "Printer",
+      "hidden": false
+    },
+    "kevin": {
+      "label": "KEVIN-GOTCHI™",
+      "title": "KEVIN-GOTCHI™",
+      "hidden": false
+    },
+    "stonks": {
+      "label": "NASDANK",
+      "title": "NASDANK",
+      "hidden": false
+    },
     "achievements": {
       "label": "Achievements",
       "title": "Achievements",
@@ -88,8 +108,8 @@
       "hidden": false
     },
     "messenger": {
-      "label": "Messenger",
-      "title": "nikstil Messenger",
+      "label": "Yapper",
+      "title": "Yapper",
       "hidden": false
     },
     "account": {
@@ -103,7 +123,7 @@
     "rows": [
       [
         "Edition",
-        "nikstilOS Ultimate"
+        "BloatOS Ultimate"
       ],
       [
         "Version",

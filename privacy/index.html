@@ -31,24 +31,27 @@
 <body>
   <main>
     <h1>Privacy</h1>
-    <p class="muted">For nikstil.com, nikstilOS and TRANSLATR™. Short version: only what the online features need, nothing sold, no ads, no tracking.</p>
+    <p class="muted">For nikstil.com, BloatOS and TRANSLATR™. Short version: only what the online features need, nothing sold, no ads, no tracking.</p>
 
     <h2>Without an account</h2>
     <p>Nothing about you is sent anywhere. Your theme, your game saves, your achievements and similar settings are kept in your own browser (local storage) and never leave it.</p>
     <p>Buying COUNTER-STRIFE credits, and everything in SKINSINK.GG (the casino on the LigmaPhone), uses pretend money only. You’re never asked for card or payment details, nothing is charged, and your balance, skins and casino numbers stay in your browser like the rest.</p>
 
+    <h2>Other visitors on the desktop</h2>
+    <p>When the online features are on, everyone on the BloatOS desktop sees everyone else’s mouse pointer as a “ghost” with a made-up name (like “Sleepy Llama”), and can throw paper planes with a few set messages. What’s sent is only that random name and where your pointer is on the screen, a few times a second while it moves, through Supabase’s realtime service; nothing is stored, and no account or real name is involved. The 👻 button in the taskbar turns it off (you stop seeing others, and they stop seeing you).</p>
+
     <h2>Playing COUNTER-STRIFE online</h2>
     <p>Online games don’t need an account. While you’re in one, the name you pick, what you do in the game, your chat and radio lines, your equipped skins and the rank you show are sent to the other players in that game. Nothing about the game is stored. Games are set up through Supabase’s realtime service, then usually run straight between the players’ browsers, which means the other players’ browsers can see your IP address, as in most online games. To find each other, browsers ask a public STUN server (Google’s or Cloudflare’s) for their own address. If a direct connection doesn’t work, the game goes through Supabase instead.</p>
 
     <h2>With an account</h2>
-    <p>Making an account (Start → Account) turns on the leaderboards, COUNTER-STRIFE ranks, your profile and nikstil Messenger. The site then keeps:</p>
+    <p>Making an account (Start → Account) turns on the leaderboards, COUNTER-STRIFE ranks, your profile and Yapper. The site then keeps:</p>
     <ul>
       <li><b>Your username and password.</b> No email address, no real name. The password is stored scrambled (hashed) by the database provider, so nobody can read it, including the site owner.</li>
       <li><b>Your speedrun and Daily Challenge times</b>, with when they happened and which ending you got. Your username and best times are public on the leaderboards.</li>
       <li><b>Your COUNTER-STRIFE ranked matches</b>: the map, mode and bot difficulty, when they started and ended, whether you won, the score, and your kills, deaths and MVPs. From these the server works out your rating. Your rank, rating and wins and losses are public on the ranks leaderboard and your profile.</li>
       <li><b>Your achievements</b> (which ones you’ve unlocked) and which TRANSLATR™ endings you’ve found. Your profile is public: anyone can see your username, profile picture, the date you joined, your achievements, your COUNTER-STRIFE rank and your best TRANSLATR™ run.</li>
       <li><b>Your messages</b>, who they were between, when they were sent and whether they’ve been read. Only you and the person you’re talking to can see them in the app. They aren’t end-to-end encrypted, though: they’re stored on the server, so the site owner could technically read them. If you report a message, the owner is shown a copy so they can deal with it.</li>
-      <li><b>GIFs you upload</b> in Messenger. They’re stored under a random address that only the people in your chat are sent; anyone who has that address can open the GIF, like a photo sent in most chat apps. Your <b>profile picture</b> is a generated pixel-art portrait (no photo), and like your username, everyone can see it.</li>
+      <li><b>GIFs you upload</b> in Yapper. They’re stored under a random address that only the people in your chat are sent; anyone who has that address can open the GIF, like a photo sent in most chat apps. Your <b>profile picture</b> is a generated pixel-art portrait (no photo), and like your username, everyone can see it.</li>
       <li><b>Who you’ve blocked</b> (only you can see this) and <b>reports</b> you send.</li>
       <li><b>A sign-in token</b> in your browser, so you stay signed in.</li>
     </ul>
@@ -61,7 +64,7 @@
     <p>Open <b>Start → Account → Delete account</b>. Your account, profile, times, COUNTER-STRIFE matches and rank, achievements, messages (on both sides), uploaded GIFs, blocks and reports are deleted straight away, for good. If you just want messages to stop, you can turn off “Let other players message me” or block someone instead.</p>
 
     <h2>Questions</h2>
-    <p>Message <b>nikstil</b> on nikstil Messenger.</p>
+    <p>Message <b>nikstil</b> on Yapper.</p>
 
     <p class="muted" style="margin-top: 28px"><a href="/">← Back to nikstil.com</a></p>
   </main>

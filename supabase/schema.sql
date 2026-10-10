@@ -1,4 +1,4 @@
--- nikstil.com online features: accounts, TRANSLATR™ leaderboards, COUNTER-STRIFE ranks and Messenger (DMs).
+-- nikstil.com online features: accounts, TRANSLATR™ leaderboards, COUNTER-STRIFE ranks and Yapper (DMs).
 --
 -- Run this whole file in Supabase: Dashboard → SQL Editor → New query → paste → Run.
 -- It's safe to run again after an update: tables are only created if missing, and functions
@@ -312,7 +312,7 @@ as $$
   from mine m;
 $$;
 
--- ================= Messenger =================
+-- ================= Yapper =================
 
 create table if not exists public.messages (
   id bigint generated always as identity primary key,
@@ -1001,7 +1001,7 @@ begin
 end;
 $$;
 
--- ================= GIFs in Messenger =================
+-- ================= GIFs in Yapper =================
 -- Players upload GIFs into their own folder of a public bucket (5 MB each, GIF or WebP); a message
 -- then carries the GIF's address. File names are random, so only the people in the chat know them.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

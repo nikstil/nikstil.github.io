@@ -8,6 +8,7 @@ import { someoneElse } from './bots.js'
 import { rollCase, skinById, caseById } from '../strife/skins.js'
 import { iconFor, rarityOf, itemValue, caseValue, SKIN_CASES } from '../strife/items.js'
 import { tick, winSound, loseSound, click } from './sound.js'
+import { nudge, TICKER_OF } from '../stonks/market.js'
 
 /** What a case costs here: what's in it on average, plus 10%. */
 export const casePrice = (id) => r2(caseValue(id) * 1.1)
@@ -67,6 +68,9 @@ function finish() {
   } else {
     loseSound()
     toast(`${b.winner.who.name} won the battle and took everything.`, 'lose')
+    // a cast member's win is good news for their stock (NASDANK)
+    const t = TICKER_OF[b.winner.who.name]
+    if (t) nudge(t, 0.06, `${b.winner.who.name} wins a case battle (against you)`)
     if (worth >= 100) feed({ kind: 'win', who: b.winner.who, text: `won a case battle worth ⓒ ${fmt(worth)}` })
   }
   view?.render()

@@ -1,6 +1,6 @@
 /* ============================================================
    TRANSLATR™ themes
-   Aero is the default look (index.css). Every theme matches nikstilOS's (same ids). Each theme below re-skins the same component
+   Aero is the default look (index.css). Every theme matches BloatOS's (same ids). Each theme below re-skins the same component
    classes under html[data-theme="…"], switched from the Start menu (src/lib/theme.js).
    Everything lives in the `components` layer, so utilities used for layout still win.
    Client areas stay light in every theme so all window content stays readable.
@@ -779,7 +779,7 @@
 
   /* ==================================================================
      LUNA — Windows XP: Bliss, blue title bars, beige dialogs, a very green Start button.
-     (The same look as nikstilOS's Luna theme.)
+     (The same look as BloatOS's Luna theme.)
      ================================================================== */
   html[data-theme="luna"] {
     --color-ink: #000;
@@ -972,7 +972,7 @@
 
   /* ==================================================================
      AQUA — Mac OS X: pinstripes, lickable gel, traffic lights and a glass dock.
-     (The same look as nikstilOS's Aqua theme.)
+     (The same look as BloatOS's Aqua theme.)
      ================================================================== */
   html[data-theme="aqua"] {
     --color-ink: #1d1d1f;
@@ -1133,7 +1133,7 @@
 
   /* ==================================================================
      VAPORWAVE — a striped sunset over a neon grid, pastel bevels, VT323.
-     (The same look as nikstilOS's Vaporwave theme.) Surfaces are variables, so dark mode
+     (The same look as BloatOS's Vaporwave theme.) Surfaces are variables, so dark mode
      (dark.css) only has to swap them.
      ================================================================== */
   html[data-theme="vapor"] {

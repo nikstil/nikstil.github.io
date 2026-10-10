@@ -1,4 +1,4 @@
-// nikstil.com online: accounts, TRANSLATR™ leaderboards, COUNTER-STRIFE ranks and Messenger, on Supabase.
+// nikstil.com online: accounts, TRANSLATR™ leaderboards, COUNTER-STRIFE ranks and Yapper, on Supabase.
 // Shared by the desktop (os/online-apps.js), the game page (online/translatr-bridge.js) and the
 // admin page. Exposes window.nikstilOnline.
 //
@@ -315,7 +315,7 @@
     return data
   }
 
-  // ================= Messenger =================
+  // ================= Yapper =================
   const likeEscape = (s) => s.replace(/[\\%_*]/g, (c) => `\\${c}`)
 
   /** Players whose names start with `prefix` (for the "find a player" box). */
@@ -358,7 +358,7 @@
     if (error) throw error
     return data.reverse()
   }
-  /** Every player (for Messenger's grid), A to Z: { id, username, avatar, allow_dms }. */
+  /** Every player (for Yapper's grid), A to Z: { id, username, avatar, allow_dms }. */
   async function players() {
     const c = await connect()
     let { data, error } = await c.from('profiles').select('id, username, avatar, allow_dms').eq('banned', false).order('username').limit(1000)

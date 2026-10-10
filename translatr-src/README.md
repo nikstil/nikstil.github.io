@@ -1,6 +1,6 @@
 # nikstil.com: source code
 
-The source for nikstil.com: **nikstilOS** (the homepage desktop) and **TRANSLATR™ Ultra+ Pro Max**
+The source for nikstil.com: **BloatOS** (the homepage desktop) and **TRANSLATR™ Ultra+ Pro Max**
 (the game at nikstil.com/translatr).
 
 ## What's where
@@ -40,7 +40,7 @@ npm run build:site
 ```
 
 This builds the game straight into `../translatr/` (nikstil.com/translatr/, replacing the old
-bundles), keeps the online leaderboards' script tag in its page, and fills nikstilOS in with a few
+bundles), keeps the online leaderboards' script tag in its page, and fills BloatOS in with a few
 facts from the game (`../os/cursors.css` and the numbers in `../index.html`). Commit the result.
 
 DOOMSCROLL.EXE's engine, levels, difficulties and sound are shared with nikstil.com/doomscroll/ and
@@ -60,7 +60,7 @@ npm run fetch-cats  # download the cat photos, then rebuild
 - Saves live in the browser's localStorage under `translatr-save` (the game) and `nikstilos-theme`
   (the homepage's theme). The save format is versioned (`src/lib/save.js`), with migrations for
   older saves.
-- The game and nikstilOS share their ten themes (same ids), so a theme picked in one carries over
+- The game and BloatOS share their ten themes (same ids), so a theme picked in one carries over
   to the other. Keep `src/data/themes.js` and the list in `../os/os.js` in step.
 - Every emoji the game uses has a stand-in for each emoji-swapping theme in
   `src/data/themeEmoji.js`; add one there when adding a new emoji.

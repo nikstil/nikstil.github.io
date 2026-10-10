@@ -5,6 +5,7 @@ import { bet, win, fmt, r2 } from './wallet.js'
 import { $, esc, coins, betBox, toast, feed } from './ui.js'
 import { anyone, someoneElse, botAmount } from './bots.js'
 import { coin, winSound, loseSound, click } from './sound.js'
+import { nudge, TICKER_OF } from '../stonks/market.js'
 
 const FEE = 0.05
 const SIDE = { t: { name: 'T', face: '🟧' }, ct: { name: 'CT', face: '🟦' } }
@@ -35,6 +36,8 @@ function flip(g) {
       } else {
         loseSound()
         toast(`Coinflip: ${SIDE[g.result].name}. Lost ⓒ ${fmt(g.amount)}.`, 'lose')
+        const winner = g.mineSide === g.a.side ? g.b.who : g.a.who
+        if (TICKER_OF[winner.name]) nudge(TICKER_OF[winner.name], 0.02, `${winner.name} wins a coinflip`)
       }
     } else if (pot >= 150) feed({ kind: 'win', who: g.result === g.a.side ? g.a.who : g.b.who, text: `won a ⓒ ${fmt(pot)} coinflip` })
     view?.list()

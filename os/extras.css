@@ -1,0 +1,252 @@
+/* BloatOS extras: Task Manager, the blue screen, gravity, the desk plant and its zombies, other
+   visitors' ghost cursors and paper planes, the printer, dial-up, notifications, and the Haunted
+   theme (the secret at the end of DO_NOT_OPEN.txt). */
+
+/* ---------------- Task Manager */
+.win-body.tm { display: flex; flex-direction: column; padding: 0; min-height: 0; height: min(460px, 70vh); flex: 1 1 auto; font-size: 13px; }
+.tm-menu { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid color-mix(in srgb, var(--ink, #000) 12%, transparent); }
+.tm-menu button, .tm-small { border: 1px solid color-mix(in srgb, var(--ink, #000) 20%, transparent); background: transparent; color: inherit; border-radius: 4px; padding: 3px 9px; font: inherit; cursor: pointer; }
+.tm-uptime { margin-left: auto; opacity: 0.6; font-size: 12px; }
+.tm-tabs { display: flex; gap: 2px; padding: 6px 10px 0; border-bottom: 1px solid color-mix(in srgb, var(--ink, #000) 15%, transparent); }
+.tm-tabs button { border: 0; background: transparent; color: inherit; padding: 6px 12px; font: inherit; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; }
+.tm-tabs button.sel { border-bottom-color: #117dbb; opacity: 1; font-weight: 600; }
+.tm-page { flex: 1; min-height: 0; overflow: auto; }
+.tm-page[hidden] { display: none; }
+.tm-procs { width: 100%; border-collapse: collapse; }
+.tm-procs th { position: sticky; top: 0; background: color-mix(in srgb, var(--surface, #fff) 92%, #117dbb); text-align: left; font-weight: 600; padding: 5px 8px; border-bottom: 1px solid color-mix(in srgb, var(--ink, #000) 15%, transparent); }
+.tm-procs td { padding: 4px 8px; white-space: nowrap; }
+.tm-procs .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tm-procs tr[data-key] { cursor: default; }
+.tm-procs tr[data-key]:hover { background: color-mix(in srgb, #117dbb 10%, transparent); }
+.tm-procs tr.sel { background: color-mix(in srgb, #117dbb 24%, transparent) !important; }
+.tm-procs tr.ghost td { color: #7a5cd6; font-style: italic; animation: tm-flicker 2.4s steps(2) infinite; }
+@keyframes tm-flicker { 50% { opacity: 0.55; } }
+.tm-group td { padding: 8px 8px 3px; font-weight: 700; color: #117dbb; }
+.tm-icon { display: inline-block; width: 22px; }
+.tm-foot { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid color-mix(in srgb, var(--ink, #000) 12%, transparent); }
+.tm-sum { flex: 1; opacity: 0.75; font-size: 12px; }
+.tm-end { border: 1px solid #117dbb; background: #117dbb; color: #fff; border-radius: 4px; padding: 6px 16px; font: inherit; cursor: pointer; }
+.tm-end:disabled { opacity: 0.45; cursor: default; }
+.tm-end[hidden] { display: none; }
+.tm-graph-wrap { padding: 10px; }
+.tm-graph { display: block; width: 100%; height: auto; margin-top: 6px; border: 1px solid #117dbb55; }
+.tm-stats { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; padding: 0 10px 10px; margin: 0; }
+.tm-stats dt { opacity: 0.7; }
+.tm-stats dd { margin: 0; }
+
+/* ---------------- The blue screen */
+.bsod { position: fixed; inset: 0; z-index: 2147483600; background: #0078d7; color: #fff; display: grid; place-items: center; font: 300 18px/1.45 "Segoe UI", system-ui, sans-serif; cursor: default; }
+.bsod-in { width: min(720px, 88vw); }
+.bsod-face { font-size: clamp(90px, 18vw, 160px); line-height: 1; margin: 0 0 24px; }
+.bsod p { margin: 0 0 18px; }
+.bsod-pct { font-size: 22px; }
+.bsod-qr { display: grid; grid-template-columns: repeat(9, 8px); gap: 0; width: 72px; padding: 6px; background: #fff; float: left; margin: 0 18px 10px 0; }
+.bsod-qr i { width: 8px; height: 8px; }
+.bsod-qr i.on { background: #0078d7; }
+.bsod-small { font-size: 13px; }
+.bsod-game { clear: both; padding-top: 10px; font-size: 15px; }
+.bsod-game input { margin-left: 8px; border: 0; border-bottom: 2px solid #fff; background: transparent; color: #fff; font: 600 16px/1.4 Consolas, monospace; padding: 4px 2px; width: min(380px, 70vw); outline: none; text-transform: uppercase; }
+.bsod-game input::placeholder { color: #cfe6ff; }
+
+/* ---------------- explorer.exe has stopped */
+html.no-explorer :is(.desk-icons, .taskbar, .plant, .start-menu, .ctx-menu) { visibility: hidden !important; }
+.explorer-rescue { position: fixed; left: 12px; bottom: 12px; z-index: 2147483000; border: 1px solid #c33; background: #fff3f3; color: #611; border-radius: 6px; padding: 8px 12px; font: 13px system-ui, sans-serif; cursor: pointer; box-shadow: 0 6px 20px rgb(0 0 0 / 0.25); }
+.explorer-rescue[hidden] { display: none; }
+
+/* ---------------- Gravity */
+html.gravity .desk-icons > li:not([hidden]) { position: fixed !important; left: 0 !important; top: 0 !important; z-index: 1; will-change: transform; }
+html.gravity .desk-icons > li.grav-held { z-index: 3; }
+html.gravity .win.grav-held { transition: none; }
+.grav-junk { position: fixed; left: 0; top: 0; z-index: 2147482000; width: 34px; height: 34px; display: grid; place-items: center; font-size: 26px; pointer-events: none; transition: opacity 0.6s; }
+.grav-junk.fade { opacity: 0; }
+
+/* ---------------- The desk plant */
+.plant { position: fixed; right: 18px; bottom: calc(var(--taskbar-h, 44px) + 6px); z-index: 2; width: 54px; height: 64px; border: 0; background: none; padding: 0; cursor: pointer; display: grid; justify-items: center; align-content: end; }
+.pl-face { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.25)); transform-origin: 50% 100%; animation: pl-sway 5s ease-in-out infinite; }
+.plant.wilted .pl-face { animation: none; transform: rotate(-18deg); filter: grayscale(0.6) drop-shadow(0 2px 2px rgb(0 0 0 / 0.25)); }
+.pl-pot { width: 34px; height: 18px; margin-top: -4px; background: linear-gradient(#c96a3b, #9a4a26); clip-path: polygon(0 0, 100% 0, 84% 100%, 16% 100%); border-radius: 2px; }
+.pl-drops { position: absolute; top: -8px; left: 14px; font-size: 16px; opacity: 0; pointer-events: none; }
+.plant.watering .pl-drops { animation: pl-water 0.9s ease-in; }
+@keyframes pl-sway { 50% { transform: rotate(4deg); } }
+@keyframes pl-water { 0% { opacity: 1; transform: translateY(-14px); } 100% { opacity: 0; transform: translateY(18px); } }
+
+/* ---------------- Zombies (and peas) */
+.zombie { position: fixed; left: 0; top: 0; z-index: 2147482500; width: 48px; height: 56px; border: 0; padding: 0; background: none; cursor: crosshair; display: grid; place-items: center; }
+.zb-body { font-size: 40px; line-height: 1; display: block; transform: scaleX(-1); animation: zb-walk 0.9s ease-in-out infinite; }
+.zb-hat { position: absolute; top: -10px; left: 12px; font-size: 22px; }
+.zb-hp { position: absolute; left: 6px; bottom: -4px; height: 4px; width: 100%; max-width: 36px; background: #5c3; border-radius: 2px; }
+.zombie.eating .zb-body { animation: zb-chomp 0.25s steps(2) infinite; }
+.zombie.hurt .zb-body { animation: zb-hurt 0.25s; }
+.zombie.down { pointer-events: none; animation: zb-fade 0.9s forwards; }
+.zombie.down .zb-body { animation: zb-fall 0.9s forwards; }
+.zb-pow { position: absolute; top: -18px; left: 30px; font: 900 14px/1 system-ui, sans-serif; font-style: normal; color: #ff5a1f; text-shadow: 0 1px 0 #fff; animation: zb-pow 0.5s forwards; pointer-events: none; }
+@keyframes zb-walk { 50% { transform: scaleX(-1) translateY(-3px) rotate(-4deg); } }
+@keyframes zb-chomp { 50% { transform: scaleX(-1) scale(1.1, 0.9); } }
+@keyframes zb-hurt { 50% { filter: brightness(2.5) saturate(0); } }
+@keyframes zb-fade { to { opacity: 0; } }
+@keyframes zb-fall { to { transform: scaleX(-1) rotate(-90deg) translateX(-8px); } }
+@keyframes zb-pow { to { transform: translateY(-14px); opacity: 0; } }
+.desk-icons > li.being-eaten { animation: being-eaten 0.2s infinite; }
+@keyframes being-eaten { 50% { filter: saturate(0.3) brightness(0.8); } }
+.pea { position: fixed; left: 0; top: 0; z-index: 2147482400; width: 12px; height: 12px; margin: -6px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #b6ff7a, #2f9e23); box-shadow: 0 1px 2px rgb(0 0 0 / 0.4); pointer-events: none; }
+
+/* ---------------- Other visitors */
+.ghost-cursor { position: fixed; left: 0; top: 0; z-index: 2147482800; pointer-events: none; display: flex; align-items: flex-start; gap: 2px; transition: opacity 0.6s; --c: hsl(var(--h, 200) 80% 55%); }
+.ghost-cursor svg { fill: var(--c); stroke: #fff; stroke-width: 1.2; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35)); opacity: 0.85; }
+.ghost-cursor span { margin-top: 16px; padding: 1px 7px; border-radius: 99px; background: var(--c); color: #fff; font: 600 11px/1.6 system-ui, sans-serif; white-space: nowrap; opacity: 0.9; }
+.ghost-cursor.idle { opacity: 0.25; }
+.ghost-cursor[hidden] { display: none; }
+.ghost-tray.off { opacity: 0.45; }
+.ghost-tray .tray-badge:empty { display: none; }
+.paper-plane { position: fixed; left: 0; top: 0; z-index: 2147482900; font-size: 26px; pointer-events: none; }
+.plane-note { position: fixed; z-index: 2147482900; max-width: 220px; padding: 6px 10px; border-radius: 10px; background: #fffbe0; color: #333; border: 1px solid #e8d77a; font: 13px/1.3 system-ui, sans-serif; box-shadow: 0 6px 18px rgb(0 0 0 / 0.2); animation: note-in 0.25s ease-out; pointer-events: none; }
+.plane-note.for-me { border-color: #ff9f1c; box-shadow: 0 0 0 3px rgb(255 159 28 / 0.35), 0 6px 18px rgb(0 0 0 / 0.2); }
+@keyframes note-in { from { transform: scale(0.6); opacity: 0; } }
+
+/* ---------------- Notifications */
+.balloon.notify { bottom: calc(var(--taskbar-h, 44px) + 76px); }
+
+/* ---------------- The printer */
+.win-body.printer { display: grid; gap: 12px; justify-items: center; padding: 16px; max-height: min(640px, 76vh); overflow: auto; flex: 1 1 auto; }
+.pr-device { position: relative; width: 240px; height: 120px; margin-top: 10px; }
+.pr-top { position: absolute; left: 20px; right: 20px; top: 0; height: 26px; border-radius: 8px 8px 0 0; background: linear-gradient(#e8e6e0, #cfccc4); }
+.pr-device::before { content: ""; position: absolute; inset: 22px 0 0; border-radius: 10px; background: linear-gradient(#f2f0ea, #d9d6ce); box-shadow: inset 0 -6px 0 #b8b4aa, 0 6px 14px rgb(0 0 0 / 0.2); }
+.pr-lcd { position: absolute; left: 22px; top: 40px; width: 136px; height: 26px; padding: 0 6px; border-radius: 3px; background: #9fb08a; color: #1d2716; font: 700 11px/26px "Courier New", monospace; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.35); }
+.pr-light { position: absolute; right: 30px; top: 46px; width: 12px; height: 12px; border-radius: 50%; background: #3c4; box-shadow: 0 0 6px #3c4; }
+.pr-light.busy { background: #fc3; box-shadow: 0 0 6px #fc3; animation: pr-blink 0.5s steps(2) infinite; }
+.pr-light.err { background: #e33; box-shadow: 0 0 8px #e33; animation: pr-blink 0.4s steps(2) infinite; }
+@keyframes pr-blink { 50% { opacity: 0.25; } }
+.pr-slot { position: absolute; left: 40px; right: 40px; bottom: 16px; height: 8px; border-radius: 4px; background: #333; overflow: visible; }
+.pr-sheet { position: absolute; left: 10px; right: 10px; top: 4px; height: 0; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.3); }
+.printer.feeding .pr-sheet { animation: pr-feed 1.6s linear forwards; }
+.printer.jammed .pr-sheet { height: 22px; transform: rotate(-6deg); clip-path: polygon(0 0, 100% 0, 92% 60%, 100% 100%, 70% 80%, 40% 100%, 10% 75%, 0 100%); }
+@keyframes pr-feed { to { height: 26px; } }
+.pr-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pr-btn { border: 1px solid color-mix(in srgb, var(--ink, #000) 25%, transparent); background: color-mix(in srgb, var(--surface, #fff) 85%, #117dbb); color: inherit; border-radius: 6px; padding: 7px 14px; font: inherit; cursor: pointer; text-decoration: none; }
+.pr-btn:disabled { opacity: 0.5; cursor: default; }
+.pr-jam { text-align: center; display: grid; gap: 8px; justify-items: center; }
+.pr-jam[hidden], .pr-out[hidden] { display: none; }
+.pr-jam p { margin: 0; }
+.pr-pull { height: 110px; width: 80px; position: relative; border-top: 6px solid #333; border-radius: 3px; }
+.pr-tab { position: absolute; left: 14px; top: 0; width: 52px; height: 56px; display: grid; place-items: center; font-size: 34px; background: #fff; border: 1px solid #ccc; box-shadow: 0 2px 4px rgb(0 0 0 / 0.2); cursor: grab; touch-action: none; transition: transform 0.15s; }
+.pr-tab:active { cursor: grabbing; }
+.pr-out { display: grid; gap: 10px; justify-items: center; }
+.pr-receipt { width: min(330px, 86vw); background: #fdfcf6; color: #222; padding: 16px 16px 20px; font: 12.5px/1.5 "Courier New", Courier, monospace; box-shadow: 0 6px 18px rgb(0 0 0 / 0.18); clip-path: polygon(0 0, 100% 0, 100% 100%, 95% 98%, 90% 100%, 85% 98%, 80% 100%, 75% 98%, 70% 100%, 65% 98%, 60% 100%, 55% 98%, 50% 100%, 45% 98%, 40% 100%, 35% 98%, 30% 100%, 25% 98%, 20% 100%, 15% 98%, 10% 100%, 5% 98%, 0 100%); }
+.pr-receipt.rolling { animation: pr-roll 1.4s steps(18) both; }
+@keyframes pr-roll { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+.rc-top { text-align: center; font-weight: 700; margin-bottom: 10px; }
+.rc-top small { font-weight: 400; font-size: 11px; }
+.rc-head { text-align: center; font-weight: 700; margin: 10px 0 2px; }
+.rc-head::before, .rc-head::after { content: " — "; }
+.rc-row { display: flex; align-items: baseline; gap: 4px; }
+.rc-row i { flex: 1; border-bottom: 1px dotted #888; transform: translateY(-3px); }
+.rc-row b { font-weight: 400; }
+.rc-total { display: flex; justify-content: space-between; font-weight: 700; margin-top: 12px; padding-top: 6px; border-top: 2px dashed #222; }
+.rc-bar { height: 36px; margin: 12px 12px 6px; background: repeating-linear-gradient(90deg, #222 0 2px, transparent 2px 4px, #222 4px 5px, transparent 5px 8px, #222 8px 11px, transparent 11px 12px); }
+.rc-foot { text-align: center; font-size: 11px; }
+
+/* ---------------- Dial-up */
+.dial { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: #008080; }
+.dial-box { width: min(320px, 90%); background: #c0c0c0; color: #000; border: 2px solid; border-color: #fff #404040 #404040 #fff; font: 12px/1.4 "MS Sans Serif", Tahoma, sans-serif; padding: 0 0 10px; text-align: center; box-shadow: 4px 4px 0 rgb(0 0 0 / 0.3); }
+.dial-head { background: linear-gradient(90deg, #000080, #1084d0); color: #fff; font-weight: 700; text-align: left; padding: 3px 6px; margin-bottom: 10px; }
+.dial-art { font-size: 22px; letter-spacing: 2px; }
+.dial-art i { font-style: normal; font-size: 12px; animation: pr-blink 0.6s steps(2) infinite; }
+.dial-status { margin: 8px 10px; min-height: 18px; }
+.dial-bar { height: 14px; margin: 0 16px 10px; border: 1px solid; border-color: #404040 #fff #fff #404040; background: #fff; }
+.dial-bar i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(90deg, #000080 0 10px, transparent 10px 12px); transition: width 0.4s; }
+.dial-cancel { font: inherit; }
+.dial-cover { position: absolute; inset: 0; z-index: 4; background: repeating-linear-gradient(0deg, #fff 0 3px, #eee 3px 4px); pointer-events: none; }
+.dial-kbps { position: absolute; right: 8px; bottom: 6px; font: 11px monospace; color: #555; background: #fff; padding: 1px 5px; border: 1px solid #ccc; }
+
+/* ---------------- KEVIN-GOTCHI™ and NASDANK windows */
+.win-body.kevin-win { flex: none; padding: 0; overflow: hidden; height: min(660px, calc(100dvh - 160px)); }
+.win-body.stonks-win { flex: none; padding: 0; overflow: hidden; height: min(640px, calc(100dvh - 160px)); background: #0b0f0c; }
+.kevin-frame, .stonks-frame { display: block; width: 100%; height: 100%; border: 0; }
+
+/* ---------------- Haunted: the secret theme (built on the Terminal theme's look) */
+html[data-theme="haunted"] { --t-bg: #0b0814; --t-fg: #b9a6ff; --t-hi: #1c1530; --font-ui: "Special Elite", "Courier New", monospace; --font-title: "Creepster", "Special Elite", cursive; --ink: #b9a6ff; --muted: #8a76d6; --accent: #b9a6ff; --phosphor: grayscale(1) invert(1) sepia(1) saturate(5) hue-rotate(215deg) brightness(1.05); }
+html[data-theme="haunted"] .marquee { border: 1px solid #000; background: rgb(0 0 0 / 0.06); }
+html[data-theme="haunted"] body { background: var(--t-bg); }
+html[data-theme="haunted"] .wp-sky { background: var(--t-bg); }
+html[data-theme="haunted"] :is(.wp-rays, .wp-hills, .wp-bubble, .wp-noise) { display: none; }
+html[data-theme="haunted"] .desk-icons { gap: 10px; padding: 24px; }
+html[data-theme="haunted"] .di-img { filter: none; font-size: 34px; font-weight: 300; }
+html[data-theme="haunted"] .di-label { color: var(--t-fg); text-shadow: none; font-size: 11px; letter-spacing: 0.04em; }
+html[data-theme="haunted"] .desk-icon { border-radius: 0; }
+html[data-theme="haunted"] .desk-icon:hover { background: var(--t-hi); border-color: transparent; }
+html[data-theme="haunted"] .desk-icon.is-selected { background: var(--t-bg); border-color: var(--t-fg); }
+html[data-theme="haunted"] .win, html[data-theme="haunted"] .win:not(.is-active) { padding: 0; border-radius: 0; background: var(--t-bg); border: 1px solid var(--t-fg); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+html[data-theme="haunted"] .win.is-active { box-shadow: 6px 6px 0 var(--t-fg); }
+html[data-theme="haunted"] .win::before { content: none; }
+html[data-theme="haunted"] .win-bar { min-height: 46px; padding-left: 16px; gap: 10px; border-bottom: 1px solid var(--t-fg); }
+html[data-theme="haunted"] .win-title { font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--t-fg); text-shadow: none; }
+html[data-theme="haunted"] .win-client { border: 0; border-radius: 0; background: #fff; box-shadow: none; }
+html[data-theme="haunted"] .win-caps { align-self: stretch; margin: 0; border: 0; border-left: 1px solid var(--t-fg); border-radius: 0; box-shadow: none; }
+html[data-theme="haunted"] .cap, html[data-theme="haunted"] .cap-close { width: 40px; height: auto; font-size: 11px; color: var(--t-fg); text-shadow: none; background: var(--t-bg); border-left-color: var(--t-fg); }
+html[data-theme="haunted"] .cap:hover, html[data-theme="haunted"] .cap-close:hover { color: var(--t-bg); background: var(--t-fg); box-shadow: none; }
+html[data-theme="haunted"] .win-foot { border-top: 1px solid #000; background: #fff; }
+html[data-theme="haunted"] .btn { border-radius: 0; border: 1px solid #000; font-weight: 500; letter-spacing: 0.04em; color: #000; background: #fff; box-shadow: none; }
+html[data-theme="haunted"] .btn:hover { color: #fff; border-color: #000; background: #000; box-shadow: none; }
+html[data-theme="haunted"] .btn-primary { color: #fff; background: #000; }
+html[data-theme="haunted"] .btn-primary:hover { color: #000; background: #fff; }
+html[data-theme="haunted"] .taskbar { color: var(--t-fg); text-shadow: none; background: var(--t-bg); border-top: 1px solid var(--t-fg); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+html[data-theme="haunted"] .task { border-radius: 0; }
+html[data-theme="haunted"] .task:hover { border-color: var(--t-fg); background: var(--t-bg); box-shadow: none; }
+html[data-theme="haunted"] .task.is-active { border-color: transparent; background: var(--t-bg); box-shadow: inset 0 -2px 0 var(--t-fg); }
+html[data-theme="haunted"] .tray { border-color: var(--t-fg); }
+html[data-theme="haunted"] .show-desktop { border-color: var(--t-fg); background: var(--t-bg); }
+html[data-theme="haunted"] .show-desktop:hover { background: var(--t-fg); }
+html[data-theme="haunted"] .start-btn { height: 30px; padding: 0 12px 0 5px; gap: 9px; border-radius: 0; border: 1px solid var(--t-fg); background: var(--t-bg); }
+html[data-theme="haunted"] .start-btn:hover { background: var(--t-hi); }
+html[data-theme="haunted"] .start-orb, html[data-theme="haunted"] .start-btn:hover .start-orb, html[data-theme="haunted"] .start-btn[aria-expanded="true"] .start-orb { width: 20px; height: 20px; border-radius: 0; border: 0; background: var(--t-fg); box-shadow: none; filter: none; }
+html[data-theme="haunted"] .start-orb::before { content: none; }
+html[data-theme="haunted"] .start-glyph { font-size: 12px; font-weight: 600; text-shadow: none; }
+html[data-theme="haunted"] .start-label { font-size: 12px; font-weight: 500; letter-spacing: 0.06em; color: var(--t-fg); }
+html[data-theme="haunted"] .start-menu { padding: 0; border-radius: 0; color: var(--t-fg); background: var(--t-bg); border: 1px solid var(--t-fg); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 6px 6px 0 var(--t-fg); animation: none; }
+html[data-theme="haunted"] .sm-head { padding: 12px 14px; border-bottom: 1px solid var(--t-fg); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; text-shadow: none; }
+html[data-theme="haunted"] .sm-avatar { border-radius: 0; border: 1px solid var(--t-fg); background: var(--t-bg); box-shadow: none; }
+html[data-theme="haunted"] .sm-cols { gap: 0; }
+html[data-theme="haunted"] .sm-list { border: 0; border-right: 1px solid var(--t-fg); border-radius: 0; padding: 6px; }
+html[data-theme="haunted"] .sm-item, html[data-theme="haunted"] .sm-theme { border-radius: 0; }
+html[data-theme="haunted"] .sm-item:hover, html[data-theme="haunted"] .sm-item:focus-visible, html[data-theme="haunted"] .sm-theme:hover, html[data-theme="haunted"] .sm-theme[aria-pressed="true"] { background: var(--t-hi); box-shadow: inset 2px 0 0 var(--t-fg); }
+html[data-theme="haunted"] .sm-side { padding: 6px; text-shadow: none; }
+html[data-theme="haunted"] .sm-heading { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; opacity: 1; }
+html[data-theme="haunted"] .sm-foot { padding: 8px; border-top: 1px solid var(--t-fg); }
+html[data-theme="haunted"] .sm-power { border-radius: 0; border: 1px solid var(--t-fg); text-shadow: none; background: var(--t-fg); }
+html[data-theme="haunted"] .swatch { border-radius: 0; border-color: #000; }
+html[data-theme="haunted"] .ctx-menu { background: var(--t-bg); border-color: var(--t-fg); box-shadow: 4px 4px 0 var(--t-fg); }
+html[data-theme="haunted"] .ctx-item { border-radius: 0; }
+html[data-theme="haunted"] .ctx-item:hover, html[data-theme="haunted"] .ctx-item:focus-visible { color: var(--t-bg); background: var(--t-fg); border-color: var(--t-fg); }
+html[data-theme="haunted"] .ctx-menu hr { border-color: var(--t-fg); }
+html[data-theme="haunted"] .pc-logo { color: #000; }
+html[data-theme="haunted"] .tr-facts li { border-radius: 0; border-color: #000; background: #fff; }
+html[data-theme="haunted"] .theme-card { border-radius: 0; border-color: #000; background: #fff; }
+html[data-theme="haunted"] .theme-card:hover, html[data-theme="haunted"] .theme-card[aria-pressed="true"] { border-color: #000; box-shadow: 4px 4px 0 #000; }
+html[data-theme="haunted"] .bin-file { border-radius: 0; }
+html[data-theme="haunted"] .bin-file:hover, html[data-theme="haunted"] .bin-file.is-selected { background: #f2f2f2; border-color: #000; }
+html[data-theme="haunted"] .br-view:not(.no-fx) :is(.br-frame, .br-start) { filter: grayscale(1) contrast(1.15); }
+html[data-theme="haunted"] :is(.win-body :is(input, select, textarea), .msg-input, .msgr-suggest, .lb-wrap) { border-color: var(--t-fg); border-radius: 0; }
+html[data-theme="haunted"] :is(.msgr-msg, .acct-avatar) { border-radius: 0; box-shadow: none; border: 1px solid var(--t-fg); background: var(--t-bg); }
+html[data-theme="haunted"] .msgr-msg.is-mine { color: var(--t-bg); background: var(--t-fg); }
+html[data-theme="haunted"] .msgr-msg.is-mine .msgr-time { color: rgb(255 255 255 / 0.7); }
+html[data-theme="haunted"] body { background: #0b0814; }
+html[data-theme="haunted"] .wp-sky { background: radial-gradient(ellipse at 50% 40%, #1c1530, #05030a 70%), #05030a; }
+html[data-theme="haunted"] .wp-noise { display: block; opacity: 1; background: repeating-linear-gradient(0deg, rgb(185 166 255 / 0.05) 0 1px, transparent 1px 3px); }
+html[data-theme="haunted"] :is(.di-label, .win-title, .start-label, .sm-head, .taskbar) { text-shadow: 0 0 6px rgb(185 166 255 / 0.55); }
+html[data-theme="haunted"] :is(.di-img, .sm-item [data-icon], .task-icon, .win-icon) { filter: grayscale(1) sepia(1) saturate(6) hue-rotate(220deg) brightness(1.2); }
+html[data-theme="haunted"] .win-client { --ink: #000; --muted: #555; color: #000; }
+html[data-theme="haunted"] .win-client:not(:has(iframe, .term)), html[data-theme="haunted"] .win-client:has(iframe, .term) .win-foot { filter: var(--phosphor); }html[data-theme="haunted"] .wp-sky { background: radial-gradient(ellipse at 50% 30%, #2a1f48, #05030a 70%), #05030a; }
+html[data-theme="haunted"] body::before { content: ""; position: fixed; inset: -20%; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at 20% 70%, rgb(59 227 196 / 0.10), transparent 40%), radial-gradient(ellipse at 80% 40%, rgb(185 166 255 / 0.12), transparent 45%), radial-gradient(ellipse at 50% 90%, rgb(255 255 255 / 0.06), transparent 50%); animation: fog 28s ease-in-out infinite alternate; }
+html[data-theme="haunted"] body::after { content: "👻"; position: fixed; z-index: 0; top: 18%; left: -10%; font-size: 46px; opacity: 0.18; pointer-events: none; animation: drift 40s linear infinite; }
+@keyframes fog { to { transform: translate(6%, -4%) scale(1.1); } }
+@keyframes drift { 0% { transform: translate(0, 0); } 50% { transform: translate(60vw, 18vh); } 100% { transform: translate(125vw, -6vh); } }
+html[data-theme="haunted"] .win.is-active { animation: haunt-flicker 9s infinite; }
+@keyframes haunt-flicker { 0%, 96%, 100% { opacity: 1; } 97% { opacity: 0.7; } 98% { opacity: 1; } 99% { opacity: 0.85; } }
+html[data-theme="haunted"] .win-title, html[data-theme="haunted"] .start-label { letter-spacing: 0.08em; }
+html[data-theme="haunted"] .di-label { text-shadow: 0 0 8px rgb(185 166 255 / 0.7); }
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="haunted"] body::before, html[data-theme="haunted"] body::after, html[data-theme="haunted"] .win.is-active { animation: none; }
+}
+@media (max-width: 520px) {
+  .tm-procs th:nth-child(4), .tm-procs td:nth-child(4) { display: none; }
+}

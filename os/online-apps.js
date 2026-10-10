@@ -1,4 +1,4 @@
-// nikstilOS online apps: Leaderboards, nikstil Messenger and Account. The server side is
+// BloatOS online apps: Leaderboards, Yapper and Account. The server side is
 // online/online.js (window.nikstilOnline) and supabase/schema.sql.
 //
 // os.js calls window.nikstilOnlineApps(os) once with the bits of the desktop these need, then
@@ -99,7 +99,7 @@
       const choice = await os.choicebox({
         title: 'Welcome to nikstil.com',
         icon: '👋',
-        text: 'Sign in to put your TRANSLATR™ runs and COUNTER-STRIFE rank on the leaderboards, show off your achievements on your profile and chat in Messenger. Or just look around: nothing here needs an account.',
+        text: 'Sign in to put your TRANSLATR™ runs and COUNTER-STRIFE rank on the leaderboards, show off your achievements on your profile and chat in Yapper. Or just look around: nothing here needs an account.',
         choices: [
           { label: 'Continue as guest', value: 'guest' },
           { label: 'Create account', value: 'up' },
@@ -148,7 +148,7 @@
       const badge = $('.tray-badge')
       badge.hidden = !total
       badge.textContent = total > 99 ? '99+' : String(total)
-      const label = total ? `nikstil Messenger (${total} unread)` : 'nikstil Messenger'
+      const label = total ? `Yapper (${total} unread)` : 'Yapper'
       $('#msgr-tray').title = label
       $('#msgr-tray').setAttribute('aria-label', label)
     }
@@ -184,7 +184,7 @@
     /** What a message says, for one-line previews (a GIF is just "GIF"). */
     const preview = (body) => (net().gifUrl(body) ? '🎞️ GIF' : inviteCode(body) ? '💣 COUNTER-STRIFE invite' : body)
 
-    /** Opens Messenger on a chat with `user` ({ id, username }). */
+    /** Opens Yapper on a chat with `user` ({ id, username }). */
     function openChat(user) {
       os.openApp('messenger')
       messenger?.show(user)
@@ -646,8 +646,8 @@
       }
     }
 
-    // ================= Messenger =================
-    let messenger = null // the open Messenger window's controls
+    // ================= Yapper =================
+    let messenger = null // the open Yapper window's controls
 
     function initMessenger(el) {
       const body = $('.msgr', el)
@@ -742,7 +742,7 @@
         if (!list.length) peopleList.replaceChildren(h('li', { class: 'muted msgr-people-none' }, q ? 'Nobody by that name.' : 'Nobody else is here yet. Tell a friend.'))
       }
 
-      // ----- full screen (the Messenger window on its own)
+      // ----- full screen (the Yapper window on its own)
       const fullBtn = $('.msgr-full', el)
       const isFull = () => (document.fullscreenElement ?? document.webkitFullscreenElement) === el
       fullBtn.hidden = !(el.requestFullscreen || el.webkitRequestFullscreen)
@@ -785,7 +785,7 @@
         if (!q) return
         const p = await net().findPlayer(q).catch(() => null)
         if (p && p.id !== me?.id) pick(p)
-        else os.msgbox('nikstil Messenger', p ? 'That’s you. Pick someone else.' : `Nobody called “${q}” plays here (yet).`, '🔍')
+        else os.msgbox('Yapper', p ? 'That’s you. Pick someone else.' : `Nobody called “${q}” plays here (yet).`, '🔍')
       })
       function pick(p) {
         find.value = ''
@@ -908,7 +908,7 @@
           reloadChats()
         } catch (err) {
           if (!text.value) text.value = msg // give it back
-          os.msgbox('nikstil Messenger', net().errorText(err), '⚠️')
+          os.msgbox('Yapper', net().errorText(err), '⚠️')
         } finally {
           $('.msgr-send', el).disabled = blocked.has(current?.id)
           if (!os.coarsePointer) text.focus()
@@ -961,7 +961,7 @@
           }
           reloadChats()
         } catch (err) {
-          os.msgbox('nikstil Messenger', net().errorText(err), '⚠️')
+          os.msgbox('Yapper', net().errorText(err), '⚠️')
         }
       }
       $('.msgr-gif-file', el).addEventListener('change', async (e) => {
@@ -973,7 +973,7 @@
         try {
           await sendGif(await net().uploadGif(file))
         } catch (err) {
-          os.msgbox('nikstil Messenger', net().errorText(err), '⚠️')
+          os.msgbox('Yapper', net().errorText(err), '⚠️')
         } finally {
           label.classList.remove('is-busy')
         }
@@ -982,7 +982,7 @@
         e.preventDefault()
         const input = $('.msgr-gif-url', el)
         const url = net().gifUrl(`[gif] ${input.value.trim()}`)
-        if (!url) return os.msgbox('nikstil Messenger', 'Paste the link of the GIF itself (it ends in .gif, from media.giphy.com or media.tenor.com), or upload one.', '🎞️')
+        if (!url) return os.msgbox('Yapper', 'Paste the link of the GIF itself (it ends in .gif, from media.giphy.com or media.tenor.com), or upload one.', '🎞️')
         input.value = ''
         sendGif(url)
       })
@@ -1014,7 +1014,7 @@
           renderChat()
           loadChats()
         } catch (err) {
-          os.msgbox('nikstil Messenger', net().errorText(err), '⚠️')
+          os.msgbox('Yapper', net().errorText(err), '⚠️')
         }
       })
       async function reportUser(messageId = null) {

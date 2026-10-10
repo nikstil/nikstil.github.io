@@ -1,8 +1,9 @@
-// Command Prompt for nikstilOS: the File Explorer's pretend C: drive, typed at. dir, cd, type,
+// Command Prompt for BloatOS: the File Explorer's pretend C: drive, typed at. dir, cd, type,
 // start (files, folders and apps), mkdir, del, ren, echo > file, tree, color, cls and the rest of
 // the classics, with history (↑ ↓) and Tab to finish a name. Some commands aren't in `help`.
 
 import * as F from '/os/files.js'
+import * as arg from '/os/arg.js'
 
 const $ = (s, el = document) => el.querySelector(s)
 const STORE = 'nikstilos-terminal' // { color, found: [hidden commands tried] }
@@ -34,11 +35,15 @@ const APPS = [
   ['achievements', 'Achievements', ['achievements', 'achievements.exe']],
   ['themes', 'Themes', ['themes', 'themes.exe']],
   ['files', 'File Explorer', ['files', 'explorer', 'explorer.exe']],
-  ['messenger', 'Messenger', ['messenger', 'msn']],
+  ['messenger', 'Yapper', ['messenger', 'msn']],
   ['leaderboard', 'Leaderboards', ['leaderboard', 'leaderboards']],
   ['gif', 'The GIF', ['gif', 'animation.gif']],
   ['pc', 'System Properties', ['pc', 'sysdm.cpl']],
   ['bin', 'Recycle Bin', ['bin', 'recyclebin']],
+  ['taskmgr', 'Task Manager', ['taskmgr', 'taskmgr.exe', 'taskmanager']],
+  ['printer', 'Printer', ['printer', 'print', 'spoolsv.exe']],
+  ['kevin', 'KEVIN-GOTCHI™', ['kevin', 'kevin.exe', 'kevingotchi', 'tamagotchi']],
+  ['stonks', 'NASDANK', ['stonks', 'nasdank', 'nasdank.exe', 'stocks']],
 ]
 const appFor = (name) => APPS.find((a) => a[2].includes(String(name).toLowerCase()))
 
@@ -64,7 +69,7 @@ const HELP = [
   ['TITLE', 'Sets the window title.'],
   ['TREE', 'Graphically displays the folder structure.'],
   ['TYPE', 'Displays the contents of a text file.'],
-  ['VER', 'Displays the nikstilOS version.'],
+  ['VER', 'Displays the BloatOS version.'],
   ['WHOAMI', 'Displays who you are.'],
 ]
 // The hidden ones (finding them is an achievement)
@@ -107,8 +112,8 @@ export function initTerminal(el, win, os) {
   }
   const err = (t) => print(t, 'term-err')
 
-  print('nikstilOS [Version 10.0.2026.1009]')
-  print('(c) nikstil Corporation. All rights reserved, some of them wrong.')
+  print('BloatOS [Version 10.0.2026.1009]')
+  print('(c) Bloatware Corporation. All rights reserved, some of them wrong.')
   print('')
   print('Type HELP for a list of commands.', 'term-dim')
   print('')
@@ -173,7 +178,7 @@ export function initTerminal(el, win, os) {
     const p = target ? resolveDir(target) : cwd
     if (!p) return err('File Not Found')
     const items = F.list(p) ?? []
-    print(' Volume in drive C is NIKSTILOS')
+    print(' Volume in drive C is BLOATOS')
     print(' Volume Serial Number is 1337-C0DE')
     print('')
     print(` Directory of ${pathText(p)}`)
@@ -280,7 +285,7 @@ export function initTerminal(el, win, os) {
     if (e) err(e)
   }
   function tree() {
-    print(`Folder PATH listing for volume NIKSTILOS`)
+    print(`Folder PATH listing for volume BLOATOS`)
     print(pathText(cwd))
     const walk = (p, pre, depth) => {
       const dirs = (F.list(p) ?? []).filter((x) => x.kind === 'dir')
@@ -346,7 +351,7 @@ export function initTerminal(el, win, os) {
         busy = false
         print('Wake up, Guest…', 'term-green')
         print('The Matrix has you.', 'term-green')
-        print('Follow the white rabbit. (It went into C:\\nikstilOS\\System32.)', 'term-dim')
+        print('Follow the white rabbit. (It went into C:\\BloatOS\\System32.)', 'term-dim')
         showPrompt()
       }
     }
@@ -355,7 +360,7 @@ export function initTerminal(el, win, os) {
   const HIDDEN_RUN = {
     sudo: () => print(`${who()} is not in the sudoers file. This incident will be reported.`, 'term-err'),
     matrix,
-    rm: (a) => (a.join(' ').includes('-rf') ? slow(['Deleting C:\\nikstilOS\\System32…', 'Deleting C:\\nikstilOS\\kernel.exe…', 'Deleting your homework…', '…', 'Just kidding. This isn’t Linux. Try DEL.']) : err('\'rm\' is not recognized. This isn’t Linux: try DEL.')),
+    rm: (a) => (a.join(' ').includes('-rf') ? slow(['Deleting C:\\BloatOS\\System32…', 'Deleting C:\\BloatOS\\kernel.exe…', 'Deleting your homework…', '…', 'Just kidding. This isn’t Linux. Try DEL.']) : err('\'rm\' is not recognized. This isn’t Linux: try DEL.')),
     xyzzy: () => print('Nothing happens.'),
     coffee: () => err('Error: coffee.dll is missing. Please insert coffee and try again.'),
     cowsay: (a) => {
@@ -369,7 +374,7 @@ export function initTerminal(el, win, os) {
     neofetch: () => {
       const ach = achievementsLine()
       const logo = ['  ████████  ████████', '  ████████  ████████', '  ████████  ████████', '', '  ████████  ████████', '  ████████  ████████', '  ████████  ████████', '', '     n i k s t i l O S']
-      const info = [`${who()}@nikstil.com`, '-----------------', 'OS: nikstilOS Ultimate', `Theme: ${document.documentElement.dataset.theme ?? 'aero'}`, `Uptime: ${Math.round(performance.now() / 60000)} min`, 'Shell: cmd.exe (allegedly)', `Achievements: ${ach}`, 'CPU: Pentium 4 @ 3.0 GHz (vibes)', 'Memory: 640 KB (should be enough)']
+      const info = [`${who()}@nikstil.com`, '-----------------', 'OS: BloatOS Ultimate', `Theme: ${document.documentElement.dataset.theme ?? 'aero'}`, `Uptime: ${Math.round(performance.now() / 60000)} min`, 'Shell: cmd.exe (allegedly)', `Achievements: ${ach}`, 'CPU: Pentium 4 @ 3.0 GHz (vibes)', 'Memory: 640 KB (should be enough)']
       for (let i = 0; i < Math.max(logo.length, info.length); i++) print((logo[i] ?? '').padEnd(30) + (info[i] ?? ''), i < logo.length ? 'term-green' : '')
     },
     ping: (a) => {
@@ -386,7 +391,7 @@ export function initTerminal(el, win, os) {
     hello: () => print(`Hello, ${who()}. Type HELP if you’re lost.`),
     nikstil: () => print('That’s us! Thanks for poking around. 💙', 'term-green'),
     format: () => err('Access is denied. Nice try though.'),
-    shutdown: () => slow(['Shutting down nikstilOS…', 'Saving your 47 open tabs…', 'Saying goodbye to the CEO dog…', 'Shutdown cancelled: you have unsaved fun.'], 400),
+    shutdown: () => slow(['Shutting down BloatOS…', 'Saving your 47 open tabs…', 'Saying goodbye to the CEO dog…', 'Shutdown cancelled: you have unsaved fun.'], 400),
   }
   const who = () => window.nikstilOnline?.profile?.username ?? 'Guest'
   function achievementsLine() {
@@ -469,11 +474,19 @@ export function initTerminal(el, win, os) {
       case 'time':
         return print(`The current time is: ${new Date().toLocaleTimeString()}`)
       case 'ver':
-        return print('nikstilOS [Version 10.0.2026.1009] (Ultimate, Home Premium, Pro Max)')
+        return print('BloatOS [Version 10.0.2026.1009] (Ultimate, Home Premium, Pro Max)')
       case 'whoami':
-        return print(`nikstil\\${who().toLowerCase()}`)
+        if (args[0]?.toLowerCase() === '/secret') {
+          if (arg.step() < 2) return err('Access is denied. (You don’t know the secret yet.)')
+          arg.reach(3)
+          return slow(['y̴o̷u̶ ̵a̷r̴e̴ ̸n̷o̵t̶ ̸a̴l̵o̶n̴e̶.', 'Something runs on this PC when the clock says :X3 (three past, thirteen past, twenty-three past…).', 'Find it in the Task Manager. End it.'], 700)
+        }
+        return print(`bloatware\\${who().toLowerCase()}`)
       case 'hostname':
-        return print('NIKSTIL-PC')
+        return print('BLOAT-PC-9000')
+      case 'gravity':
+        os.gravity?.(args[0] ? !/^(off|0|no)$/i.test(args[0]) : undefined)
+        return print('Gravity toggled. Hold on to something.', 'term-dim')
       case 'title':
         win.setTitle?.(rest || 'Command Prompt')
         return
