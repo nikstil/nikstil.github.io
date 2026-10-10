@@ -83,7 +83,7 @@ const SAVES = [
   ['strife-record', 'COUNTER-STRIFE'],
   ['strife-settings', 'COUNTER-STRIFE'],
   ['strife-rank', 'COUNTER-STRIFE'],
-  ['strife-pretend-spent', 'COUNTER-STRIFE'],
+  ['strife-pretend-spent', 'COUNTER-STRIFE', 'strife-spent'],
   ['skinsink-stats', 'SKINSINK.GG'],
   ['skinsink-free', 'SKINSINK.GG'],
   ['doomscroll-save', 'DOOMSCROLL'],
@@ -160,12 +160,12 @@ export function list(path) {
   if (key === 'AppData') return [dir('nikstil', P('nikstil'), true)]
   if (key === 'AppData/nikstil') return [dir('Saves', P('Saves'), true, '💾')]
   if (key === 'AppData/nikstil/Saves')
-    return SAVES.map(([k, game]) => {
+    return SAVES.map(([k, game, as = k]) => {
       let raw = null
       try {
         raw = localStorage.getItem(k)
       } catch {}
-      return raw == null ? null : { name: `${k}.json`, kind: 'save', icon: '💾', ro: true, path: P(`${k}.json`), storageKey: k, game, size: sizeOf(raw) }
+      return raw == null ? null : { name: `${as}.json`, kind: 'save', icon: '💾', ro: true, path: P(`${as}.json`), storageKey: k, game, size: sizeOf(raw) }
     }).filter(Boolean)
   if (key === 'Users') return [dir('Guest', P('Guest'), true, '🙂'), dir('Public', P('Public'), true)]
   if (key === 'Users/Public') return [{ name: 'shared.txt', kind: 'txt', icon: '📄', ro: true, path: P('shared.txt'), text: 'Everyone can read this. Nobody has.', size: 35 }]

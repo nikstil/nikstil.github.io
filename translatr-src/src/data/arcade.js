@@ -17,7 +17,7 @@ export const ARCADE_GAMES = [
 export const PHONE_APPS = [
   { id: 'doom', icon: '🔥', name: 'DoomFeed™', blurb: 'The endless feed. Now in your pocket, where it can reach you anywhere.' },
   { id: 'browser', icon: '🌐', name: 'Browser', blurb: 'The internet, or the parts of it that agree to load in a frame.' },
-  { id: 'casino', icon: '🎰', name: 'SKINSINK.GG', blurb: 'The COUNTER-STRIFE skins casino: roulette, crash, coinflip, case battles and an upgrader. Pretend credits, real regret. From nikstil.com.', src: '/casino/?embed' },
+  { id: 'casino', icon: '🎰', name: 'SKINSINK.GG', blurb: 'The COUNTER-STRIFE skins casino: roulette, crash, coinflip, case battles and an upgrader. Credits in, regret out. From nikstil.com.', src: '/casino/?embed' },
   { id: 'kevin', icon: '👔', name: 'KEVIN-GOTCHI™', blurb: 'A pet intern. Coffee, snacks, praise, meetings. Get him to CEO before he quits. From nikstil.com.', src: '/kevin/?embed' },
   { id: 'stonks', icon: '📈', name: 'NASDANK', blurb: 'Buy shares in Kevin, Brenda, the CEO Dog and TheAlgorithm. Not financial advice. From nikstil.com.', src: '/stonks/?embed' },
 ]

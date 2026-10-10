@@ -3,7 +3,7 @@
 // players in an online game, and what you earn by playing: credits for kills and wins, case drops.
 
 import { WEAPONS } from './weapons.js'
-import { iconFor, rarityOf, shortName } from './items.js'
+import { iconFor, drawnIcon, rarityOf, shortName } from './items.js'
 import { openCreditStore } from './credits.js'
 import {
   SKINS, RARITY, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem, skinMaterial, itemKey,
@@ -23,6 +23,31 @@ let contract = [] // uids in the trade-up
 let tradeApi = null // set while in an online game: { partners(), send(toId, msg), onOpen() }
 
 export const inventory = () => inv
+
+// A skin's picture takes a moment to draw the first time (the gun, its paint, a render): they're
+// drawn a few at a time between frames instead of all at once, so the screen (and the case reel)
+// shows straight away and the pictures arrive as it goes.
+const toDraw = []
+let drawing = false
+const afterPaint = (f) => requestAnimationFrame(() => setTimeout(f))
+function picture(img, it, w = 150, h = 60) {
+  const ready = drawnIcon(it, w, h)
+  if (ready != null) return void (img.src = ready)
+  toDraw.push([img, it, w, h])
+  if (!drawing) {
+    drawing = true
+    afterPaint(drawSome)
+  }
+}
+function drawSome() {
+  const t = performance.now()
+  while (toDraw.length && performance.now() - t < 10) {
+    const [img, it, w, h] = toDraw.shift()
+    if (img.isConnected) img.src = iconFor(it, w, h)
+  }
+  if (toDraw.length) afterPaint(drawSome)
+  else drawing = false
+}
 /** Your equipped skins, weapon id -> descriptor (sent to the host when you join a game). */
 export function equippedSkins() {
   inv = loadInventory()
@@ -137,19 +162,21 @@ export function initInventory(opts) {
       const it = inv.items.find((x) => x.uid === selUid)
       if (it) audio?.music?.(musicById[it.music], 'mvp')
     } else if (act === 'key') {
-      if (inv.credits < KEY_PRICE) return flash('Not enough credits: win rounds and get kills to earn them (or get some with ＋ Credits).')
-      inv.credits -= KEY_PRICE
-      inv.keys++
+      const n = Number(t.dataset.n) || 1
+      if (inv.credits < KEY_PRICE * n) return flash(`Not enough credits${n > 1 ? ` for ${n} keys (ⓒ ${KEY_PRICE * n})` : ''}: win rounds and get kills to earn them (or get some with ＋ Credits).`)
+      inv.credits -= KEY_PRICE * n
+      inv.keys += n
       save()
       audio?.play('buy')
       render()
+      if (n > 1) flash(`🔑 ${n} keys added.`)
     } else if (act === 'credits') {
       openCreditStore({
         onBought: (n) => {
           inv = loadInventory()
           audio?.play('buy')
           render()
-          flash(`ⓒ ${n.toLocaleString('en-US')} credits added (pretend money).`)
+          flash(`ⓒ ${n.toLocaleString('en-US')} credits added.`)
         },
       })
     } else if (act === 'open') openCase(t.dataset.v)
@@ -288,7 +315,7 @@ function card(it, opts = {}) {
   b.dataset.uid = it.uid
   b.style.setProperty('--r', r.color)
   b.innerHTML = `<img alt=""><b></b><small></small>${isEquipped(it) ? '<em>Equipped</em>' : ''}${it.st != null ? '<i class="st">ST</i>' : ''}`
-  $('img', b).src = iconFor(it)
+  picture($('img', b), it)
   $('b', b).textContent = shortName(it)
   $('small', b).textContent = kindOf(it) === 'skin' ? wearOf(it.wear).name + ((it.stickers ?? []).length ? ` · ${it.stickers.length} sticker${it.stickers.length > 1 ? 's' : ''}` : '') : r.name
   return b
@@ -297,6 +324,7 @@ function tabsRender() {
   // (the casino pays out in hundredths)
   $('#inv-credits').textContent = Number.isInteger(inv.credits) ? inv.credits.toLocaleString('en-US') : inv.credits.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   $('#inv-buy-key').textContent = `Buy key (ⓒ ${KEY_PRICE})`
+  $('#inv-buy-keys').textContent = `10 keys (ⓒ ${KEY_PRICE * 10})`
   $('#inv-keys').textContent = inv.keys
   $('#inventory').querySelectorAll('[data-inv="tab"]').forEach((b) => b.classList.toggle('sel', b.dataset.v === tab))
   const tb = $('#inventory [data-inv="trade"]')
@@ -445,8 +473,8 @@ function casesTab(body) {
     }
     const ob = $('button', el)
     ob.dataset.v = c.id
-    ob.textContent = inv.keys ? 'Open (uses a key)' : 'Open: needs a key'
-    ob.disabled = !n || !inv.keys
+    ob.textContent = !n ? 'None to open' : inv.keys ? 'Open (uses a key)' : `Buy key & open (ⓒ ${KEY_PRICE})`
+    ob.disabled = !n
     grid.append(el)
   }
   body.append(grid)
@@ -468,7 +496,7 @@ function tradeUpTab(body) {
     if (it) {
       s.style.setProperty('--r', rarityOf(it).color)
       s.innerHTML = '<img alt="">'
-      $('img', s).src = iconFor(it, 120, 48)
+      picture($('img', s), it, 120, 48)
       s.title = shortName(it)
     }
     slots.append(s)
@@ -510,7 +538,13 @@ function signContract() {
 // ---------------- Opening a case: the reel
 let reelAnim = 0
 function openCase(caseId) {
-  if (!inv.keys || !(inv.cases[caseId] > 0)) return
+  if (!(inv.cases[caseId] > 0)) return
+  // no key: buy one on the way (it's what the button says)
+  if (!inv.keys) {
+    if (inv.credits < KEY_PRICE) return flash(`A key is ⓒ ${KEY_PRICE}: win rounds and get kills to earn credits (or get some with ＋ Credits).`)
+    inv.credits -= KEY_PRICE
+    inv.keys++
+  }
   inv.keys--
   inv.cases[caseId]--
   const won = addItem(inv, rollCase(caseId))
@@ -527,20 +561,31 @@ function openCase(caseId) {
   const N = 46
   const at = 40
   const items = []
-  for (let i = 0; i < N; i++) items.push(i === at ? won : rollCase(caseId))
+  // (the ones going past all wear the same paint job, so each skin is only drawn once)
+  const filler = (it) => (kindOf(it) === 'skin' ? { ...it, seed: 7, wear: 0.2, stickers: [] } : it)
+  for (let i = 0; i < N; i++) items.push(i === at ? won : filler(rollCase(caseId)))
+  const pics = []
   for (const it of items) {
     const el = document.createElement('div')
     el.className = 'reel-card'
     el.style.setProperty('--r', rarityOf(it).color)
+    strip.append(el)
     if (kindOf(it) === 'skin' && skinById[it.skin].rarity === 'gold' && it !== won) {
       el.innerHTML = '<div class="gold-star">★</div><b>Rare Special Item</b>'
     } else {
       el.innerHTML = '<img alt=""><b></b>'
-      $('img', el).src = iconFor(it, 150, 60)
       $('b', el).textContent = shortName(it)
     }
-    strip.append(el)
+    pics.push($('img', el))
   }
+  // pictures for what's in view at the start first, then where it stops, then the ones that fly past
+  const order = [...items.keys()].sort((a, b) => rank(a) - rank(b))
+  function rank(i) {
+    if (i < 6) return i
+    if (Math.abs(i - at) <= 5) return 10 + Math.abs(i - at)
+    return 100 + i
+  }
+  for (const i of order) if (pics[i]) picture(pics[i], items[i])
   const cardW = 158
   const view = $('#reel-window').clientWidth || 640
   const target = at * cardW + cardW / 2 - view / 2 + (Math.random() - 0.5) * (cardW * 0.7)

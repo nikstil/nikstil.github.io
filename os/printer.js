@@ -54,7 +54,7 @@ export async function receiptLines() {
     ['Kills / deaths', `${int(rec.kills)} / ${int(rec.deaths)}`],
     ['Matches won', int(rec.wins)],
     ['Credits on hand', int(inv.credits)],
-    ['Pretend money spent', `$${n(read('strife-pretend-spent')).toFixed(2)}`],
+    ['Money spent on credits', `$${n(read('strife-pretend-spent')).toFixed(2)}`],
     'SKINSINK.GG',
     ['Bet', `ⓒ ${int(sink.wagered)}`],
     [net >= 0 ? 'Up' : 'Down', `ⓒ ${int(Math.abs(net))}`],

@@ -1,4 +1,4 @@
-// Buying credits with pretend money. Five packs and a pretend checkout ("FakePal™"): no card
+// Buying credits with pretend money. Five packs and a pretend checkout ("WalletDrain™"): no card
 // details, nothing is charged, it's all made up. The credits go straight into your COUNTER-STRIFE
 // inventory (the one SKINSINK.GG uses too). Used by the inventory screen and the casino.
 
@@ -104,20 +104,20 @@ export function openCreditStore(opts = {}) {
 
   function packs() {
     const coins = ['🪙', '🪙🪙', '💰', '💰💰', '🏦']
-    card.innerHTML = `<h2>Get credits</h2><p class="cs-sub">For COUNTER-STRIFE keys and SKINSINK.GG. Paid for with <b>pretend money</b>: nothing is real and nothing is charged.</p>
+    card.innerHTML = `<h2>Get credits</h2><p class="cs-sub">For COUNTER-STRIFE keys and SKINSINK.GG. Instant delivery. No refunds. No regrets (some regrets).</p>
       <div class="cs-packs">${PACKS.map((p, i) => `<button class="cs-pack" data-c="${p.credits}">${p.tag ? `<span class="cs-tag${p.credits >= 10000 ? ' whale' : ''}">${p.tag}</span>` : ''}<span class="cs-coins" aria-hidden="true">${coins[i]}</span><span class="cs-amt">ⓒ ${num(p.credits)}</span><span class="cs-price">${money(p.price)}</span></button>`).join('')}</div>
-      <div class="cs-foot"><span>Pretend money spent so far: ${money(pretendSpent())}</span><button class="cs-btn" data-x>Close</button></div>`
+      <div class="cs-foot"><span>Spent so far: ${money(pretendSpent())}</span><button class="cs-btn" data-x>Close</button></div>`
     card.querySelector('[data-x]').onclick = close
     for (const b of card.querySelectorAll('.cs-pack')) b.onclick = () => checkout(PACKS.find((p) => p.credits === Number(b.dataset.c)))
     card.querySelector('.cs-pack')?.focus()
   }
   function checkout(p) {
-    card.innerHTML = `<h2>FakePal™</h2><p class="cs-sub">Checkout. The money is pretend; so is the bank.</p>
+    card.innerHTML = `<h2>WalletDrain™</h2><p class="cs-sub">Checkout. One click. That’s the problem.</p>
       <div class="cs-pay">
         <div class="cs-row"><span>ⓒ ${num(p.credits)} credits</span><b>${money(p.price)}</b></div>
-        <div class="cs-card"><span aria-hidden="true">💳</span><span><b>Pretend Bank</b> card •••• 0000<br><small>Not a real card. There's nothing to type in.</small></span></div>
+        <div class="cs-card"><span aria-hidden="true">💳</span><span><b>Bank of Bloat</b> card •••• 0000<br><small>Your default card. It’s always your default card.</small></span></div>
         <p class="cs-status" aria-live="polite"></p>
-        <div class="cs-foot"><button class="cs-btn" data-back>Back</button><button class="cs-btn go" data-pay>Pay ${money(p.price)} (pretend)</button></div>
+        <div class="cs-foot"><button class="cs-btn" data-back>Back</button><button class="cs-btn go" data-pay>Pay ${money(p.price)}</button></div>
       </div>`
     const status = card.querySelector('.cs-status')
     card.querySelector('[data-back]').onclick = packs
@@ -126,12 +126,12 @@ export function openCreditStore(opts = {}) {
     pay.onclick = () => {
       busy = true
       pay.disabled = card.querySelector('[data-back]').disabled = true
-      status.innerHTML = '<span class="cs-spin"></span>Contacting your imaginary bank…'
+      status.innerHTML = '<span class="cs-spin"></span>Contacting your bank…'
       setTimeout(() => {
         const bal = buyPack(p.credits)
         busy = false
         status.className = 'cs-status ok'
-        status.textContent = bal == null ? 'That didn’t work.' : `✓ Approved. ⓒ ${num(p.credits)} added (you have ⓒ ${num(bal)}). No real money moved.`
+        status.textContent = bal == null ? 'That didn’t work.' : `✓ Approved. ⓒ ${num(p.credits)} added (you have ⓒ ${num(bal)}). Spend it wisely (you won’t).`
         const foot = card.querySelector('.cs-foot')
         foot.innerHTML = '<button class="cs-btn" data-more>Buy more</button><button class="cs-btn go" data-done>Done</button>'
         foot.querySelector('[data-more]').onclick = packs

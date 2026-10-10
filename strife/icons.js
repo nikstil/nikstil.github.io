@@ -24,9 +24,12 @@ function setup() {
   cam.lookAt(0, 0, 0)
 }
 
+const cacheKey = (id, w, h, opts) => `${id}|${w}|${h}|${opts.silenced}|${opts.key ?? ''}`
+/** The picture, if it's been drawn already (or undefined). */
+export const drawnGunIcon = (id, w = 200, h = 80, opts = {}) => cache.get(cacheKey(id, w, h, opts))
 /** A picture of gun `id` (w×h px). opts: { silenced, skin: Material, key }. Returns a data URL. */
 export function gunIcon(id, w = 200, h = 80, opts = {}) {
-  const key = `${id}|${w}|${h}|${opts.silenced}|${opts.key ?? ''}`
+  const key = cacheKey(id, w, h, opts)
   if (cache.has(key)) return cache.get(key)
   let url = ''
   try {

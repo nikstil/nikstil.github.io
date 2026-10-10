@@ -3,7 +3,7 @@
 // inventory screen and SKINSINK.GG (the skins casino at /casino/).
 
 import { WEAPONS } from './weapons.js'
-import { gunIcon } from './icons.js'
+import { gunIcon, drawnGunIcon } from './icons.js'
 import {
   RARITY, CASES, STICKER_GRADE, skinById, caseById, stickerById, musicById, kindOf, wearOf, skinMaterial, stickerMaterial, stickerUrl, itemKey,
 } from './skins.js'
@@ -41,6 +41,12 @@ export function iconFor(it, w = 150, h = 60) {
   if (kind === 'music') return musicIcon(it.music)
   const s = skinById[it.skin]
   return gunIcon(s.weapon, w, h, { skin: skinMaterial(it), key: itemKey(it), stickers: (it.stickers ?? []).map(stickerMaterial) })
+}
+/** The same picture, but only if it's ready (drawing a skin the first time takes a moment): or null. */
+export function drawnIcon(it, w = 150, h = 60) {
+  const kind = kindOf(it)
+  if (kind !== 'skin') return iconFor(it, w, h)
+  return drawnGunIcon(skinById[it.skin].weapon, w, h, { key: itemKey(it) }) ?? null
 }
 /** Its rarity: { name, color }. */
 export function rarityOf(it) {
