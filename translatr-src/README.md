@@ -60,7 +60,7 @@ npm run fetch-cats  # download the cat photos, then rebuild
 - Saves live in the browser's localStorage under `translatr-save` (the game) and `nikstilos-theme`
   (the homepage's theme). The save format is versioned (`src/lib/save.js`), with migrations for
   older saves.
-- The game and nikstilOS share their eight themes (same ids), so a theme picked in one carries over
+- The game and nikstilOS share their ten themes (same ids), so a theme picked in one carries over
   to the other. Keep `src/data/themes.js` and the list in `../os/os.js` in step.
 - Every emoji the game uses has a stand-in for each emoji-swapping theme in
   `src/data/themeEmoji.js`; add one there when adding a new emoji.

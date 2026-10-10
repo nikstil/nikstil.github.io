@@ -1752,7 +1752,7 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 @media (max-width: 480px) { .prof-stats { grid-template-columns: 1fr; } }
 
 /* ---------- Command Prompt ---------- */
-.win-body.term { --term-bg: #0c0c0c; --term-fg: #cccccc; position: relative; height: min(440px, 62vh); padding: 6px 8px; overflow: auto; background: var(--term-bg) !important; color: var(--term-fg) !important; font: 14px/1.35 Consolas, 'Cascadia Mono', 'Lucida Console', 'Courier New', monospace; cursor: text; border-radius: 0 !important; }
+.win-body.term { --term-bg: #0c0c0c; --term-fg: #cccccc; position: relative; flex: 1 1 auto; height: min(440px, 62vh); padding: 6px 8px; overflow: auto; background: var(--term-bg) !important; color: var(--term-fg) !important; font: 14px/1.35 Consolas, 'Cascadia Mono', 'Lucida Console', 'Courier New', monospace; cursor: text; border-radius: 0 !important; }
 .term-out { white-space: pre-wrap; overflow-wrap: anywhere; }
 .term-l { min-height: 1.35em; }
 .term-err { color: #f2f2f2; }

@@ -480,3 +480,14 @@ body:not(.hosting) .host-only { display: none; }
 .invite-list li.muted { display: block; border: 0; background: none; font-size: 13px; opacity: 0.7; }
 .invite-find { display: flex; gap: 6px; }
 .invite-find input { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(0, 0, 0, 0.3); color: inherit; font: inherit; }
+
+/* ---------- Touch screens: keep the readouts and the chat clear of the buttons ---------- */
+/* the chat sits above your money and health, clear of the stick; just the last few lines */
+html.touch .chat { left: 172px; bottom: 84px; width: min(330px, calc(100vw - 400px)); }
+html.touch .chat-log li:nth-last-child(n + 5) { display: none; }
+/* upright phones: the buttons fill the bottom, so money, health and ammo go up top */
+@media (orientation: portrait) {
+  html.touch .bottom-left { left: 14px; bottom: auto; top: 168px; }
+  html.touch .bottom-right { right: 14px; bottom: auto; top: 168px; }
+  html.touch .chat { left: 14px; bottom: auto; top: 262px; width: calc(100vw - 28px); }
+}

@@ -75,13 +75,16 @@ const SAVES = [
   ['strife-stats', 'COUNTER-STRIFE'],
   ['strife-record', 'COUNTER-STRIFE'],
   ['strife-settings', 'COUNTER-STRIFE'],
+  ['strife-rank', 'COUNTER-STRIFE'],
   ['doomscroll-save', 'DOOMSCROLL'],
   ['touchgrass-save', 'LAWN OF THE DEAD'],
   ['touchphone-save', 'BRAINS FIRST'],
   ['loggle-save', 'LOGGLE'],
   ['nikstil-achievements', 'Achievements'],
+  ['nikstil-rewards', 'Achievements'],
   ['nikstilos-files', 'nikstilOS'],
   ['nikstilos-icons', 'nikstilOS'],
+  ['nikstilos-terminal', 'nikstilOS'],
 ]
 const SYS = {
   'kernel.exe': 'Please do not double-click the kernel.',
