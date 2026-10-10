@@ -20,6 +20,7 @@ const APPS = {
   grass: lazy(() => import('./arcade/TouchGrass')),
   brains: lazy(() => import('./arcade/TouchGrass')),
   strife: lazy(() => import('./arcade/TouchGrass')),
+  casino: lazy(() => import('./arcade/TouchGrass')),
   loggle: lazy(() => import('./arcade/Loggle')),
 }
 const PHONE = PREMIUM_ITEMS.find((p) => p.id === 'smartphone')
@@ -250,7 +251,7 @@ function LockScreen() {
       </div>
       <h2>This phone is not activated</h2>
       <p>
-        The LigmaPhone™ has the Arcade, DoomFeed™ and a browser. You can see it. You can’t use it. That’s what the {PHONE.price} is for.
+        The LigmaPhone™ has the Arcade, DoomFeed™, a browser and a casino. You can see it. You can’t use it. That’s what the {PHONE.price} is for.
       </p>
       <button className="phone-buy" onClick={buy} disabled={!!checkout}>
         {checkout?.itemId === 'smartphone' ? 'Processing…' : `Buy for ${PHONE.price}`}

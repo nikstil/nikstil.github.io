@@ -58,6 +58,7 @@ function ownNode(path) {
 const APP_FILES = [
   ['translatr', 'TRANSLATR™', 'translatr.exe'],
   ['strife', 'COUNTER-STRIFE', 'strife.exe'],
+  ['casino', 'SKINSINK.GG', 'skinsink.exe'],
   ['doom', 'DOOMSCROLL', 'DOOMSCROLL.EXE'],
   ['grass', 'LAWN OF THE DEAD', 'lawn.exe'],
   ['phone', 'BRAINS FIRST', 'brains.exe'],
@@ -76,6 +77,9 @@ const SAVES = [
   ['strife-record', 'COUNTER-STRIFE'],
   ['strife-settings', 'COUNTER-STRIFE'],
   ['strife-rank', 'COUNTER-STRIFE'],
+  ['strife-pretend-spent', 'COUNTER-STRIFE'],
+  ['skinsink-stats', 'SKINSINK.GG'],
+  ['skinsink-free', 'SKINSINK.GG'],
   ['doomscroll-save', 'DOOMSCROLL'],
   ['touchgrass-save', 'LAWN OF THE DEAD'],
   ['touchphone-save', 'BRAINS FIRST'],

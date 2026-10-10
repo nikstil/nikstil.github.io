@@ -25,16 +25,16 @@
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨', achievements: '🏅', files: '🗂️', terminal: '📟' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '🗄️', terminal: '⌨️' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷', achievements: '✪', files: '▤', terminal: '>_' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯', achievements: '🏆', files: '📂', terminal: '🖥️' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🏅', files: '🗂️', terminal: '⌨️' },
-    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯', achievements: '🎖️', files: '📁', terminal: '⌨️' },
-    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨', achievements: '💿', files: '📼', terminal: '💾' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨', achievements: '🏅', files: '🗂️', terminal: '📟', casino: '🎲' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '🗄️', terminal: '⌨️', casino: '🎰' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷', achievements: '✪', files: '▤', terminal: '>_', casino: '◈' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯', achievements: '🏆', files: '📂', terminal: '🖥️', casino: '🎰' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🏅', files: '🗂️', terminal: '⌨️', casino: '🎲' },
+    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰' },
+    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨', achievements: '💿', files: '📼', terminal: '💾', casino: '💸' },
   }
   ICONS.terminal = { ...ICONS.minimal }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
@@ -77,6 +77,7 @@
     browser: { title: 'BobbyBrowser', icon: 'browser', width: 900, init: initBrowser },
     mobile: { title: 'LigmaPhone', icon: 'mobile', width: 400, init: initMobile },
     strife: { title: 'COUNTER-STRIFE', icon: 'strife', width: 900, init: initStrife },
+    casino: { title: 'SKINSINK.GG', icon: 'casino', width: 760, init: initCasino },
     achievements: { title: 'Achievements', icon: 'achievements', width: 820, init: initAchievements },
     files: { title: 'File Explorer', icon: 'files', width: 780, init: initFiles },
     terminal: { title: 'Command Prompt', icon: 'terminal', width: 680, init: initTerminal },
@@ -623,6 +624,11 @@
     $('.loggle-frame', el).src = '/loggle/?embed'
   }
 
+  /** SKINSINK.GG, the COUNTER-STRIFE skins casino (the page at /casino/; pretend credits only). */
+  function initCasino(el) {
+    $('.casino-frame', el).src = '/casino/?embed'
+  }
+
   /** COUNTER-STRIFE, 5v5 bomb defusal against bots (the page at /strife/). */
   let strifeQuery = '' // what the next COUNTER-STRIFE window should do (see openStrife)
   function initStrife(el) {
@@ -765,6 +771,7 @@
     { id: 'phone', label: 'BRAINS FIRST', aspect: 960 / 672 },
     { id: 'loggle', label: 'LOGGLE' },
     { id: 'strife', label: 'COUNTER-STRIFE', aspect: 16 / 9 },
+    { id: 'casino', label: 'SKINSINK.GG' },
   ]
   function initMobile(el, win) {
     const grid = $('.mp-grid', el)
@@ -937,6 +944,7 @@
     { icon: '🧠', name: 'BRAINS FIRST', url: '/touchphone/' },
     { icon: '🟩', name: 'LOGGLE', url: '/loggle/' },
     { icon: '💣', name: 'COUNTER-STRIFE', url: '/strife/' },
+    { icon: '🎰', name: 'SKINSINK.GG', url: '/casino/' },
     { icon: '🎖️', name: 'Achievements', url: '/achievements/' },
     { icon: '🎞️', name: 'The GIF', url: '/gif/' },
     { icon: '📚', name: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },

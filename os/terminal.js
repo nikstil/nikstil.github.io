@@ -23,6 +23,7 @@ const write = (v) => {
 // The apps `start` knows, by any of their names.
 const APPS = [
   ['strife', 'COUNTER-STRIFE', ['strife', 'counter-strife', 'counterstrife', 'cs', 'cs2', 'csgo', 'strife.exe']],
+  ['casino', 'SKINSINK.GG', ['casino', 'skinsink', 'skinsink.gg', 'skinsink.exe', 'gamble']],
   ['translatr', 'TRANSLATR™', ['translatr', 'translatr.exe', 'translator']],
   ['doom', 'DOOMSCROLL.EXE', ['doom', 'doomscroll', 'doomscroll.exe']],
   ['grass', 'LAWN OF THE DEAD', ['grass', 'lawn', 'lawn.exe', 'touchgrass']],

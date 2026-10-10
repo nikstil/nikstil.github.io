@@ -138,7 +138,7 @@ CASES.push(
 export const caseById = Object.fromEntries(CASES.map((c) => [c.id, c]))
 /** What kind of thing an item is. */
 export const kindOf = (it) => it?.kind ?? 'skin'
-export const KEY_PRICE = 25 // credits
+export const KEY_PRICE = 5 // credits
 
 // ---------------- Rolling
 /** Picks what comes out of a case: rarity by the classic odds, then a skin of that rarity. */

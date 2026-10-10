@@ -17,6 +17,7 @@ export const ARCADE_GAMES = [
 export const PHONE_APPS = [
   { id: 'doom', icon: '🔥', name: 'DoomFeed™', blurb: 'The endless feed. Now in your pocket, where it can reach you anywhere.' },
   { id: 'browser', icon: '🌐', name: 'Browser', blurb: 'The internet, or the parts of it that agree to load in a frame.' },
+  { id: 'casino', icon: '🎰', name: 'SKINSINK.GG', blurb: 'The COUNTER-STRIFE skins casino: roulette, crash, coinflip, case battles and an upgrader. Pretend credits, real regret. From nikstil.com.', src: '/casino/?embed' },
 ]
 
 /**
@@ -32,6 +33,7 @@ export const BOOKMARKS = [
   { icon: '🧠', name: 'BRAINS FIRST', url: '/touchphone/' },
   { icon: '🟩', name: 'LOGGLE', url: '/loggle/' },
   { icon: '💣', name: 'COUNTER-STRIFE', url: '/strife/' },
+  { icon: '🎰', name: 'SKINSINK.GG', url: '/casino/' },
   { icon: '🎞️', name: 'The GIF', url: '/gif/' },
   { icon: '📚', name: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
   { icon: '🎲', name: 'Random article', url: 'https://en.m.wikipedia.org/wiki/Special:Random' },
