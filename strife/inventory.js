@@ -3,7 +3,8 @@
 // players in an online game, and what you earn by playing: credits for kills and wins, case drops.
 
 import { WEAPONS } from './weapons.js'
-import { gunIcon } from './icons.js'
+import { iconFor, rarityOf, shortName } from './items.js'
+import { openCreditStore } from './credits.js'
 import {
   SKINS, RARITY, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem, skinMaterial, itemKey,
   loadInventory, saveInventory, addItem, toggleEquip, equippedFor, skinDesc, randomSkinFor,
@@ -91,54 +92,8 @@ function giveCase() {
   return c.name
 }
 
-// ---------------- Pictures of things
-const musicIcons = new Map()
-function musicIcon(id) {
-  if (!musicIcons.has(id)) {
-    const k = musicById[id]
-    const c = document.createElement('canvas')
-    c.width = 150
-    c.height = 60
-    const g = c.getContext('2d')
-    const hue = (k.seed * 47) % 360
-    const gr = g.createLinearGradient(0, 0, 150, 60)
-    gr.addColorStop(0, `hsl(${hue} 60% 40%)`)
-    gr.addColorStop(1, `hsl(${(hue + 60) % 360} 60% 22%)`)
-    g.fillStyle = gr
-    g.beginPath()
-    g.roundRect(30, 4, 90, 52, 8)
-    g.fill()
-    g.fillStyle = '#fff'
-    g.font = '30px sans-serif'
-    g.textAlign = 'center'
-    g.textBaseline = 'middle'
-    g.fillText('♫', 75, 31)
-    musicIcons.set(id, c.toDataURL())
-  }
-  return musicIcons.get(id)
-}
-function iconFor(it, w = 150, h = 60) {
-  const kind = kindOf(it)
-  if (kind === 'sticker') return stickerUrl(it.sticker)
-  if (kind === 'music') return musicIcon(it.music)
-  const s = skinById[it.skin]
-  return gunIcon(s.weapon, w, h, { skin: skinMaterial(it), key: itemKey(it), stickers: (it.stickers ?? []).map(stickerMaterial) })
-}
-function rarityOf(it) {
-  const kind = kindOf(it)
-  if (kind === 'sticker') return { ...RARITY[stickerById[it.sticker]?.rarity ?? 'milspec'], name: STICKER_GRADE[stickerById[it.sticker]?.rarity ?? 'milspec'] }
-  if (kind === 'music') return { ...RARITY.milspec, name: 'High Grade' }
-  return RARITY[skinById[it.skin].rarity]
-}
 const equipKey = (it) => (kindOf(it) === 'music' ? 'music' : kindOf(it) === 'skin' ? skinById[it.skin].weapon : null)
 const isEquipped = (it) => equipKey(it) && inv.equipped[equipKey(it)] === it.uid
-function shortName(it) {
-  const kind = kindOf(it)
-  if (kind === 'sticker') return `Sticker | ${stickerById[it.sticker]?.name}`
-  if (kind === 'music') return `Music Kit | ${musicById[it.music]?.name}`
-  const s = skinById[it.skin]
-  return `${WEAPONS[s.weapon].name} | ${s.name}`
-}
 
 // ---------------- The screen
 export function initInventory(opts) {
@@ -182,12 +137,21 @@ export function initInventory(opts) {
       const it = inv.items.find((x) => x.uid === selUid)
       if (it) audio?.music?.(musicById[it.music], 'mvp')
     } else if (act === 'key') {
-      if (inv.credits < KEY_PRICE) return flash('Not enough credits: win rounds and get kills to earn them.')
+      if (inv.credits < KEY_PRICE) return flash('Not enough credits: win rounds and get kills to earn them (or get some with ＋ Credits).')
       inv.credits -= KEY_PRICE
       inv.keys++
       save()
       audio?.play('buy')
       render()
+    } else if (act === 'credits') {
+      openCreditStore({
+        onBought: (n) => {
+          inv = loadInventory()
+          audio?.play('buy')
+          render()
+          flash(`ⓒ ${n.toLocaleString('en-US')} credits added (pretend money).`)
+        },
+      })
     } else if (act === 'open') openCase(t.dataset.v)
     else if (act === 'reel-close') closeReel()
     else if (act === 'reel-equip') {
@@ -205,6 +169,12 @@ export function initInventory(opts) {
     else if (act === 'trade') openTradePicker()
   })
 }
+// SKINSINK.GG (or another tab) changed the inventory: pick that up instead of saving over it.
+addEventListener('storage', (e) => {
+  if (e.key !== 'strife-inventory') return
+  inv = loadInventory()
+  if (!document.getElementById('inventory')?.hidden) render()
+})
 export function showInventory() {
   inv = loadInventory()
   picking = null
@@ -324,7 +294,9 @@ function card(it, opts = {}) {
   return b
 }
 function tabsRender() {
-  $('#inv-credits').textContent = inv.credits
+  // (the casino pays out in hundredths)
+  $('#inv-credits').textContent = Number.isInteger(inv.credits) ? inv.credits.toLocaleString('en-US') : inv.credits.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  $('#inv-buy-key').textContent = `Buy key (ⓒ ${KEY_PRICE})`
   $('#inv-keys').textContent = inv.keys
   $('#inventory').querySelectorAll('[data-inv="tab"]').forEach((b) => b.classList.toggle('sel', b.dataset.v === tab))
   const tb = $('#inventory [data-inv="trade"]')

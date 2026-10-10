@@ -91,6 +91,19 @@ export const WEAPONS = {
 }
 export const MAX_GRENADES = 4
 
+/**
+ * Aiming down the sights (right mouse), for every gun without a scope: how much the view zooms in
+ * and how long it takes to get the sights up. Guns with a scope use the scope instead.
+ */
+export function adsOf(w) {
+  if (!w?.mag || w.zoom || w.kind === 'taser') return null
+  if (w.kind === 'pistol') return { fov: 0.86, time: 0.14 }
+  if (w.kind === 'smg') return { fov: 0.82, time: 0.18 }
+  if (w.type === 'shotgun') return { fov: 0.88, time: 0.2 }
+  if (w.type === 'mg') return { fov: 0.8, time: 0.3 }
+  return { fov: 0.76, time: 0.22 }
+}
+
 // The buy menu, by category, as in CS: five per row. Team-only items show for that team.
 export const SHOP = [
   { cat: 'Pistols', items: ['glock', 'usp', 'p2000', 'dualies', 'p250', 'tec9', 'fiveseven', 'cz75', 'deagle', 'r8'] },

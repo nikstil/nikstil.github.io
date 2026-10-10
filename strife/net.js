@@ -475,7 +475,7 @@ export class NetHost {
 /** Only the fields we expect, of the types we expect. */
 function sanitize(c) {
   const n = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
-  const o = { yaw: n(c.yaw), pitch: n(c.pitch), fire: !!c.fire, use: !!c.use, crouch: !!c.crouch, walk: !!c.walk, jump: !!c.jump, reload: !!c.reload, alt: !!c.alt, drop: !!c.drop, pickup: !!c.pickup, fx: 0, fz: 0 }
+  const o = { yaw: n(c.yaw), pitch: n(c.pitch), fire: !!c.fire, use: !!c.use, crouch: !!c.crouch, walk: !!c.walk, jump: !!c.jump, reload: !!c.reload, alt: !!c.alt, mode: !!c.mode, aim: !!c.aim, drop: !!c.drop, pickup: !!c.pickup, fx: 0, fz: 0 }
   if (typeof c.slot === 'string' && /^(primary|pistol|knife|grenade|bomb|last|zeus)$/.test(c.slot)) o.slot = c.slot
   if (typeof c.buy === 'string' && (WEAPONS[c.buy] || /^(vest|vesthelm|kit)$/.test(c.buy))) o.buy = c.buy
   const s = c.st
@@ -655,7 +655,7 @@ export class NetClient {
 function squash(batch) {
   const last = batch[batch.length - 1]
   const edge = {}
-  for (const c of batch) for (const k of ['reload', 'alt', 'drop', 'pickup', 'jump']) if (c[k]) edge[k] = true
+  for (const c of batch) for (const k of ['reload', 'alt', 'mode', 'drop', 'pickup', 'jump']) if (c[k]) edge[k] = true
   const slot = batch.findLast((c) => c.slot)?.slot
   const buy = batch.find((c) => c.buy)?.buy
   const fired = batch.some((c) => c.fire)

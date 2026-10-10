@@ -12,7 +12,9 @@ export function gunMat(color, kind = 'metal') {
   if (!matCache.has(key)) {
     const shin = { metal: 70, poly: 12, wood: 18, rubber: 4, glass: 120 }[kind]
     const spec = { metal: '#6a6a6a', poly: '#1c1c1c', wood: '#2a2018', rubber: '#0a0a0a', glass: '#ffffff' }[kind]
-    matCache.set(key, new THREE.MeshPhongMaterial({ color, shininess: shin, specular: spec }))
+    // (glass you can see through: you look through a red dot's window to aim)
+    const see = kind === 'glass' ? { transparent: true, opacity: 0.35, depthWrite: false } : {}
+    matCache.set(key, new THREE.MeshPhongMaterial({ color, shininess: shin, specular: spec, ...see }))
   }
   return matCache.get(key)
 }
@@ -158,11 +160,17 @@ function scope(u0, u1, v, g, { r = 0.017, bell = 0.026, mat = C.black(), mount =
     g.add(blk(u1 - L * 0.38, u1 - L * 0.3, v - r - 0.02, v - r * 0.3, 0.018, C.black()))
   }
 }
-/** A red-dot / holo sight. */
+const DOT = new THREE.MeshBasicMaterial({ color: '#ff2a3a' })
+/** A red-dot / holo sight: an open hood (you look through it to aim) with the glass and the dot. */
 function redDot(u, v, g) {
-  g.add(blk(u - 0.04, u + 0.03, v, v + 0.012, 0.03, C.black()))
-  g.add(profile([[u - 0.04, v + 0.012], [u + 0.03, v + 0.012], [u + 0.03, v + 0.048], [u + 0.022, v + 0.052], [u - 0.034, v + 0.052], [u - 0.04, v + 0.046]], 0.034, C.black(), { hole: [[u - 0.036, v + 0.016], [u + 0.026, v + 0.016], [u + 0.026, v + 0.046], [u - 0.036, v + 0.046]] }))
-  g.add(blk(u + 0.02, u + 0.024, v + 0.016, v + 0.046, 0.028, C.lens()))
+  const M = C.black()
+  g.add(blk(u - 0.04, u + 0.03, v, v + 0.012, 0.03, M))
+  const side = [[u - 0.034, v + 0.012], [u + 0.03, v + 0.012], [u + 0.03, v + 0.048], [u + 0.022, v + 0.052], [u - 0.028, v + 0.052], [u - 0.034, v + 0.046]]
+  for (const x of [-0.0145, 0.0145]) g.add(profile(side, 0.005, M, { x }))
+  g.add(blk(u - 0.028, u + 0.022, v + 0.047, v + 0.053, 0.034, M)) // the roof
+  g.add(blk(u + 0.02, u + 0.024, v + 0.014, v + 0.047, 0.024, C.lens()))
+  g.add(blk(u + 0.0185, u + 0.0195, v + 0.0295, v + 0.0325, 0.003, DOT)) // the dot
+  g.userData.dot = v + 0.031 // aiming down the sights, you look through the middle of the window
 }
 /** Front sight post (A-frame or a simple blade). */
 function frontPost(u, v, g, h = 0.035, frame = true) {
@@ -623,6 +631,19 @@ export function muzzleOf(g) {
   const b = new THREE.Box3().setFromObject(g)
   return -b.min.z
 }
+/** How high the line of sight is above the bore (to aim down the sights): a red dot's window, or the top of the sights. */
+export function sightOf(g) {
+  if (g.userData.dot != null) return g.userData.dot
+  g.updateMatrixWorld(true)
+  const box = new THREE.Box3()
+  let top = -Infinity
+  g.traverse((m) => {
+    if (!m.isMesh || m.userData.offhand) return
+    box.setFromObject(m)
+    if (Math.abs(box.min.x + box.max.x) / 2 < 0.03) top = Math.max(top, box.max.y)
+  })
+  return Number.isFinite(top) ? top : 0.05
+}
 
 /** Up to four stickers along the right side of the receiver. */
 const stickerGeo = new THREE.PlaneGeometry(1, 1)
@@ -658,6 +679,7 @@ export function buildGun(id, opts = {}) {
   make(g, opts.detail ?? 1, { silenced: opts.silenced })
   if (opts.skin) g.traverse((m) => m.isMesh && m.userData.paint && (m.material = opts.skin))
   g.userData.muzzle = muzzleOf(g)
+  g.userData.sight = sightOf(g)
   if (opts.stickers?.length) applyStickers(g, opts.stickers)
   return g
 }

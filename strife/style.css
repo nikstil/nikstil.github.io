@@ -167,6 +167,8 @@ html.embed .home-link, body.playing .home-link { display: none; }
 .tb.reload { right: 120px; bottom: 150px; }
 .tb.use { right: 24px; bottom: 190px; }
 .tb.alt { right: 120px; bottom: 210px; width: 44px; height: 44px; }
+.tb.mode { right: 180px; bottom: 220px; width: 44px; height: 44px; font-size: 11px; }
+.tb.mode[hidden] { display: none; }
 .tb.swap { right: 180px; bottom: 100px; width: 44px; height: 44px; }
 .tb.nade { right: 180px; bottom: 160px; width: 44px; height: 44px; }
 .tb.buy-btn { left: 16px; top: 50%; width: 44px; height: 44px; }

@@ -3,6 +3,7 @@
 
 let ctx = null
 let master = null
+let sfx = null // the sound effects go through here: quieter, and with the harsh top taken off
 let volume = 0.8
 let muted = false
 const buffers = {}
@@ -32,6 +33,17 @@ export function unlockAudio() {
   comp.threshold.value = -14
   comp.ratio.value = 6
   master.connect(comp).connect(ctx.destination)
+  sfx = ctx.createGain()
+  sfx.gain.value = 0.85
+  const shelf = ctx.createBiquadFilter()
+  shelf.type = 'highshelf'
+  shelf.frequency.value = 4000
+  shelf.gain.value = -5
+  const top = ctx.createBiquadFilter()
+  top.type = 'lowpass'
+  top.frequency.value = 11000
+  top.Q.value = 0.5
+  sfx.connect(shelf).connect(top).connect(master)
   bake()
 }
 
@@ -45,17 +57,21 @@ function buffer(seconds, fn) {
   return b
 }
 const noise = () => Math.random() * 2 - 1
-/** A gunshot: a crack of noise, a body (filtered noise) and a low thump, each with its own decay. */
+/**
+ * A gunshot: a crack of noise, a body (filtered noise) and a low thump, each with its own decay.
+ * (The crack is filtered and the whole thing only lightly driven: punchy, not fizzy.)
+ */
 function shot({ crack = 1, crackDecay = 60, body = 0.8, bodyDecay = 14, lp = 0.25, thump = 0.7, thumpHz = 70, thumpDecay = 18, tail = 0.15, tailDecay = 4, len = 0.6 }) {
   return buffer(len, (t, s) => {
     const n = noise()
     s.lp += (n - s.lp) * lp
     s.lp2 += (n - s.lp2) * 0.04
-    const c = n * crack * Math.exp(-t * crackDecay)
+    s.hp += (n - s.hp) * 0.5
+    const c = s.hp * crack * 0.75 * Math.exp(-t * crackDecay * 1.2)
     const b = s.lp * body * Math.exp(-t * bodyDecay)
-    const th = Math.sin(2 * Math.PI * thumpHz * t * (1 - t * 0.8)) * thump * Math.exp(-t * thumpDecay)
-    const tl = s.lp2 * tail * Math.exp(-t * tailDecay) * 3
-    return Math.tanh((c + b + th + tl) * 1.4) * 0.9
+    const th = Math.sin(2 * Math.PI * thumpHz * t * (1 - t * 0.8)) * thump * 1.1 * Math.exp(-t * thumpDecay)
+    const tl = s.lp2 * tail * Math.exp(-t * tailDecay) * 2.4
+    return Math.tanh((c + b + th + tl) * 1.15) * 0.8
   })
 }
 function bake() {
@@ -69,12 +85,15 @@ function bake() {
   buffers.mg = shot({ crack: 0.95, body: 0.9, lp: 0.24, thump: 0.75, thumpHz: 70, tail: 0.2, bodyDecay: 16, len: 0.5 })
   buffers.scout = shot({ crack: 1, body: 0.8, lp: 0.3, thump: 0.6, thumpHz: 75, thumpDecay: 14, tail: 0.35, tailDecay: 3, bodyDecay: 12, len: 1.0 })
   buffers.auto = shot({ crack: 1, body: 1, lp: 0.2, thump: 0.85, thumpHz: 55, thumpDecay: 10, tail: 0.35, tailDecay: 3, bodyDecay: 10, len: 0.9 })
-  buffers.zeus = buffer(0.5, (t) => (Math.random() < 0.5 ? 1 : -1) * Math.exp(-t * 7) * (0.4 + 0.6 * (Math.sin(2 * Math.PI * 90 * t) > 0 ? 1 : 0)) * 0.6)
+  buffers.zeus = buffer(0.5, (t, s) => {
+    s.lp += (noise() - s.lp) * 0.3
+    return s.lp * Math.exp(-t * 7) * (0.4 + 0.6 * (Math.sin(2 * Math.PI * 90 * t) > 0 ? 1 : 0)) * 0.7
+  })
   buffers.molotov = buffer(1.2, (t, s) => {
     const n = noise()
     s.lp += (n - s.lp) * 0.08
     const glass = t < 0.15 ? n * Math.exp(-t * 30) * (Math.sin(2 * Math.PI * 3200 * t) * 0.5 + 0.5) : 0
-    return glass * 0.8 + s.lp * 2.2 * Math.min(1, t * 6) * Math.exp(-t * 2.2)
+    return glass * 0.45 + s.lp * 2.2 * Math.min(1, t * 6) * Math.exp(-t * 2.2)
   })
   buffers.burn = buffer(0.5, (t, s) => {
     const n = noise()
@@ -99,12 +118,12 @@ function bake() {
     const n = noise()
     s.hp = n - s.last
     s.last = n
-    const tone = t > 0.05 && t < 0.2 ? Math.sign(Math.sin(2 * Math.PI * (t < 0.12 ? 1320 : 990) * t)) * 0.12 : 0
-    return s.hp * 0.25 * Math.exp(-t * 18) + tone
+    const tone = t > 0.05 && t < 0.2 ? Math.sin(2 * Math.PI * (t < 0.12 ? 1100 : 825) * t) * 0.1 * Math.min(1, (t - 0.05) * 200, (0.2 - t) * 200) : 0
+    return s.hp * 0.12 * Math.exp(-t * 18) + tone
   })
   buffers.reload = buffer(1.0, (t) => {
     const hit = (at) => (t > at && t < at + 0.03 ? noise() * Math.exp(-(t - at) * 160) : 0)
-    return (hit(0.1) * 0.6 + hit(0.55) * 0.8 + hit(0.62) * 0.5 + hit(0.85) * 0.7) * 0.8
+    return (hit(0.1) * 0.6 + hit(0.55) * 0.8 + hit(0.62) * 0.5 + hit(0.85) * 0.7) * 0.55
   })
   buffers.swish = buffer(0.25, (t, s) => {
     const n = noise()
@@ -121,7 +140,7 @@ function bake() {
     buffers['step' + k] = buffer(0.12, (t, s) => {
       const n = noise()
       s.lp += (n - s.lp) * (0.15 + k * 0.05)
-      return s.lp * 1.6 * Math.exp(-t * (40 + k * 6)) + Math.sin(2 * Math.PI * (60 + k * 8) * t) * 0.3 * Math.exp(-t * 50)
+      return s.lp * 1.7 * Math.exp(-t * (40 + k * 6)) + Math.sin(2 * Math.PI * (60 + k * 8) * t) * 0.3 * Math.exp(-t * 50)
     })
   buffers.land = buffer(0.2, (t, s) => {
     const n = noise()
@@ -130,29 +149,32 @@ function bake() {
   })
   buffers.hit = buffer(0.15, (t, s) => {
     const n = noise()
-    s.lp += (n - s.lp) * 0.3
-    return s.lp * 1.6 * Math.exp(-t * 35)
+    s.lp += (n - s.lp) * 0.2
+    return s.lp * 1.3 * Math.exp(-t * 35)
   })
-  buffers.dink = buffer(0.5, (t) => (Math.sin(2 * Math.PI * 2400 * t) * 0.5 + Math.sin(2 * Math.PI * 3700 * t) * 0.3) * Math.exp(-t * 14) * 0.6)
-  buffers.ricochet = buffer(0.3, (t) => Math.sin(2 * Math.PI * (2600 - t * 4000) * t) * Math.exp(-t * 18) * 0.25)
-  buffers.beep = buffer(0.12, (t) => Math.sin(2 * Math.PI * 1950 * t) * Math.min(1, t * 200) * Math.exp(-t * 18) * 0.7)
+  buffers.dink = buffer(0.4, (t) => (Math.sin(2 * Math.PI * 1760 * t) * 0.5 + Math.sin(2 * Math.PI * 2640 * t) * 0.2) * Math.min(1, t * 400) * Math.exp(-t * 18) * 0.45)
+  buffers.ricochet = buffer(0.3, (t) => Math.sin(2 * Math.PI * (2200 - t * 3000) * t) * Math.min(1, t * 300) * Math.exp(-t * 18) * 0.14)
+  buffers.beep = buffer(0.12, (t) => Math.sin(2 * Math.PI * 1480 * t) * Math.min(1, t * 200, (0.12 - t) * 200) * Math.exp(-t * 18) * 0.45)
   buffers.boom = buffer(2.6, (t, s) => {
     const n = noise()
     s.lp += (n - s.lp) * 0.05
     s.lp2 += (n - s.lp2) * 0.012
-    return Math.tanh((s.lp * 3 * Math.exp(-t * 3) + s.lp2 * 6 * Math.exp(-t * 1.2) + Math.sin(2 * Math.PI * 38 * t) * Math.exp(-t * 3)) * 1.5) * 0.95
+    return Math.tanh((s.lp * 3 * Math.exp(-t * 3) + s.lp2 * 6 * Math.exp(-t * 1.2) + Math.sin(2 * Math.PI * 38 * t) * Math.exp(-t * 3)) * 1.1) * 0.6
   })
   buffers.he = buffer(1.4, (t, s) => {
     const n = noise()
     s.lp += (n - s.lp) * 0.08
-    return Math.tanh((noise() * Math.exp(-t * 30) + s.lp * 3 * Math.exp(-t * 4) + Math.sin(2 * Math.PI * 50 * t) * Math.exp(-t * 6)) * 1.3) * 0.9
+    s.hp += (n - s.hp) * 0.45
+    return Math.tanh((s.hp * 0.6 * Math.exp(-t * 30) + s.lp * 3 * Math.exp(-t * 4) + Math.sin(2 * Math.PI * 50 * t) * Math.exp(-t * 6)) * 1.0) * 0.62
   })
   buffers.flash = buffer(0.6, (t, s) => {
     const n = noise()
     s.lp += (n - s.lp) * 0.3
-    return Math.tanh((noise() * Math.exp(-t * 40) + s.lp * 2 * Math.exp(-t * 12)) * 1.5) * 0.8
+    s.hp += (n - s.hp) * 0.5
+    return Math.tanh((s.hp * 0.6 * Math.exp(-t * 40) + s.lp * 2 * Math.exp(-t * 12)) * 1.1) * 0.55
   })
-  buffers.ring = buffer(3, (t) => Math.sin(2 * Math.PI * 3200 * t) * 0.2 * Math.exp(-t * 0.9))
+  // the ringing in your ears after a flash: a soft whine that fades (it used to be a shrill tone)
+  buffers.ring = buffer(2.4, (t) => (Math.sin(2 * Math.PI * 2100 * t) + Math.sin(2 * Math.PI * 2103 * t) * 0.6) * 0.035 * Math.min(1, t * 8) * Math.exp(-t * 1.3))
   buffers.hiss = buffer(2.5, (t, s) => {
     const n = noise()
     s.hp = n - s.last
@@ -160,15 +182,15 @@ function bake() {
     return s.hp * 0.25 * Math.min(1, t * 6) * Math.exp(-t * 0.8)
   })
   buffers.bounce = buffer(0.08, (t) => Math.sin(2 * Math.PI * 900 * t) * Math.exp(-t * 60) * 0.5 + noise() * Math.exp(-t * 120) * 0.3)
-  buffers.pin = buffer(0.15, (t) => Math.sin(2 * Math.PI * 3000 * t) * Math.exp(-t * 50) * 0.3)
-  buffers.buy = buffer(0.12, (t) => Math.sin(2 * Math.PI * (700 + t * 3000) * t) * Math.exp(-t * 20) * 0.35)
-  buffers.deny = buffer(0.2, (t) => Math.sign(Math.sin(2 * Math.PI * 160 * t)) * Math.exp(-t * 12) * 0.2)
+  buffers.pin = buffer(0.15, (t) => Math.sin(2 * Math.PI * 2400 * t) * Math.exp(-t * 50) * 0.2)
+  buffers.buy = buffer(0.12, (t) => Math.sin(2 * Math.PI * (700 + t * 3000) * t) * Math.min(1, t * 300) * Math.exp(-t * 20) * 0.28)
+  buffers.deny = buffer(0.2, (t) => (Math.sin(2 * Math.PI * 160 * t) + Math.sin(2 * Math.PI * 320 * t) * 0.3) * Math.min(1, t * 300) * Math.exp(-t * 12) * 0.15)
   const chord = (notes, len, wave = (x) => Math.sin(x)) =>
     buffer(len, (t) => notes.reduce((a, [hz, at]) => a + (t > at ? wave(2 * Math.PI * hz * (t - at)) * Math.exp(-(t - at) * 3) : 0), 0) * 0.16)
   buffers.roundStart = chord([[392, 0], [523, 0.08], [659, 0.16]], 1.2)
   buffers.win = chord([[523, 0], [659, 0.12], [784, 0.24], [1046, 0.36]], 1.8)
   buffers.lose = chord([[392, 0], [311, 0.15], [262, 0.3]], 1.6)
-  buffers.planted = chord([[880, 0], [880, 0.25], [660, 0.5]], 1.2, (x) => Math.sign(Math.sin(x)) * 0.5)
+  buffers.planted = chord([[880, 0], [880, 0.25], [660, 0.5]], 1.2, (x) => Math.sin(x) * 0.5 + Math.sin(3 * x) * 0.06)
 }
 
 const listener = { x: 0, y: 0, z: 0, fx: 0, fz: -1 }
@@ -201,8 +223,13 @@ export function setListener(x, y, z, yaw) {
  * Plays a sound. With `at` ({x, y, z}) it comes from that place in the world; without, it's in
  * your head (your own gun, the UI). `range` is how far it carries (metres).
  */
+// How loud each kind of sound sits in the mix (1 = as made). Your own gun is in your head, so it's
+// turned down on top of this.
+const GUNS = new Set(['ak', 'm4', 'smg', 'pistol', 'deagle', 'awp', 'shotgun', 'mg', 'scout', 'auto'])
+const TRIM = { boom: 0.7, he: 0.75, flash: 0.7, molotov: 0.8, zeus: 0.8, click: 0.7, reload: 0.8, land: 0.75, hit: 0.8, stab: 0.8, swish: 0.8, radio: 0.8, bounce: 0.75 }
 export function play(name, { at = null, gain = 1, rate = 1, range = 40 } = {}) {
   if (!ctx || !buffers[name]) return
+  gain *= (TRIM[name] ?? 1) * (GUNS.has(name) && !at ? 0.8 : 1)
   if (at) {
     const d = Math.hypot(at.x - listener.x, at.y - listener.y, at.z - listener.z)
     if (d > range * 2.2) return
@@ -224,8 +251,8 @@ export function play(name, { at = null, gain = 1, rate = 1, range = 40 } = {}) {
       p.positionY.value = at.y
       p.positionZ.value = at.z
     } else p.setPosition(at.x, at.y, at.z)
-    src.connect(g).connect(p).connect(master)
-  } else src.connect(g).connect(master)
+    src.connect(g).connect(p).connect(sfx)
+  } else src.connect(g).connect(sfx)
   src.start()
 }
 
