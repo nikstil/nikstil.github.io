@@ -7,12 +7,12 @@ import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP, adsOf } from './weapons.js'
 import { gunIcon } from './icons.js'
-import { skinMaterial, stickerMaterial } from './skins.js'
+import { skinMaterial, stickerMaterial, randomAgent } from './skins.js'
 import { initChat } from './chatui.js'
 import { initRanks } from './rankui.js'
 import { initInvites, isUserId } from './invite.js'
 import { rankBadge } from './ranks.js'
-import { initInventory, showInventory, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
+import { initInventory, showInventory, myAgents, skinFor, rewardKill, rewardRound, rewardMatch, equippedSkins, musicKit, rewardMvp, setTradeApi, onTradeMessage, openTradePicker } from './inventory.js'
 import { openHub, NetHost, NetClient, makeCode } from './net.js'
 import { track } from './stats.js'
 import { Recorder, Player, clip, saveReplay, listReplays, loadReplay, deleteReplay } from './replay.js'
@@ -55,7 +55,6 @@ const settings = {
   cross: '#4dff6a',
   invert: false,
   killcam: true,
-  radioVoice: true,
   aimToggle: false, // aim down the sights: hold right mouse (or click once to aim, again to stop)
   map: 'dust2',
   team: 'auto',
@@ -125,7 +124,9 @@ function hooks() {
       if (mode === 'play') chatUi.chat(d)
     },
     radio(d) {
-      if (mode === 'play') chatUi.radio(d)
+      if (mode !== 'play') return
+      chatUi.radio(d)
+      addWaypoint(d)
     },
     sound(name, at, o) {
       if (mode !== 'play') return
@@ -153,6 +154,7 @@ function hooks() {
       addKillfeed(e)
       if (e.victim === game.player) {
         deathInfo = e
+        afterDeath()
         if (e.attacker && e.attacker !== e.victim && !game.respawns && !game.practice) {
           const killerId = e.attacker.id
           const deathT = game.time
@@ -192,6 +194,8 @@ function hooks() {
       hideBanner()
       deathInfo = null
       spectIdx = 0
+      freshSpawn()
+      clearWaypoints()
       if (game.player) {
         look.yaw = game.player.yaw
         look.pitch = 0
@@ -235,6 +239,7 @@ function hooks() {
     },
     respawn({ a }) {
       if (a !== game.player) return
+      freshSpawn()
       deathInfo = null
       camY = null
       look.yaw = a.yaw
@@ -262,6 +267,11 @@ function start({ demo = false, practice = false, host = false } = {}) {
   const map = MAPS[settings.map]
   const team = demo ? null : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
   game = new Game({ map, team, mode: demo ? 'competitive' : settings.mode, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
+  // who everyone plays as: you, your agents; a bot, now and then, a random one
+  for (const a of game.actors) {
+    if (a === game.player) a.agents = myAgents()
+    else if (a.isBot && Math.random() < 0.25) a.agents = { T: randomAgent('T'), CT: randomAgent('CT') }
+  }
   if (!demo) {
     rankCtx = rankUi.startMatch(game, settings.map)
     rankUi.tagActors(game)
@@ -292,9 +302,12 @@ function attachView(map, demo = false) {
   camY = null
   killfeed.length = 0
   $('#killfeed').replaceChildren()
+  clearWaypoints()
   chatUi.clear()
   hideBanner()
   document.body.classList.toggle('playing', !demo)
+  // Deathmatch and Arms Race: no radio, no callouts, no waypoints
+  document.body.classList.toggle('no-radio', !!game.respawns)
 }
 
 // ================= Killcam and replays =================
@@ -362,6 +375,7 @@ async function startReplay(data) {
   mode = 'replay'
   killfeed.length = 0
   $('#killfeed').replaceChildren()
+  clearWaypoints()
   chatUi.clear()
   show(null)
   $('#hud').hidden = false
@@ -737,7 +751,6 @@ function syncSettings() {
   $('#set-cross').value = settings.cross
   $('#set-invert').checked = settings.invert
   $('#set-killcam').checked = settings.killcam
-  $('#set-radio-voice').checked = settings.radioVoice
   $('#set-aim-toggle').checked = settings.aimToggle
   $('#crosshair').style.setProperty('--c', settings.cross)
 }
@@ -752,7 +765,6 @@ $('#set-vol').addEventListener('input', (e) => {
 $('#set-cross').addEventListener('change', (e) => ((settings.cross = e.target.value), saveSettings(), syncSettings()))
 $('#set-invert').addEventListener('change', (e) => ((settings.invert = e.target.checked), saveSettings()))
 $('#set-killcam').addEventListener('change', (e) => ((settings.killcam = e.target.checked), saveSettings()))
-$('#set-radio-voice').addEventListener('change', (e) => ((settings.radioVoice = e.target.checked), saveSettings()))
 $('#set-aim-toggle').addEventListener('change', (e) => {
   settings.aimToggle = e.target.checked
   aimLatch = mouseAim = false
@@ -1040,7 +1052,8 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyQ') edge.slot = 'last'
   if (e.code === 'KeyG') edge.drop = true
   if (e.code === 'KeyE') edge.pickup = true
-  if (e.code === 'KeyF') edge.mode = true
+  if (e.code === 'KeyF') inspect()
+  if (e.code === 'KeyV') edge.mode = true
   if (SLOT_KEYS[e.code]) edge.slot = SLOT_KEYS[e.code]
   if (e.code === 'KeyB') toggleBuy()
   if (e.code === 'Escape') {
@@ -1097,6 +1110,25 @@ function playerCmd() {
     cmd.fire = false
   }
   return cmd
+}
+
+/** F: have a look at what's in your hands (and its skin). */
+function inspect() {
+  if (mode !== 'play' || !game.player?.alive || paused) return
+  view?.inspect()
+}
+/** You died: the buy menu goes away (left open, it kept the mouse free and the trigger off into the next life). */
+function afterDeath() {
+  if (buyOpen) toggleBuy(false)
+  mouseFire = false
+  aimLatch = false
+}
+/** A new round or a respawn: nothing from the last life carries over (a half-pressed button, an open menu). */
+function freshSpawn() {
+  if (buyOpen && !game.canBuy(game.player)) toggleBuy(false)
+  edge.jump = edge.reload = edge.alt = edge.mode = edge.drop = edge.pickup = false
+  edge.slot = null
+  aimLatch = false
 }
 
 // ================= Buy menu =================
@@ -1240,6 +1272,7 @@ if (coarse) {
       if (t === 'reload') edge.reload = true
       if (t === 'alt') altDown(true)
       if (t === 'mode') edge.mode = true
+      if (t === 'inspect') inspect()
       if (t === 'swap') cycleWeapon(1)
       if (t === 'nade') edge.slot = 'grenade'
       if (t === 'crouch') touch.crouch = !touch.crouch
@@ -1258,6 +1291,89 @@ if (coarse) {
     }
     b.addEventListener('pointerup', up)
     b.addEventListener('pointercancel', up)
+  }
+}
+
+// ================= Waypoints =================
+// Radio callouts with a place ("Enemy spotted", "Need backup", "Hold this position"…) don't talk:
+// a marker appears where they are, for the speaker's team, with the place and how far it is.
+// It's on screen (or at its edge, pointing the way) and on the radar, for a few seconds.
+const WAYPOINT_MS = 6000
+const WP_STYLE = {
+  spotted: { icon: '!', col: '#ff4d4d', what: 'Enemy' },
+  backup: { icon: '+', col: '#ff9f1a', what: 'Backup' },
+  planting: { icon: '💣', col: '#ff9f1a', what: 'Planting' },
+  hold: { icon: '■', col: null, what: 'Hold' },
+  clear: { icon: '✓', col: null, what: 'Clear' },
+  inpos: { icon: '●', col: null, what: 'In position' },
+}
+const teamCol = (t) => (t === 'T' ? '#e3ac48' : '#6fa8e0')
+let waypoints = []
+const wpBox = $('#waypoints')
+function addWaypoint(d) {
+  const me = game.player
+  if (!d.at || game.respawns || !me || d.team !== me.team) return
+  const style = WP_STYLE[d.id] ?? { icon: '◆', col: null, what: '' }
+  // one each: a new callout moves the speaker's last one
+  for (const w of waypoints.filter((w) => w.who === d.a)) w.el.remove()
+  waypoints = waypoints.filter((w) => w.who !== d.a)
+  const el = document.createElement('div')
+  el.className = 'wp'
+  el.style.setProperty('--wp', style.col ?? teamCol(d.team))
+  el.innerHTML = '<i class="wp-icon"><span></span></i><b class="wp-place"></b><small class="wp-dist"></small>'
+  el.querySelector('.wp-icon span').textContent = style.icon
+  el.querySelector('.wp-place').textContent = d.place || style.what
+  el.title = `${d.a?.name ?? ''}: ${style.what}`
+  wpBox.append(el)
+  waypoints.push({ x: d.at.x, y: d.at.y + 1.1, z: d.at.z, who: d.a, el, born: performance.now(), col: style.col ?? teamCol(d.team) })
+  while (waypoints.length > 6) waypoints.shift().el.remove()
+}
+function clearWaypoints() {
+  for (const w of waypoints) w.el.remove()
+  waypoints = []
+}
+const wpV = new THREE.Vector3()
+function drawWaypoints() {
+  if (!waypoints.length) return
+  const now = performance.now()
+  const cam = view.camera
+  const W = stage.clientWidth
+  const H = stage.clientHeight
+  const me = watched ?? game.player
+  for (const w of [...waypoints]) {
+    const age = now - w.born
+    if (age > WAYPOINT_MS || game.respawns) {
+      w.el.remove()
+      waypoints.splice(waypoints.indexOf(w), 1)
+      continue
+    }
+    wpV.set(w.x, w.y, w.z).project(cam)
+    const behind = wpV.z > 1
+    let x = (wpV.x * 0.5 + 0.5) * W
+    let y = (-wpV.y * 0.5 + 0.5) * H
+    if (behind) {
+      x = W - x
+      y = H - y
+    }
+    const m = 36
+    const off = behind || x < m || x > W - m || y < m || y > H - m
+    if (off) {
+      // pinned to the edge, on the side to turn to (clear of the score at the top and the HUD below)
+      const top = 74
+      const bottom = H - 110
+      const cx = W / 2
+      const cy = (top + bottom) / 2
+      let dx = x - cx
+      const dy = y - cy
+      if (behind && Math.abs(dx) < 1) dx = 1
+      const k = Math.min((cx - m) / Math.max(1e-3, Math.abs(dx)), (bottom - top) / 2 / Math.max(1e-3, Math.abs(dy)))
+      x = cx + dx * k
+      y = cy + dy * k
+    }
+    w.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
+    w.el.classList.toggle('edge', off)
+    w.el.style.opacity = String(Math.min(1, (WAYPOINT_MS - age) / 900))
+    if (me) w.el.querySelector('.wp-dist').textContent = `${Math.round(Math.hypot(w.x - me.pos.x, w.z - me.pos.z))} m`
   }
 }
 
@@ -1357,6 +1473,9 @@ function fmtTime(s) {
 let radarT = 0
 let sbT = 0
 function updateHud(dt) {
+  drawWaypoints()
+  // the buy menu closes itself when buying's over (time's up, out of the buy zone, dead)
+  if (buyOpen && game.player && !game.canBuy(game.player)) toggleBuy(false)
   const nb = $('#net-badge')
   nb.hidden = !net
   if (net) {
@@ -1427,7 +1546,7 @@ function updateHud(dt) {
       setText('money', m)
     }
   }
-  setText('place', w ? g.world.calloutAt(w.pos.x, w.pos.z, w.pos.y) : '')
+  setText('place', w && !g.respawns ? g.world.calloutAt(w.pos.x, w.pos.z, w.pos.y) : '')
   chatUi.tick()
   // hints and progress
   let hint = ''
@@ -1587,6 +1706,19 @@ function drawRadar() {
     if (!a.alive || a === me) continue
     if (a.team === myTeam) dot(a.pos.x, a.pos.z, myTeam === 'T' ? '#e3ac48' : '#6fa8e0')
     else if (seen.has(a.id)) dot(a.pos.x, a.pos.z, '#ff3b3b')
+  }
+  // waypoints: a diamond where each callout is
+  for (const w of waypoints) {
+    g.save()
+    g.translate(w.x, w.z)
+    g.rotate(Math.PI / 4)
+    g.fillStyle = w.col
+    g.globalAlpha = 0.6 + 0.4 * Math.abs(Math.sin(performance.now() / 180))
+    g.fillRect(-2, -2, 4, 4)
+    g.lineWidth = 0.5
+    g.strokeStyle = '#000'
+    g.strokeRect(-2, -2, 4, 4)
+    g.restore()
   }
   // the bomb
   const b = game.bomb

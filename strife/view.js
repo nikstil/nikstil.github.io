@@ -6,6 +6,7 @@ import { buildLevel, buildSky } from './render.js'
 import { WEAPONS, adsOf } from './weapons.js'
 import { buildGun } from './guns.js'
 import { buildSoldier, buildViewArms } from './models.js'
+import { agentLook } from './skins.js'
 import { eyeOf, weaponOf } from './game.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
@@ -109,8 +110,71 @@ export function gunModel(id, detail = 1, opts = {}) {
   return g
 }
 
+/**
+ * A knife in a fist: the handle runs up through the hand like a pistol grip (so the fingers wrap
+ * round it), and the blade comes out of the top, pointing up and forward, edge first.
+ * `hand`: where the fist is, in the holder's space. (The model points down -z from the guard,
+ * the handle behind it.)
+ */
+const KNIFE_TILT = 0.82 // how far the blade is raised from pointing straight ahead
+function holdKnife(g, hand) {
+  const handle = new THREE.Vector3(0, 0, 0.06) // the middle of the handle
+  g.rotation.set(KNIFE_TILT, 0.3, -0.3, 'XYZ')
+  g.updateMatrix()
+  const mid = handle.clone().applyMatrix4(g.matrix)
+  g.position.set(hand[0] - 0.012 - mid.x, hand[1] - 0.012 - mid.y, hand[2] - 0.03 - mid.z)
+}
+/** The same, for a soldier's hand (third person). */
+function holdKnifeTp(g) {
+  g.rotation.set(0.7, 0, 0)
+  g.updateMatrix()
+  const mid = new THREE.Vector3(0, 0, 0.06).applyMatrix4(g.matrix)
+  g.position.sub(mid)
+}
+
+// ================= Inspecting (F) =================
+// Key poses over the animation (0 to 1), as offsets from how it's normally held: x, y, z move it
+// (toward the middle, up, nearer), rx tilts the muzzle up, ry turns it to show its side, rz rolls
+// it over. Between poses it eases.
+const INSPECT = {
+  gun: {
+    secs: 3.6,
+    keys: [
+      [0, {}],
+      [0.16, { x: -0.09, y: 0.06, z: 0.02, rx: 0.1, ry: 1.0, rz: -0.22 }], // turned to show its side
+      [0.48, { x: -0.085, y: 0.055, z: 0.015, rx: 0.05, ry: 1.08, rz: -0.16 }],
+      [0.64, { x: -0.07, y: 0.075, z: 0.02, rx: -0.2, ry: 0.5, rz: 1.3 }], // rolled over: the other side, the top
+      [0.84, { x: -0.068, y: 0.07, z: 0.018, rx: -0.16, ry: 0.46, rz: 1.22 }],
+      [1, {}],
+    ],
+  },
+  knife: {
+    secs: 3.0,
+    keys: [
+      [0, {}],
+      [0.18, { x: -0.07, y: 0.03, z: 0.05, rx: -0.25, ry: 0.9, rz: -0.5 }], // the blade, side on
+      [0.45, { x: -0.065, y: 0.035, z: 0.05, rx: -0.2, ry: 0.95, rz: -0.42 }],
+      [0.62, { x: -0.06, y: 0.06, z: 0.04, rx: -0.3, ry: 0.4, rz: 2.5 }], // a flip of the wrist: the other side
+      [0.8, { x: -0.06, y: 0.055, z: 0.04, rx: -0.25, ry: 0.35, rz: 2.4 }],
+      [1, {}],
+    ],
+  },
+}
+const INSPECT_KEYS = ['x', 'y', 'z', 'rx', 'ry', 'rz']
+function inspectPose(keys, t) {
+  let i = 0
+  while (i < keys.length - 2 && t > keys[i + 1][0]) i++
+  const [t0, a] = keys[i]
+  const [t1, b] = keys[i + 1]
+  const u = Math.min(1, Math.max(0, (t - t0) / (t1 - t0)))
+  const e = u * u * (3 - 2 * u)
+  const o = {}
+  for (const k of INSPECT_KEYS) o[k] = (a[k] ?? 0) + ((b[k] ?? 0) - (a[k] ?? 0)) * e
+  return o
+}
+
 // ================= Soldiers (models.js) =================
-const soldier = (team, seed) => buildSoldier(team, seed)
+const soldier = (team, seed, look) => buildSoldier(team, seed, look)
 
 // ================= The view =================
 export class View {
@@ -129,7 +193,7 @@ export class View {
     this.vm = new THREE.Group()
     this.vmScene.add(this.vm)
     this.vmGunId = null
-    this.vmState = { kick: 0, swayX: 0, swayY: 0, lastYaw: 0, lastPitch: 0, bob: 0, draw: 0, slash: 0, flash: 0 }
+    this.vmState = { kick: 0, swayX: 0, swayY: 0, lastYaw: 0, lastPitch: 0, bob: 0, draw: 0, slash: 0, flash: 0, inspect: -1, inspectOut: 0 }
     this.tex = { soft: softTex(), smoke: smokeTex(), flash: flashTex(), hole: holeTex() }
   }
 
@@ -181,8 +245,10 @@ export class View {
     this.smokeClouds = new Map()
   }
   addSoldier(a) {
-    const s = soldier(a.team, a.id * 7 + (a.isBot ? 0 : 1))
+    const look = agentLook(a)
+    const s = soldier(a.team, a.id * 7 + (a.isBot ? 0 : 1), look)
     s.team = a.team
+    s.look = look
     this.scene.add(s.root)
     this.soldiers.set(a.id, s)
   }
@@ -297,8 +363,8 @@ export class View {
     for (const a of game.actors) {
       const s = this.soldiers.get(a.id)
       if (!s) continue
-      if (s.team !== a.team) {
-        // they swapped sides at halftime: new uniform
+      if (s.team !== a.team || s.look !== agentLook(a)) {
+        // they swapped sides at halftime (or changed agent): new uniform
         this.scene.remove(s.root)
         this.addSoldier(a)
         continue
@@ -316,6 +382,7 @@ export class View {
         s.gun = gid ? gunModel(w.id, 1, { silenced: sl?.silenced, skin: this.skinMat?.(sl?.skin), stickers: (sl?.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) }) : null
         if (s.gun) {
           s.gun.scale.setScalar(1.3)
+          if (w.kind === 'knife') holdKnifeTp(s.gun)
           s.hand.add(s.gun)
         }
         s.gunId = gid
@@ -512,7 +579,7 @@ export class View {
     const w = a && a.alive ? weaponOf(a) : null
     const id = w?.id ?? null
     const slot = a?.inv?.[a.active]
-    const key = id && `${id}|${slot?.silenced}|${slot?.skin?.key ?? ''}`
+    const key = id && `${id}|${slot?.silenced}|${slot?.skin?.key ?? ''}|${a.team}|${a.agents?.[a.team] ?? ''}`
     if (key !== this.vmGunId) {
       this.vm.clear()
       this.vmGunId = key
@@ -524,11 +591,12 @@ export class View {
         // the right hand on the grip; the left on the handguard (or cupping a pistol's grip)
         const right = w.kind === 'knife' ? [0, 0, 0.02] : w.kind === 'grenade' || w.kind === 'bomb' ? [0.01, -0.03, 0.02] : [0, -0.05 * k, 0.03 * k]
         const left = twoHands ? [-0.005, -0.012, fore] : id === 'dualies' ? [-0.22 * k, -0.05 * k, 0.05 * k] : null
-        const arms = buildViewArms(a.team, a.id * 7 + (a.isBot ? 0 : 1), right, left)
+        const arms = buildViewArms(a.team, a.id * 7 + (a.isBot ? 0 : 1), right, left, agentLook(a))
         const holder = new THREE.Group()
         const sc = w.kind === 'rifle' || w.kind === 'sniper' || w.kind === 'heavy' ? 0.64 : w.kind === 'smg' ? 0.72 : w.kind === 'pistol' || w.kind === 'taser' ? 0.8 : 1
         g.scale.setScalar(sc)
         arms.scale.setScalar(sc)
+        if (w.kind === 'knife') holdKnife(g, right)
         holder.add(g, arms)
         this.vm.add(holder)
         this.vmGun = g
@@ -579,6 +647,30 @@ export class View {
       base[2] + st.kick * lerp(0.035, 0.02, ads),
     )
     h.rotation.set(st.kick * lerp(0.1, 0.03, ads) + rl * 0.5 - (1 - st.draw) * 0.6, (0.06 + st.swayX * 2) * (1 - ads) + Math.sin(st.slash * Math.PI) * 0.8, rl * 0.4 + Math.sin(st.slash * Math.PI) * -0.6)
+    // inspecting (F): turning it over to look at it; anything else you do puts it away
+    if (st.inspect >= 0) {
+      const busy = reloading || now < a.switchEnd || a.ads > 0.05 || a.scope || st.kick > 0.05 || st.slash > 0 || st.draw < 1
+      const look = INSPECT[kind === 'knife' ? 'knife' : 'gun']
+      if (busy) st.inspectStop = true // (once stopped, it stays stopped)
+      if (st.inspectStop) {
+        st.inspectOut = Math.max(0, st.inspectOut - dt * 6)
+        if (st.inspectOut === 0) st.inspect = -1
+      } else {
+        st.inspect += dt / look.secs
+        st.inspectOut = Math.min(1, st.inspectOut + dt * 6)
+        if (st.inspect >= 1) st.inspect = -1
+      }
+      if (st.inspect >= 0) {
+        const o = inspectPose(look.keys, st.inspect)
+        const k = st.inspectOut
+        h.position.x += o.x * k
+        h.position.y += o.y * k
+        h.position.z += o.z * k
+        h.rotation.x += o.rx * k
+        h.rotation.y += o.ry * k
+        h.rotation.z += o.rz * k
+      }
+    }
     if (st.flash > 0) {
       st.flash -= dt
       this.vmFlash.visible = st.flash > 0
@@ -589,9 +681,21 @@ export class View {
   kick(w, silenced = false) {
     this.vmState.kick = Math.min(1, this.vmState.kick + (w.kind === 'sniper' || w.type === 'shotgun' ? 1 : w.kind === 'pistol' ? 0.7 : 0.45))
     this.vmState.flash = silenced ? 0 : 0.05
+    this.vmState.inspectStop = true
   }
   slash() {
     this.vmState.slash = 1
+    this.vmState.inspectStop = true
+  }
+  /** Starts the inspect animation (F) for what's in your hands, or starts it over. */
+  inspect() {
+    if (!this.vmGunId) return
+    this.vmState.inspect = 0
+    this.vmState.inspectOut = 1
+    this.vmState.inspectStop = false
+  }
+  get inspecting() {
+    return this.vmState.inspect >= 0
   }
 
   /** Draws the frame. `cam` = { x, y, z, yaw, pitch, fov }. */

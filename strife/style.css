@@ -170,6 +170,7 @@ html.embed .home-link, body.playing .home-link { display: none; }
 .tb.mode { right: 180px; bottom: 220px; width: 44px; height: 44px; font-size: 11px; }
 .tb.mode[hidden] { display: none; }
 .tb.swap { right: 180px; bottom: 100px; width: 44px; height: 44px; }
+.tb.inspect { right: 236px; bottom: 160px; width: 44px; height: 44px; font-size: 18px; }
 .tb.nade { right: 180px; bottom: 160px; width: 44px; height: 44px; }
 .tb.buy-btn { left: 16px; top: 50%; width: 44px; height: 44px; }
 .tb.score-btn { left: 66px; top: 50%; width: 44px; height: 44px; }
@@ -199,7 +200,8 @@ html.embed .home-link, body.playing .home-link { display: none; }
 .seg button.sel { background: rgba(227, 172, 72, 0.9); border-color: transparent; color: #241703; font-weight: 700; }
 .menu-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 12px; }
 .go { padding: 12px 26px; border: 0; border-radius: 6px; font-weight: 800; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: #1d1203; background: linear-gradient(180deg, #ffd06a, #e3a43a); box-shadow: 0 6px 20px rgba(227, 164, 58, 0.35); }
-.go:hover { filter: brightness(1.08); }
+.go:hover:not(:disabled) { filter: brightness(1.08); }
+.go:disabled { color: rgba(255, 255, 255, 0.45); background: rgba(255, 255, 255, 0.08); box-shadow: none; cursor: default; }
 .ghost { padding: 10px 16px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.06); }
 .ghost:hover { background: rgba(255, 255, 255, 0.14); }
 .ghost.danger:hover { background: rgba(255, 80, 80, 0.25); }
@@ -257,7 +259,7 @@ html.touch .crosshair { --len: 6px; }
 .inv-tabs, .inv-filters { display: flex; gap: 4px; }
 .inv-tabs button, .inv-filters button { padding: 6px 12px; border: 1px solid var(--line); border-radius: 5px; background: rgba(255, 255, 255, 0.05); color: #ddd; font: 600 13px var(--font); cursor: pointer; }
 .inv-tabs button.sel, .inv-filters button.sel { background: #ffd65a; border-color: #ffd65a; color: #111; }
-.inv-wallet { display: flex; align-items: center; gap: 12px; margin-left: auto; font-size: 14px; }
+.inv-wallet { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-left: auto; font-size: 14px; }
 .inv-wallet b { font: 700 16px var(--font); color: #ffd65a; }
 .ghost.small { padding: 5px 10px; font-size: 12px; }
 .inv-head .x { position: static; }
@@ -493,3 +495,18 @@ html.touch .chat-log li:nth-last-child(n + 5) { display: none; }
   html.touch .bottom-right { right: 14px; bottom: auto; top: 168px; }
   html.touch .chat { left: 14px; bottom: auto; top: 262px; width: calc(100vw - 28px); }
 }
+
+/* ===== Waypoints: where a radio callout is (app.js) ===== */
+.waypoints { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.wp { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: 1px; width: 0; translate: 0 -14px; will-change: transform; }
+.wp-icon { display: grid; place-items: center; width: 22px; height: 22px; font-style: normal; background: var(--wp); rotate: 45deg; border-radius: 3px; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 12px var(--wp); animation: wp-in 0.35s ease-out; }
+.wp-icon span { rotate: -45deg; font: 800 13px/1 var(--font); color: #111; }
+.wp-place, .wp-dist { white-space: nowrap; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
+.wp-place { margin-top: 5px; font-size: 12px; font-weight: 700; color: var(--wp); }
+.wp-dist { font-size: 11px; color: #fff; opacity: 0.85; }
+.wp.edge .wp-place { display: none; }
+.wp.edge .wp-icon { width: 18px; height: 18px; }
+.wp.edge .wp-icon span { font-size: 11px; }
+@keyframes wp-in { from { scale: 1.8; opacity: 0; } }
+body.killcam-on .waypoints, body.replaying .waypoints { display: none; }
+body.no-radio :is(.radio-btn, .radio-menu, .waypoints, .place) { display: none !important; }

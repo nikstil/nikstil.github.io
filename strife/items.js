@@ -3,9 +3,10 @@
 // inventory screen and SKINSINK.GG (the skins casino at /casino/).
 
 import { WEAPONS } from './weapons.js'
-import { gunIcon } from './icons.js'
+import { gunIcon, drawnGunIcon, agentIcon } from './icons.js'
 import {
   RARITY, CASES, STICKER_GRADE, skinById, caseById, stickerById, musicById, kindOf, wearOf, skinMaterial, stickerMaterial, stickerUrl, itemKey,
+  agentById, AGENT_GRADE, patternOf,
 } from './skins.js'
 
 // ---------------- Pictures of things
@@ -37,16 +38,31 @@ function musicIcon(id) {
 /** A picture of an item (a data URL). */
 export function iconFor(it, w = 150, h = 60) {
   const kind = kindOf(it)
+  if (kind === 'agent') {
+    const a = agentById[it.agent]
+    return a ? agentIcon(a.team, a.look, a.id, w, h) : ''
+  }
   if (kind === 'sticker') return stickerUrl(it.sticker)
   if (kind === 'music') return musicIcon(it.music)
   const s = skinById[it.skin]
   return gunIcon(s.weapon, w, h, { skin: skinMaterial(it), key: itemKey(it), stickers: (it.stickers ?? []).map(stickerMaterial) })
+}
+/** The same picture, but only if it's ready (drawing a skin the first time takes a moment): or null. */
+export function drawnIcon(it, w = 150, h = 60) {
+  const kind = kindOf(it)
+  if (kind === 'agent') return null // (drawn later, like a gun)
+  if (kind !== 'skin') return iconFor(it, w, h)
+  return drawnGunIcon(skinById[it.skin].weapon, w, h, { key: itemKey(it) }) ?? null
 }
 /** Its rarity: { name, color }. */
 export function rarityOf(it) {
   const kind = kindOf(it)
   if (kind === 'sticker') return { ...RARITY[stickerById[it.sticker]?.rarity ?? 'milspec'], name: STICKER_GRADE[stickerById[it.sticker]?.rarity ?? 'milspec'] }
   if (kind === 'music') return { ...RARITY.milspec, name: 'High Grade' }
+  if (kind === 'agent') {
+    const g = agentById[it.agent]?.rarity ?? 'milspec'
+    return { ...RARITY[g], name: AGENT_GRADE[g] }
+  }
   return RARITY[skinById[it.skin].rarity]
 }
 /** "AK-47 | Q3 Earnings" (no StatTrak™ or ★). */
@@ -54,23 +70,28 @@ export function shortName(it) {
   const kind = kindOf(it)
   if (kind === 'sticker') return `Sticker | ${stickerById[it.sticker]?.name}`
   if (kind === 'music') return `Music Kit | ${musicById[it.music]?.name}`
+  if (kind === 'agent') return `${agentById[it.agent]?.name ?? '?'} | ${agentById[it.agent]?.title ?? ''}`
   const s = skinById[it.skin]
-  return `${WEAPONS[s.weapon].name} | ${s.name}`
+  const p = patternOf(it)
+  return `${WEAPONS[s.weapon].name} | ${s.name}${p?.gem ? ` (${p.note.split(' · ')[0]})` : ''}`
 }
 
 // ---------------- What things are worth (in credits)
 // Rarer is worth more; so is a better float, StatTrak™, and stickers stuck on it. A key is 5.
 const SKIN_VALUE = { consumer: 1, industrial: 1, milspec: 2, restricted: 8, classified: 30, covert: 120, gold: 600 }
 const STICKER_VALUE = { milspec: 1, restricted: 4, classified: 15, covert: 60 }
+const AGENT_VALUE = { milspec: 3, restricted: 10, classified: 35, covert: 120 }
 const WEAR_MULT = { 'Factory New': 1.5, 'Minimal Wear': 1.2, 'Field-Tested': 1, 'Well-Worn': 0.85, 'Battle-Scarred': 0.7 }
 const round2 = (v) => Math.round(v * 100) / 100
 export function itemValue(it) {
   const kind = kindOf(it)
   if (kind === 'sticker') return STICKER_VALUE[stickerById[it.sticker]?.rarity] ?? 1
   if (kind === 'music') return it.st != null ? 16 : 10
+  if (kind === 'agent') return AGENT_VALUE[agentById[it.agent]?.rarity] ?? 3
   const s = skinById[it.skin]
   if (!s) return 0
-  let v = SKIN_VALUE[s.rarity] * WEAR_MULT[wearOf(it.wear).name] * (it.st != null ? 1.6 : 1)
+  // (a rare pattern, like a Ruby or a blue gem, is worth several times as much)
+  let v = SKIN_VALUE[s.rarity] * WEAR_MULT[wearOf(it.wear).name] * (it.st != null ? 1.6 : 1) * (patternOf(it)?.value ?? 1)
   for (const k of it.stickers ?? []) v += (STICKER_VALUE[stickerById[k]?.rarity] ?? 1) * 0.1
   return round2(v)
 }
@@ -82,6 +103,7 @@ export function caseValue(caseId) {
   if (!c) return 0
   if (c.kind === 'music') return 10.6
   if (c.kind === 'sticker') return round2(0.8 * 1 + 0.16 * 4 + 0.032 * 15 + 0.008 * 60)
+  if (c.kind === 'agent') return round2(0.6 * AGENT_VALUE.milspec + 0.28 * AGENT_VALUE.restricted + 0.09 * AGENT_VALUE.classified + 0.03 * AGENT_VALUE.covert)
   const pool = c.skins.map((id) => skinById[id])
   const present = [...new Set(pool.map((s) => s.rarity))]
   const total = present.reduce((t, r) => t + RARITY[r].odds, 0)

@@ -3,12 +3,13 @@
 // players in an online game, and what you earn by playing: credits for kills and wins, case drops.
 
 import { WEAPONS } from './weapons.js'
-import { iconFor, rarityOf, shortName } from './items.js'
+import { iconFor, drawnIcon, rarityOf, shortName } from './items.js'
 import { openCreditStore } from './credits.js'
 import {
   SKINS, RARITY, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem, skinMaterial, itemKey,
   loadInventory, saveInventory, addItem, toggleEquip, equippedFor, skinDesc, randomSkinFor,
   kindOf, stickerById, musicById, stickerMaterial, stickerUrl, STICKER_GRADE, tradeUpOutcomes, signTradeUp, MUSIC_KITS,
+  agentById, equippedAgents, patternOf,
 } from './skins.js'
 
 const $ = (s, el = document) => el.querySelector(s)
@@ -23,16 +24,50 @@ let contract = [] // uids in the trade-up
 let tradeApi = null // set while in an online game: { partners(), send(toId, msg), onOpen() }
 
 export const inventory = () => inv
+
+// A skin's picture takes a moment to draw the first time (the gun, its paint, a render): they're
+// drawn a few at a time between frames instead of all at once, so the screen (and the case reel)
+// shows straight away and the pictures arrive as it goes.
+const toDraw = []
+let drawing = false
+const afterPaint = (f) => requestAnimationFrame(() => setTimeout(f))
+function picture(img, it, w = 150, h = 60) {
+  const ready = drawnIcon(it, w, h)
+  if (ready != null) return void (img.src = ready)
+  toDraw.push([img, it, w, h])
+  if (!drawing) {
+    drawing = true
+    afterPaint(drawSome)
+  }
+}
+function drawSome() {
+  const t = performance.now()
+  while (toDraw.length && performance.now() - t < 10) {
+    const [img, it, w, h] = toDraw.shift()
+    if (img.isConnected) img.src = iconFor(it, w, h)
+  }
+  if (toDraw.length) afterPaint(drawSome)
+  else drawing = false
+}
 /** Your equipped skins, weapon id -> descriptor (sent to the host when you join a game). */
 export function equippedSkins() {
   inv = loadInventory()
   const out = {}
   for (const w of Object.keys(inv.equipped)) {
-    if (w === 'music') continue
+    if (w === 'music' || w.startsWith('agent')) continue
     const d = skinDesc(equippedFor(inv, w))
     if (d) out[w] = d
   }
+  // (and who you play as)
+  const ag = equippedAgents(inv)
+  out.agentT = ag.T
+  out.agentCT = ag.CT
   return out
+}
+/** Your agents for the two sides: { T, CT } (ids, or null). */
+export function myAgents() {
+  inv = loadInventory()
+  return equippedAgents(inv)
 }
 /** Your music kit (the default one if none). */
 export function musicKit() {
@@ -92,7 +127,7 @@ function giveCase() {
   return c.name
 }
 
-const equipKey = (it) => (kindOf(it) === 'music' ? 'music' : kindOf(it) === 'skin' ? skinById[it.skin].weapon : null)
+const equipKey = (it) => (kindOf(it) === 'music' ? 'music' : kindOf(it) === 'agent' ? `agent${agentById[it.agent]?.team}` : kindOf(it) === 'skin' ? skinById[it.skin].weapon : null)
 const isEquipped = (it) => equipKey(it) && inv.equipped[equipKey(it)] === it.uid
 
 // ---------------- The screen
@@ -137,19 +172,21 @@ export function initInventory(opts) {
       const it = inv.items.find((x) => x.uid === selUid)
       if (it) audio?.music?.(musicById[it.music], 'mvp')
     } else if (act === 'key') {
-      if (inv.credits < KEY_PRICE) return flash('Not enough credits: win rounds and get kills to earn them (or get some with ＋ Credits).')
-      inv.credits -= KEY_PRICE
-      inv.keys++
+      const n = Number(t.dataset.n) || 1
+      if (inv.credits < KEY_PRICE * n) return flash(`Not enough credits${n > 1 ? ` for ${n} keys (ⓒ ${KEY_PRICE * n})` : ''}: win rounds and get kills to earn them (or get some with ＋ Credits).`)
+      inv.credits -= KEY_PRICE * n
+      inv.keys += n
       save()
       audio?.play('buy')
       render()
+      if (n > 1) flash(`🔑 ${n} keys added.`)
     } else if (act === 'credits') {
       openCreditStore({
         onBought: (n) => {
           inv = loadInventory()
           audio?.play('buy')
           render()
-          flash(`ⓒ ${n.toLocaleString('en-US')} credits added (pretend money).`)
+          flash(`ⓒ ${n.toLocaleString('en-US')} credits added.`)
         },
       })
     } else if (act === 'open') openCase(t.dataset.v)
@@ -157,7 +194,7 @@ export function initInventory(opts) {
     else if (act === 'reel-equip') {
       const it = inv.items.find((x) => x.uid === Number(t.dataset.uid))
       if (it && kindOf(it) === 'music') inv.equipped.music = it.uid
-      else if (it && kindOf(it) === 'skin') toggleEquip(inv, it.uid)
+      else if (it && (kindOf(it) === 'skin' || kindOf(it) === 'agent')) toggleEquip(inv, it.uid)
       save()
       closeReel()
       tab = 'items'
@@ -288,7 +325,7 @@ function card(it, opts = {}) {
   b.dataset.uid = it.uid
   b.style.setProperty('--r', r.color)
   b.innerHTML = `<img alt=""><b></b><small></small>${isEquipped(it) ? '<em>Equipped</em>' : ''}${it.st != null ? '<i class="st">ST</i>' : ''}`
-  $('img', b).src = iconFor(it)
+  picture($('img', b), it)
   $('b', b).textContent = shortName(it)
   $('small', b).textContent = kindOf(it) === 'skin' ? wearOf(it.wear).name + ((it.stickers ?? []).length ? ` · ${it.stickers.length} sticker${it.stickers.length > 1 ? 's' : ''}` : '') : r.name
   return b
@@ -297,6 +334,7 @@ function tabsRender() {
   // (the casino pays out in hundredths)
   $('#inv-credits').textContent = Number.isInteger(inv.credits) ? inv.credits.toLocaleString('en-US') : inv.credits.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   $('#inv-buy-key').textContent = `Buy key (ⓒ ${KEY_PRICE})`
+  $('#inv-buy-keys').textContent = `10 keys (ⓒ ${KEY_PRICE * 10})`
   $('#inv-keys').textContent = inv.keys
   $('#inventory').querySelectorAll('[data-inv="tab"]').forEach((b) => b.classList.toggle('sel', b.dataset.v === tab))
   const tb = $('#inventory [data-inv="trade"]')
@@ -313,7 +351,7 @@ function render() {
 function itemsTab(body) {
   const bar = document.createElement('div')
   bar.className = 'inv-filters'
-  for (const [v, label] of [['all', 'All'], ['pistol', 'Pistols'], ['primary', 'Guns'], ['knife', 'Knives'], ['sticker', 'Stickers'], ['music', 'Music'], ['equipped', 'Equipped']]) {
+  for (const [v, label] of [['all', 'All'], ['pistol', 'Pistols'], ['primary', 'Guns'], ['knife', 'Knives'], ['agent', 'Agents'], ['sticker', 'Stickers'], ['music', 'Music'], ['equipped', 'Equipped']]) {
     const b = document.createElement('button')
     b.dataset.inv = 'filter'
     b.dataset.v = v
@@ -327,7 +365,7 @@ function itemsTab(body) {
   const list = inv.items.filter((it) => {
     const kind = kindOf(it)
     if (want === 'guns-for-stickers') return kind === 'skin' && skinById[it.skin].weapon !== 'knife'
-    if (want === 'sticker' || want === 'music') return kind === want
+    if (want === 'sticker' || want === 'music' || want === 'agent') return kind === want
     if (want === 'equipped') return isEquipped(it)
     if (want === 'all') return true
     if (kind !== 'skin') return false
@@ -389,11 +427,19 @@ function details(it) {
     $('.rar', d).textContent = r.name + (WEAPONS[s.weapon].team ? ` · ${WEAPONS[s.weapon].team === 'T' ? 'Terrorist' : 'Counter-Terrorist'} weapon` : '')
     row('Exterior', wearOf(it.wear).name)
     row('Float', it.wear.toFixed(4))
-    row('Pattern', `#${it.seed}${it.st != null ? ` · StatTrak™ kills: ${it.st}` : ''}`)
+    const pat = patternOf(it)
+    row('Pattern', `#${it.seed}${pat ? ` · ${pat.note}` : ''}`)
+    if (it.st != null) row('StatTrak™', `${it.st} kills`)
     if (it.stickers?.length) row('Stickers', it.stickers.map((k) => stickerById[k]?.name).join(', '))
     btn(eq ? 'Unequip' : `Equip on the ${WEAPONS[s.weapon].name}`, 'equip', eq ? 'ghost' : 'go')
     if (s.weapon !== 'knife' && (it.stickers ?? []).length < 4) btn('🏷️ Apply a sticker', 'apply', 'ghost')
     if (it.stickers?.length) btn('Scrape the last sticker', 'scrape', 'ghost')
+  } else if (kind === 'agent') {
+    const ag = agentById[it.agent]
+    $('.rar', d).textContent = `${r.name} agent · ${ag.team === 'T' ? 'Terrorist' : 'Counter-Terrorist'} side`
+    row('Who', `${ag.name}, ${ag.title}`)
+    row('Wears', `${{ bare: 'No hat', beret: 'A beret', hood: 'A hood', cowboy: 'A cowboy hat', cap: 'A cap', helmet: 'A helmet', gasmask: 'A gas mask', balaclava: 'A balaclava', shemagh: 'A shemagh', beanie: 'A beanie' }[ag.look.head]}${ag.look.shades ? ', shades' : ''}${ag.look.tie ? ', a tie' : ''}`)
+    btn(eq ? 'Unequip' : `Play as ${ag.name} (${ag.team} side)`, 'equip', eq ? 'ghost' : 'go')
   } else if (kind === 'sticker') {
     $('.rar', d).textContent = `${r.name} sticker`
     row('Finish', { paper: 'Paper', holo: 'Holo', foil: 'Foil', gold: 'Gold' }[stickerById[it.sticker]?.style] ?? 'Paper')
@@ -418,7 +464,7 @@ function casesTab(body) {
     el.className = 'case-card'
     el.style.setProperty('--c', c.color)
     el.innerHTML = `<div class="case-box"><span></span></div><h3></h3><p class="case-n"></p><div class="case-skins"></div><button class="go" data-inv="open"></button>`
-    $('.case-box span', el).textContent = c.kind === 'sticker' ? 'Stickers' : c.kind === 'music' ? '♫ Music' : c.name.replace(' Case', '')
+    $('.case-box span', el).textContent = c.kind === 'sticker' ? 'Stickers' : c.kind === 'music' ? '♫ Music' : c.kind === 'agent' ? '🕵 Agents' : c.name.replace(' Case', '')
     $('h3', el).textContent = c.name
     $('.case-n', el).textContent = n ? `You have ${n}` : 'None yet: they drop when you play'
     const sk = $('.case-skins', el)
@@ -431,6 +477,7 @@ function casesTab(body) {
     }
     if (c.kind === 'sticker') for (const id of c.stickers) line(`Sticker | ${stickerById[id].name}`, RARITY[stickerById[id].rarity].color)
     else if (c.kind === 'music') for (const id of c.music) line(`${musicById[id].artist}, ${musicById[id].name}`, RARITY.milspec.color)
+    else if (c.kind === 'agent') for (const id of c.agents) line(`${agentById[id].name} | ${agentById[id].title} (${agentById[id].team})`, RARITY[agentById[id].rarity].color)
     else {
       let gold = false
       for (const id of c.skins) {
@@ -445,8 +492,8 @@ function casesTab(body) {
     }
     const ob = $('button', el)
     ob.dataset.v = c.id
-    ob.textContent = inv.keys ? 'Open (uses a key)' : 'Open: needs a key'
-    ob.disabled = !n || !inv.keys
+    ob.textContent = !n ? 'None to open' : inv.keys ? 'Open (uses a key)' : `Buy key & open (ⓒ ${KEY_PRICE})`
+    ob.disabled = !n
     grid.append(el)
   }
   body.append(grid)
@@ -468,7 +515,7 @@ function tradeUpTab(body) {
     if (it) {
       s.style.setProperty('--r', rarityOf(it).color)
       s.innerHTML = '<img alt="">'
-      $('img', s).src = iconFor(it, 120, 48)
+      picture($('img', s), it, 120, 48)
       s.title = shortName(it)
     }
     slots.append(s)
@@ -510,7 +557,13 @@ function signContract() {
 // ---------------- Opening a case: the reel
 let reelAnim = 0
 function openCase(caseId) {
-  if (!inv.keys || !(inv.cases[caseId] > 0)) return
+  if (!(inv.cases[caseId] > 0)) return
+  // no key: buy one on the way (it's what the button says)
+  if (!inv.keys) {
+    if (inv.credits < KEY_PRICE) return flash(`A key is ⓒ ${KEY_PRICE}: win rounds and get kills to earn credits (or get some with ＋ Credits).`)
+    inv.credits -= KEY_PRICE
+    inv.keys++
+  }
   inv.keys--
   inv.cases[caseId]--
   const won = addItem(inv, rollCase(caseId))
@@ -527,20 +580,31 @@ function openCase(caseId) {
   const N = 46
   const at = 40
   const items = []
-  for (let i = 0; i < N; i++) items.push(i === at ? won : rollCase(caseId))
+  // (the ones going past all wear the same paint job, so each skin is only drawn once)
+  const filler = (it) => (kindOf(it) === 'skin' ? { ...it, seed: 7, wear: 0.2, stickers: [] } : it)
+  for (let i = 0; i < N; i++) items.push(i === at ? won : filler(rollCase(caseId)))
+  const pics = []
   for (const it of items) {
     const el = document.createElement('div')
     el.className = 'reel-card'
     el.style.setProperty('--r', rarityOf(it).color)
+    strip.append(el)
     if (kindOf(it) === 'skin' && skinById[it.skin].rarity === 'gold' && it !== won) {
       el.innerHTML = '<div class="gold-star">★</div><b>Rare Special Item</b>'
     } else {
       el.innerHTML = '<img alt=""><b></b>'
-      $('img', el).src = iconFor(it, 150, 60)
       $('b', el).textContent = shortName(it)
     }
-    strip.append(el)
+    pics.push($('img', el))
   }
+  // pictures for what's in view at the start first, then where it stops, then the ones that fly past
+  const order = [...items.keys()].sort((a, b) => rank(a) - rank(b))
+  function rank(i) {
+    if (i < 6) return i
+    if (Math.abs(i - at) <= 5) return 10 + Math.abs(i - at)
+    return 100 + i
+  }
+  for (const i of order) if (pics[i]) picture(pics[i], items[i])
   const cardW = 158
   const view = $('#reel-window').clientWidth || 640
   const target = at * cardW + cardW / 2 - view / 2 + (Math.random() - 0.5) * (cardW * 0.7)
@@ -570,13 +634,14 @@ function reveal(it, title = 'You got') {
   $('#reel-title').textContent = title
   $('img', res).src = kindOf(it) === 'skin' ? iconFor(it, 400, 160) : iconFor(it)
   $('h3', res).textContent = itemName(it)
-  $('p', res).textContent = kindOf(it) === 'skin' ? `${r.name} · ${wearOf(it.wear).name} (${it.wear.toFixed(4)})` : r.name
+  const pat = kindOf(it) === 'skin' ? patternOf(it) : null
+  $('p', res).textContent = kindOf(it) === 'skin' ? `${r.name} · ${wearOf(it.wear).name} (${it.wear.toFixed(4)})${pat ? ` · ${pat.note}` : ''}` : kindOf(it) === 'agent' ? `${r.name} agent · ${agentById[it.agent]?.team} side` : r.name
   const eb = $('[data-inv="reel-equip"]', res)
   eb.dataset.uid = it.uid
   eb.hidden = kindOf(it) === 'sticker'
   res.hidden = false
-  const top = kindOf(it) === 'skin' ? skinById[it.skin].rarity : stickerById[it.sticker]?.rarity
-  audio?.play(top === 'covert' || top === 'gold' || top === 'classified' ? 'win' : 'buy')
+  const top = kindOf(it) === 'skin' ? skinById[it.skin].rarity : kindOf(it) === 'agent' ? agentById[it.agent]?.rarity : stickerById[it.sticker]?.rarity
+  audio?.play(top === 'covert' || top === 'gold' || top === 'classified' || patternOf(it)?.gem ? 'win' : 'buy')
   if (kindOf(it) === 'music') audio?.music?.(musicById[it.music], 'mvp')
 }
 function showReveal(it, title) {

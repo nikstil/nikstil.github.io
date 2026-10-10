@@ -92,7 +92,7 @@ export function mountInventory(el) {
     $('.iv-stats', el).innerHTML = `<div><small>Balance</small><b>${coins(inv.credits)}</b></div><div><small>Skins worth</small><b>${coins(worth)}</b></div>
       <div><small>Bet in total</small><b>${coins(s.wagered)}</b></div><div><small>Won back</small><b>${coins(s.won)}</b></div>
       <div class="${net >= 0 ? 'up' : 'down'}"><small>${net >= 0 ? 'Up' : 'Down'}</small><b>${coins(Math.abs(net))}</b></div><div><small>Biggest win</small><b>${coins(s.biggest)}</b></div>
-      <div><small>Keys · cases</small><b>🔑 ${inv.keys} · 📦 ${Object.values(inv.cases).reduce((a, b) => a + b, 0)}</b></div><div><small>Pretend money spent</small><b>$${pretendSpent().toFixed(2)}</b></div>`
+      <div><small>Keys · cases</small><b>🔑 ${inv.keys} · 📦 ${Object.values(inv.cases).reduce((a, b) => a + b, 0)}</b></div><div><small>Money spent</small><b>$${pretendSpent().toFixed(2)}</b></div>`
   }
   function render() {
     const inv = inventory()
@@ -166,7 +166,7 @@ export function mountFree(el) {
       <form class="fr-code"><input placeholder="Enter a code" maxlength="20" autocomplete="off" spellcheck="false" aria-label="Promo code"><button class="go">Redeem</button></form></div>
     <div class="fr-card"><h3>📅 Daily bonus</h3><p>Once a day: between ⓒ 0.25 and ⓒ 5, mostly nearer the 0.25.</p><button class="go" data-daily></button></div>
     <div class="fr-card"><h3>♻️ Rakeback</h3><p>0.5% of everything you've bet, back. It's how we say thanks for the other 99.5%.</p><button class="go" data-rake></button></div>
-    <div class="fr-card"><h3>💳 Credits</h3><p>Out of credits? Buy some with pretend money. Or play COUNTER-STRIFE: kills and wins pay credits.</p><button class="go" data-store>Get credits</button></div>
+    <div class="fr-card"><h3>💳 Credits</h3><p>Out of credits? Buy some. Or play COUNTER-STRIFE: kills and wins pay credits.</p><button class="go" data-store>Get credits</button></div>
   </section>`
   function render() {
     const f = readFree()

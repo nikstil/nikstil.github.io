@@ -30,6 +30,7 @@
 
     <!-- ===== HUD ===== -->
     <div class="hud" id="hud" hidden>
+      <div class="waypoints" id="waypoints" aria-hidden="true"></div>
       <div class="radar-wrap">
         <canvas class="radar" id="radar" width="200" height="200" aria-label="Radar"></canvas>
         <div class="place" id="place"></div>
@@ -119,6 +120,7 @@
       <button class="tb alt" data-t="alt" aria-label="Aim">◎</button>
       <button class="tb mode" data-t="mode" aria-label="Fire mode" hidden>3×</button>
       <button class="tb swap" data-t="swap">⇄</button>
+      <button class="tb inspect" data-t="inspect" aria-label="Inspect">👁</button>
       <button class="tb nade" data-t="nade">●</button>
       <button class="tb buy-btn" data-t="buy">$</button>
       <button class="tb score-btn" data-t="score">☰</button>
@@ -214,7 +216,6 @@
         </label>
         <label class="setting check"><input type="checkbox" id="set-invert"><span>Invert mouse</span></label>
         <label class="setting check"><input type="checkbox" id="set-killcam"><span>Killcam (watch how you died)</span></label>
-        <label class="setting check"><input type="checkbox" id="set-radio-voice"><span>Radio voices (read the radio out loud)</span></label>
         <label class="setting check"><input type="checkbox" id="set-aim-toggle"><span>Toggle aim (right click once to aim down the sights, again to stop)</span></label>
         <button class="go" data-do="back">Done</button>
       </div>
@@ -228,7 +229,8 @@
           <dt>Mouse</dt><dd>Aim (click the game to grab the mouse)</dd>
           <dt>Left click</dt><dd>Shoot · throw · plant (with the bomb out)</dd>
           <dt>Right click</dt><dd>Aim down the sights (hold) · scope (AWP, AUG…) · heavy stab · lob a grenade</dd>
-          <dt>F / middle click</dt><dd>Burst fire (Glock, FAMAS) · silencer on or off (USP-S, M4A1-S)</dd>
+          <dt>F</dt><dd>Inspect your weapon (and its skin)</dd>
+          <dt>V / middle click</dt><dd>Burst fire (Glock, FAMAS) · silencer on or off (USP-S, M4A1-S)</dd>
           <dt>Shift</dt><dd>Walk (silent)</dd>
           <dt>Ctrl / C</dt><dd>Crouch (crouch in the air to reach high boxes)</dd>
           <dt>Space</dt><dd>Jump</dd>
@@ -305,7 +307,7 @@
         <header class="inv-head">
           <h2>Inventory</h2>
           <div class="inv-tabs"><button data-inv="tab" data-v="items">Items</button><button data-inv="tab" data-v="cases">Cases</button><button data-inv="tab" data-v="tradeup">Trade Up</button><button data-inv="trade" hidden>🤝 Trade</button></div>
-          <div class="inv-wallet"><span title="Credits: 1 per kill, 3 per round won, more for winning the match">ⓒ <b id="inv-credits">0</b></span><span title="Keys open cases">🔑 <b id="inv-keys">0</b></span><button class="ghost small" data-inv="key" id="inv-buy-key">Buy key (ⓒ 5)</button><button class="go small" data-inv="credits" title="Buy credits with pretend money">＋ Credits</button></div>
+          <div class="inv-wallet"><span title="Credits: 1 per kill, 3 per round won, more for winning the match">ⓒ <b id="inv-credits">0</b></span><span title="Keys open cases">🔑 <b id="inv-keys">0</b></span><button class="ghost small" data-inv="key" id="inv-buy-key">Buy key (ⓒ 5)</button><button class="ghost small" data-inv="key" data-n="10" id="inv-buy-keys">10 keys (ⓒ 50)</button><button class="go small" data-inv="credits" title="Buy credits">＋ Credits</button></div>
           <button class="x" data-do="back" aria-label="Close">✕</button>
         </header>
         <p class="inv-note" id="inv-note"></p>

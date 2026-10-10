@@ -1581,8 +1581,10 @@ html.embed-app .win.is-embedded > .win-bar { display: none; }
 .win:is(:fullscreen, .is-max):has(.mobile-win) { display: flex; flex-direction: column; }
 .win:is(:fullscreen, .is-max) .win-client:has(.mobile-win) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .win:is(:fullscreen, .is-max) .mobile-win { flex: 1; min-height: 0; }
-.win:is(:fullscreen, .is-max) .mp { height: 100%; }
 .win:is(:fullscreen, .is-max) .mobile-win { container-type: size; }
+/* (upright, it stays phone-shaped: as big as fits, not stretched to the window's height; on a
+   short screen, at least as wide as it is in a window) */
+.win:is(:fullscreen, .is-max):not(.mp-land, .mp-landscape) .mp { --mp-ratio: 0.52; width: min(100cqw, max(380px, 100cqh * var(--mp-ratio))); max-width: none; height: auto; min-height: 0; max-height: 100cqh; aspect-ratio: var(--mp-ratio); }
 .win.mp-land:is(:fullscreen, .is-max) .mp { width: min(100cqw, calc((100cqh - 116px) * var(--ar, 1.43) + 20px)); height: auto; }
 
 /* ---- The fold: apps wider than the phone open it like a Z Fold (2 panels) or a trifold (3) ----

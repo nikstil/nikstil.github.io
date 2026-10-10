@@ -27,6 +27,6 @@ const LINES = [
   'gg', 'why is crash always 1.00 when i bet', 'all in. again.', 'its a marathon not a sprint', 'who wants to coinflip',
   'case battle me cowards', 'i was up 400 an hour ago', 'my rakeback is my salary now', 'this is fine', 'trust the process',
   'one more', 'cashed out at 1.01 like a coward and it went to 40x', 'upgrader hates me specifically', 'any1 wanna trade',
-  'gl everyone', 'the house always wins (not today)', 'is this financial advice', 'nice', 'sold my car (pretend car)',
+  'gl everyone', 'the house always wins (not today)', 'is this financial advice', 'nice', 'sold my car for this',
 ]
 export const chatLine = () => LINES[Math.floor(Math.random() * LINES.length)]
