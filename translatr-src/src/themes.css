@@ -237,7 +237,6 @@
   html[data-theme="y2k"] .wallet-value { color: #0b1400; }
 
   html[data-theme="y2k"] .gadget { border-radius: 22px; border: 1px solid #000; background: var(--y2k-chrome-soft); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: inset 0 1px 0 #fff, 0 18px 40px -10px rgb(0 0 0 / 0.85), 0 0 22px -2px var(--mood, #ff2bd6); }
-  html[data-theme="y2k"] .gadget-orb { box-shadow: 0 0 20px var(--mood, #ff2bd6); }
   html[data-theme="y2k"] .gadget-title { font-family: var(--font-display); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: #0b0c10; text-shadow: 0 1px 0 #fff; }
   html[data-theme="y2k"] .balloon { border-radius: 16px; border: 1px solid #0b0c10; background: linear-gradient(180deg, #ffffff, #e6e9ef); box-shadow: 0 0 0 2px #9aa1ad, 0 10px 30px -6px rgb(0 0 0 / 0.7), 0 0 18px -4px rgb(255 43 214 / 0.5); }
   html[data-theme="y2k"] .menu-heading { font-family: var(--font-display); font-size: 0.59375rem; letter-spacing: 0.14em; text-transform: uppercase; color: #3b404a; }
@@ -250,7 +249,6 @@
   html[data-theme="y2k"] .shop-card { border-radius: 18px; border-color: #9aa1ad; background: linear-gradient(180deg, #ffffff, #e3e6ec); }
   html[data-theme="y2k"] .shop-card:hover { border-color: #0b0c10; box-shadow: 0 0 22px -4px rgb(255 43 214 / 0.55); }
   html[data-theme="y2k"] .shop-card-title { color: #0b0c10; }
-  html[data-theme="y2k"] .doom-tab { color: #b6ff1a; text-shadow: 0 0 6px #b6ff1a; border-color: #000; background: var(--y2k-black); box-shadow: 0 0 14px rgb(255 43 214 / 0.4); }
   html[data-theme="y2k"] .doom-post { border-radius: 14px; background: linear-gradient(180deg, #ffffff, #eceef2); border-color: #c3c8d1; }
   html[data-theme="y2k"] .doom-tab-btn.active { color: #0b0c10; background: var(--y2k-chrome-soft); border-color: #0b0c10; border-radius: 999px; }
   html[data-theme="y2k"] .hell-switch[aria-checked="true"] { background: linear-gradient(180deg, #d9ff8a, #6fb300); }
@@ -426,7 +424,6 @@
     outline-offset: 3px;
     box-shadow: 0 0 0 7px #7a4f2c, 0 0 0 8px #3e2615, 0 18px 30px -6px rgb(0 0 0 / 0.7), 0 0 22px 4px var(--mood, transparent);
   }
-  html[data-theme="skeuo"] .gadget-orb { box-shadow: 0 0 0 5px #7a4f2c, 0 0 0 6px #3e2615, 0 0 18px 6px var(--mood, transparent); }
   html[data-theme="skeuo"] .gadget-title { color: #4a3510; text-shadow: 0 1px 0 rgb(255 255 255 / 0.8); }
   html[data-theme="skeuo"] .balloon { border-radius: 10px; border: 1px solid #b8a57c; background: linear-gradient(180deg, #fffdf5, #f4ecd8); box-shadow: 0 6px 14px -4px rgb(0 0 0 / 0.45), inset 0 1px 0 #fff; }
   html[data-theme="skeuo"] .menu-heading { color: #5b4630; text-shadow: 0 1px 0 rgb(255 255 255 / 0.8); }
@@ -435,7 +432,6 @@
   html[data-theme="skeuo"] .mine-tile-alt { border-color: #2c6412; background: radial-gradient(circle at 50% 35%, #f1ffe6, #b8e39a 45%, #6cae47); }
   html[data-theme="skeuo"] .shop-card { border-radius: 10px; border-color: #c4b594; background: linear-gradient(180deg, #fffdf6, #efe6d2); box-shadow: inset 0 1px 0 #fff, 0 3px 6px rgb(0 0 0 / 0.25); }
   html[data-theme="skeuo"] .shop-card-title { color: #3d2a12; }
-  html[data-theme="skeuo"] .doom-tab { border-color: #3e2615; background: linear-gradient(180deg, #9a6a42, #6b4327); text-shadow: 0 -1px 0 rgb(0 0 0 / 0.6); }
   html[data-theme="skeuo"] .doom-post { background: linear-gradient(180deg, #fffdf6, #f3ead6); border-color: #d8c9a6; }
 
   /* ==================================================================
@@ -545,7 +541,6 @@
   html[data-theme="minimal"] .wallet-value { color: #fff; }
 
   html[data-theme="minimal"] .gadget,
-  html[data-theme="minimal"] .gadget-orb { border-radius: 0; border: 1px solid #000; background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
   html[data-theme="minimal"] .gadget-title { font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #000; text-shadow: none; }
   html[data-theme="minimal"] .balloon { border-radius: 0; border: 1px solid #000; background: #fff; box-shadow: none; }
   html[data-theme="minimal"] .menu-heading { font-size: 0.625rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #000; }
@@ -557,7 +552,6 @@
   html[data-theme="minimal"] .shop-card { border-radius: 0; border-color: #000; background: #fff; box-shadow: none; }
   html[data-theme="minimal"] .shop-card:hover { border-color: #000; }
   html[data-theme="minimal"] .shop-card-title { color: #000; }
-  html[data-theme="minimal"] .doom-tab { border-color: #000; background: #000; box-shadow: none; text-shadow: none; }
   html[data-theme="minimal"] .doom-post { border-radius: 0; background: #fff; border-color: #000; box-shadow: none; }
   html[data-theme="minimal"] .doom-avatar { border-radius: 0; background: #fff; border-color: #000; box-shadow: none; }
   html[data-theme="minimal"] .doom-tab-btn.active { color: #000; background: #fff; border-color: #000; border-radius: 0; box-shadow: none; }
@@ -717,7 +711,6 @@
   html[data-theme="retro"] .wallet-value { color: #39ff14; text-shadow: 0 0 6px rgb(57 255 20 / 0.6); }
 
   html[data-theme="retro"] .gadget,
-  html[data-theme="retro"] .gadget-orb { border-radius: 0; border: 0; background: var(--retro-face); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: var(--retro-raised), 4px 4px 0 rgb(0 0 0 / 0.35); }
   html[data-theme="retro"] .gadget-title { color: #000; font-weight: 700; text-shadow: none; }
   html[data-theme="retro"] .balloon { border-radius: 0; border: 1px solid #000; background: #ffffe1; box-shadow: 2px 2px 0 rgb(0 0 0 / 0.4); }
   html[data-theme="retro"] .menu-heading { font-weight: 700; color: #000080; }
@@ -734,7 +727,6 @@
   html[data-theme="retro"] .shop-card,
   html[data-theme="retro"] .shop-card:hover { border-radius: 0; border-color: transparent; background: #f4f0e4; box-shadow: var(--retro-raised); }
   html[data-theme="retro"] .shop-card-title { color: #000080; }
-  html[data-theme="retro"] .doom-tab { color: #000; text-shadow: none; border: 0; background: var(--retro-face); box-shadow: var(--retro-raised); }
   html[data-theme="retro"] .doom-post { border-radius: 0; border: 0; background: #fff; box-shadow: var(--retro-sunken); }
   html[data-theme="retro"] .doom-avatar { border-radius: 0; background: var(--retro-face); border: 1px solid #000; box-shadow: none; }
   html[data-theme="retro"] .doom-tab-btn.active { color: #000; border-radius: 0; background: #f4f0e4; border-color: transparent; box-shadow: var(--retro-sunken); }
@@ -956,7 +948,6 @@
   html[data-theme="luna"] .shop-card { border-radius: 3px; border-color: #aca899; background: #fff; box-shadow: none; }
   html[data-theme="luna"] .shop-card:hover { border-color: #316ac5; }
   html[data-theme="luna"] .shop-card-title { color: #0b3b9e; }
-  html[data-theme="luna"] .doom-tab { color: #fff; text-shadow: 1px 1px 0 #0f1089; border-color: #001ea0; background: var(--luna-title); }
   html[data-theme="luna"] .doom-post { border-radius: 3px; border-color: #aca899; background: #fff; box-shadow: none; }
   html[data-theme="luna"] .doom-tab-btn.active { color: #fff; background: #316ac5; border-color: #316ac5; box-shadow: none; }
   html[data-theme="luna"] .desktop-icon:hover { background: none; border-color: transparent; }
@@ -1118,7 +1109,6 @@
   html[data-theme="aqua"] .shop-card { border-radius: 10px; border-color: #c8c8c8; background: #fff; }
   html[data-theme="aqua"] .shop-card:hover { border-color: var(--aqua-select); box-shadow: 0 0 0 3px rgb(56 117 215 / 0.3); }
   html[data-theme="aqua"] .shop-card-title { color: #1a4f9c; }
-  html[data-theme="aqua"] .doom-tab { color: #1d1d1f; text-shadow: none; border: 1px solid rgb(0 0 0 / 0.3); background: var(--aqua-bar); }
   html[data-theme="aqua"] .doom-post { border-radius: 8px; }
   html[data-theme="aqua"] .doom-tab-btn.active { color: #fff; background: var(--aqua-select); border-color: #1a4f9c; box-shadow: none; }
   html[data-theme="aqua"] .desktop-icon:hover { background: transparent; border-color: transparent; }
@@ -1299,7 +1289,6 @@
   html[data-theme="vapor"] .wallet-value { color: #01cdfe; text-shadow: 0 0 8px rgb(1 205 254 / 0.7); }
 
   html[data-theme="vapor"] .gadget,
-  html[data-theme="vapor"] .gadget-orb { border-radius: 0; border: 0; background: var(--vp-face); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: var(--vp-raised), 5px 5px 0 rgb(255 113 206 / 0.5); }
   html[data-theme="vapor"] .gadget-title { color: var(--vp-text); font-weight: 700; text-shadow: none; }
   html[data-theme="vapor"] .balloon { border-radius: 0; border: 1px solid #2b0f4f; color: var(--color-ink); background: var(--vp-light); box-shadow: 3px 3px 0 #ff71ce; }
   html[data-theme="vapor"] .menu-heading { font-weight: 700; color: var(--vp-accent); }
@@ -1316,7 +1305,6 @@
   html[data-theme="vapor"] .shop-card,
   html[data-theme="vapor"] .shop-card:hover { border-radius: 0; border-color: transparent; background: var(--vp-light); box-shadow: var(--vp-raised); }
   html[data-theme="vapor"] .shop-card-title { color: var(--vp-accent); }
-  html[data-theme="vapor"] .doom-tab { color: var(--vp-text); text-shadow: none; border: 0; background: var(--vp-face); box-shadow: var(--vp-raised); }
   html[data-theme="vapor"] .doom-post { border-radius: 0; border: 0; background: var(--vp-paper); box-shadow: var(--vp-sunken); }
   html[data-theme="vapor"] .doom-avatar { border-radius: 0; background: var(--vp-face); border: 1px solid #2b0f4f; box-shadow: none; }
   html[data-theme="vapor"] .doom-tab-btn.active { color: var(--vp-text); border-radius: 0; background: var(--vp-light); border-color: transparent; box-shadow: var(--vp-sunken); }
@@ -1485,7 +1473,6 @@
   html[data-theme="metro"] .wallet-value { color: #fff; }
 
   html[data-theme="metro"] .gadget,
-  html[data-theme="metro"] .gadget-orb { border-radius: 0; border: 0; color: #fff; background: var(--metro); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
   html[data-theme="metro"] .gadget-title { font-weight: 600; color: #fff; text-shadow: none; }
   html[data-theme="metro"] .balloon { border-radius: 0; border: 0; border-left: 6px solid var(--metro); background: #fff; box-shadow: 0 6px 20px rgb(0 0 0 / 0.3); }
   html[data-theme="metro"] .menu-heading { font-family: var(--font-display); font-weight: 300; font-size: 0.9rem; }
@@ -1496,7 +1483,6 @@
   html[data-theme="metro"] .mine-tile:hover { box-shadow: inset 0 0 0 3px var(--metro); }
   html[data-theme="metro"] .shop-card { border-radius: 0; border: 0; background: #f4f4f4; box-shadow: none; }
   html[data-theme="metro"] .shop-card:hover { box-shadow: inset 0 0 0 2px var(--metro); }
-  html[data-theme="metro"] .doom-tab { border: 0; color: #fff; background: var(--metro); box-shadow: none; text-shadow: none; }
   html[data-theme="metro"] .doom-post { border-radius: 0; background: #fff; border-color: #e0e0e0; box-shadow: none; }
   html[data-theme="metro"] .doom-avatar { border-radius: 0; box-shadow: none; }
   html[data-theme="metro"] .doom-tab-btn.active { color: #fff; background: var(--metro); border-color: var(--metro); border-radius: 0; box-shadow: none; }
@@ -1604,7 +1590,6 @@
   html[data-theme="glass"] .wallet-value { color: #3a2200; }
 
   html[data-theme="glass"] .gadget,
-  html[data-theme="glass"] .gadget-orb { border-radius: 22px; border: 0; background: rgb(255 255 255 / 0.38); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-edge), 0 12px 30px -10px rgb(30 20 80 / 0.35); }
   html[data-theme="glass"] .gadget-title { font-weight: 600; color: var(--color-ink); text-shadow: none; }
   html[data-theme="glass"] .balloon { border-radius: 18px; border: 0; background: rgb(255 255 255 / 0.62); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-edge), 0 14px 40px -10px rgb(30 20 80 / 0.4); }
   html[data-theme="glass"] .menu-heading { font-weight: 600; color: rgb(18 20 23 / 0.55); }
@@ -1615,7 +1600,6 @@
   html[data-theme="glass"] .mine-tile:hover { box-shadow: var(--glass-edge), 0 0 0 3px rgb(10 132 255 / 0.5); }
   html[data-theme="glass"] .shop-card { border-radius: 18px; border: 0; background: rgb(255 255 255 / 0.55); box-shadow: var(--glass-edge); }
   html[data-theme="glass"] .shop-card:hover { box-shadow: var(--glass-edge), 0 8px 20px rgb(30 20 80 / 0.15); }
-  html[data-theme="glass"] .doom-tab { border: 0; border-radius: 14px; color: var(--color-ink); background: rgb(255 255 255 / 0.5); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-edge); text-shadow: none; }
   html[data-theme="glass"] .doom-post { border-radius: 18px; background: rgb(255 255 255 / 0.6); border: 0; box-shadow: var(--glass-edge); }
   html[data-theme="glass"] .doom-avatar { border-radius: 50%; }
   html[data-theme="glass"] .doom-tab-btn.active { color: #fff; background: rgb(10 132 255 / 0.85); border-color: transparent; border-radius: 999px; box-shadow: none; }

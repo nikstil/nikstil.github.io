@@ -3,13 +3,13 @@
 // players in an online game, and what you earn by playing: credits for kills and wins, case drops.
 
 import { WEAPONS } from './weapons.js'
-import { iconFor, drawnIcon, rarityOf, shortName } from './items.js'
+import { iconFor, drawnIcon, rarityOf, shortName, itemValue } from './items.js'
 import { openCreditStore } from './credits.js'
 import {
-  SKINS, RARITY, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem, skinMaterial, itemKey,
+  SKINS, RARITY, RARITY_ORDER, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem,
   loadInventory, saveInventory, addItem, toggleEquip, equippedFor, skinDesc, randomSkinFor,
-  kindOf, stickerById, musicById, stickerMaterial, stickerUrl, STICKER_GRADE, tradeUpOutcomes, signTradeUp, MUSIC_KITS,
-  agentById, equippedAgents, patternOf,
+  kindOf, stickerById, musicById, tradeUpOutcomes, signTradeUp, MUSIC_KITS,
+  agentById, equippedAgents, patternOf, sourceOf, sidesOf, equippedSides, COLLECTIONS, rollCollection, SIDES,
 } from './skins.js'
 
 const $ = (s, el = document) => el.querySelector(s)
@@ -49,14 +49,14 @@ function drawSome() {
   if (toDraw.length) afterPaint(drawSome)
   else drawing = false
 }
-/** Your equipped skins, weapon id -> descriptor (sent to the host when you join a game). */
+/** Your equipped skins, 'T:ak47' -> descriptor (sent to the host when you join a game). */
 export function equippedSkins() {
   inv = loadInventory()
   const out = {}
-  for (const w of Object.keys(inv.equipped)) {
-    if (w === 'music' || w.startsWith('agent')) continue
-    const d = skinDesc(equippedFor(inv, w))
-    if (d) out[w] = d
+  for (const k of Object.keys(inv.equipped)) {
+    if (!k.includes(':')) continue
+    const d = skinDesc(equippedFor(inv, k))
+    if (d) out[k] = d
   }
   // (and who you play as)
   const ag = equippedAgents(inv)
@@ -82,15 +82,15 @@ const save = () => {
 // ---------------- In the game
 /** The skin a soldier's gun wears: yours for you, now and then a random one for bots. */
 export function skinFor(a, weaponId) {
-  if (a.remote) return a.netSkins?.[weaponId] ?? null
-  if (a.isPlayer) return skinDesc(equippedFor(inv, weaponId))
+  if (a.remote) return a.netSkins?.[`${a.team}:${weaponId}`] ?? a.netSkins?.[weaponId] ?? null
+  if (a.isPlayer) return skinDesc(equippedFor(inv, weaponId, a.team))
   if (a.isBot && Math.random() < 0.3) return randomSkinFor(weaponId)
   return null
 }
 /** A kill by you: a credit, and a tick on a StatTrak™ counter. */
-export function rewardKill(weaponId) {
+export function rewardKill(weaponId, side) {
   inv.credits += 1
-  const it = equippedFor(inv, weaponId)
+  const it = equippedFor(inv, weaponId, side)
   if (it && it.st != null) it.st++
   save()
 }
@@ -111,12 +111,17 @@ export function rewardRound(won) {
   save()
   return got
 }
-/** End of a match: a case for playing, more credits for winning. Returns what you got. */
-export function rewardMatch(won, mvps = 0) {
+/**
+ * End of a match: a case for playing, a skin from the map's collection, and more credits for
+ * winning. Returns what you got: { box, skin } (names).
+ */
+export function rewardMatch(won, mvps = 0, mapId = null) {
   inv.credits += (won ? 15 : 5) + mvps * 5
-  const got = giveCase()
+  const box = giveCase()
+  const drop = mapId ? rollCollection(mapId) : null
+  if (drop) addItem(inv, drop)
   save()
-  return got
+  return { box, skin: drop ? shortName(drop) : '' }
 }
 function giveCase() {
   // weapon cases most of the time; now and then a sticker capsule or a music kit box
@@ -127,8 +132,13 @@ function giveCase() {
   return c.name
 }
 
-const equipKey = (it) => (kindOf(it) === 'music' ? 'music' : kindOf(it) === 'agent' ? `agent${agentById[it.agent]?.team}` : kindOf(it) === 'skin' ? skinById[it.skin].weapon : null)
-const isEquipped = (it) => equipKey(it) && inv.equipped[equipKey(it)] === it.uid
+const isEquipped = (it) => Object.values(inv.equipped).includes(it.uid)
+/** "Equipped", or which side it's equipped on when a gun used on both sides is on just one. */
+function equipBadge(it) {
+  if (kindOf(it) !== 'skin') return 'Equipped'
+  const on = equippedSides(inv, it.uid)
+  return on.length === 1 && sidesOf(skinById[it.skin].weapon).length === 2 ? `Equipped · ${on[0]}` : 'Equipped'
+}
 
 // ---------------- The screen
 export function initInventory(opts) {
@@ -156,7 +166,7 @@ export function initInventory(opts) {
       const it = inv.items.find((x) => x.uid === selUid)
       if (!it) return
       if (kindOf(it) === 'music') inv.equipped.music === it.uid ? delete inv.equipped.music : (inv.equipped.music = it.uid)
-      else toggleEquip(inv, selUid)
+      else toggleEquip(inv, selUid, t.dataset.side || null)
       save()
       audio?.play('click')
       if (kindOf(it) === 'music' && inv.equipped.music === it.uid) audio?.music?.(musicById[it.music], 'mvp')
@@ -190,6 +200,23 @@ export function initInventory(opts) {
         },
       })
     } else if (act === 'open') openCase(t.dataset.v)
+    else if (act === 'open-many') openMany(t.dataset.v, Number(t.dataset.n) || 1)
+    else if (act === 'slot') {
+      slotPick = slotPick?.w === t.dataset.w && slotPick?.side === t.dataset.side ? null : { w: t.dataset.w, side: t.dataset.side }
+      render()
+    } else if (act === 'slot-equip' && slotPick) {
+      const k = `${slotPick.side}:${slotPick.w}`
+      const uid = Number(t.dataset.uid)
+      if (uid) inv.equipped[k] = uid
+      else delete inv.equipped[k]
+      save()
+      audio?.play('click')
+      render()
+    }
+    else if (act === 'bulk-close') {
+      $('#bulk').hidden = true
+      render()
+    }
     else if (act === 'reel-close') closeReel()
     else if (act === 'reel-equip') {
       const it = inv.items.find((x) => x.uid === Number(t.dataset.uid))
@@ -324,7 +351,7 @@ function card(it, opts = {}) {
   b.dataset.inv = 'item'
   b.dataset.uid = it.uid
   b.style.setProperty('--r', r.color)
-  b.innerHTML = `<img alt=""><b></b><small></small>${isEquipped(it) ? '<em>Equipped</em>' : ''}${it.st != null ? '<i class="st">ST</i>' : ''}`
+  b.innerHTML = `<img alt=""><b></b><small></small>${isEquipped(it) ? `<em>${equipBadge(it)}</em>` : ''}${it.st != null ? '<i class="st">ST</i>' : ''}`
   picture($('img', b), it)
   $('b', b).textContent = shortName(it)
   $('small', b).textContent = kindOf(it) === 'skin' ? wearOf(it.wear).name + ((it.stickers ?? []).length ? ` · ${it.stickers.length} sticker${it.stickers.length > 1 ? 's' : ''}` : '') : r.name
@@ -345,6 +372,7 @@ function render() {
   const body = $('#inv-body')
   body.replaceChildren()
   if (tab === 'items') itemsTab(body)
+  else if (tab === 'loadout') loadoutTab(body)
   else if (tab === 'tradeup') tradeUpTab(body)
   else casesTab(body)
 }
@@ -431,7 +459,22 @@ function details(it) {
     row('Pattern', `#${it.seed}${pat ? ` · ${pat.note}` : ''}`)
     if (it.st != null) row('StatTrak™', `${it.st} kills`)
     if (it.stickers?.length) row('Stickers', it.stickers.map((k) => stickerById[k]?.name).join(', '))
-    btn(eq ? 'Unequip' : `Equip on the ${WEAPONS[s.weapon].name}`, 'equip', eq ? 'ghost' : 'go')
+    const from = sourceOf(it.skin)
+    if (from) row('From', from.name)
+    // equipped per side: both at once, or just one (a T-only or CT-only gun has the one side)
+    const sides = sidesOf(s.weapon)
+    const on = equippedSides(inv, it.uid)
+    row('Equipped', on.length ? on.map((x) => (x === 'T' ? 'Terrorist' : 'Counter-Terrorist')).join(' and ') : 'No')
+    const side = (sd, label) => {
+      btn(on.includes(sd) ? `Unequip (${sd})` : label, 'equip', on.includes(sd) ? 'ghost' : 'go')
+      acts.lastChild.dataset.side = sd
+    }
+    if (sides.length === 1) side(sides[0], `Equip on the ${WEAPONS[s.weapon].name} (${sides[0]})`)
+    else {
+      btn(on.length === 2 ? 'Unequip (both)' : `Equip on the ${WEAPONS[s.weapon].name} (T + CT)`, 'equip', on.length === 2 ? 'ghost' : 'go')
+      side('T', 'T only')
+      side('CT', 'CT only')
+    }
     if (s.weapon !== 'knife' && (it.stickers ?? []).length < 4) btn('🏷️ Apply a sticker', 'apply', 'ghost')
     if (it.stickers?.length) btn('Scrape the last sticker', 'scrape', 'ghost')
   } else if (kind === 'agent') {
@@ -455,7 +498,110 @@ function details(it) {
   }
   return d
 }
-function casesTab(body) {
+// ---------------- Loadout: every gun, what you carry on each side
+const LOADOUT = [
+  ['knife', 'Knives'],
+  ['pistol', 'Pistols'],
+  ['smg', 'SMGs'],
+  ['rifle', 'Rifles'],
+  ['sniper', 'Snipers'],
+  ['heavy', 'Heavy'],
+  ['taser', 'Gear'],
+]
+let slotPick = null // { w, side }: the slot whose skins are showing
+function loadoutTab(into) {
+  const body = document.createElement('div')
+  body.className = 'case-scroll loadout'
+  into.append(body)
+  const intro = document.createElement('p')
+  intro.className = 'case-head'
+  intro.textContent = 'What you carry on each side. Click a slot to pick one of your skins for it (or the default).'
+  body.append(intro)
+  const skinned = new Set(SKINS.map((s) => s.weapon))
+  for (const [kind, label] of LOADOUT) {
+    const ids = Object.keys(WEAPONS).filter((id) => WEAPONS[id].kind === kind && skinned.has(id))
+    if (!ids.length) continue
+    const h = document.createElement('h3')
+    h.className = 'case-section'
+    h.textContent = label
+    body.append(h)
+    const table = document.createElement('div')
+    table.className = 'lo-table'
+    for (const w of ids) {
+      const row = document.createElement('div')
+      row.className = 'lo-row'
+      const name = document.createElement('b')
+      name.textContent = WEAPONS[w].name
+      row.append(name)
+      for (const side of SIDES) {
+        const cell = document.createElement('button')
+        cell.className = 'lo-cell'
+        if (!sidesOf(w).includes(side)) {
+          cell.disabled = true
+          cell.textContent = `Not on ${side}`
+        } else {
+          const it = equippedFor(inv, w, side)
+          cell.dataset.inv = 'slot'
+          cell.dataset.w = w
+          cell.dataset.side = side
+          cell.classList.toggle('sel', slotPick?.w === w && slotPick?.side === side)
+          if (it) {
+            cell.style.setProperty('--r', rarityOf(it).color)
+            cell.innerHTML = '<img alt=""><span></span>'
+            picture($('img', cell), it, 120, 48)
+            $('span', cell).textContent = `${side} · ${skinById[it.skin].name}`
+          } else cell.textContent = `${side} · Default`
+        }
+        row.append(cell)
+      }
+      table.append(row)
+      if (slotPick?.w === w) table.append(slotPicker(w, slotPick.side))
+    }
+    body.append(table)
+  }
+}
+/** Your skins for a weapon, to put on a side (or back to the default). */
+function slotPicker(w, side) {
+  const box = document.createElement('div')
+  box.className = 'lo-pick'
+  const mine = inv.items.filter((it) => kindOf(it) === 'skin' && skinById[it.skin].weapon === w)
+  const opt = (uid, label, it = null) => {
+    const b = document.createElement('button')
+    b.className = 'lo-cell'
+    b.dataset.inv = 'slot-equip'
+    b.dataset.uid = uid
+    b.classList.toggle('sel', (inv.equipped[`${side}:${w}`] ?? 0) === uid)
+    if (it) {
+      b.style.setProperty('--r', rarityOf(it).color)
+      b.innerHTML = '<img alt=""><span></span>'
+      picture($('img', b), it, 120, 48)
+      $('span', b).textContent = label
+    } else b.textContent = label
+    box.append(b)
+  }
+  opt(0, 'Default')
+  for (const it of mine) opt(it.uid, `${skinById[it.skin].name} · ${wearOf(it.wear).short}`, it)
+  if (!mine.length) {
+    const p = document.createElement('p')
+    p.textContent = `You have no ${WEAPONS[w].name} skins yet: open some cases.`
+    box.append(p)
+  }
+  return box
+}
+
+// Any case opens with a key, as many at once as you have keys for; the ones that drop when you
+// play open free.
+const OPEN_MANY = [5, 10, 25, 100]
+const openable = (caseId) => (inv.cases[caseId] ?? 0) + inv.keys
+function casesTab(into) {
+  // (one scrolling column: the cases, then the map collections)
+  const body = document.createElement('div')
+  body.className = 'case-scroll'
+  into.append(body)
+  const head = document.createElement('p')
+  head.className = 'case-head'
+  head.textContent = `🔑 ${inv.keys} key${inv.keys === 1 ? '' : 's'}: any case opens with a key, as many as you like at once. Cases you’ve earned by playing open free.`
+  body.append(head)
   const grid = document.createElement('div')
   grid.className = 'case-grid'
   for (const c of CASES) {
@@ -463,10 +609,10 @@ function casesTab(body) {
     const el = document.createElement('div')
     el.className = 'case-card'
     el.style.setProperty('--c', c.color)
-    el.innerHTML = `<div class="case-box"><span></span></div><h3></h3><p class="case-n"></p><div class="case-skins"></div><button class="go" data-inv="open"></button>`
+    el.innerHTML = `<div class="case-box"><span></span></div><h3></h3><p class="case-n"></p><div class="case-skins"></div><button class="go" data-inv="open"></button><div class="case-many"></div>`
     $('.case-box span', el).textContent = c.kind === 'sticker' ? 'Stickers' : c.kind === 'music' ? '♫ Music' : c.kind === 'agent' ? '🕵 Agents' : c.name.replace(' Case', '')
     $('h3', el).textContent = c.name
-    $('.case-n', el).textContent = n ? `You have ${n}` : 'None yet: they drop when you play'
+    $('.case-n', el).textContent = n ? `You’ve earned ${n}: ${n === 1 ? 'it opens' : 'they open'} free` : 'Opens with a key'
     const sk = $('.case-skins', el)
     const line = (text, color, cls = '') => {
       const i = document.createElement('span')
@@ -492,11 +638,46 @@ function casesTab(body) {
     }
     const ob = $('button', el)
     ob.dataset.v = c.id
-    ob.textContent = !n ? 'None to open' : inv.keys ? 'Open (uses a key)' : `Buy key & open (ⓒ ${KEY_PRICE})`
-    ob.disabled = !n
+    ob.textContent = n ? 'Open (free)' : inv.keys ? 'Open (uses a key)' : `Buy a key & open (ⓒ ${KEY_PRICE})`
+    // many at once: as many as you have (earned ones first, then keys)
+    const most = openable(c.id)
+    const many = $('.case-many', el)
+    for (const k of [...OPEN_MANY.filter((x) => x < most), most > 1 ? most : 0].filter(Boolean)) {
+      const b = document.createElement('button')
+      b.className = 'ghost small'
+      b.dataset.inv = 'open-many'
+      b.dataset.v = c.id
+      b.dataset.n = k
+      b.textContent = k === most ? `Open all ${k}` : `×${k}`
+      many.append(b)
+    }
     grid.append(el)
   }
   body.append(grid)
+  // the map collections: no keys, they drop after a match on their map
+  const h = document.createElement('h3')
+  h.className = 'case-section'
+  h.textContent = 'Map collections: one of these drops after every match on its map'
+  body.append(h)
+  const cg = document.createElement('div')
+  cg.className = 'case-grid'
+  for (const col of COLLECTIONS) {
+    const el = document.createElement('div')
+    el.className = 'case-card collection'
+    el.innerHTML = `<div class="case-box"><span></span></div><h3></h3><p class="case-n"></p><div class="case-skins"></div>`
+    $('.case-box span', el).textContent = col.name.replace('The ', '').replace(' Collection', '')
+    $('h3', el).textContent = col.name
+    $('.case-n', el).textContent = `Play a match on ${col.name.replace('The ', '').replace(' Collection', '')}`
+    const sk = $('.case-skins', el)
+    for (const id of [...col.skins].sort((a, b) => RARITY_ORDER.indexOf(skinById[b].rarity) - RARITY_ORDER.indexOf(skinById[a].rarity))) {
+      const i = document.createElement('span')
+      i.style.setProperty('--r', RARITY[skinById[id].rarity].color)
+      i.textContent = `${WEAPONS[skinById[id].weapon].name} | ${skinById[id].name}`
+      sk.append(i)
+    }
+    cg.append(el)
+  }
+  body.append(cg)
 }
 function tradeUpTab(body) {
   const items = contract.map((u) => inv.items.find((x) => x.uid === u)).filter(Boolean)
@@ -506,7 +687,7 @@ function tradeUpTab(body) {
   head.className = 'tu-head'
   head.innerHTML = `<p></p><div class="tu-slots"></div><div class="tu-out"></div><div class="tu-actions"><button class="go" data-inv="sign">📝 Sign the contract</button><button class="ghost small" data-inv="contract-clear">Clear</button></div>`
   const need = o?.need ?? 10
-  $('p', head).textContent = 'Trade up: put in 10 skins of one grade (5 Coverts for a knife) and get one of the next grade back, from the same cases. The wear is the average of what you put in.'
+  $('p', head).textContent = 'Trade up: put in 10 skins of one grade (5 Coverts for a knife) and get one of the next grade back, from the same cases or map collections. The wear is the average of what you put in.'
   const slots = $('.tu-slots', head)
   for (let k = 0; k < need; k++) {
     const it = items[k]
@@ -529,7 +710,7 @@ function tradeUpTab(body) {
   const grid = document.createElement('div')
   grid.className = 'inv-grid tu-grid'
   const grade = items[0] ? skinById[items[0].skin].rarity : null
-  const eligible = inv.items.filter((it) => kindOf(it) === 'skin' && ['milspec', 'restricted', 'classified', 'covert'].includes(skinById[it.skin].rarity) && (!grade || skinById[it.skin].rarity === grade))
+  const eligible = inv.items.filter((it) => kindOf(it) === 'skin' && skinById[it.skin].rarity !== 'gold' && (!grade || skinById[it.skin].rarity === grade))
   if (!eligible.length) {
     const p = document.createElement('p')
     p.className = 'inv-empty'
@@ -556,16 +737,22 @@ function signContract() {
 
 // ---------------- Opening a case: the reel
 let reelAnim = 0
+/** Pays for one opening: an earned case if there is one, else a key. False if there's neither. */
+function payFor(caseId) {
+  if (inv.cases[caseId] > 0) inv.cases[caseId]--
+  else if (inv.keys > 0) inv.keys--
+  else return false
+  return true
+}
 function openCase(caseId) {
-  if (!(inv.cases[caseId] > 0)) return
-  // no key: buy one on the way (it's what the button says)
-  if (!inv.keys) {
+  if (!caseById[caseId]) return
+  // no case and no key: buy a key on the way (it's what the button says)
+  if (!openable(caseId)) {
     if (inv.credits < KEY_PRICE) return flash(`A key is ⓒ ${KEY_PRICE}: win rounds and get kills to earn credits (or get some with ＋ Credits).`)
     inv.credits -= KEY_PRICE
     inv.keys++
   }
-  inv.keys--
-  inv.cases[caseId]--
+  payFor(caseId)
   const won = addItem(inv, rollCase(caseId))
   inv.opened++
   save()
@@ -626,6 +813,42 @@ function openCase(caseId) {
     else reveal(won)
   }
   reelAnim = requestAnimationFrame(step)
+}
+/** Opens n of a case at once (earned ones first, then keys) and shows the lot, best first. */
+function openMany(caseId, n) {
+  const c = caseById[caseId]
+  if (!c) return
+  n = Math.min(n, openable(caseId))
+  if (n < 1) return flash('You need keys for that: buy some above (ⓒ 5 each, or 10 at a time).')
+  const got = []
+  for (let k = 0; k < n && payFor(caseId); k++) got.push(addItem(inv, rollCase(caseId)))
+  inv.opened += got.length
+  save()
+  const rank = (it) => {
+    const r = kindOf(it) === 'skin' ? skinById[it.skin].rarity : kindOf(it) === 'agent' ? agentById[it.agent]?.rarity : kindOf(it) === 'sticker' ? stickerById[it.sticker]?.rarity : 'milspec'
+    return RARITY_ORDER.indexOf(r) * 1000 + itemValue(it)
+  }
+  got.sort((a, b) => rank(b) - rank(a))
+  const worth = got.reduce((t, it) => t + itemValue(it), 0)
+  const box = $('#bulk')
+  box.hidden = false
+  box.innerHTML = `<div class="bulk-card"><h2></h2><p class="bulk-sum"></p><div class="bulk-grid"></div><div class="menu-buttons"><button class="go" data-inv="bulk-close">Done</button></div></div>`
+  $('h2', box).textContent = `${got.length} × ${c.name}`
+  $('.bulk-sum', box).textContent = `Worth ⓒ ${worth.toFixed(2)} in all · best: ${shortName(got[0])}`
+  const grid = $('.bulk-grid', box)
+  got.forEach((it, i) => {
+    const d = document.createElement('div')
+    d.className = 'bulk-item'
+    d.style.setProperty('--r', rarityOf(it).color)
+    d.style.animationDelay = `${Math.min(i, 60) * 35}ms`
+    d.innerHTML = '<img alt=""><b></b><small></small>'
+    picture($('img', d), it, 150, 60)
+    $('b', d).textContent = shortName(it)
+    $('small', d).textContent = kindOf(it) === 'skin' ? `${wearOf(it.wear).short} · ⓒ ${itemValue(it).toFixed(2)}` : rarityOf(it).name
+    grid.append(d)
+  })
+  const top = got[0] && kindOf(got[0]) === 'skin' ? skinById[got[0].skin].rarity : null
+  audio?.play(top === 'covert' || top === 'gold' || top === 'classified' ? 'win' : 'buy')
 }
 function reveal(it, title = 'You got') {
   const r = rarityOf(it)

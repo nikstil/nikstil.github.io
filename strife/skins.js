@@ -185,9 +185,384 @@ const CASE_SKINS = {
     S('knife', 'Stained', 'stained', ['#5a5f66', '#3a3d42', '#8a8f96'], 'gold'),
     S('knife', 'Black Laminate', 'laminate', ['#1a1a1a', '#3a3a3a', '#5a4a3a'], 'gold'),
   ],
+  standup: [
+    S('ak47', 'Blocker Removed', 'blocks', ['#101820', '#f2aa1f', '#e8e3d7'], 'covert'),
+    S('awp', 'Yesterday, Today, Blockers', 'circuit', ['#0b0f1a', '#3ad1ff', '#f2f2f2'], 'covert'),
+    S('m4a4', 'Sprint Zero', 'stripes', ['#1a1a1a', '#ffcc00', '#e8e8e8'], 'classified'),
+    S('usp', 'Story Points', 'hex', ['#20232a', '#61dafb'], 'classified'),
+    S('famas', 'Burndown Chart', 'fade', ['#ff5a1f', '#ffd23a', '#2a2a2a'], 'classified'),
+    S('m4a1s', 'Retro Board', 'waves', ['#2a3a6a', '#ff8fab', '#f2f2f2'], 'restricted'),
+    S('glock', 'Parking Lot Topic', 'splatter', ['#2a2a2a', '#7ad8ff', '#ffd23a'], 'restricted'),
+    S('galil', 'Velocity Theater', 'stripes', ['#3a0d5c', '#ff4fb8', '#f2f2f2'], 'restricted'),
+    S('tec9', 'Scrum of Scrums', 'digital', ['#2a3a2e', '#6a8a5a', '#a8c49a'], 'restricted'),
+    S('mp7', 'Async Update', 'circuit', ['#101820', '#2ee67a', '#e8fff0'], 'restricted'),
+    S('p250', 'Stand Up Straight', 'solid', ['#3a6ea5'], 'milspec'),
+    S('cz75', 'Timeboxed', 'carbon', ['#1b1b1d', '#3ad1ff'], 'milspec'),
+    S('mac10', 'Kanban Pastel', 'blocks', ['#ffd6e0', '#c1f0e0', '#3a3a5a'], 'milspec'),
+    S('ump45', 'Ticket Blue', 'digital', ['#0052cc', '#2684ff', '#deebff'], 'milspec'),
+    S('nova', 'Backlog Grooming', 'camo', ['#5a5a4a', '#3a3a2a', '#7a7a5a', '#9a9a7a'], 'milspec'),
+    S('sawedoff', 'Story Spike', 'stripes', ['#c8102e', '#1a1a1a', '#f2f2f2'], 'milspec'),
+    S('p2000', 'Five Minute Meeting', 'waves', ['#2a6fd6', '#f2f2f2', '#1a1a1a'], 'milspec'),
+    S('negev', 'Thirty Minute Meeting', 'tiger', ['#3a3a3a', '#e8a21a'], 'milspec'),
+    S('knife', 'Crimson Splash', 'splatter', ['#e8e0d8', '#b3001b', '#7a0010'], 'gold'),
+    S('knife', 'Scorched', 'camo', ['#2a2420', '#4a3a2a', '#1a1410', '#6a5a4a'], 'gold'),
+  ],
+  payday: [
+    S('awp', 'Direct Deposit', 'fade', ['#0d3a1a', '#2ee67a', '#e4c76a'], 'covert'),
+    S('m4a1s', 'Overtime Pay', 'damascus', ['#2a2410', '#e4c76a'], 'covert'),
+    S('deagle', 'Gross Income', 'marble', ['#f5f0e0', '#c9a25a', '#2a2410'], 'classified'),
+    S('glock', 'Pay Stub', 'blocks', ['#f2f2f2', '#2a9d5a', '#1a1a1a'], 'classified'),
+    S('ssg08', 'Fat Bonus', 'hex', ['#1a2a1a', '#e4c76a'], 'classified'),
+    S('usp', 'Pension Plan', 'damascus', ['#3a2a1a', '#b08a5a'], 'restricted'),
+    S('p90', 'Gold Standard', 'scales', ['#2a2410', '#e4c76a', '#f2e6b0'], 'restricted'),
+    S('mp9', 'Cash Flow', 'waves', ['#0d3a1a', '#2ee67a', '#f2f2f2'], 'restricted'),
+    S('xm1014', 'Tax Return', 'stripes', ['#f2f2f2', '#2a6fd6', '#c8102e'], 'restricted'),
+    S('mag7', 'Petty Cash', 'camo', ['#2a5a2a', '#4a7a3a', '#1a3a1a', '#8aa06a'], 'restricted'),
+    S('galil', 'Expense Report', 'digital', ['#3a4a3a', '#6a7a5a', '#a8b49a'], 'milspec'),
+    S('p250', 'Coin Purse', 'hex', ['#2a2a2a', '#c9a25a'], 'milspec'),
+    S('tec9', 'Loose Change', 'carbon', ['#1b1b1d', '#c9a25a'], 'milspec'),
+    S('mp5', 'Minimum Wage', 'solid', ['#7a8a6a'], 'milspec'),
+    S('bizon', 'Piggy Bank', 'blocks', ['#ffb6c8', '#2a2a2a', '#f2f2f2'], 'milspec'),
+    S('dualies', 'Two Paychecks', 'fade', ['#e4c76a', '#2ee67a', '#1a1a1a'], 'milspec'),
+    S('r8', 'Wire Transfer', 'circuit', ['#0d1a2a', '#e4c76a', '#2a6fd6'], 'milspec'),
+    S('zeus', 'Static Income', 'waves', ['#1a1a3a', '#ffd23a', '#f2f2f2'], 'milspec'),
+    S('knife', 'Ruby Steel', 'fade', ['#3a0006', '#c8102e', '#ff6a7a'], 'gold'),
+    S('knife', 'Gold Leaf', 'damascus', ['#5a4a1a', '#e4c76a'], 'gold'),
+  ],
+  mandatoryfun: [
+    S('ak47', 'Trust Fall', 'splatter', ['#f2f2f2', '#ff3a8c', '#2be1ff'], 'covert'),
+    S('deagle', 'Karaoke Night', 'fade', ['#ff4fb8', '#7a5cff', '#2be1ff'], 'covert'),
+    S('m4a4', 'Pizza Friday', 'blocks', ['#ffcc33', '#c8102e', '#f2e9da'], 'classified'),
+    S('aug', 'Escape Room', 'circuit', ['#0d0d1a', '#ff3a3a', '#ffd23a'], 'classified'),
+    S('p90', 'Ugly Sweater', 'stripes', ['#c8102e', '#2a9d5a', '#f2f2f2'], 'classified'),
+    S('famas', 'Paintball Offsite', 'splatter', ['#1a1a1a', '#ff5a1f', '#2ee67a'], 'restricted'),
+    S('sg553', 'Bowling Shoes', 'blocks', ['#c8102e', '#2a6fd6', '#f2f2f2'], 'restricted'),
+    S('mac10', 'Laser Tag', 'stripes', ['#0d0d1a', '#2be1ff', '#ff3ac0'], 'restricted'),
+    S('ump45', 'Potluck', 'camo', ['#c8a26a', '#8a4a2a', '#e8d9a8', '#5a3a1a'], 'restricted'),
+    S('cz75', 'Secret Santa', 'stripes', ['#c8102e', '#f2f2f2', '#2a9d5a'], 'restricted'),
+    S('glock', 'Name Tag', 'solid', ['#f2f2f2'], 'milspec'),
+    S('mp7', 'Icebreaker Game', 'hex', ['#e8f6ff', '#3ec2ff'], 'milspec'),
+    S('nova', 'Sack Race', 'camo', ['#a8946a', '#7a6a4a', '#c8b48a', '#5a4a3a'], 'milspec'),
+    S('xm1014', 'Conga Line', 'waves', ['#ff5a1f', '#ffd23a', '#2a9d8f'], 'milspec'),
+    S('mag7', 'Piñata', 'blocks', ['#ff3a8c', '#ffd23a', '#2be1ff'], 'milspec'),
+    S('sawedoff', 'Three-Legged Race', 'tiger', ['#2a2a2a', '#ffd23a'], 'milspec'),
+    S('m249', 'Team Jersey', 'stripes', ['#2a6fd6', '#f2f2f2', '#c8102e'], 'milspec'),
+    S('scar20', 'Fun Committee', 'digital', ['#3a2a5a', '#7a5cff', '#d9c8ff'], 'milspec'),
+    S('knife', 'Sapphire Strip', 'fade', ['#0d1a3a', '#2a6fd6', '#7ad8ff'], 'gold'),
+    S('knife', 'Bright Hex', 'hex', ['#1a1a1a', '#ffd23a'], 'gold'),
+  ],
+  reorg: [
+    S('awp', 'Restructured', 'blocks', ['#1a1a1a', '#e8e8e8', '#ff5a1f'], 'covert'),
+    S('m4a4', 'Matrix Management', 'circuit', ['#0b1d12', '#2ee67a', '#c8ffd8'], 'covert'),
+    S('m4a1s', 'Dotted Line', 'stripes', ['#1a1a2a', '#f2f2f2', '#7a5cff'], 'classified'),
+    S('fiveseven', 'Org Chart', 'blocks', ['#e8e8e8', '#2a6fd6', '#1a1a1a'], 'classified'),
+    S('sg553', 'Skip-Level', 'fade', ['#1a1a3a', '#5a3aff', '#ffd1f0'], 'classified'),
+    S('deagle', 'Synergy Realignment', 'scales', ['#1a2a3a', '#7ad8ff', '#e8f6ff'], 'restricted'),
+    S('galil', 'Headcount', 'digital', ['#5a5a6a', '#8a8a9a', '#c8c8d4'], 'restricted'),
+    S('aug', 'Span of Control', 'hex', ['#1e2330', '#ff5a1f'], 'restricted'),
+    S('mp5', 'Musical Chairs', 'waves', ['#3a1a5c', '#ffd23a', '#f2f2f2'], 'restricted'),
+    S('ssg08', 'Dotted Line Report', 'carbon', ['#1b1b1d', '#7a5cff'], 'restricted'),
+    S('p250', 'New Manager', 'solid', ['#5a6a8a'], 'milspec'),
+    S('tec9', 'Hot Desk', 'camo', ['#6a6a6a', '#4a4a4a', '#8a8a8a', '#2a2a2a'], 'milspec'),
+    S('mac10', 'Severance', 'tiger', ['#1a1a1a', '#c8102e'], 'milspec'),
+    S('bizon', 'Transition Plan', 'stripes', ['#f2f2f2', '#5a6a8a', '#1a1a1a'], 'milspec'),
+    S('p2000', 'Interim', 'digital', ['#2a3a5c', '#4a6a9a', '#a8b8d8'], 'milspec'),
+    S('r8', 'Redundancy', 'carbon', ['#1b1b1d', '#9aa0a6'], 'milspec'),
+    S('g3sg1', 'Flat Hierarchy', 'blocks', ['#d9d4c8', '#5a6a8a', '#1a1a1a'], 'milspec'),
+    S('zeus', 'Change Management', 'circuit', ['#1a1a1a', '#ffd23a', '#f2f2f2'], 'milspec'),
+    S('knife', 'Carbon Fiber', 'carbon', ['#1b1b1d', '#3a3a3d'], 'gold'),
+    S('knife', 'Urban Masked', 'digital', ['#5a5f66', '#3a3d42', '#9aa0a6'], 'gold'),
+  ],
+  takeover: [
+    S('ak47', 'Golden Parachute Deluxe', 'fade', ['#2a1a00', '#e4c76a', '#fff2c0'], 'covert'),
+    S('usp', 'Poison Pill', 'splatter', ['#1a1a1a', '#2ee67a', '#7a5cff'], 'covert'),
+    S('glock', 'Leveraged Buyout', 'circuit', ['#1a0d0d', '#c8102e', '#ffd23a'], 'classified'),
+    S('mp9', 'Asset Stripper', 'damascus', ['#2a2a2a', '#9aa0a6'], 'classified'),
+    S('famas', 'White Knight', 'marble', ['#f5f5f5', '#cfcfd4', '#2a2a2a'], 'classified'),
+    S('m4a4', 'Proxy Fight', 'blocks', ['#151515', '#c8102e', '#e8e3d7'], 'restricted'),
+    S('xm1014', 'Bear Hug', 'tiger', ['#3a2a1a', '#c8a26a'], 'restricted'),
+    S('p90', 'Greenmail', 'camo', ['#1a3a1a', '#2a5a2a', '#0d2a0d', '#4a7a3a'], 'restricted'),
+    S('nova', 'Shark Repellent', 'waves', ['#0d2a3a', '#7ad8ff', '#f2f2f2'], 'restricted'),
+    S('tec9', 'Pac-Man Defense', 'blocks', ['#ffd23a', '#1a1a1a', '#2a6fd6'], 'restricted'),
+    S('galil', 'Due Diligence', 'digital', ['#3a3a2a', '#6a6a4a', '#a8a87a'], 'milspec'),
+    S('cz75', 'Term Sheet', 'stripes', ['#f2f2f2', '#1a1a1a', '#c8a25a'], 'milspec'),
+    S('ump45', 'Quarterly Raid', 'carbon', ['#1b1b1d', '#c8102e'], 'milspec'),
+    S('mp7', 'Insider', 'hex', ['#1a1a1a', '#2ee67a'], 'milspec'),
+    S('sawedoff', 'Cash Out', 'solid', ['#2a9d5a'], 'milspec'),
+    S('dualies', 'Merger', 'fade', ['#2a6fd6', '#c8102e', '#f2f2f2'], 'milspec'),
+    S('negev', 'Hostile Bid', 'splatter', ['#3a0d0d', '#c8102e', '#f2d7d7'], 'milspec'),
+    S('scar20', 'Board Seat', 'marble', ['#e9eef2', '#7b8a99', '#33414f'], 'milspec'),
+    S('knife', 'Ocean Fade', 'fade', ['#0d3a5c', '#2be1ff', '#e8fffb'], 'gold'),
+    S('knife', 'Midnight Damascus', 'damascus', ['#1a1d22', '#5a6070'], 'gold'),
+  ],
+  onboarding: [
+    S('awp', 'Welcome Packet', 'blocks', ['#f2f2f2', '#2a8ad6', '#ffd23a'], 'covert'),
+    S('m4a1s', 'First Day Jitters', 'fade', ['#ffd1f0', '#7ad8ff', '#f2f2f2'], 'covert'),
+    S('deagle', 'Lanyard', 'stripes', ['#c8102e', '#f2f2f2', '#1a1a1a'], 'classified'),
+    S('usp', 'Password Reset', 'digital', ['#1a2a3a', '#2a8ad6', '#a8d8ff'], 'classified'),
+    S('aug', 'Swag Bag', 'splatter', ['#f2f2f2', '#2a8ad6', '#ff5a1f'], 'classified'),
+    S('glock', 'Buddy System', 'waves', ['#2a8ad6', '#ffd23a', '#f2f2f2'], 'restricted'),
+    S('famas', 'Compliance Training', 'carbon', ['#1b1b1d', '#2a8ad6'], 'restricted'),
+    S('mp9', 'Laptop Sticker', 'blocks', ['#f2f2f2', '#ff3a8c', '#2be1ff'], 'restricted'),
+    S('mag7', 'Ergonomic Chair', 'hex', ['#2a2a2a', '#7a8a99'], 'restricted'),
+    S('ump45', 'Badge Photo', 'solid', ['#2a6fd6'], 'restricted'),
+    S('p250', 'Org Wiki', 'circuit', ['#1a1a1a', '#2a8ad6', '#f2f2f2'], 'milspec'),
+    S('mac10', 'Free Snacks', 'blocks', ['#ffd23a', '#c8102e', '#f2e9da'], 'milspec'),
+    S('mp5', 'Shadowing', 'camo', ['#4a4a5a', '#2a2a3a', '#6a6a7a', '#8a8a9a'], 'milspec'),
+    S('xm1014', 'Handbook', 'stripes', ['#e8e3d7', '#2a6fd6', '#1a1a1a'], 'milspec'),
+    S('bizon', 'Probation Period', 'digital', ['#5a5a4a', '#7a7a6a', '#a8a89a'], 'milspec'),
+    S('p2000', 'Welcome Lunch', 'fade', ['#ff5a1f', '#ffd23a', '#f2f2f2'], 'milspec'),
+    S('r8', 'Orientation', 'hex', ['#1e2330', '#2a8ad6'], 'milspec'),
+    S('m249', 'Team Intro', 'waves', ['#2a3a6a', '#f2f2f2', '#ff8fab'], 'milspec'),
+    S('knife', 'Tiger Stripe Blue', 'tiger', ['#0d1a3a', '#2a8ad6'], 'gold'),
+    S('knife', 'Ivory', 'marble', ['#f5f0e6', '#d9d0c0', '#a8a090'], 'gold'),
+  ],
+  blackfriday: [
+    S('ak47', 'Doorbuster', 'fade', ['#0d0d0d', '#c8102e', '#ffd23a'], 'covert'),
+    S('glock', 'Limited Time Only', 'splatter', ['#0d0d0d', '#ffd23a', '#c8102e'], 'covert'),
+    S('m4a4', 'Flash Sale', 'circuit', ['#0d0d0d', '#ffd23a', '#f2f2f2'], 'classified'),
+    S('m4a1s', 'Cart Abandoned', 'blocks', ['#0d0d0d', '#ff3a3a', '#f2f2f2'], 'classified'),
+    S('p90', 'Price Tag', 'stripes', ['#0d0d0d', '#ff3a3a', '#f2f2f2'], 'classified'),
+    S('deagle', 'Buy One Get One', 'fade', ['#0d0d0d', '#e4c76a', '#c8102e'], 'restricted'),
+    S('usp', 'Receipt Printer', 'marble', ['#f2f2f2', '#d9d9de', '#1a1a1a'], 'restricted'),
+    S('sg553', 'Cyber Monday', 'circuit', ['#0d0d1a', '#2be1ff', '#ff3ac0'], 'restricted'),
+    S('mp7', 'Queue Jumper', 'stripes', ['#0d0d0d', '#ffd23a', '#c8102e'], 'restricted'),
+    S('cz75', 'Coupon Clipper', 'hex', ['#0d0d0d', '#ff3a3a'], 'restricted'),
+    S('fiveseven', 'Clearance Rack', 'solid', ['#c8102e'], 'milspec'),
+    S('tec9', 'Barcode', 'stripes', ['#f2f2f2', '#0d0d0d', '#5a5a5a'], 'milspec'),
+    S('mac10', 'Impulse Buy', 'fade', ['#ff3a8c', '#ffd23a', '#0d0d0d'], 'milspec'),
+    S('nova', 'Return Policy', 'carbon', ['#1b1b1d', '#ffd23a'], 'milspec'),
+    S('mag7', 'No Refunds', 'blocks', ['#0d0d0d', '#f2f2f2', '#c8102e'], 'milspec'),
+    S('sawedoff', 'Price Match', 'digital', ['#2a2a2a', '#5a5a5a', '#c8102e'], 'milspec'),
+    S('g3sg1', 'Out of Stock', 'camo', ['#3a3a3a', '#1a1a1a', '#5a5a5a', '#7a7a7a'], 'milspec'),
+    S('negev', 'Midnight Opening', 'waves', ['#0d0d1a', '#2a2a5a', '#ffd23a'], 'milspec'),
+    S('knife', 'Amber Fade', 'fade', ['#5a2a00', '#ffb300', '#ffe08a'], 'gold'),
+    S('knife', 'Night Stripe', 'stripes', ['#0d0d0d', '#3a3a3a', '#1a1a1a'], 'gold'),
+  ],
+  unicorn: [
+    S('awp', 'Series F', 'fade', ['#ff4fb8', '#7a5cff', '#2be1ff'], 'covert'),
+    S('m4a4', 'Pre-Revenue', 'scales', ['#1a0d2a', '#ff4fb8', '#e4c76a'], 'covert'),
+    S('glock', 'Burn Rate', 'fade', ['#ff2a00', '#ffb300', '#3b0a00'], 'classified'),
+    S('ssg08', 'Pivot to AI', 'circuit', ['#0d0d1a', '#7a5cff', '#2be1ff'], 'classified'),
+    S('fiveseven', 'Hockey Stick', 'stripes', ['#1a1a2a', '#2ee67a', '#f2f2f2'], 'classified'),
+    S('usp', 'Seed Round', 'camo', ['#3a5a2a', '#2a3a1a', '#6a8a3a', '#8aa06a'], 'restricted'),
+    S('aug', 'Disruptor', 'splatter', ['#1a1a2a', '#ff4fb8', '#ffd23a'], 'restricted'),
+    S('m4a1s', 'Runway', 'waves', ['#ff4fb8', '#7a5cff', '#f2f2f2'], 'restricted'),
+    S('galil', 'Stealth Mode', 'carbon', ['#1b1b1d', '#5a3aff'], 'restricted'),
+    S('xm1014', 'Moonshot', 'fade', ['#0d0d2a', '#7a5cff', '#f2f2f2'], 'restricted'),
+    S('p250', 'Cap Table', 'blocks', ['#f2f2f2', '#7a5cff', '#1a1a1a'], 'milspec'),
+    S('mp9', 'Growth Hacker', 'hex', ['#1a1a1a', '#2ee67a'], 'milspec'),
+    S('ump45', 'Ping Pong Table', 'stripes', ['#2a9d5a', '#f2f2f2', '#1a1a1a'], 'milspec'),
+    S('mp5', 'Kombucha Tap', 'waves', ['#c8a26a', '#ff8f5a', '#f2f2f2'], 'milspec'),
+    S('bizon', 'Beanbag', 'solid', ['#7a5cff'], 'milspec'),
+    S('dualies', 'Two Founders', 'scales', ['#1a1a2a', '#ff4fb8', '#7ad8ff'], 'milspec'),
+    S('scar20', 'Exit Strategy', 'digital', ['#2a2a3a', '#5a5a7a', '#a8a8c8'], 'milspec'),
+    S('m249', 'Unlimited PTO', 'camo', ['#5a7a5a', '#3a5a3a', '#8aa08a', '#2a3a2a'], 'milspec'),
+    S('knife', 'Rose Gold', 'solid', ['#c9907a'], 'gold'),
+    S('knife', 'Emerald Circuit', 'circuit', ['#002a14', '#00c060', '#5affa0'], 'gold'),
+  ],
 }
-export const SKINS = Object.values(CASE_SKINS).flat()
+// ---------------- Map collections
+// Everyday finishes (Consumer Grade up to Classified), one collection per map: one of them drops
+// after every match on that map, no key needed.
+const COLLECTION_SKINS = {
+  dust2: [
+    S('m4a4', 'Sand Dune', 'fade', ['#c8a26a', '#8a6a3a', '#2a6fd6'], 'classified'),
+    S('aug', 'Desert Storm', 'scales', ['#5a4a2a', '#3a2a1a', '#a0522d'], 'classified'),
+    S('sg553', 'Long A', 'damascus', ['#f2e6c0', '#c8a26a'], 'restricted'),
+    S('sg553', 'Catwalk', 'hardened', ['#e8d9a8', '#5a4a2a', '#3a2a1a'], 'restricted'),
+    S('ssg08', 'Xbox', 'fade', ['#2a6fd6', '#f2e6c0', '#c8a26a'], 'restricted'),
+    S('p90', 'Double Doors', 'stripes', ['#a0522d', '#e8d9a8', '#5a4a2a'], 'milspec'),
+    S('mp9', 'The Pit', 'tiger', ['#8a6a3a', '#2a6fd6'], 'milspec'),
+    S('fiveseven', 'Goose', 'marble', ['#3a2a1a', '#a0522d', '#e8d9a8'], 'milspec'),
+    S('tec9', 'Upper Tunnels', 'blocks', ['#c8a26a', '#8a6a3a', '#2a6fd6'], 'milspec'),
+    S('cz75', 'Blue Door', 'splatter', ['#5a4a2a', '#3a2a1a', '#a0522d'], 'milspec'),
+    S('mac10', 'Suicide', 'scales', ['#f2e6c0', '#c8a26a', '#8a6a3a'], 'milspec'),
+    S('mp7', 'Car Wreck', 'digital', ['#e8d9a8', '#5a4a2a', '#3a2a1a'], 'industrial'),
+    S('mp5', 'Mid Doors', 'hex', ['#2a6fd6', '#f2e6c0'], 'industrial'),
+    S('xm1014', 'Sandstorm', 'stripes', ['#a0522d', '#e8d9a8', '#5a4a2a'], 'industrial'),
+    S('mag7', 'Palm Frond', 'waves', ['#8a6a3a', '#2a6fd6', '#f2e6c0'], 'industrial'),
+    S('nova', 'Scarab', 'camo', ['#3a2a1a', '#a0522d', '#e8d9a8', '#5a4a2a'], 'industrial'),
+    S('r8', 'Dune Buggy', 'digital', ['#c8a26a', '#8a6a3a', '#2a6fd6'], 'industrial'),
+    S('dualies', 'Mudbrick', 'hex', ['#5a4a2a', '#3a2a1a'], 'industrial'),
+    S('p2000', 'Sun-Bleached', 'stripes', ['#f2e6c0', '#c8a26a', '#8a6a3a'], 'industrial'),
+    S('bizon', 'Oasis', 'carbon', ['#e8d9a8', '#5a4a2a'], 'consumer'),
+    S('sawedoff', 'Camel Spider', 'solid', ['#2a6fd6'], 'consumer'),
+    S('scar20', 'Pharaoh’s Due', 'camo', ['#a0522d', '#e8d9a8', '#5a4a2a', '#3a2a1a'], 'consumer'),
+    S('g3sg1', 'Kebab Stand', 'digital', ['#8a6a3a', '#2a6fd6', '#f2e6c0'], 'consumer'),
+    S('g3sg1', 'Dusty Tarp', 'carbon', ['#3a2a1a', '#a0522d'], 'consumer'),
+    S('m249', 'Short Stairs', 'solid', ['#c8a26a'], 'consumer'),
+    S('negev', 'Lower Tunnels', 'camo', ['#5a4a2a', '#3a2a1a', '#a0522d', '#e8d9a8'], 'consumer'),
+    S('zeus', 'B Platform', 'digital', ['#f2e6c0', '#c8a26a', '#8a6a3a'], 'consumer'),
+  ],
+  mirage: [
+    S('m4a1s', 'Palace', 'scales', ['#3a8a7f', '#f2e9da', '#b0874a'], 'classified'),
+    S('aug', 'Jungle', 'circuit', ['#2a4a6a', '#7a3a2a', '#e8d0a8'], 'classified'),
+    S('sg553', 'Connector', 'hardened', ['#d9b54a', '#3a8a7f', '#f2e9da'], 'restricted'),
+    S('ssg08', 'Window', 'fade', ['#c86a3a', '#2a4a6a', '#7a3a2a'], 'restricted'),
+    S('ssg08', 'Underpass', 'circuit', ['#b0874a', '#d9b54a', '#3a8a7f'], 'restricted'),
+    S('p90', 'Apartments', 'tiger', ['#e8d0a8', '#c86a3a'], 'milspec'),
+    S('mp9', 'Firebox', 'marble', ['#f2e9da', '#b0874a', '#d9b54a'], 'milspec'),
+    S('fiveseven', 'Ticket Booth', 'blocks', ['#7a3a2a', '#e8d0a8', '#c86a3a'], 'milspec'),
+    S('tec9', 'Sandwich', 'splatter', ['#3a8a7f', '#f2e9da', '#b0874a'], 'milspec'),
+    S('p250', 'Tetris', 'scales', ['#2a4a6a', '#7a3a2a', '#e8d0a8'], 'milspec'),
+    S('mac10', 'Mosaic', 'stripes', ['#d9b54a', '#3a8a7f', '#f2e9da'], 'milspec'),
+    S('mp7', 'Tiled Floor', 'hex', ['#c86a3a', '#2a4a6a'], 'industrial'),
+    S('mp5', 'Market Stall', 'stripes', ['#b0874a', '#d9b54a', '#3a8a7f'], 'industrial'),
+    S('xm1014', 'Spice Rack', 'waves', ['#e8d0a8', '#c86a3a', '#2a4a6a'], 'industrial'),
+    S('mag7', 'Lantern', 'camo', ['#f2e9da', '#b0874a', '#d9b54a', '#3a8a7f'], 'industrial'),
+    S('nova', 'Arabesque', 'digital', ['#7a3a2a', '#e8d0a8', '#c86a3a'], 'industrial'),
+    S('r8', 'Archway', 'hex', ['#3a8a7f', '#f2e9da'], 'industrial'),
+    S('dualies', 'Bazaar', 'stripes', ['#2a4a6a', '#7a3a2a', '#e8d0a8'], 'industrial'),
+    S('p2000', 'Teal Shutters', 'waves', ['#d9b54a', '#3a8a7f', '#f2e9da'], 'industrial'),
+    S('bizon', 'Courtyard', 'solid', ['#c86a3a'], 'consumer'),
+    S('sawedoff', 'Fountainhead', 'camo', ['#b0874a', '#d9b54a', '#3a8a7f', '#f2e9da'], 'consumer'),
+    S('scar20', 'Minaret', 'digital', ['#e8d0a8', '#c86a3a', '#2a4a6a'], 'consumer'),
+    S('g3sg1', 'Saffron', 'carbon', ['#f2e9da', '#b0874a'], 'consumer'),
+    S('g3sg1', 'Carpet Seller', 'solid', ['#7a3a2a'], 'consumer'),
+    S('m249', 'Stairs', 'camo', ['#3a8a7f', '#f2e9da', '#b0874a', '#d9b54a'], 'consumer'),
+    S('negev', 'Short A', 'digital', ['#2a4a6a', '#7a3a2a', '#e8d0a8'], 'consumer'),
+    S('zeus', 'Ramp', 'carbon', ['#d9b54a', '#3a8a7f'], 'consumer'),
+  ],
+  nuke: [
+    S('deagle', 'Radiation Hazard', 'circuit', ['#1a1a1a', '#c8102e', '#5a6a3a'], 'classified'),
+    S('aug', 'Outside', 'fade', ['#e8e8e8', '#3a3d42', '#9aa2a6'], 'classified'),
+    S('sg553', 'Secret', 'fade', ['#d9b52a', '#1a1a1a', '#c8102e'], 'restricted'),
+    S('ssg08', 'Ramp Room', 'circuit', ['#2a6fd6', '#e8e8e8', '#3a3d42'], 'restricted'),
+    S('galil', 'Hut', 'damascus', ['#5a6a3a', '#d9b52a'], 'restricted'),
+    S('p90', 'Heaven', 'marble', ['#9aa2a6', '#2a6fd6', '#e8e8e8'], 'milspec'),
+    S('mp9', 'Silo', 'blocks', ['#c8102e', '#5a6a3a', '#d9b52a'], 'milspec'),
+    S('fiveseven', 'Vents', 'splatter', ['#3a3d42', '#9aa2a6', '#2a6fd6'], 'milspec'),
+    S('cz75', 'Lobby', 'scales', ['#1a1a1a', '#c8102e', '#5a6a3a'], 'milspec'),
+    S('p250', 'Squeaky', 'stripes', ['#e8e8e8', '#3a3d42', '#9aa2a6'], 'milspec'),
+    S('mac10', 'Hazmat', 'tiger', ['#d9b52a', '#1a1a1a'], 'milspec'),
+    S('ump45', 'Cooling Tower', 'stripes', ['#2a6fd6', '#e8e8e8', '#3a3d42'], 'industrial'),
+    S('mp5', 'Fallout', 'waves', ['#5a6a3a', '#d9b52a', '#1a1a1a'], 'industrial'),
+    S('xm1014', 'Containment', 'camo', ['#9aa2a6', '#2a6fd6', '#e8e8e8', '#3a3d42'], 'industrial'),
+    S('mag7', 'Control Room', 'digital', ['#c8102e', '#5a6a3a', '#d9b52a'], 'industrial'),
+    S('r8', 'Reactor Yellow', 'hex', ['#3a3d42', '#9aa2a6'], 'industrial'),
+    S('r8', 'Decay', 'stripes', ['#1a1a1a', '#c8102e', '#5a6a3a'], 'industrial'),
+    S('dualies', 'Half-Life', 'waves', ['#e8e8e8', '#3a3d42', '#9aa2a6'], 'industrial'),
+    S('p2000', 'Isotope', 'camo', ['#d9b52a', '#1a1a1a', '#c8102e', '#5a6a3a'], 'industrial'),
+    S('bizon', 'Lockdown', 'camo', ['#2a6fd6', '#e8e8e8', '#3a3d42', '#9aa2a6'], 'consumer'),
+    S('sawedoff', 'Geiger', 'digital', ['#5a6a3a', '#d9b52a', '#1a1a1a'], 'consumer'),
+    S('scar20', 'Meltdown', 'carbon', ['#9aa2a6', '#2a6fd6'], 'consumer'),
+    S('g3sg1', 'Coolant Blue', 'solid', ['#c8102e'], 'consumer'),
+    S('m249', 'Forklift', 'camo', ['#3a3d42', '#9aa2a6', '#2a6fd6', '#e8e8e8'], 'consumer'),
+    S('m249', 'Trophy Room', 'digital', ['#1a1a1a', '#c8102e', '#5a6a3a'], 'consumer'),
+    S('negev', 'Garage', 'carbon', ['#e8e8e8', '#3a3d42'], 'consumer'),
+    S('zeus', 'Yard', 'solid', ['#d9b52a'], 'consumer'),
+  ],
+  inferno: [
+    S('famas', 'Banana', 'fade', ['#7a5a42', '#2a2a2a', '#f2e9d0'], 'classified'),
+    S('aug', 'Balcony', 'scales', ['#8a3a1a', '#b8643c', '#4a6b3a'], 'classified'),
+    S('sg553', 'Pit Stop', 'circuit', ['#e6d6b8', '#7a5a42', '#2a2a2a'], 'restricted'),
+    S('ssg08', 'Library', 'damascus', ['#d4a050', '#8a3a1a'], 'restricted'),
+    S('galil', 'Arch', 'hardened', ['#f2e9d0', '#e6d6b8', '#7a5a42'], 'restricted'),
+    S('p90', 'Boiler', 'blocks', ['#4a6b3a', '#d4a050', '#8a3a1a'], 'milspec'),
+    S('fiveseven', 'Coffins', 'splatter', ['#2a2a2a', '#f2e9d0', '#e6d6b8'], 'milspec'),
+    S('fiveseven', 'Graveyard', 'scales', ['#b8643c', '#4a6b3a', '#d4a050'], 'milspec'),
+    S('cz75', 'Church', 'stripes', ['#7a5a42', '#2a2a2a', '#f2e9d0'], 'milspec'),
+    S('p250', 'Second Mid', 'tiger', ['#8a3a1a', '#b8643c'], 'milspec'),
+    S('mp7', 'Terracotta', 'marble', ['#e6d6b8', '#7a5a42', '#2a2a2a'], 'milspec'),
+    S('ump45', 'Olive Grove', 'waves', ['#d4a050', '#8a3a1a', '#b8643c'], 'industrial'),
+    S('mp5', 'Vineyard', 'camo', ['#f2e9d0', '#e6d6b8', '#7a5a42', '#2a2a2a'], 'industrial'),
+    S('xm1014', 'Piazza', 'digital', ['#4a6b3a', '#d4a050', '#8a3a1a'], 'industrial'),
+    S('nova', 'Fontana', 'hex', ['#2a2a2a', '#f2e9d0'], 'industrial'),
+    S('r8', 'Bell Tower', 'stripes', ['#b8643c', '#4a6b3a', '#d4a050'], 'industrial'),
+    S('dualies', 'Espresso', 'waves', ['#7a5a42', '#2a2a2a', '#f2e9d0'], 'industrial'),
+    S('dualies', 'Sun-Dried', 'camo', ['#8a3a1a', '#b8643c', '#4a6b3a', '#d4a050'], 'industrial'),
+    S('p2000', 'Moped', 'digital', ['#e6d6b8', '#7a5a42', '#2a2a2a'], 'industrial'),
+    S('bizon', 'Laundry Line', 'digital', ['#d4a050', '#8a3a1a', '#b8643c'], 'consumer'),
+    S('sawedoff', 'Green Shutters', 'carbon', ['#f2e9d0', '#e6d6b8'], 'consumer'),
+    S('scar20', 'Truck', 'solid', ['#4a6b3a'], 'consumer'),
+    S('g3sg1', 'Hay Bale', 'camo', ['#2a2a2a', '#f2e9d0', '#e6d6b8', '#7a5a42'], 'consumer'),
+    S('m249', 'Pottery', 'digital', ['#b8643c', '#4a6b3a', '#d4a050'], 'consumer'),
+    S('negev', 'Cobblestone', 'carbon', ['#7a5a42', '#2a2a2a'], 'consumer'),
+    S('negev', 'Siesta', 'solid', ['#8a3a1a'], 'consumer'),
+    S('zeus', 'Nonna', 'camo', ['#e6d6b8', '#7a5a42', '#2a2a2a', '#f2e9d0'], 'consumer'),
+  ],
+  overpass: [
+    S('famas', 'Monster', 'scales', ['#c8102e', '#e8a21a', '#8a877c'], 'classified'),
+    S('aug', 'Toilets', 'circuit', ['#4a5a62', '#3d6f96', '#d0cdc2'], 'classified'),
+    S('sg553', 'Bank', 'damascus', ['#5f7a3a', '#c8102e'], 'restricted'),
+    S('ssg08', 'Party', 'hardened', ['#2a2a2a', '#4a5a62', '#3d6f96'], 'restricted'),
+    S('galil', 'Playground', 'fade', ['#8a877c', '#5f7a3a', '#c8102e'], 'restricted'),
+    S('mp9', 'Water', 'splatter', ['#d0cdc2', '#2a2a2a', '#4a5a62'], 'milspec'),
+    S('fiveseven', 'Sewers', 'scales', ['#e8a21a', '#8a877c', '#5f7a3a'], 'milspec'),
+    S('tec9', 'Canal', 'stripes', ['#3d6f96', '#d0cdc2', '#2a2a2a'], 'milspec'),
+    S('cz75', 'Graffiti', 'tiger', ['#c8102e', '#e8a21a'], 'milspec'),
+    S('p250', 'Park Bench', 'marble', ['#4a5a62', '#3d6f96', '#d0cdc2'], 'milspec'),
+    S('mp7', 'Billboard', 'blocks', ['#5f7a3a', '#c8102e', '#e8a21a'], 'milspec'),
+    S('ump45', 'Barrels', 'camo', ['#2a2a2a', '#4a5a62', '#3d6f96', '#d0cdc2'], 'industrial'),
+    S('mp5', 'Pillar', 'digital', ['#8a877c', '#5f7a3a', '#c8102e'], 'industrial'),
+    S('mag7', 'Trash Bin', 'hex', ['#d0cdc2', '#2a2a2a'], 'industrial'),
+    S('nova', 'Tunnel Vision', 'stripes', ['#e8a21a', '#8a877c', '#5f7a3a'], 'industrial'),
+    S('r8', 'Autobahn', 'waves', ['#3d6f96', '#d0cdc2', '#2a2a2a'], 'industrial'),
+    S('dualies', 'Rust Bucket', 'camo', ['#c8102e', '#e8a21a', '#8a877c', '#5f7a3a'], 'industrial'),
+    S('p2000', 'Concrete', 'digital', ['#4a5a62', '#3d6f96', '#d0cdc2'], 'industrial'),
+    S('p2000', 'Pipeline', 'hex', ['#5f7a3a', '#c8102e'], 'industrial'),
+    S('bizon', 'Short B', 'carbon', ['#2a2a2a', '#4a5a62'], 'consumer'),
+    S('sawedoff', 'Long A', 'solid', ['#8a877c'], 'consumer'),
+    S('scar20', 'Fountain Square', 'camo', ['#d0cdc2', '#2a2a2a', '#4a5a62', '#3d6f96'], 'consumer'),
+    S('g3sg1', 'Heaven Sent', 'digital', ['#e8a21a', '#8a877c', '#5f7a3a'], 'consumer'),
+    S('m249', 'Pigeon', 'carbon', ['#3d6f96', '#d0cdc2'], 'consumer'),
+    S('negev', 'Skate Ramp', 'solid', ['#c8102e'], 'consumer'),
+    S('zeus', 'Bike Rack', 'camo', ['#4a5a62', '#3d6f96', '#d0cdc2', '#2a2a2a'], 'consumer'),
+    S('zeus', 'Construction', 'digital', ['#5f7a3a', '#c8102e', '#e8a21a'], 'consumer'),
+  ],
+  vertigo: [
+    S('famas', 'Scaffold', 'circuit', ['#e8e8e8', '#c8102e', '#9a968e'], 'classified'),
+    S('aug', 'Elevator', 'fade', ['#d07a2a', '#2a2a2a', '#6b6f74'], 'classified'),
+    S('sg553', 'Crane', 'hardened', ['#f2c230', '#e8e8e8', '#c8102e'], 'restricted'),
+    S('ssg08', 'Rebar', 'fade', ['#3a6a9a', '#d07a2a', '#2a2a2a'], 'restricted'),
+    S('galil', 'Sandbags', 'circuit', ['#9a968e', '#f2c230', '#e8e8e8'], 'restricted'),
+    S('mp9', 'Generator', 'scales', ['#6b6f74', '#3a6a9a', '#d07a2a'], 'milspec'),
+    S('fiveseven', 'Hard Hat', 'stripes', ['#c8102e', '#9a968e', '#f2c230'], 'milspec'),
+    S('tec9', 'High Rise', 'tiger', ['#2a2a2a', '#6b6f74'], 'milspec'),
+    S('cz75', 'Safety Net', 'marble', ['#e8e8e8', '#c8102e', '#9a968e'], 'milspec'),
+    S('mac10', 'Blueprint', 'blocks', ['#d07a2a', '#2a2a2a', '#6b6f74'], 'milspec'),
+    S('mp7', 'Cement Mixer', 'splatter', ['#f2c230', '#e8e8e8', '#c8102e'], 'milspec'),
+    S('ump45', 'Orange Cone', 'digital', ['#3a6a9a', '#d07a2a', '#2a2a2a'], 'industrial'),
+    S('mp5', 'Girder', 'hex', ['#9a968e', '#f2c230'], 'industrial'),
+    S('mag7', 'Updraft', 'stripes', ['#6b6f74', '#3a6a9a', '#d07a2a'], 'industrial'),
+    S('nova', 'Rooftop', 'waves', ['#c8102e', '#9a968e', '#f2c230'], 'industrial'),
+    S('r8', 'Windy', 'camo', ['#2a2a2a', '#6b6f74', '#3a6a9a', '#d07a2a'], 'industrial'),
+    S('dualies', 'Altitude', 'digital', ['#e8e8e8', '#c8102e', '#9a968e'], 'industrial'),
+    S('p2000', 'Hazard Tape', 'hex', ['#d07a2a', '#2a2a2a'], 'industrial'),
+    S('bizon', 'Plywood', 'stripes', ['#f2c230', '#e8e8e8', '#c8102e'], 'industrial'),
+    S('sawedoff', 'Concrete Pour', 'solid', ['#3a6a9a'], 'consumer'),
+    S('scar20', 'Skyline', 'camo', ['#9a968e', '#f2c230', '#e8e8e8', '#c8102e'], 'consumer'),
+    S('scar20', 'Freefall', 'digital', ['#6b6f74', '#3a6a9a', '#d07a2a'], 'consumer'),
+    S('g3sg1', 'Drywall', 'carbon', ['#c8102e', '#9a968e'], 'consumer'),
+    S('m249', 'Pulley', 'solid', ['#2a2a2a'], 'consumer'),
+    S('negev', 'Tarp', 'camo', ['#e8e8e8', '#c8102e', '#9a968e', '#f2c230'], 'consumer'),
+    S('zeus', 'Level 50', 'digital', ['#d07a2a', '#2a2a2a', '#6b6f74'], 'consumer'),
+    S('zeus', 'Stairwell', 'carbon', ['#f2c230', '#e8e8e8'], 'consumer'),
+  ],
+}
+export const SKINS = [...Object.values(CASE_SKINS), ...Object.values(COLLECTION_SKINS)].flat()
 export const skinById = Object.fromEntries(SKINS.map((s) => [s.id, s]))
+const MAP_NAMES = { dust2: 'Dust 2', mirage: 'Mirage', nuke: 'Nuke', inferno: 'Inferno', overpass: 'Overpass', vertigo: 'Vertigo' }
+export const COLLECTIONS = Object.entries(COLLECTION_SKINS).map(([map, list]) => ({ id: `col-${map}`, map, name: `The ${MAP_NAMES[map]} Collection`, skins: list.map((x) => x.id) }))
+export const collectionById = Object.fromEntries(COLLECTIONS.map((c) => [c.id, c]))
+const COLLECTION_ODDS = { consumer: 0.5, industrial: 0.3, milspec: 0.14, restricted: 0.045, classified: 0.015 }
+/** After a match on a map: a skin from its collection (the commoner grades far more often). */
+export function rollCollection(map, rand = Math.random) {
+  const c = collectionById[`col-${map}`]
+  if (!c) return null
+  let x = rand()
+  let grade = 'consumer'
+  for (const [g, p] of Object.entries(COLLECTION_ODDS)) {
+    x -= p
+    if (x <= 0) {
+      grade = g
+      break
+    }
+  }
+  const of = c.skins.filter((id) => skinById[id].rarity === grade)
+  return makeItem(of[Math.floor(rand() * of.length)], rand)
+}
 
 const ids = (k) => CASE_SKINS[k].map((s) => s.id)
 export const CASES = [
@@ -199,6 +574,14 @@ export const CASES = [
   { id: 'casualfriday', name: 'Casual Friday Case', color: '#2aa6a0', skins: ids('casualfriday') },
   { id: 'replyall', name: 'Reply All Case', color: '#c4385a', skins: ids('replyall') },
   { id: 'ooo', name: 'Out of Office Case', color: '#3a8a3a', skins: ids('ooo') },
+  { id: 'standup', name: 'Daily Standup Case', color: '#e0a21a', skins: ids('standup') },
+  { id: 'payday', name: 'Payday Case', color: '#2a9d5a', skins: ids('payday') },
+  { id: 'mandatoryfun', name: 'Mandatory Fun Case', color: '#d6417a', skins: ids('mandatoryfun') },
+  { id: 'reorg', name: 'Reorg Case', color: '#5a6a8a', skins: ids('reorg') },
+  { id: 'takeover', name: 'Hostile Takeover Case', color: '#8a1a1a', skins: ids('takeover') },
+  { id: 'onboarding', name: 'Onboarding Case', color: '#2a8ad6', skins: ids('onboarding') },
+  { id: 'blackfriday', name: 'Black Friday Case', color: '#26262a', skins: ids('blackfriday') },
+  { id: 'unicorn', name: 'Unicorn Valuation Case', color: '#b04ae0', skins: ids('unicorn') },
 ]
 // ---------------- Stickers and music kits
 // Sticker grades use the same colours as skin rarities.
@@ -273,6 +656,8 @@ CASES.push(
   { id: 'agents', name: 'Agent Dossier', color: '#4a6a8a', kind: 'agent', agents: AGENTS.map((a) => a.id) },
 )
 export const caseById = Object.fromEntries(CASES.map((c) => [c.id, c]))
+/** The case or map collection a skin comes from (or null). */
+export const sourceOf = (skinId) => CASES.find((c) => c.skins?.includes(skinId)) ?? COLLECTIONS.find((c) => c.skins.includes(skinId)) ?? null
 /** What kind of thing an item is. */
 export const kindOf = (it) => it?.kind ?? 'skin'
 export const KEY_PRICE = 5 // credits
@@ -873,9 +1258,26 @@ function blank() {
 export function loadInventory() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null')
-    if (v && Array.isArray(v.items)) return { ...blank(), ...v }
+    if (v && Array.isArray(v.items)) return sideLoadouts({ ...blank(), ...v })
   } catch {}
   return blank()
+}
+// Skins are equipped per side: `T:ak47`, `CT:knife` (the music kit is `music`, agents `agentT` and
+// `agentCT`). Saves from before this had a bare weapon id, for both sides: that goes in both.
+export const SIDES = ['T', 'CT']
+/** The sides a weapon is used on (the AK-47 only on T, the knife on both). */
+export const sidesOf = (weaponId) => (WEAPONS[weaponId]?.team ? [WEAPONS[weaponId].team] : SIDES)
+function sideLoadouts(inv) {
+  for (const [k, uid] of Object.entries(inv.equipped)) {
+    if (k === 'music' || k.startsWith('agent') || k.includes(':')) continue
+    for (const side of sidesOf(k)) inv.equipped[`${side}:${k}`] ??= uid
+    delete inv.equipped[k]
+  }
+  return inv
+}
+/** The sides an item is equipped on: [], ['T'], ['CT'] or both. */
+export function equippedSides(inv, uid) {
+  return SIDES.filter((side) => Object.entries(inv.equipped).some(([k, v]) => v === uid && (k.startsWith(`${side}:`) || k === `agent${side}`)))
 }
 export function saveInventory(inv) {
   try {
@@ -887,14 +1289,27 @@ export function addItem(inv, item) {
   inv.items.unshift(it)
   return it
 }
-/** Equip (or unequip) an item for its weapon. */
-export function toggleEquip(inv, uid) {
+/**
+ * Equip (or unequip) an item. A skin: for `side` ('T' or 'CT'), or with no side for every side
+ * its weapon is used on (and if it's on all of them already, off them all). An agent goes in its
+ * side's slot (agentT or agentCT).
+ */
+export function toggleEquip(inv, uid, side = null) {
   const it = inv.items.find((x) => x.uid === uid)
   if (!it) return
-  // (an agent goes in its side's slot: agentT or agentCT)
-  const w = kindOf(it) === 'agent' ? `agent${agentById[it.agent]?.team}` : skinById[it.skin].weapon
-  if (inv.equipped[w] === uid) delete inv.equipped[w]
-  else inv.equipped[w] = uid
+  if (kindOf(it) === 'agent') {
+    const k = `agent${agentById[it.agent]?.team}`
+    if (inv.equipped[k] === uid) delete inv.equipped[k]
+    else inv.equipped[k] = uid
+    return
+  }
+  const w = skinById[it.skin].weapon
+  const sides = side ? [side] : sidesOf(w)
+  const on = sides.every((sd) => inv.equipped[`${sd}:${w}`] === uid)
+  for (const sd of sides) {
+    if (on) delete inv.equipped[`${sd}:${w}`]
+    else inv.equipped[`${sd}:${w}`] = uid
+  }
 }
 /** Your agents: { T, CT } agent ids (or null for the standard look). */
 export function equippedAgents(inv) {
@@ -904,8 +1319,9 @@ export function equippedAgents(inv) {
   }
   return { T: id('agentT'), CT: id('agentCT') }
 }
-export function equippedFor(inv, weaponId) {
-  const uid = inv.equipped[weaponId]
+/** What's equipped in a slot: a weapon on a side (side given), or 'music', 'agentT', 'agentCT'. */
+export function equippedFor(inv, weaponId, side = null) {
+  const uid = inv.equipped[side ? `${side}:${weaponId}` : weaponId]
   return uid ? inv.items.find((x) => x.uid === uid) ?? null : null
 }
 /** A skin descriptor for a gun in play (small, serialisable). */
@@ -991,7 +1407,7 @@ export function stickerUrl(id) {
 // ---------------- Trade-up contracts
 /** What a contract of these items could give: [{ skin, weight }], or why it can't be signed. */
 export function tradeUpOutcomes(items) {
-  const grades = ['milspec', 'restricted', 'classified', 'covert']
+  const grades = ['consumer', 'industrial', 'milspec', 'restricted', 'classified', 'covert']
   if (!items.length) return { error: 'Add skins of one grade.' }
   const r0 = skinById[items[0].skin]?.rarity
   if (!items.every((it) => kindOf(it) === 'skin' && skinById[it.skin]?.rarity === r0)) return { error: 'Every skin in a contract must be the same grade.' }
@@ -1000,11 +1416,14 @@ export function tradeUpOutcomes(items) {
   const next = r0 === 'covert' ? 'gold' : grades[grades.indexOf(r0) + 1]
   const weights = new Map()
   for (const it of items) {
-    const c = CASES.find((cs) => cs.skins?.includes(it.skin))
+    const c = sourceOf(it.skin)
     const pool = (c?.skins ?? []).map((id) => skinById[id]).filter((s) => s.rarity === next)
     for (const s of pool) weights.set(s.id, (weights.get(s.id) ?? 0) + 1 / pool.length)
   }
-  return { need, grade: r0, next, outcomes: [...weights].map(([skin, weight]) => ({ skin, weight: weight / items.length })).sort((a, b) => b.weight - a.weight) }
+  if (!weights.size) return { error: `None of these come from a case or collection with a ${RARITY[next].name} skin in it.` }
+  // (skins from a case or collection with nothing of the next grade don't count towards it)
+  const total = [...weights.values()].reduce((a, b) => a + b, 0)
+  return { need, grade: r0, next, outcomes: [...weights].map(([skin, weight]) => ({ skin, weight: weight / total })).sort((a, b) => b.weight - a.weight) }
 }
 /** Signs it: the result (wear is the average of the inputs; StatTrak™ only if they all were). */
 export function signTradeUp(items, rand = Math.random) {

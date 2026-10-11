@@ -119,7 +119,6 @@ function flush() {
 // ---------------- Paper planes
 /** Throws a plane with one of the set messages at someone (or across the screen). */
 export function throwPlane(msgIndex, from) {
-  const msg = PLANE_MESSAGES[msgIndex] ?? PLANE_MESSAGES[0]
   const others = [...ghosts.entries()].filter(([, g]) => !g.el.hidden)
   const target = others.length ? pick(others) : null
   const to = target ? { x: target[1].tx / innerWidth, y: target[1].ty / innerHeight } : { x: Math.random(), y: Math.random() * 0.6 }

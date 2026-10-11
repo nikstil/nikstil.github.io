@@ -188,6 +188,32 @@ li.me { background: rgba(245, 184, 61, 0.12); }
 
 /* ---- case battles */
 .cb-setup { display: grid; gap: 12px; }
+.cb-setup h3 small { font-weight: 400; color: var(--muted); }
+.cb-case { position: relative; }
+.cb-case.special { border-color: color-mix(in srgb, var(--cc) 60%, var(--line)); box-shadow: 0 0 14px -4px var(--cc); }
+.cb-n { position: absolute; top: 4px; right: 6px; padding: 0 5px; border-radius: 8px; background: var(--gold); color: #111; font: 700 11px/16px system-ui, sans-serif; font-style: normal; }
+.cb-lineup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 30px; }
+.cb-chip { padding: 3px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--cc) 55%, var(--line)); background: color-mix(in srgb, var(--cc) 22%, var(--panel)); color: var(--ink); font-size: 12px; }
+.cb-blurb { margin: -2px 0 0; font-size: 13px; color: var(--muted); }
+.go.stakes { background: linear-gradient(180deg, #ffd66b, #e4ae39); box-shadow: 0 0 22px -4px #e4ae39; }
+.cb-best { padding: 10px 12px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); font-size: 13px; }
+.cb-best h4 { margin: 0 0 6px; }
+.cb-track { display: flex; gap: 3px; margin: 0 0 8px; }
+.cb-track i { flex: 1; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--cc) 30%, var(--panel2)); }
+.cb-track i.done { background: var(--cc); }
+.cb-stakes { margin: 0 0 8px; padding: 6px; border-radius: 10px; text-align: center; font-weight: 800; letter-spacing: 0.12em; color: #111; background: linear-gradient(90deg, #b8862a, #ffe08a, #b8862a); background-size: 200% 100%; animation: cb-shine 2.4s linear infinite; }
+@keyframes cb-shine { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .cb-stakes { animation: none; } }
+.cb-arena.high-stakes .cb-seat { border-color: #6a5420; }
+.cb-team { display: inline-block; width: 16px; height: 16px; border-radius: 4px; text-align: center; font-size: 11px; line-height: 16px; color: #111; }
+.team-0 .cb-team, .cb-jackpot .team-0 { background: #4b9fff; }
+.team-1 .cb-team, .cb-jackpot .team-1 { background: #ff7a4b; }
+.cb-jackpot .team-2 { background: #b04ae0; }
+.cb-jackpot .team-3 { background: #2ee67a; }
+.cb-jackpot { position: relative; display: flex; height: 22px; margin: 0 0 10px; overflow: hidden; border-radius: 6px; }
+.cb-jackpot span { display: grid; place-items: center; min-width: 0; overflow: hidden; color: #111; font-size: 11px; font-weight: 700; }
+.cb-jackpot i { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: #fff; box-shadow: 0 0 6px #000; animation: cb-draw 1.2s cubic-bezier(.2,.8,.2,1); }
+@keyframes cb-draw { from { left: 0; } }
 .cb-cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
 .cb-case { display: grid; justify-items: center; gap: 2px; padding: 12px 6px; border-radius: 12px; border: 1px solid var(--line); background: linear-gradient(180deg, color-mix(in srgb, var(--cc) 30%, var(--panel2)), var(--panel)); }
 .cb-case .box { font-size: 30px; }

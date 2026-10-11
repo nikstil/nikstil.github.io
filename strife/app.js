@@ -53,6 +53,14 @@ const settings = {
   vol: 70,
   quality: coarse ? 'low' : 'medium',
   cross: '#4dff6a',
+  // the crosshair's shape (Settings): arm length, gap, thickness (px), the dot, the outline, and
+  // whether it opens up as you move and spray
+  xlen: 7,
+  xgap: 3,
+  xthick: 2,
+  xdot: true,
+  xoutline: true,
+  xdyn: true,
   invert: false,
   killcam: true,
   aimToggle: false, // aim down the sights: hold right mouse (or click once to aim, again to stop)
@@ -165,7 +173,7 @@ function hooks() {
       if (!game.practice) track.kill(e, game.player, game)
       if (e.attacker === game.player && e.victim.team !== game.player.team) {
         record.kills++
-        if (!game.practice) rewardKill(e.weaponId)
+        if (!game.practice) rewardKill(e.weaponId, game.player.team)
       }
     },
     knife({ a }) {
@@ -752,8 +760,21 @@ function syncSettings() {
   $('#set-invert').checked = settings.invert
   $('#set-killcam').checked = settings.killcam
   $('#set-aim-toggle').checked = settings.aimToggle
-  $('#crosshair').style.setProperty('--c', settings.cross)
+  for (const [id, k] of [['set-xlen', 'xlen'], ['set-xgap', 'xgap'], ['set-xthick', 'xthick']]) $(`#${id}`).value = settings[k]
+  for (const [id, k] of [['set-xdot', 'xdot'], ['set-xoutline', 'xoutline'], ['set-xdyn', 'xdyn']]) $(`#${id}`).checked = settings[k]
+  for (const el of [$('#crosshair'), $('#xhair-preview')]) {
+    el.style.setProperty('--c', settings.cross)
+    el.style.setProperty('--len', `${settings.xlen}px`)
+    el.style.setProperty('--t', `${settings.xthick}px`)
+    el.classList.toggle('no-dot', !settings.xdot)
+    el.classList.toggle('no-outline', !settings.xoutline)
+  }
+  $('#xhair-preview').style.setProperty('--gap', `${settings.xgap}px`)
 }
+const CROSS_DEFAULT = { xlen: 7, xgap: 3, xthick: 2, xdot: true, xoutline: true, xdyn: true }
+for (const [id, k] of [['set-xlen', 'xlen'], ['set-xgap', 'xgap'], ['set-xthick', 'xthick']]) $(`#${id}`).addEventListener('input', (e) => ((settings[k] = Number(e.target.value)), saveSettings(), syncSettings()))
+for (const [id, k] of [['set-xdot', 'xdot'], ['set-xoutline', 'xoutline'], ['set-xdyn', 'xdyn']]) $(`#${id}`).addEventListener('change', (e) => ((settings[k] = e.target.checked), saveSettings(), syncSettings()))
+$('#set-xreset').addEventListener('click', () => (Object.assign(settings, CROSS_DEFAULT), saveSettings(), syncSettings()))
 $('#set-sens').addEventListener('input', (e) => ((settings.sens = Number(e.target.value)), saveSettings(), syncSettings()))
 $('#set-fov').addEventListener('input', (e) => ((settings.fov = Number(e.target.value)), saveSettings(), syncSettings()))
 $('#set-vol').addEventListener('input', (e) => {
@@ -881,11 +902,11 @@ function matchOver() {
     saveReplay(lastReplay)
   }
   $('#over-replay').hidden = !lastReplay
-  const got = me ? rewardMatch(won, me.mvps ?? 0) : ''
+  const got = me ? rewardMatch(won, me.mvps ?? 0, game.map.id) : null
   rankUi.hideResult()
   if (rankCtx) rankUi.finishMatch(rankCtx, game)
   if (me) track.matchOver(won, settings.map, game.difficulty, game.mode, game.mode === 'armsrace' && (me.arLevel ?? 0) >= ARMS_LADDER.length)
-  $('#over-drop').textContent = got ? `Case drop: ${got} · open it from Inventory` : ''
+  $('#over-drop').textContent = got ? `Case drop: ${got.box}${got.skin ? ` · ${got.skin}` : ''} · see your Inventory` : ''
   $('#over-title').textContent = won ? 'Victory' : 'Defeat'
   $('#over-title').className = won ? 'win' : 'loss'
   hideBanner()
@@ -1597,7 +1618,7 @@ function updateHud(dt) {
   }
   if (wpn && w) {
     const spd = Math.hypot(w.vel.x, w.vel.z)
-    const gap = 3 + (wpn.moveSpread ?? 0.03) * Math.min(1, spd / (wpn.speed || 6)) * 160 + (w.onGround ? 0 : 10) + Math.min(10, w.recoil * 1.2)
+    const gap = settings.xgap + (settings.xdyn ? (wpn.moveSpread ?? 0.03) * Math.min(1, spd / (wpn.speed || 6)) * 160 + (w.onGround ? 0 : 10) + Math.min(10, w.recoil * 1.2) : 0)
     hud.crosshair.style.setProperty('--gap', `${gap.toFixed(1)}px`)
   }
   let fl = 0

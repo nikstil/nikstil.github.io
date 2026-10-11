@@ -141,6 +141,10 @@ export class Chatter {
     if (!g.plan || g.respawns || !m.routes[site] || !(site in g.sites) || g.bomb?.state === 'planted') return false
     g.plan.site = site
     g.plan.execAt = 0
+    // (whatever was lined up for the old site is off)
+    g.plan.staged.clear()
+    g.plan.lineups.clear()
+    g.plan.utilUntil = g.plan.pushAt = 0
     for (const b of this.bots('T')) {
       b.brain.clearOrder?.()
       // the nearest point of the nearest route to the new site: carry on from there
@@ -155,6 +159,7 @@ export class Chatter {
       g.plan.assign[b.id] = { route: best.route, lurk: false }
       b.brain.wp = best.k
       b.brain.plantSpot = null
+      b.brain.lineup = b.brain.waitAt = null
     }
     return true
   }

@@ -1279,7 +1279,7 @@
       loadRuns()
     }
 
-    queueMicrotask(start)
+    queueMicrotask(() => start().catch(fail))
     return wrap
   }
 

@@ -103,16 +103,44 @@ function boot(m, sole) {
 }
 
 // ---------------- merging (per material, inside one moving part)
+// Plain coloured parts (a colour, no texture, not see-through) that only differ in their colour
+// all go in one mesh, the colour in its vertices: a soldier or a gun is a handful of draw calls,
+// not one per colour.
+const flatMats = new Map()
+/** The vertex-coloured material standing in for m, or null if m has to stay as it is. */
+function flatOf(m) {
+  if (m.map || m.transparent || m.vertexColors || m.side !== THREE.FrontSide || m.emissiveMap || m.emissive?.getHex()) return null
+  let key = null
+  if (m.type === 'MeshLambertMaterial') key = 'l'
+  else if (m.type === 'MeshPhongMaterial' && !m.specularMap && !m.normalMap && !m.bumpMap) key = `p${m.shininess}|${m.specular.getHex()}`
+  if (!key) return null
+  if (!flatMats.has(key)) flatMats.set(key, key === 'l' ? new THREE.MeshLambertMaterial({ vertexColors: true }) : new THREE.MeshPhongMaterial({ vertexColors: true, shininess: m.shininess, specular: m.specular }))
+  return flatMats.get(key)
+}
+/** Meshes ({ geometry, matrix, material }) as one mesh per material (colours in the vertices where they can be). */
+function mergeParts(list) {
+  const byMat = new Map()
+  for (const p of list) {
+    const flat = flatOf(p.material)
+    const key = flat ?? p.material
+    const l = byMat.get(key) ?? []
+    l.push({ ...p, color: flat ? p.material.color : null })
+    byMat.set(key, l)
+  }
+  return [...byMat].map(([m, l]) => {
+    const parts = l.map(({ geometry, matrix }) => {
+      const g = geometry.index ? geometry.toNonIndexed() : geometry.clone()
+      g.applyMatrix4(matrix)
+      return g
+    })
+    return new THREE.Mesh(concat(parts, l[0].color ? l.map((x) => x.color) : null), m)
+  })
+}
 function mergeGroup(group) {
   group.updateMatrixWorld(true)
   const inv = group.matrixWorld.clone().invert()
-  const byMat = new Map()
-  const collect = (o) => {
-    const rel = new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld)
-    const list = byMat.get(o.material) ?? []
-    list.push({ geometry: o.geometry, matrix: rel })
-    byMat.set(o.material, list)
-  }
+  const list = []
+  const collect = (o) => list.push({ geometry: o.geometry, matrix: new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld), material: o.material })
   for (const ch of [...group.children]) {
     if (ch.isMesh && !ch.userData.keep) {
       collect(ch)
@@ -123,35 +151,47 @@ function mergeGroup(group) {
       group.remove(ch)
     }
   }
-  for (const [m, list] of byMat) {
-    const parts = list.map(({ geometry, matrix }) => {
-      const g = geometry.index ? geometry.toNonIndexed() : geometry.clone()
-      g.applyMatrix4(matrix)
-      return g
-    })
-    group.add(new THREE.Mesh(concat(parts), m))
-  }
+  for (const m of mergeParts(list)) group.add(m)
   return group
 }
-function concat(geos) {
+/**
+ * A gun that doesn't move (in a hand, on the floor): its plain parts merged, once per kind of gun
+ * (key) and shared by every copy; the rest (a skin, stickers, glass) left as they are.
+ */
+const mergedGuns = new Map()
+function mergeGun(inner, key) {
+  inner.updateMatrixWorld(true)
+  const inv = inner.matrixWorld.clone().invert()
+  const flat = []
+  inner.traverse((o) => o.isMesh && flatOf(o.material) && flat.push(o))
+  if (!mergedGuns.has(key)) mergedGuns.set(key, mergeParts(flat.map((o) => ({ geometry: o.geometry, matrix: new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld), material: o.material }))))
+  for (const o of flat) o.parent.remove(o)
+  for (const m of mergedGuns.get(key)) inner.add(new THREE.Mesh(m.geometry, m.material))
+  return inner
+}
+/** One geometry from many (non-indexed); colors: a colour per geometry, put in its vertices. */
+function concat(geos, colors = null) {
   let n = 0
   for (const g of geos) n += g.attributes.position.count
   const pos = new Float32Array(n * 3)
   const nor = new Float32Array(n * 3)
   const uv = new Float32Array(n * 2)
+  const col = colors ? new Float32Array(n * 3) : null
   let o = 0
-  for (const g of geos) {
+  geos.forEach((g, k) => {
     const c = g.attributes.position.count
     pos.set(g.attributes.position.array, o * 3)
     if (g.attributes.normal) nor.set(g.attributes.normal.array, o * 3)
     if (g.attributes.uv) uv.set(g.attributes.uv.array, o * 2)
+    if (col) for (let i = 0; i < c; i++) col.set([colors[k].r, colors[k].g, colors[k].b], (o + i) * 3)
     o += c
     g.dispose()
-  }
+  })
   const out = new THREE.BufferGeometry()
   out.setAttribute('position', new THREE.BufferAttribute(pos, 3))
   out.setAttribute('normal', new THREE.BufferAttribute(nor, 3))
   out.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+  if (col) out.setAttribute('color', new THREE.BufferAttribute(col, 3))
   out.computeBoundingSphere()
   return out
 }
@@ -397,4 +437,4 @@ export function buildViewArms(team, seed, right, left, look = null) {
   mergeGroup(g)
   return g
 }
-export { mergeGroup }
+export { mergeGroup, mergeGun }

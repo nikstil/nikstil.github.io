@@ -96,7 +96,7 @@ export const ACHIEVEMENTS = [
   { id: 'cs-sticker', game: 'strife', icon: '🏷️', name: 'Sticker Collector', desc: 'Put four stickers on one gun.', points: 10, check: (s) => B(s.strifeInv?.items?.some((i) => (i.stickers ?? []).length >= 4)) },
   { id: 'cs-music', game: 'strife', icon: '🎵', name: 'DJ', desc: 'Equip a music kit.', points: 5, check: (s) => B(s.strifeInv?.equipped?.music) },
   { id: 'cs-trade', game: 'strife', icon: '🤝', name: 'Fair Trade', desc: 'Trade with another player online.', points: 15, check: (s) => B(s.strifeInv?.trades) },
-  { id: 'cs-drip', game: 'strife', icon: '🎨', name: 'Fashion Week', desc: 'Have five skins equipped at once.', points: 10, check: (s) => P(Object.keys(s.strifeInv?.equipped ?? {}).length, 5) },
+  { id: 'cs-drip', game: 'strife', icon: '🎨', name: 'Fashion Week', desc: 'Have five skins equipped at once.', points: 10, check: (s) => P(new Set(Object.values(s.strifeInv?.equipped ?? {})).size, 5) },
   { id: 'cs-online', game: 'strife', icon: '🌐', name: 'LAN Party', desc: 'Win a round in an online game.', points: 15, check: (s) => B(st(s).onlineRounds) },
   { id: 'cs-ranked', game: 'strife', icon: '🎖️', name: 'Placed', desc: 'Play three ranked matches and get a rank.', points: 10, check: (s) => P(s.strifeRank.matches, 3) },
   { id: 'cs-goldnova', game: 'strife', icon: '🌟', name: 'Gold Nova', desc: 'Reach Gold Nova I.', points: 15, check: (s) => B(s.strifeRank.best >= 6) },
