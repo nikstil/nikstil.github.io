@@ -366,7 +366,7 @@ export class NetHost {
     const ag = (id, team) => (agentById[id]?.team === team ? id : null)
     actor.agents = { T: ag(actor.netSkins.agentT, 'T'), CT: ag(actor.netSkins.agentCT, 'CT') }
     actor.netQueue = []
-    for (const s of ['primary', 'pistol', 'knife']) if (actor.inv[s]) actor.inv[s].skin = actor.netSkins[actor.inv[s].id] ?? null
+    for (const s of ['primary', 'pistol', 'knife']) if (actor.inv[s]) actor.inv[s].skin = actor.netSkins[`${actor.team}:${actor.inv[s].id}`] ?? actor.netSkins[actor.inv[s].id] ?? null
     return actor
   }
   /** A player knocks: find them a slot (a bot's), and connect. */

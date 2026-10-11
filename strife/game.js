@@ -342,7 +342,10 @@ export class Game {
       const pick = (list) => list[Math.floor(Math.random() * list.length)]
       a.inv.primary = card === 'full' ? gun(pick(T ? ['ak47', 'ak47', 'sg553', 'galil'] : ['m4a4', 'm4a1s', 'aug', 'famas']), a.inv.primary?.skin ?? null) : card === 'force' ? gun(pick(T ? ['mac10', 'ump45', 'xm1014', 'galil'] : ['mp9', 'ump45', 'famas', 'mag7'])) : null
       if (a.inv.primary) a.inv.primary.skin = this.skinFor?.(a, a.inv.primary.id) ?? null
-      if (card === 'pistol') a.inv.pistol = gun(pick(T ? ['tec9', 'deagle', 'p250'] : ['fiveseven', 'deagle', 'p250']), this.skinFor?.(a, 'deagle') ?? null)
+      if (card === 'pistol') {
+        const id = pick(T ? ['tec9', 'deagle', 'p250'] : ['fiveseven', 'deagle', 'p250'])
+        a.inv.pistol = gun(id, this.skinFor?.(a, id) ?? null)
+      }
       a.armor = 100
       a.helmet = card !== 'pistol'
       a.kit = !T && Math.random() < 0.6

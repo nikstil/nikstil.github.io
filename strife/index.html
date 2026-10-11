@@ -214,6 +214,18 @@
         <label class="setting"><span>Crosshair colour</span>
           <select id="set-cross"><option value="#4dff6a">Green</option><option value="#ffffff">White</option><option value="#29e5ff">Cyan</option><option value="#ffe14d">Yellow</option><option value="#ff4d6d">Pink</option></select>
         </label>
+        <div class="setting xhair-edit"><span>Crosshair</span>
+          <div class="xhair-grid">
+            <label>Length <input type="range" id="set-xlen" min="2" max="16" step="1"></label>
+            <label>Gap <input type="range" id="set-xgap" min="-2" max="12" step="1"></label>
+            <label>Thickness <input type="range" id="set-xthick" min="1" max="4" step="1"></label>
+            <label class="check"><input type="checkbox" id="set-xdot"> Centre dot</label>
+            <label class="check"><input type="checkbox" id="set-xoutline"> Outline</label>
+            <label class="check"><input type="checkbox" id="set-xdyn"> Opens up when you move and shoot</label>
+            <button class="ghost small" type="button" id="set-xreset">Default</button>
+          </div>
+          <div class="xhair-preview" aria-hidden="true"><div class="crosshair" id="xhair-preview"><i></i><i></i><i></i><i></i><b></b></div></div>
+        </div>
         <label class="setting check"><input type="checkbox" id="set-invert"><span>Invert mouse</span></label>
         <label class="setting check"><input type="checkbox" id="set-killcam"><span>Killcam (watch how you died)</span></label>
         <label class="setting check"><input type="checkbox" id="set-aim-toggle"><span>Toggle aim (right click once to aim down the sights, again to stop)</span></label>
@@ -306,7 +318,7 @@
       <div class="menu-card inv-card-wrap">
         <header class="inv-head">
           <h2>Inventory</h2>
-          <div class="inv-tabs"><button data-inv="tab" data-v="items">Items</button><button data-inv="tab" data-v="cases">Cases</button><button data-inv="tab" data-v="tradeup">Trade Up</button><button data-inv="trade" hidden>🤝 Trade</button></div>
+          <div class="inv-tabs"><button data-inv="tab" data-v="items">Items</button><button data-inv="tab" data-v="loadout">Loadout</button><button data-inv="tab" data-v="cases">Cases</button><button data-inv="tab" data-v="tradeup">Trade Up</button><button data-inv="trade" hidden>🤝 Trade</button></div>
           <div class="inv-wallet"><span title="Credits: 1 per kill, 3 per round won, more for winning the match">ⓒ <b id="inv-credits">0</b></span><span title="Keys open cases">🔑 <b id="inv-keys">0</b></span><button class="ghost small" data-inv="key" id="inv-buy-key">Buy key (ⓒ 5)</button><button class="ghost small" data-inv="key" data-n="10" id="inv-buy-keys">10 keys (ⓒ 50)</button><button class="go small" data-inv="credits" title="Buy credits">＋ Credits</button></div>
           <button class="x" data-do="back" aria-label="Close">✕</button>
         </header>
@@ -321,6 +333,7 @@
           <div class="menu-buttons"><button class="go" data-inv="reel-equip">Equip it</button><button class="ghost" data-inv="reel-close">Keep it</button></div>
         </div>
       </div>
+      <div class="bulk" id="bulk" hidden></div>
     </section>
 
     <div class="trade" id="trade" hidden></div>
