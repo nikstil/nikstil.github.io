@@ -1539,7 +1539,7 @@
     } else {
       // Apps that are a page in a frame (the games, LOGGLE, DOOMSCROLL): reload it, or open it on its own.
       const frame = [...el.querySelectorAll('iframe')].find((f) => !f.closest('[hidden]'))
-      if (frame) add('⟳  Reload', () => (frame.src = frame.src))
+      if (frame) add('⟳  Reload', () => frame.setAttribute('src', frame.getAttribute('src')))
       const page = $('.win-foot a.btn[href]', el)
       if (page && (frame || !$('.mp', el))) add(`⛶  ${page.textContent.replace(/^\W+/, '').trim() || 'Open full page'}`, () => (page.target ? window.open(page.href, '_blank', 'noopener') : (location.href = page.href)))
     }
@@ -1797,10 +1797,8 @@
   })
 
   // ================= Gravity, the plant, other visitors (os/gravity.js, plant.js, ghosts.js) =================
-  let gravityMod = null
   function toggleGravity(on) {
     import('/os/gravity.js').then((g) => {
-      gravityMod = g
       const now = g.setGravity(on ?? !g.gravityOn(), osApi)
       notify('🪐 Gravity', now ? 'Gravity is on. Throw things. (Desktop menu → Gravity to turn it off.)' : 'Gravity is off. Everything’s back where it was.')
     })
@@ -1823,9 +1821,9 @@
       .then((p) => p.initPlant(osApi))
       .catch(() => {})
     import('/os/ghosts.js')
-      .then((g) => g.initGhosts(osApi).then(() => (ghostsMod = g)))
+      .then((g) => g.initGhosts().then(() => (ghostsMod = g)))
       .catch(() => {})
-    if (storage.get('nikstilos-gravity') === '1') import('/os/gravity.js').then((g) => ((gravityMod = g), g.setGravity(true, osApi)))
+    if (storage.get('nikstilos-gravity') === '1') import('/os/gravity.js').then((g) => g.setGravity(true, osApi))
     // Kevin texts you when he needs something (KEVIN-GOTCHI™, on the phone)
     const kevinCheck = () =>
       import('/kevin/state.js')

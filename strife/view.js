@@ -90,13 +90,6 @@ function holeTex() {
   return t
 }
 
-const box = (w, h, d, mat, x = 0, y = 0, z = 0) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat)
-  m.position.set(x, y, z)
-  return m
-}
-const lam = (color) => new THREE.MeshLambertMaterial({ color })
-
 // ================= Guns =================
 /** A gun model (for hands, the floor, or first person). Points down -z, trigger at the origin. */
 export function gunModel(id, detail = 1, opts = {}) {

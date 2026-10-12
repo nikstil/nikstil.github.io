@@ -126,7 +126,6 @@ function magazine(u, v, g, mat, { len = 0.16, w = 0.03, d = 0.06, curve = 0, rak
   }
   g.add(profile(pts, w, mat, { paint, bevel: 0.002 }))
   // base plate
-  const t = 1
   const bu = u + rake + curve - d / 2
   g.add(blk(bu - d / 2 - 0.004, bu + d / 2 + 0.004, v - len - 0.008, v - len + 0.002, w + 0.006, C.black()))
   for (let i = 1; i <= ribs; i++) {

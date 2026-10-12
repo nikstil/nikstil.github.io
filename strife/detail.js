@@ -145,7 +145,6 @@ export function decorate(map, lookName) {
             if (topY - floorY < 1.5) continue
             const cx = x + 0.5 + nx * 0.5
             const cz = z + 0.5 + nz * 0.5
-            const along = nx ? 0 : Math.PI / 2 // the face runs along z when nx != 0
             const out = (dist) => [cx + nx * dist, cz + nz * dist]
             const wide = (len, h, depth, m2, dist, y) => {
               const [px, pz] = out(dist)

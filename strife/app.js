@@ -1130,7 +1130,6 @@ function turn(dx, dy, scale) {
   look.yaw -= dx * k
   look.pitch -= dy * k * (settings.invert ? -1 : 1)
   look.pitch = Math.max(-1.5, Math.min(1.5, look.pitch))
-  if (!a?.alive && deathInfo && dx * dx > 0) spectTurn = true
 }
 /** How far aiming down the sights has zoomed the view in (1: not at all). */
 function adsZoom(a, w) {
@@ -1583,7 +1582,6 @@ function damageFlash(attacker, dmg) {
 }
 let deathInfo = null
 let spectIdx = 0
-let spectTurn = false
 stage.addEventListener('click', () => {
   if (mode === 'play' && game.player && !game.player.alive) spectIdx++
 })
