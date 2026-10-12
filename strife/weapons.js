@@ -46,6 +46,8 @@ export const WEAPONS = {
   cz75: gun('cz75', { name: 'CZ75-Auto', kind: 'pistol', price: 500, reward: 100, dmg: 31, pen: 0.776, rpm: 600, mag: 12, reserve: 12, reload: 2.7, speed: 240, auto: true, spread: 0.007, moveSpread: 0.035, airSpread: 0.1, range: 0.85, kick: 0.015, sound: 'pistol', look: 'cz75' }),
   deagle: gun('deagle', { name: 'Desert Eagle', kind: 'pistol', price: 700, dmg: 53, pen: 0.932, rpm: 267, mag: 7, reserve: 35, reload: 2.2, speed: 230, spread: 0.006, moveSpread: 0.07, airSpread: 0.16, range: 0.81, kick: 0.04, sway: 0.01, sound: 'deagle', look: 'deagle' }),
   r8: gun('r8', { name: 'R8 Revolver', kind: 'pistol', price: 600, dmg: 86, pen: 0.932, rpm: 120, mag: 8, reserve: 8, reload: 2.3, speed: 220, spread: 0.005, moveSpread: 0.08, airSpread: 0.16, range: 0.94, kick: 0.05, sway: 0.01, sound: 'deagle', prime: 0.35, look: 'r8' }),
+  // (only in Zombies, from the Mystery Box: its bolts burst, and hurt you too if you're too close)
+  raygun: gun('raygun', { name: 'Ray Gun', kind: 'pistol', zombiesOnly: true, price: 0, dmg: 260, pen: 1, rpm: 181, mag: 20, reserve: 160, reload: 3.0, speed: 240, spread: 0.003, moveSpread: 0.02, airSpread: 0.08, range: 1, kick: 0.02, sound: 'ray', splash: { r: 2.6, dmg: 220 } }),
 
   // ---- SMGs
   mac10: gun('mac10', { name: 'MAC-10', kind: 'smg', team: 'T', price: 1050, reward: 600, dmg: 29, pen: 0.575, rpm: 800, mag: 30, reserve: 100, reload: 2.6, speed: 240, auto: true, spread: 0.011, moveSpread: 0.02, airSpread: 0.09, range: 0.8, kick: 0.009, sway: 0.014, sound: 'smg', look: 'mac10' }),

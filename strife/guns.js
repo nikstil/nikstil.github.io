@@ -478,6 +478,20 @@ function deagle(g, d) {
   g.add(profile([[-0.06, 0.03], [-0.072, 0.05], [-0.078, 0.05], [-0.068, 0.026]], 0.01, C.black()))
   g.add(tube(0.008, 0.2, 0.204, 0.036, C.black()))
 }
+function raygun(g, d) {
+  // the Mystery Box's wonder weapon: a fat red body, finned barrel, a green glow in the middle
+  const red = gunMat('#b3261e', 'metal')
+  const chrome = gunMat('#c9ced3', 'metal')
+  const glow = matCache.get('ray-glow') ?? matCache.set('ray-glow', new THREE.MeshBasicMaterial({ color: '#6dff6a' })).get('ray-glow')
+  g.add(profile([[-0.07, 0.0], [0.08, 0.0], [0.1, 0.02], [0.1, 0.06], [0.06, 0.075], [-0.05, 0.075], [-0.075, 0.05]], 0.05, red, { paint: true, bevel: 0.006 }))
+  g.add(tube(0.022, 0.1, 0.2, 0.04, chrome, { r1: 0.014, seg: 14 }))
+  for (let k = 0; k < (d > 1 ? 4 : 3); k++) g.add(tube(0.032 - k * 0.003, 0.11 + k * 0.025, 0.118 + k * 0.025, 0.04, red, { seg: 14 })) // fins
+  g.add(tube(0.012, 0.2, 0.215, 0.04, glow, { seg: 10 }))
+  g.add(tube(0.013, -0.04, 0.06, 0.08, glow, { seg: 10 })) // the charge tube on top
+  for (const u of [-0.045, 0.065]) g.add(tube(0.017, u - 0.006, u + 0.006, 0.08, chrome, { seg: 10 }))
+  triggerGuard(-0.01, 0.05, 0.0, g, chrome, 0.03)
+  pistolGrip(-0.01, 0.0, g, gunMat('#2a1d14', 'wood'), { len: 0.1, thick: 0.042, rake: 0.03, w: 0.034 })
+}
 function revolver(g, d) {
   const steel = gunMat('#5c6066', 'metal')
   g.add(profile([[-0.05, 0.0], [0.04, 0.0], [0.05, 0.05], [-0.04, 0.06], [-0.06, 0.04]], 0.034, steel, { paint: true }))
@@ -655,6 +669,7 @@ const BUILD = {
   dualies,
   deagle,
   r8: revolver,
+  raygun,
   tec9,
   zeus,
   knife,

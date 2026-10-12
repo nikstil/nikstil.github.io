@@ -5,9 +5,10 @@ import * as THREE from './lib/three.min.js'
 import { buildLevel, buildSky } from './render.js'
 import { WEAPONS, adsOf } from './weapons.js'
 import { buildGun } from './guns.js'
-import { buildSoldier, buildViewArms, mergeGun } from './models.js'
+import { buildSoldier, buildViewArms, mergeGun, buildZombie } from './models.js'
 import { agentLook, modelOf } from './skins.js'
 import { eyeOf, weaponOf } from './game.js'
+import { ZView } from './zview.js'
 
 const lerp = (a, b, t) => a + (b - a) * t
 
@@ -262,16 +263,26 @@ export class View {
     this.drops = new Map()
     this.nadeMeshes = new Map()
     this.smokeClouds = new Map()
+    this.zv = game.z ? new ZView(this, game) : null
+  }
+  /** A gun to put in the scene on its own (the Mystery Box's, the Pack-a-Punch's). */
+  gunModelFor(id, skin = null) {
+    return gunModel(id, 1, { skin })
+  }
+  /** What a gun in someone's hands is painted with: its skin, or the Pack-a-Punch camo. */
+  paintOf(sl) {
+    return sl?.pap && this.zv ? this.zv.papMat : this.skinMat?.(sl?.skin)
   }
   addSoldier(a) {
     const look = agentLook(a)
-    const s = soldier(a.team, a.id * 7 + (a.isBot ? 0 : 1), look)
+    const s = a.zombie ? buildZombie(a.id * 13 + 5) : soldier(a.team, a.id * 7 + (a.isBot ? 0 : 1), look)
     s.team = a.team
     s.look = look
     this.scene.add(s.root)
     this.soldiers.set(a.id, s)
   }
   dispose() {
+    this.zv = null
     this.scene?.traverse((o) => {
       o.geometry?.dispose?.()
       if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => (m.map?.dispose?.(), m.dispose?.()))
@@ -346,6 +357,13 @@ export class View {
   }
   explosion(pos, kind) {
     const p = { x: pos.x, y: pos.y + 0.6, z: pos.z }
+    if (kind === 'ray') {
+      // a Ray Gun bolt bursting: green
+      this.sprite(this.tex.flash, '#7dff6a', pos, 2.2, 0.3, { add: true, grow: 1.5 })
+      this.sprite(this.tex.soft, '#3dff4a', pos, 1.6, 0.45, { add: true, grow: 1.8 })
+      this.light(new THREE.Vector3(pos.x, pos.y, pos.z), 12, 0.2)
+      return
+    }
     if (kind === 'flash') {
       this.sprite(this.tex.soft, '#ffffff', p, 6, 0.25, { add: true, grow: 2 })
       this.light(new THREE.Vector3(p.x, p.y, p.z), 40, 0.2)
@@ -395,10 +413,10 @@ export class View {
       // gun in hand
       const w = weaponOf(a)
       const sl = a.inv?.[a.active]
-      const gid = a.alive && w ? `${w.id}|${sl?.silenced}|${sl?.skin?.key ?? ''}` : null
+      const gid = a.alive && w ? `${w.id}|${sl?.silenced}|${sl?.skin?.key ?? ''}|${!!sl?.pap}` : null
       if (gid !== s.gunId) {
         if (s.gun) s.hand.remove(s.gun)
-        s.gun = gid ? gunModel(w.id, 1, { model: modelOf(sl?.skin?.skin) ?? w.id, silenced: sl?.silenced, skin: this.skinMat?.(sl?.skin), stickers: (sl?.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) }) : null
+        s.gun = gid ? gunModel(w.id, 1, { model: modelOf(sl?.skin?.skin) ?? w.id, silenced: sl?.silenced, skin: this.paintOf(sl), stickers: (sl?.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) }) : null
         if (s.gun) {
           s.gun.scale.setScalar(1.3)
           if (w.kind === 'knife') holdKnifeTp(s.gun)
@@ -413,12 +431,32 @@ export class View {
         s.root.rotation.z = f * 0.3 * s.fallDir
         s.root.position.y = a.pos.y + 0.05 - f * 0.1
         s.blob.visible = false
+        // a dead zombie sinks away after a few seconds (its body comes back as another one)
+        if (a.zombie) {
+          // (one that's never been up yet isn't anywhere)
+          const gone = !a.deadAt ? 9 : now - a.deadAt - 3
+          if (gone > 0) s.root.position.y -= gone * 0.5
+          s.root.visible = gone < 2
+        }
         continue
       }
       s.fall = 0
       s.root.rotation.x = 0
       s.root.rotation.z = 0
       s.blob.visible = true
+      if (a.zombie) {
+        this.animateZombie(s, a, now, dt)
+        continue
+      }
+      // down (in Zombies): on the floor, propped up on an elbow
+      if (a.down) {
+        s.root.rotation.x = -1.1
+        s.root.position.y = a.pos.y + 0.25
+        s.legs.forEach((l, k) => (l.thigh.rotation.x = 0.2 - k * 0.3))
+        s.arms.rotation.x = 0.9
+        s.torso.rotation.x = 0.5
+        continue
+      }
       const speed = Math.hypot(a.vel.x, a.vel.z)
       s.phase += dt * speed * 1.9
       const swing = Math.min(1, speed / 4) * 0.7
@@ -581,6 +619,7 @@ export class View {
         this.scene.remove(m)
         this.decoyFx.delete(d)
       }
+    this.zv?.update(dt, me)
     // The bomb (on the floor or planted)
     const b = game.bomb
     const showBomb = b && (b.state === 'dropped' || b.state === 'planted')
@@ -591,6 +630,30 @@ export class View {
     }
   }
 
+  /** A zombie: up out of the ground, then a shamble (or a sprint), arms out, swiping when close. */
+  animateZombie(s, a, now, dt) {
+    const rise = Math.max(0, (a.zRise ?? 0) - now)
+    s.root.position.y = a.pos.y - Math.min(1, rise / 1.1) * 1.75
+    if (rise > 0 && Math.random() < dt * 8) this.sprite(this.tex.soft, '#5a4a38', { x: a.pos.x + (Math.random() - 0.5) * 0.6, y: a.pos.y + 0.1, z: a.pos.z + (Math.random() - 0.5) * 0.6 }, 0.5, 0.8, { grow: 1.4, opacity: 0.7, vy: 0.3 })
+    const speed = Math.hypot(a.vel.x, a.vel.z)
+    const fast = speed > 2.5
+    s.phase += dt * speed * (fast ? 1.9 : 2.6)
+    const swing = Math.min(1, speed / 3) * (fast ? 0.8 : 0.45)
+    s.hips.position.y = 0.92 + Math.abs(Math.sin(s.phase)) * 0.04 * swing
+    s.legs.forEach((l, k) => {
+      const sw = Math.sin(s.phase + k * Math.PI) * swing * (k === 0 && !fast ? 0.6 : 1) // (a limp)
+      l.thigh.rotation.x = sw
+      l.shin.rotation.x = Math.max(0, -sw) * 1.1
+    })
+    s.torso.rotation.x = fast ? 0.35 : 0.15 + Math.sin(s.phase * 0.5) * 0.05
+    s.torso.rotation.z = fast ? 0 : Math.sin(s.phase * 0.5) * 0.08
+    s.neck.rotation.z = Math.sin(now * 1.3 + a.id) * 0.2
+    // the swipe: arms up, then down hard
+    const sw = a.zSwing ? 1 - Math.max(0, a.zSwing - now) / 0.42 : (a.zSwingShow ?? 0) > now ? 1 - (a.zSwingShow - now) / 0.42 : -1
+    if (sw >= 0) s.arms.rotation.x = sw < 0.7 ? -0.8 * (sw / 0.7) : -0.8 + ((sw - 0.7) / 0.3) * 1.4
+    else s.arms.rotation.x = (fast ? 0.15 : -0.1) + Math.sin(now * 2.2 + a.id) * 0.12
+  }
+
   // ================= First person =================
   /** The gun in your hands: its model, sway, bob, kick, reload and draw animations. */
   updateViewmodel(dt, a, game) {
@@ -598,13 +661,13 @@ export class View {
     const w = a && a.alive ? weaponOf(a) : null
     const id = w?.id ?? null
     const slot = a?.inv?.[a.active]
-    const key = id && `${id}|${slot?.silenced}|${slot?.skin?.key ?? ''}|${a.team}|${a.agents?.[a.team] ?? ''}`
+    const key = id && `${id}|${slot?.silenced}|${slot?.skin?.key ?? ''}|${a.team}|${a.agents?.[a.team] ?? ''}|${!!slot?.pap}`
     if (key !== this.vmGunId) {
       this.vm.clear()
       this.vmGunId = key
       if (id) {
         this.vmModel = modelOf(slot?.skin?.skin) ?? id
-        const g = gunModel(id, 2, { model: this.vmModel, silenced: slot?.silenced, skin: this.skinMat?.(slot?.skin), stickers: (slot?.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) })
+        const g = gunModel(id, 2, { model: this.vmModel, silenced: slot?.silenced, skin: this.paintOf(slot), stickers: (slot?.skin?.stickers ?? []).map((k) => this.stickerMat?.(k)) })
         // (a butterfly knife's handles, to swing open when you look at it)
         this.vmFlip = []
         g.traverse((o) => o.userData.flip && this.vmFlip.push(o))

@@ -91,6 +91,22 @@ export const track = {
     }
     commit()
   },
+  /** Zombies: the highest round you've reached, a Pack-a-Punch, the Ray Gun */
+  zround(round) {
+    if (round > (s.zBest ?? 0)) {
+      s.zBest = round
+      dirty = true
+      commit()
+    }
+  },
+  zpap() {
+    bump('zPap')
+    commit()
+  },
+  zraygun() {
+    bump('zRaygun')
+    commit()
+  },
   hostedWithFriend() {
     if (!s.hostedWithFriend) {
       s.hostedWithFriend = true
