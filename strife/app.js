@@ -7,7 +7,7 @@ import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP, adsOf } from './weapons.js'
 import { gunIcon } from './icons.js'
-import { skinMaterial, stickerMaterial, randomAgent } from './skins.js'
+import { skinMaterial, stickerMaterial, randomAgent, KNIVES, modelOf } from './skins.js'
 import { initChat } from './chatui.js'
 import { initRanks } from './rankui.js'
 import { initInvites, isUserId } from './invite.js'
@@ -1442,7 +1442,7 @@ function addKillfeed({ victim, attacker, weaponId, headshot }) {
   if (attacker && attacker !== victim) li.append(name(attacker))
   const w = document.createElement('span')
   w.className = 'w'
-  w.textContent = weaponId === 'bomb' ? '💥' : weaponId === 'fall' ? '⤓' : weaponId === 'he' ? 'HE' : WEAPONS[weaponId]?.name ?? weaponId
+  w.textContent = weaponId === 'bomb' ? '💥' : weaponId === 'fall' ? '⤓' : weaponId === 'he' ? 'HE' : (weaponId === 'knife' && KNIVES[modelOf(attacker?.inv?.knife?.skin?.skin)]) || (WEAPONS[weaponId]?.name ?? weaponId)
   li.append(w)
   if (headshot) {
     const h = document.createElement('span')
@@ -1544,8 +1544,8 @@ function updateHud(dt) {
     hud.kit.hidden = !w.kit
     hud['bomb-carry'].hidden = !w.inv.bomb
     const wpn = weaponOf(w)
-    setText('weapon-name', wpn?.name ?? '')
     const s = w.inv[w.active]
+    setText('weapon-name', (wpn?.kind === 'knife' && KNIVES[modelOf(s?.skin?.skin)]) || (wpn?.name ?? ''))
     const mag = wpn?.mag
     setText('clip', mag && s ? String(s.clip) : wpn?.kind === 'grenade' ? String(w.inv.grenades.filter((x) => x === wpn.id).length) : '')
     setText('reserve', mag && s ? `/ ${s.reserve}` : '')

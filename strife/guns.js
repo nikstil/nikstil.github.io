@@ -530,6 +530,46 @@ function knife(g) {
   g.add(profile([[0.014, -0.012], [0.16, -0.008], [0.2, 0.004], [0.17, 0.016], [0.014, 0.018]], 0.006, gunMat('#c9ced3', 'metal'), { paint: true, bevel: 0.0015 }))
   g.add(profile([[0.03, 0.014], [0.12, 0.014], [0.12, 0.018], [0.03, 0.018]], 0.0072, C.black()))
 }
+// The other knives: like the knife, the guard at the origin, the handle behind it (+z) and the
+// blade forward (-z); the blade takes the skin.
+const bladeMat = () => gunMat('#c9ced3', 'metal')
+function ring(r, tube, u, v, mat) {
+  const m = new THREE.Mesh(cached(`ring${r}|${tube}`, () => new THREE.TorusGeometry(r, tube, 8, 22)), mat)
+  m.rotation.y = Math.PI / 2 // (in the knife's own plane)
+  m.position.set(0, v, -u)
+  return m
+}
+function karambit(g) {
+  // a claw: a curved handle with a finger ring, a hooked blade
+  g.add(profile([[-0.1, -0.006], [0.0, -0.014], [0.0, 0.012], [-0.05, 0.016], [-0.1, 0.012], [-0.11, 0.002]], 0.022, C.rubber(), { bevel: 0.004 }))
+  g.add(ring(0.02, 0.0045, -0.128, 0.004, C.steel()))
+  g.add(profile([[0.0, -0.018], [0.01, -0.018], [0.01, 0.02], [0.0, 0.02]], 0.026, C.steel()))
+  g.add(profile([[0.01, 0.016], [0.05, 0.02], [0.085, 0.01], [0.11, -0.012], [0.124, -0.04], [0.108, -0.026], [0.086, -0.008], [0.05, -0.002], [0.01, -0.006]], 0.006, bladeMat(), { paint: true, bevel: 0.0015 }))
+}
+function butterfly(g) {
+  // a straight clip-point blade between two handle halves on their pins
+  g.add(profile([[0.0, -0.01], [0.15, -0.008], [0.18, 0.003], [0.152, 0.012], [0.0, 0.012]], 0.0055, bladeMat(), { paint: true, bevel: 0.0012 }))
+  const slot = [[-0.1, -0.004], [-0.02, -0.004], [-0.02, 0.004], [-0.1, 0.004]]
+  for (const side of [-1, 1]) {
+    const half = new THREE.Group()
+    half.position.set(side * 0.0065, side > 0 ? 0.008 : -0.006, 0) // on its pin
+    half.add(profile([[-0.125, -0.008], [0.0, -0.008], [0.0, 0.008], [-0.125, 0.008], [-0.13, 0.0]].map(([u, v]) => [u, v - (side > 0 ? 0.008 : -0.006)]), 0.0065, C.steel(), { hole: slot.map(([u, v]) => [u, v - (side > 0 ? 0.008 : -0.006)]), bevel: 0.0015 }))
+    const pin = tube(0.0035, -0.003, 0.003, 0, C.black())
+    pin.rotation.y = Math.PI / 2
+    half.add(pin)
+    if (side > 0) half.userData.flip = -1 // (the loose "bite" handle: swings up and over the blade)
+    g.add(half)
+  }
+  // the latch at the end
+  g.add(blk(-0.135, -0.122, -0.003, 0.003, 0.02, C.black()))
+}
+function skeleton(g) {
+  // a drop-point blade on a bare skeleton frame with a ring at the end, cord wrapped round it
+  g.add(profile([[0.0, -0.012], [0.12, -0.01], [0.165, 0.0], [0.14, 0.012], [0.08, 0.016], [0.0, 0.015]], 0.006, bladeMat(), { paint: true, bevel: 0.0015 }))
+  g.add(profile([[-0.12, -0.012], [0.0, -0.012], [0.0, 0.014], [-0.12, 0.011], [-0.13, 0.0]], 0.006, C.steel(), { hole: [[-0.105, -0.006], [-0.012, -0.005], [-0.012, 0.008], [-0.105, 0.005]], bevel: 0.0015 }))
+  g.add(ring(0.016, 0.004, -0.145, 0.0, C.steel()))
+  for (let k = 0; k < 6; k++) g.add(blk(-0.098 + k * 0.014, -0.09 + k * 0.014, -0.013, 0.015, 0.011, gunMat('#2b3a2b', 'rubber')))
+}
 function grenade(g, nade) {
   const lathe = (pts, mat) => {
     const geo = cached('l' + JSON.stringify(pts), () => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 14))
@@ -618,6 +658,9 @@ const BUILD = {
   tec9,
   zeus,
   knife,
+  karambit,
+  butterfly,
+  skeleton,
   he: (g) => grenade(g, 'he'),
   flash: (g) => grenade(g, 'flash'),
   smoke: (g) => grenade(g, 'smoke'),

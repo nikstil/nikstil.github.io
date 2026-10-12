@@ -541,8 +541,27 @@ const COLLECTION_SKINS = {
     S('zeus', 'Stairwell', 'carbon', ['#f2c230', '#e8e8e8'], 'consumer'),
   ],
 }
-export const SKINS = [...Object.values(CASE_SKINS), ...Object.values(COLLECTION_SKINS)].flat()
+// ---------------- Knives
+// The knife comes in four shapes, all the same in a fight; every knife finish comes on every one
+// (a case's ★ is a random shape in the finish it lists).
+export const KNIVES = { knife: 'Knife', karambit: 'Karambit', butterfly: 'Butterfly Knife', skeleton: 'Skeleton Knife' }
+const KNIFE_SHAPES = Object.keys(KNIVES)
+const baseSkins = [...Object.values(CASE_SKINS), ...Object.values(COLLECTION_SKINS)].flat()
+const knifeShapes = baseSkins.filter((x) => x.weapon === 'knife').flatMap((x) => KNIFE_SHAPES.slice(1).map((k) => ({ ...x, id: x.id.replace(/^knife-/, `${k}-`), knife: k, base: x.id })))
+export const SKINS = [...baseSkins, ...knifeShapes]
 export const skinById = Object.fromEntries(SKINS.map((s) => [s.id, s]))
+/** The model a skin goes on: its knife's shape, or its gun. */
+export const modelOf = (skinId) => skinById[skinId]?.knife ?? skinById[skinId]?.weapon ?? null
+/** "Karambit", "AK-47": what a skin is on. */
+export const weaponName = (s) => (s.weapon === 'knife' ? KNIVES[s.knife ?? 'knife'] : WEAPONS[s.weapon]?.name ?? s.weapon)
+/** A knife finish on a random knife (anything else as it is). */
+export function anyKnife(skinId, rand = Math.random) {
+  const s = skinById[skinId]
+  if (s?.weapon !== 'knife') return skinId
+  const base = s.base ?? s.id
+  const k = KNIFE_SHAPES[Math.floor(rand() * KNIFE_SHAPES.length)]
+  return k === 'knife' ? base : base.replace(/^knife-/, `${k}-`)
+}
 const MAP_NAMES = { dust2: 'Dust 2', mirage: 'Mirage', nuke: 'Nuke', inferno: 'Inferno', overpass: 'Overpass', vertigo: 'Vertigo' }
 export const COLLECTIONS = Object.entries(COLLECTION_SKINS).map(([map, list]) => ({ id: `col-${map}`, map, name: `The ${MAP_NAMES[map]} Collection`, skins: list.map((x) => x.id) }))
 export const collectionById = Object.fromEntries(COLLECTIONS.map((c) => [c.id, c]))
@@ -656,8 +675,11 @@ CASES.push(
   { id: 'agents', name: 'Agent Dossier', color: '#4a6a8a', kind: 'agent', agents: AGENTS.map((a) => a.id) },
 )
 export const caseById = Object.fromEntries(CASES.map((c) => [c.id, c]))
-/** The case or map collection a skin comes from (or null). */
-export const sourceOf = (skinId) => CASES.find((c) => c.skins?.includes(skinId)) ?? COLLECTIONS.find((c) => c.skins.includes(skinId)) ?? null
+/** The case or map collection a skin comes from (or null). (A knife's: the case its finish is in.) */
+export function sourceOf(skinId) {
+  const id = skinById[skinId]?.base ?? skinId
+  return CASES.find((c) => c.skins?.includes(id)) ?? COLLECTIONS.find((c) => c.skins.includes(id)) ?? null
+}
 /** What kind of thing an item is. */
 export const kindOf = (it) => it?.kind ?? 'skin'
 export const KEY_PRICE = 5 // credits
@@ -701,7 +723,7 @@ export function rollCase(caseId, rand = Math.random) {
   }
   const of = pool.filter((s) => s.rarity === rarity)
   const skin = of[Math.floor(rand() * of.length)]
-  return makeItem(skin.id, rand)
+  return makeItem(anyKnife(skin.id, rand), rand)
 }
 /** A concrete item: a skin plus its float (wear), pattern seed and maybe StatTrak™. */
 export function makeItem(skinId, rand = Math.random) {
@@ -720,9 +742,8 @@ export function itemName(it) {
     return `${it.st != null ? 'StatTrak™ ' : ''}Music Kit | ${k?.artist}, ${k?.name}`
   }
   const s = skinById[it.skin]
-  const w = WEAPONS[s.weapon]
   const p = patternOf(it)
-  return `${s.rarity === 'gold' ? '★ ' : ''}${it.st != null ? 'StatTrak™ ' : ''}${w.name} | ${s.name}${p?.gem ? ` (${p.note.split(' · ')[0]})` : ''}`
+  return `${s.rarity === 'gold' ? '★ ' : ''}${it.st != null ? 'StatTrak™ ' : ''}${weaponName(s)} | ${s.name}${p?.gem ? ` (${p.note.split(' · ')[0]})` : ''}`
 }
 
 // ---------------- Pattern templates
@@ -1439,7 +1460,7 @@ export function signTradeUp(items, rand = Math.random) {
     }
   }
   const wear = items.reduce((s, it) => s + it.wear, 0) / items.length
-  const it = makeItem(pick, rand)
+  const it = makeItem(anyKnife(pick, rand), rand)
   return { ...it, wear: Number(wear.toFixed(4)), st: items.every((i) => i.st != null) ? 0 : null }
 }
 
