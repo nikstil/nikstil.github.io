@@ -305,9 +305,11 @@ export function buildLevel(map, renderer, quality) {
     const sp = spans(x, z)
     return !sp || sp.some(([b, t]) => y > b && y < t)
   }
-  /** The open gaps in a column: [bottom, top, roofed?]. */
+  /** The open gaps in a column: [bottom, top, roofed?]. Off the map, or a column with nothing in it
+   * (Vertigo's drop), is open all the way down. */
   const gaps = (sp) => {
-    const out = []
+    if (!sp?.length) return [[-INF, INF, false]]
+    const out = sp[0][0] > -INF / 2 ? [[-INF, sp[0][0], true]] : [] // (under a bridge over the drop)
     for (let k = 0; k < sp.length; k++) {
       const lo = sp[k][1]
       const hi = k + 1 < sp.length ? sp[k + 1][0] : INF
@@ -327,9 +329,18 @@ export function buildLevel(map, renderer, quality) {
     }
   }
   const size = (m) => look[MAT_NAMES[m]].size
+  const sides = []
+  const edges = new Map() // "x,z" of a vertical edge -> the heights where wall faces start and stop on it
+  const edgeAt = (p) => {
+    const k = p[0] + ',' + p[1]
+    if (!edges.has(k)) edges.set(k, [])
+    return edges.get(k)
+  }
   const STEP_MAT = MAT_NAMES.indexOf('step')
   const groundish = new Set([MAT_NAMES.indexOf('ground'), MAT_NAMES.indexOf('path')])
-  const LOW = -9 // nothing is ever seen below this (Nuke B sits at -5)
+  // nothing is ever seen below this: a little under the lowest floor (or where a fall kills you)
+  let LOW = (map.killY ?? -8) - 1
+  for (let c = 0; c < w * d; c++) for (let k = 0; k < map.sc[c]; k++) LOW = Math.min(LOW, map.st[c * MAXS + k] - 1)
   for (let z = 0; z < d; z++)
     for (let x = 0; x < w; x++) {
       const col = spans(x, z)
@@ -371,9 +382,7 @@ export function buildLevel(map, renderer, quality) {
         const sm = tall ? 0 : groundish.has(m) ? STEP_MAT : m
         const s = size(sm)
         for (const [nx, nz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const ncol = spans(x + nx, z + nz)
-          if (!ncol) continue
-          for (const [g0, g1, capped] of gaps(ncol)) {
+          for (const [g0, g1, capped] of gaps(spans(x + nx, z + nz))) {
             const a0 = Math.max(lo, g0)
             const a1 = Math.min(hi, g1)
             if (a1 - a0 < 0.005) continue
@@ -394,17 +403,38 @@ export function buildLevel(map, renderer, quality) {
             const bottomShade = a0 <= g0 + 0.01 ? 0.68 : 0.8 // darker where it meets the floor
             const loC = kk * bottomShade
             const hiC = kk * (a1 - a0 > 2.5 ? 1 : 0.92)
-            quad(
-              buckets[sm],
-              [[p0[0], a0, p0[1]], [p0[0], a1, p0[1]], [p1[0], a1, p1[1]], [p1[0], a0, p1[1]]],
-              [nx, 0, nz],
-              [[u0, a0 / s], [u0, a1 / s], [u1, a1 / s], [u1, a0 / s]],
-              [loC, hiC, hiC, loC],
-            )
+            sides.push({ b: buckets[sm], p0, p1, a0, a1, n: [nx, 0, nz], u0, u1, s, loC, hiC })
+            edgeAt(p0).push(a0, a1)
+            edgeAt(p1).push(a0, a1)
           }
         }
       })
     }
+  // The walls go in last, each split wherever another wall's corner meets its edges: with no
+  // T-junctions there are no hairline cracks for the sky to sparkle through.
+  for (const f of sides) {
+    const cut = (p) => [f.a0, ...edges.get(p[0] + ',' + p[1]).filter((y) => y > f.a0 + 0.004 && y < f.a1 - 0.004).sort((a, b) => a - b), f.a1].filter((y, k, a) => !k || y - a[k - 1] > 0.004)
+    const L = cut(f.p0)
+    const R = cut(f.p1)
+    const vert = (p, u, y) => {
+      f.b.pos.push(p[0], y, p[1])
+      f.b.nor.push(...f.n)
+      f.b.uv.push(u, y / f.s)
+      const c = f.loC + ((f.hiC - f.loC) * (y - f.a0)) / (f.a1 - f.a0)
+      f.b.col.push(c, c, c)
+    }
+    let i = 0
+    let j = 0
+    while (i < L.length - 1 || j < R.length - 1) {
+      if (i < L.length - 1 && (j === R.length - 1 || L[i + 1] <= R[j + 1])) {
+        vert(f.p0, f.u0, L[i]), vert(f.p0, f.u0, L[i + 1]), vert(f.p1, f.u1, R[j])
+        i++
+      } else {
+        vert(f.p0, f.u0, L[i]), vert(f.p1, f.u1, R[j + 1]), vert(f.p1, f.u1, R[j])
+        j++
+      }
+    }
+  }
   const group = new THREE.Group()
   const textures = {}
   MAT_NAMES.forEach((name, k) => {
