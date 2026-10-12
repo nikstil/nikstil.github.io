@@ -126,7 +126,6 @@ function magazine(u, v, g, mat, { len = 0.16, w = 0.03, d = 0.06, curve = 0, rak
   }
   g.add(profile(pts, w, mat, { paint, bevel: 0.002 }))
   // base plate
-  const t = 1
   const bu = u + rake + curve - d / 2
   g.add(blk(bu - d / 2 - 0.004, bu + d / 2 + 0.004, v - len - 0.008, v - len + 0.002, w + 0.006, C.black()))
   for (let i = 1; i <= ribs; i++) {
@@ -478,6 +477,20 @@ function deagle(g, d) {
   g.add(profile([[-0.06, 0.03], [-0.072, 0.05], [-0.078, 0.05], [-0.068, 0.026]], 0.01, C.black()))
   g.add(tube(0.008, 0.2, 0.204, 0.036, C.black()))
 }
+function raygun(g, d) {
+  // the Mystery Box's wonder weapon: a fat red body, finned barrel, a green glow in the middle
+  const red = gunMat('#b3261e', 'metal')
+  const chrome = gunMat('#c9ced3', 'metal')
+  const glow = matCache.get('ray-glow') ?? matCache.set('ray-glow', new THREE.MeshBasicMaterial({ color: '#6dff6a' })).get('ray-glow')
+  g.add(profile([[-0.07, 0.0], [0.08, 0.0], [0.1, 0.02], [0.1, 0.06], [0.06, 0.075], [-0.05, 0.075], [-0.075, 0.05]], 0.05, red, { paint: true, bevel: 0.006 }))
+  g.add(tube(0.022, 0.1, 0.2, 0.04, chrome, { r1: 0.014, seg: 14 }))
+  for (let k = 0; k < (d > 1 ? 4 : 3); k++) g.add(tube(0.032 - k * 0.003, 0.11 + k * 0.025, 0.118 + k * 0.025, 0.04, red, { seg: 14 })) // fins
+  g.add(tube(0.012, 0.2, 0.215, 0.04, glow, { seg: 10 }))
+  g.add(tube(0.013, -0.04, 0.06, 0.08, glow, { seg: 10 })) // the charge tube on top
+  for (const u of [-0.045, 0.065]) g.add(tube(0.017, u - 0.006, u + 0.006, 0.08, chrome, { seg: 10 }))
+  triggerGuard(-0.01, 0.05, 0.0, g, chrome, 0.03)
+  pistolGrip(-0.01, 0.0, g, gunMat('#2a1d14', 'wood'), { len: 0.1, thick: 0.042, rake: 0.03, w: 0.034 })
+}
 function revolver(g, d) {
   const steel = gunMat('#5c6066', 'metal')
   g.add(profile([[-0.05, 0.0], [0.04, 0.0], [0.05, 0.05], [-0.04, 0.06], [-0.06, 0.04]], 0.034, steel, { paint: true }))
@@ -529,6 +542,46 @@ function knife(g) {
   g.add(profile([[0.0, -0.022], [0.014, -0.022], [0.014, 0.024], [0.0, 0.024]], 0.03, C.steel()))
   g.add(profile([[0.014, -0.012], [0.16, -0.008], [0.2, 0.004], [0.17, 0.016], [0.014, 0.018]], 0.006, gunMat('#c9ced3', 'metal'), { paint: true, bevel: 0.0015 }))
   g.add(profile([[0.03, 0.014], [0.12, 0.014], [0.12, 0.018], [0.03, 0.018]], 0.0072, C.black()))
+}
+// The other knives: like the knife, the guard at the origin, the handle behind it (+z) and the
+// blade forward (-z); the blade takes the skin.
+const bladeMat = () => gunMat('#c9ced3', 'metal')
+function ring(r, tube, u, v, mat) {
+  const m = new THREE.Mesh(cached(`ring${r}|${tube}`, () => new THREE.TorusGeometry(r, tube, 8, 22)), mat)
+  m.rotation.y = Math.PI / 2 // (in the knife's own plane)
+  m.position.set(0, v, -u)
+  return m
+}
+function karambit(g) {
+  // a claw: a curved handle with a finger ring, a hooked blade
+  g.add(profile([[-0.1, -0.006], [0.0, -0.014], [0.0, 0.012], [-0.05, 0.016], [-0.1, 0.012], [-0.11, 0.002]], 0.022, C.rubber(), { bevel: 0.004 }))
+  g.add(ring(0.02, 0.0045, -0.128, 0.004, C.steel()))
+  g.add(profile([[0.0, -0.018], [0.01, -0.018], [0.01, 0.02], [0.0, 0.02]], 0.026, C.steel()))
+  g.add(profile([[0.01, 0.016], [0.05, 0.02], [0.085, 0.01], [0.11, -0.012], [0.124, -0.04], [0.108, -0.026], [0.086, -0.008], [0.05, -0.002], [0.01, -0.006]], 0.006, bladeMat(), { paint: true, bevel: 0.0015 }))
+}
+function butterfly(g) {
+  // a straight clip-point blade between two handle halves on their pins
+  g.add(profile([[0.0, -0.01], [0.15, -0.008], [0.18, 0.003], [0.152, 0.012], [0.0, 0.012]], 0.0055, bladeMat(), { paint: true, bevel: 0.0012 }))
+  const slot = [[-0.1, -0.004], [-0.02, -0.004], [-0.02, 0.004], [-0.1, 0.004]]
+  for (const side of [-1, 1]) {
+    const half = new THREE.Group()
+    half.position.set(side * 0.0065, side > 0 ? 0.008 : -0.006, 0) // on its pin
+    half.add(profile([[-0.125, -0.008], [0.0, -0.008], [0.0, 0.008], [-0.125, 0.008], [-0.13, 0.0]].map(([u, v]) => [u, v - (side > 0 ? 0.008 : -0.006)]), 0.0065, C.steel(), { hole: slot.map(([u, v]) => [u, v - (side > 0 ? 0.008 : -0.006)]), bevel: 0.0015 }))
+    const pin = tube(0.0035, -0.003, 0.003, 0, C.black())
+    pin.rotation.y = Math.PI / 2
+    half.add(pin)
+    if (side > 0) half.userData.flip = -1 // (the loose "bite" handle: swings up and over the blade)
+    g.add(half)
+  }
+  // the latch at the end
+  g.add(blk(-0.135, -0.122, -0.003, 0.003, 0.02, C.black()))
+}
+function skeleton(g) {
+  // a drop-point blade on a bare skeleton frame with a ring at the end, cord wrapped round it
+  g.add(profile([[0.0, -0.012], [0.12, -0.01], [0.165, 0.0], [0.14, 0.012], [0.08, 0.016], [0.0, 0.015]], 0.006, bladeMat(), { paint: true, bevel: 0.0015 }))
+  g.add(profile([[-0.12, -0.012], [0.0, -0.012], [0.0, 0.014], [-0.12, 0.011], [-0.13, 0.0]], 0.006, C.steel(), { hole: [[-0.105, -0.006], [-0.012, -0.005], [-0.012, 0.008], [-0.105, 0.005]], bevel: 0.0015 }))
+  g.add(ring(0.016, 0.004, -0.145, 0.0, C.steel()))
+  for (let k = 0; k < 6; k++) g.add(blk(-0.098 + k * 0.014, -0.09 + k * 0.014, -0.013, 0.015, 0.011, gunMat('#2b3a2b', 'rubber')))
 }
 function grenade(g, nade) {
   const lathe = (pts, mat) => {
@@ -615,9 +668,13 @@ const BUILD = {
   dualies,
   deagle,
   r8: revolver,
+  raygun,
   tec9,
   zeus,
   knife,
+  karambit,
+  butterfly,
+  skeleton,
   he: (g) => grenade(g, 'he'),
   flash: (g) => grenade(g, 'flash'),
   smoke: (g) => grenade(g, 'smoke'),

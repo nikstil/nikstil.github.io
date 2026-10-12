@@ -397,6 +397,109 @@ export function buildSoldier(team, seed = 0, look = null) {
   return { root, hips, torso, neck, legs, arms, hand, blob, gunId: null, phase: Math.random() * 6, fall: 0, fallDir: Math.random() < 0.5 ? -1 : 1, outfit: outfit.name }
 }
 
+// ---------------- the undead
+const ZSKINS = ['#7f8b6c', '#8c8f72', '#6e7a62', '#93917a', '#76806f']
+const ZSHIRTS = [['#8f877a', ['#6d665c'], 'knit'], ['#5d6a78', ['#4a5560'], 'knit'], ['#6e5a44', ['#56463a'], 'knit'], ['#7a2e2a', ['#5e2320'], 'knit'], ['#3f4a3a', ['#323b2e'], 'camo']]
+const ZPANTS = [['#3b3a36', ['#2c2b28'], 'knit'], ['#40495a', ['#333a48'], 'knit'], ['#5a4b38', ['#46392b'], 'knit']]
+/**
+ * A zombie: grey-green skin, torn clothes, blood, glowing eyes, arms reaching out in front. The
+ * same parts as a soldier (so it walks, falls and swings the same way), and nothing in its hands.
+ */
+export function buildZombie(seed = 0) {
+  const r = (k) => ((seed * 9301 + k * 49297) % 233280) / 233280
+  const skin = lam(ZSKINS[seed % ZSKINS.length])
+  const shirt = cloth(...ZSHIRTS[(seed >> 1) % ZSHIRTS.length])
+  const pants = cloth(...ZPANTS[(seed >> 2) % ZPANTS.length])
+  const blood = lam('#4a0d0b')
+  const gore = lam('#6b1512')
+  const shoe = lam('#1e1a16')
+  const eye = mat('zeye', () => new THREE.MeshBasicMaterial({ color: '#ffcf3a' }))
+  const root = new THREE.Group()
+  const hips = new THREE.Group()
+  hips.position.y = 0.92
+  root.add(hips)
+  hips.add(mesh(capsule(0.15, 0.12), pants, 0, -0.02, 0, 0, 0, Math.PI / 2, 1, 1, 0.75))
+  hips.add(mesh(cyl(0.16, 0.16, 0.04, 12), lam('#2a2118'), 0, 0.05, 0, 0, 0, 0, 1, 1, 0.78)) // belt
+
+  const torso = new THREE.Group()
+  hips.add(torso)
+  torso.add(mesh(capsule(0.165, 0.26, 12), shirt, 0, 0.31, 0, 0, 0, 0, 1.15, 1, 0.68))
+  // rips and blood down the front, a rib or two showing
+  torso.add(mesh(boxG(0.14, 0.18, 0.02), blood, -0.05 + r(1) * 0.1, 0.25 + r(2) * 0.1, -0.115, 0, 0, r(3) - 0.5))
+  torso.add(mesh(boxG(0.09, 0.08, 0.02), gore, 0.06, 0.38, -0.112, 0, 0, 0.3))
+  if (seed % 3 === 0) for (let k = 0; k < 3; k++) torso.add(mesh(boxG(0.1, 0.012, 0.012), lam('#cfc6ad'), -0.02, 0.2 + k * 0.035, -0.118))
+  torso.add(mesh(boxG(0.2, 0.1, 0.02), blood, 0.0, 0.16, 0.11, 0, 0, 0.2)) // and on the back
+  torso.add(mesh(cyl(0.08, 0.095, 0.06, 12), shirt, 0, 0.54, 0))
+
+  const neck = new THREE.Group()
+  neck.position.y = 0.57
+  torso.add(neck)
+  neck.add(mesh(cyl(0.048, 0.055, 0.08, 10), skin, 0, 0.03, 0))
+  neck.add(mesh(sphere(0.105, 14, 12), skin, 0, 0.16, 0, 0, 0, 0, 0.92, 1.12, 1.04))
+  for (const s of [-1, 1]) neck.add(mesh(sphere(0.024, 6, 5), skin, s * 0.098, 0.16, 0.0, 0, 0, 0, 0.5, 1, 0.8))
+  neck.add(mesh(boxG(0.025, 0.035, 0.03), skin, 0, 0.15, -0.104, -0.2))
+  // sunken, glowing eyes, a slack jaw, a few tufts of hair
+  for (const s of [-1, 1]) {
+    neck.add(mesh(sphere(0.022, 6, 5), lam('#1a1410'), s * 0.038, 0.18, -0.088))
+    neck.add(mesh(sphere(0.012, 6, 5), eye, s * 0.038, 0.18, -0.1))
+  }
+  neck.add(mesh(boxG(0.075, 0.035, 0.03), lam('#2a0d0b'), 0, 0.085, -0.095, 0.25))
+  neck.add(mesh(boxG(0.06, 0.03, 0.04), skin, 0, 0.06, -0.08, 0.35)) // the jaw, hanging open
+  for (let k = 0; k < 4; k++) neck.add(mesh(sphere(0.03, 6, 5), lam('#2b231b'), -0.06 + r(10 + k) * 0.12, 0.25, -0.02 + r(20 + k) * 0.08, 0, 0, 0, 1, 0.5, 1))
+  if (seed % 2) neck.add(mesh(boxG(0.05, 0.04, 0.02), gore, 0.06, 0.2, -0.09)) // a gash
+
+  const legs = []
+  for (const s of [-1, 1]) {
+    const thigh = new THREE.Group()
+    thigh.position.set(s * 0.1, -0.04, 0)
+    hips.add(thigh)
+    thigh.add(limb([0, 0, 0], [0, -0.44, 0], 0.08, pants))
+    const shin = new THREE.Group()
+    shin.position.y = -0.44
+    thigh.add(shin)
+    // one trouser leg torn off at the knee
+    shin.add(limb([0, 0, 0], [0, -0.38, 0], s < 0 && seed % 2 ? 0.055 : 0.068, s < 0 && seed % 2 ? skin : pants))
+    const b = boot(shoe, lam('#111'))
+    b.position.set(0, -0.44, 0.03)
+    b.userData.flatten = true
+    shin.add(b)
+    legs.push({ thigh, shin })
+  }
+
+  // arms out in front, reaching (the hand group is empty: nothing to hold)
+  const arms = new THREE.Group()
+  arms.position.set(0, 0.48, -0.05)
+  torso.add(arms)
+  const sR = [0.19, 0.0, 0.05]
+  const sL = [-0.19, 0.0, 0.05]
+  const eR = [0.2, -0.04, -0.22]
+  const eL = [-0.19, -0.02, -0.24]
+  const hR = [0.16, -0.02, -0.5]
+  const hL = [-0.14, 0.02, -0.52]
+  const sleeve = seed % 3 === 1 ? skin : shirt
+  arms.add(limb(sR, eR, 0.055, shirt), limb(eR, hR, 0.045, sleeve), limb(sL, eL, 0.055, shirt), limb(eL, hL, 0.045, skin))
+  for (const p of [sR, sL]) arms.add(mesh(sphere(0.072, 10, 8), shirt, ...p))
+  for (const p of [hR, hL]) {
+    arms.add(mesh(sphere(0.04, 10, 8), skin, p[0], p[1], p[2], 0, 0, 0, 0.9, 0.8, 1.2))
+    for (let f = 0; f < 4; f++) arms.add(limb([p[0] - 0.03 + f * 0.02, p[1], p[2] - 0.03], [p[0] - 0.035 + f * 0.022, p[1] - 0.03, p[2] - 0.08], 0.009, skin)) // clawing fingers
+  }
+  arms.add(mesh(boxG(0.05, 0.06, 0.02), blood, hR[0], hR[1] + 0.02, hR[2] + 0.12, 0.4))
+  const hand = new THREE.Group()
+  hand.position.set(...hR)
+  hand.userData.keep = true
+  arms.add(hand)
+
+  for (const g of [hips, torso, neck, arms, ...legs.flatMap((l) => [l.thigh, l.shin])]) mergeGroup(g)
+  const blob = new THREE.Mesh(
+    geo('blob', () => new THREE.CircleGeometry(0.42, 16)),
+    mat('blob', () => new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.28, depthWrite: false })),
+  )
+  blob.rotation.x = -Math.PI / 2
+  blob.position.y = 0.02
+  root.add(blob)
+  return { root, hips, torso, neck, legs, arms, hand, blob, gunId: null, phase: Math.random() * 6, fall: 0, fallDir: Math.random() < 0.5 ? -1 : 1, outfit: 'zombie', zombie: true }
+}
+
 // ---------------- first person
 /**
  * The arms you see: sleeves, cuffs, gloves with fingers wrapped round the grip, a watch.

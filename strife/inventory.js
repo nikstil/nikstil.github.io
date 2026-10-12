@@ -9,7 +9,7 @@ import {
   SKINS, RARITY, RARITY_ORDER, CASES, KEY_PRICE, skinById, caseById, wearOf, itemName, rollCase, makeItem,
   loadInventory, saveInventory, addItem, toggleEquip, equippedFor, skinDesc, randomSkinFor,
   kindOf, stickerById, musicById, tradeUpOutcomes, signTradeUp, MUSIC_KITS,
-  agentById, equippedAgents, patternOf, sourceOf, sidesOf, equippedSides, COLLECTIONS, rollCollection, SIDES,
+  agentById, equippedAgents, patternOf, sourceOf, weaponName, sidesOf, equippedSides, COLLECTIONS, rollCollection, SIDES,
 } from './skins.js'
 
 const $ = (s, el = document) => el.querySelector(s)
@@ -330,7 +330,7 @@ function clickItem(uid) {
     selUid = gun.uid
     save()
     audio?.play('buy')
-    flash(`Applied ${stickerById[sticker.sticker].name} to the ${WEAPONS[skinById[gun.skin].weapon].name}.`)
+    flash(`Applied ${stickerById[sticker.sticker].name} to the ${weaponName(skinById[gun.skin])}.`)
     return render()
   }
   selUid = uid
@@ -469,9 +469,9 @@ function details(it) {
       btn(on.includes(sd) ? `Unequip (${sd})` : label, 'equip', on.includes(sd) ? 'ghost' : 'go')
       acts.lastChild.dataset.side = sd
     }
-    if (sides.length === 1) side(sides[0], `Equip on the ${WEAPONS[s.weapon].name} (${sides[0]})`)
+    if (sides.length === 1) side(sides[0], `Equip on the ${weaponName(s)} (${sides[0]})`)
     else {
-      btn(on.length === 2 ? 'Unequip (both)' : `Equip on the ${WEAPONS[s.weapon].name} (T + CT)`, 'equip', on.length === 2 ? 'ghost' : 'go')
+      btn(on.length === 2 ? 'Unequip (both)' : `Equip on the ${weaponName(s)} (T + CT)`, 'equip', on.length === 2 ? 'ghost' : 'go')
       side('T', 'T only')
       side('CT', 'CT only')
     }
@@ -633,7 +633,7 @@ function casesTab(into) {
           gold = true
           continue
         }
-        line(`${WEAPONS[s.weapon].name} | ${s.name}`, RARITY[s.rarity].color)
+        line(`${weaponName(s)} | ${s.name}`, RARITY[s.rarity].color)
       }
     }
     const ob = $('button', el)
@@ -672,7 +672,7 @@ function casesTab(into) {
     for (const id of [...col.skins].sort((a, b) => RARITY_ORDER.indexOf(skinById[b].rarity) - RARITY_ORDER.indexOf(skinById[a].rarity))) {
       const i = document.createElement('span')
       i.style.setProperty('--r', RARITY[skinById[id].rarity].color)
-      i.textContent = `${WEAPONS[skinById[id].weapon].name} | ${skinById[id].name}`
+      i.textContent = `${weaponName(skinById[id])} | ${skinById[id].name}`
       sk.append(i)
     }
     cg.append(el)
@@ -703,7 +703,7 @@ function tradeUpTab(body) {
   }
   const out = $('.tu-out', head)
   if (o && !o.error) {
-    out.textContent = `Could become: ${o.outcomes.map((x) => `${WEAPONS[skinById[x.skin].weapon].name} | ${skinById[x.skin].name} (${Math.round(x.weight * 100)}%)`).join(', ')}`
+    out.textContent = `Could become: ${o.outcomes.map((x) => `${weaponName(skinById[x.skin])} | ${skinById[x.skin].name} (${Math.round(x.weight * 100)}%)`).join(', ')}`
   } else out.textContent = o?.error ?? 'Click skins below to add them.'
   $('[data-inv="sign"]', head).disabled = !o || !!o.error || items.length !== need
   body.append(head)

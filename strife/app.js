@@ -7,7 +7,7 @@ import { View } from './view.js'
 import { radarImage } from './render.js'
 import { WEAPONS, GEAR, SHOP, adsOf } from './weapons.js'
 import { gunIcon } from './icons.js'
-import { skinMaterial, stickerMaterial, randomAgent } from './skins.js'
+import { skinMaterial, stickerMaterial, randomAgent, KNIVES, modelOf } from './skins.js'
 import { initChat } from './chatui.js'
 import { initRanks } from './rankui.js'
 import { initInvites, isUserId } from './invite.js'
@@ -18,6 +18,8 @@ import { track } from './stats.js'
 import { Recorder, Player, clip, saveReplay, listReplays, loadReplay, deleteReplay } from './replay.js'
 import { DIFFICULTY } from './bots.js'
 import * as audio from './audio.js'
+import * as zhud from './zhud.js'
+import { POWERUPS, PERKS, papName } from './zombies.js'
 
 const $ = (s, r = document) => r.querySelector(s)
 const $$ = (s, r = document) => [...r.querySelectorAll(s)]
@@ -216,6 +218,11 @@ function hooks() {
     },
     roundEnd({ winner, reason, mvp, over }) {
       if (mode !== 'play') return
+      // (Zombies has its own GAME OVER)
+      if (game.z) {
+        if (over) setTimeout(matchOver, 3500)
+        return
+      }
       const reasons = { elimination: winner === 'T' ? 'All Counter-Terrorists are dead' : 'All Terrorists are dead', bomb: 'The bomb exploded', defuse: 'The bomb has been defused', time: game.respawns ? 'Time is up: most kills wins' : 'Time ran out: the bomb was never planted', kills: `First to ${game.rules.killsToWin} kills`, armsrace: `${mvp?.name ?? 'Someone'} went through every gun and won with the knife` }
       showBanner(winner, reasons[reason], mvp ? `MVP: ${mvp.name}${mvp === game.player ? ' (you!)' : ''}` : '')
       if (game.player) audio.play(winner === game.player.team ? 'win' : 'lose')
@@ -263,6 +270,68 @@ function hooks() {
     halftime() {
       if (mode === 'play') say('Halftime: switching sides', 4)
     },
+    // ---- Zombies
+    zround({ round }) {
+      if (mode !== 'play') return
+      zhud.newRound()
+      track.zround(round)
+    },
+    zpoints({ a, n }) {
+      if (mode === 'play' && a === game.player) zhud.points(n)
+    },
+    zswing({ a }) {
+      if (game.client) a.zSwingShow = game.time + 0.42
+    },
+    zrise({ a }) {
+      if (game.client) a.zRise = game.time + 1.1
+    },
+    zray({ at }) {
+      view?.explosion(at, 'ray')
+    },
+    zdown({ a }) {
+      if (mode !== 'play') return
+      if (a === game.player) {
+        mouseFire = false
+        aimLatch = false
+      } else say(`${a.name} is down!`, 2.5, true)
+    },
+    zrevive({ a, by }) {
+      if (mode !== 'play') return
+      if (a === game.player) say(by ? `${by.name} revived you` : 'Back on your feet', 2)
+      else if (by === game.player) say(`You revived ${a.name}`, 2)
+    },
+    zdead({ a }) {
+      if (mode === 'play' && a !== game.player) say(`${a.name} bled out`, 2.5, true)
+    },
+    zpowerup({ type }) {
+      if (mode !== 'play') return
+      zhud.announce(POWERUPS[type].name, POWERUPS[type].what)
+      zhud.speak(POWERUPS[type].name)
+      if (type === 'nuke') view?.explosion({ x: watched?.pos.x ?? 0, y: (watched?.pos.y ?? 0) + 3, z: watched?.pos.z ?? 0 }, 'flash')
+    },
+    zperk({ a, perk }) {
+      if (mode === 'play' && a === game.player) say(`${PERKS[perk].name}: ${PERKS[perk].what}`, 3)
+    },
+    zpower() {
+      if (mode !== 'play') return
+      zhud.announce('The power is on', 'Perk machines and the Pack-a-Punch work now')
+      zhud.speak('Power on')
+    },
+    zbear() {
+      if (mode === 'play') say('The Mystery Box is moving somewhere else…', 3)
+    },
+    zgun({ a, id, pap }) {
+      if (mode !== 'play' || a !== game.player) return
+      if (pap) say(`Pack-a-Punched: ${papName(id)}`, 3)
+      if (pap) track.zpap()
+      if (id === 'raygun') track.zraygun()
+    },
+    zover({ round }) {
+      if (mode !== 'play') return
+      zhud.speak('Game over')
+      zhud.announce('GAME OVER', `You survived ${round} round${round === 1 ? '' : 's'}`, 3.5, true)
+      track.zround(round)
+    },
   }
 }
 
@@ -273,8 +342,10 @@ function start({ demo = false, practice = false, host = false } = {}) {
   rankCtx = null
   if (!host || !net) endNet()
   const map = MAPS[settings.map]
-  const team = demo ? null : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
-  game = new Game({ map, team, mode: demo ? 'competitive' : settings.mode, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
+  // (walking the map is the same whatever mode is picked: no zombies either)
+  const md = demo || (practice && settings.mode === 'zombies') ? 'competitive' : settings.mode
+  const team = demo ? null : md === 'zombies' ? 'CT' : settings.team === 'auto' ? (Math.random() < 0.5 ? 'T' : 'CT') : settings.team
+  game = new Game({ map, team, mode: md, size: demo ? 5 : host ? 5 : settings.size, difficulty: demo ? 1 : settings.diff, practice, playerName: host ? settings.netName : undefined, rules: { roundsToWin: settings.length }, hooks: hooks(), skinFor: demo ? (a, id) => (Math.random() < 0.3 ? skinFor({ isBot: true }, id) : null) : skinFor })
   // who everyone plays as: you, your agents; a bot, now and then, a random one
   for (const a of game.actors) {
     if (a === game.player) a.agents = myAgents()
@@ -299,7 +370,7 @@ function attachView(map, demo = false) {
   radarImg = radarImage(map)
   radarLow = map.radarSplit != null ? radarImage(map, true) : null
   mode = demo ? 'menu' : 'play'
-  rec = !demo && !game.practice ? new Recorder(game) : null
+  rec = !demo && !game.practice && !game.z ? new Recorder(game) : null
   if (rec) recordInto(game)
   killcam = null
   watched = game.player
@@ -316,6 +387,9 @@ function attachView(map, demo = false) {
   document.body.classList.toggle('playing', !demo)
   // Deathmatch and Arms Race: no radio, no callouts, no waypoints
   document.body.classList.toggle('no-radio', !!game.respawns)
+  // Zombies: its own HUD (points, perks, the round in chalk) in place of money, clock and scores
+  document.body.classList.toggle('zombies', !!game.z && !demo)
+  if (game.z) zhud.reset()
 }
 
 // ================= Killcam and replays =================
@@ -743,9 +817,16 @@ function syncMenu() {
   mark('#seg-mode', settings.mode)
   const md = MODES[settings.mode] ?? MODES.competitive
   $('#mode-blurb').textContent = md.blurb
-  // match length and team size only mean something in some modes
-  $('#seg-length').parentElement.hidden = !!md.respawn
+  // match length and team size only mean something in some modes (Zombies: you're always a survivor)
+  $('#seg-length').parentElement.hidden = !!md.respawn || !!md.zombies
   $('#seg-size').parentElement.hidden = !!md.size
+  $('#seg-team').parentElement.hidden = !!md.zombies
+  // (in Zombies the team size is how many survivors: you, and bots or friends)
+  $('#seg-size').previousElementSibling.textContent = md.zombies ? 'Survivors' : 'Teams'
+  $$('#seg-size button').forEach((b) => {
+    b.dataset.label ??= b.textContent
+    b.textContent = md.zombies ? { 1: 'Just you', 3: 'You + 2', 5: 'You + 3' }[b.dataset.v] : b.dataset.label
+  })
   $('#record').textContent = record.wins + record.losses ? `Record: ${record.wins} won, ${record.losses} lost · ${record.kills} kills, ${record.deaths} deaths` : ''
 }
 function syncSettings() {
@@ -893,6 +974,7 @@ function resume() {
 }
 function matchOver() {
   if (mode !== 'play') return
+  if (game.z) return zombiesOver()
   const me = game.player
   const won = me && game.winner === me.team
   if (me) won ? record.wins++ : record.losses++
@@ -926,6 +1008,25 @@ function matchOver() {
     t.append(tr)
   }
   $('#over-board').replaceChildren(t)
+  paused = true
+  releaseMouse()
+  show('over')
+}
+
+/** Zombies: GAME OVER, how many rounds you made it, and everyone's numbers. */
+function zombiesOver() {
+  const z = game.z
+  const me = game.player
+  const was = zhud.best(settings.map, z.round)
+  const got = me ? rewardMatch(z.round >= 10, Math.floor(z.round / 5), game.map.id) : null
+  $('#over-title').textContent = 'GAME OVER'
+  $('#over-title').className = 'loss zombies'
+  $('#over-score').textContent = `You survived ${z.round} round${z.round === 1 ? '' : 's'}${z.round > was ? ` · a new best on ${game.map.name}!` : was ? ` · your best here: ${was}` : ''}`
+  $('#over-drop').textContent = got ? `Case drop: ${got.box}${got.skin ? ` · ${got.skin}` : ''} · see your Inventory` : ''
+  $('#over-replay').hidden = true
+  rankUi.hideResult()
+  hideBanner()
+  $('#over-board').replaceChildren(zhud.board(game))
   paused = true
   releaseMouse()
   show('over')
@@ -1029,7 +1130,6 @@ function turn(dx, dy, scale) {
   look.yaw -= dx * k
   look.pitch -= dy * k * (settings.invert ? -1 : 1)
   look.pitch = Math.max(-1.5, Math.min(1.5, look.pitch))
-  if (!a?.alive && deathInfo && dx * dx > 0) spectTurn = true
 }
 /** How far aiming down the sights has zoomed the view in (1: not at all). */
 function adsZoom(a, w) {
@@ -1157,7 +1257,7 @@ let buyOpen = false
 let buyCat = -1
 function toggleBuy(open = !buyOpen) {
   if (open && (!game.player || !game.canBuy(game.player))) {
-    say(game.player?.alive ? 'You can only buy in your spawn, early in the round' : 'You’re dead', 1.5)
+    say(game.z ? 'In Zombies you buy off the walls, from the Mystery Box and the machines: walk up and hold E' : game.player?.alive ? 'You can only buy in your spawn, early in the round' : 'You’re dead', game.z ? 3 : 1.5)
     audio.play('deny')
     return
   }
@@ -1442,7 +1542,7 @@ function addKillfeed({ victim, attacker, weaponId, headshot }) {
   if (attacker && attacker !== victim) li.append(name(attacker))
   const w = document.createElement('span')
   w.className = 'w'
-  w.textContent = weaponId === 'bomb' ? '💥' : weaponId === 'fall' ? '⤓' : weaponId === 'he' ? 'HE' : WEAPONS[weaponId]?.name ?? weaponId
+  w.textContent = weaponId === 'bomb' ? '💥' : weaponId === 'fall' ? '⤓' : weaponId === 'he' ? 'HE' : (weaponId === 'knife' && KNIVES[modelOf(attacker?.inv?.knife?.skin?.skin)]) || (WEAPONS[weaponId]?.name ?? weaponId)
   li.append(w)
   if (headshot) {
     const h = document.createElement('span')
@@ -1482,7 +1582,6 @@ function damageFlash(attacker, dmg) {
 }
 let deathInfo = null
 let spectIdx = 0
-let spectTurn = false
 stage.addEventListener('click', () => {
   if (mode === 'play' && game.player && !game.player.alive) spectIdx++
 })
@@ -1511,6 +1610,7 @@ function updateHud(dt) {
   const me = g.player
   const w = watched
   const now = g.time
+  if (g.z) zhud.update(g, me, w, dt)
   // what the mode is about
   let info = ''
   if (g.mode === 'armsrace' && w) {
@@ -1544,8 +1644,8 @@ function updateHud(dt) {
     hud.kit.hidden = !w.kit
     hud['bomb-carry'].hidden = !w.inv.bomb
     const wpn = weaponOf(w)
-    setText('weapon-name', wpn?.name ?? '')
     const s = w.inv[w.active]
+    setText('weapon-name', (wpn?.kind === 'knife' && KNIVES[modelOf(s?.skin?.skin)]) || (wpn?.name ?? ''))
     const mag = wpn?.mag
     setText('clip', mag && s ? String(s.clip) : wpn?.kind === 'grenade' ? String(w.inv.grenades.filter((x) => x === wpn.id).length) : '')
     setText('reserve', mag && s ? `/ ${s.reserve}` : '')
@@ -1595,6 +1695,12 @@ function updateHud(dt) {
   if (me && !me.alive && g.respawns) {
     hud.spectate.hidden = false
     hud.spectate.textContent = g.phase === 'over' ? '' : `Respawning in ${Math.max(0, Math.ceil((me.respawnAt ?? 0) - now))}…`
+  } else if (me && !me.alive && g.z) {
+    hud.spectate.hidden = g.phase === 'over'
+    hud.spectate.textContent = 'You bled out: you’ll be back next round'
+    const small = document.createElement('small')
+    small.textContent = watched && watched !== me ? `Watching ${watched.name} · click to switch` : ''
+    hud.spectate.append(small)
   } else if (me && !me.alive && !g.practice) {
     hud.spectate.hidden = false
     const killer = deathInfo?.attacker && deathInfo.attacker !== me ? `Killed by ${deathInfo.attacker.name} (${WEAPONS[deathInfo.weaponId]?.name ?? deathInfo.weaponId}${deathInfo.headshot ? ', headshot' : ''})` : 'You died'
@@ -1728,6 +1834,24 @@ function drawRadar() {
     if (a.team === myTeam) dot(a.pos.x, a.pos.z, myTeam === 'T' ? '#e3ac48' : '#6fa8e0')
     else if (seen.has(a.id)) dot(a.pos.x, a.pos.z, '#ff3b3b')
   }
+  // Zombies: the machines, the box, the guns on the walls
+  if (game.z) {
+    const z = game.z
+    for (const st of z.stations) {
+      if (Math.abs(st.y - me.pos.y) > 4) continue
+      const col = st.kind === 'perk' ? PERKS[st.perk].color : st.kind === 'pap' ? '#9a6bff' : st.kind === 'power' ? (z.power ? '#4dff5a' : '#ffcc33') : '#e8e2d0'
+      g.fillStyle = col
+      g.fillRect(st.x - (st.kind === 'wall' ? 0.6 : 1), st.z - (st.kind === 'wall' ? 0.6 : 1), st.kind === 'wall' ? 1.2 : 2, st.kind === 'wall' ? 1.2 : 2)
+    }
+    const bx = z.boxAt
+    if (bx && z.box.state !== 'away') {
+      g.fillStyle = '#7ec8ff'
+      g.font = 'bold 4px sans-serif'
+      g.textAlign = 'center'
+      g.fillText('?', bx.x, bx.z + 1.5)
+    }
+    for (const d of z.drops) dot(d.x, d.z, '#5dff4a', 1.2)
+  }
   // waypoints: a diamond where each callout is
   for (const w of waypoints) {
     g.save()
@@ -1764,6 +1888,21 @@ function drawRadar() {
   g.restore()
 }
 function drawScoreboard() {
+  if (game.z) {
+    // Zombies: just the survivors
+    const z = game.z
+    let html = '<tr><th></th><th>Player</th><th>Points</th><th>Kills</th><th>HS</th><th>Downs</th><th>Revives</th></tr>'
+    for (const a of z.survivors) {
+      const n = a.name.replace(/[<>&"]/g, '')
+      html += `<tr class="${a.alive ? '' : 'dead'} ${a === game.player ? 'me' : ''}"><td></td><td>${net && a.isBot ? '<small class="bot">BOT</small> ' : ''}${n}${a.down ? ' ✚' : a.alive ? '' : ' ✝'}</td><td>${a.money}</td><td>${a.kills}</td><td>${a.mvps}</td><td>${a.deaths}</td><td>${a.assists}</td></tr>`
+    }
+    $('#sb-ct').innerHTML = html
+    $('#sb-ct-score').textContent = `Round ${z.round}`
+    $('#sb-t').parentElement.hidden = true
+    $('#sb-foot').textContent = `${MAPS[settings.map].name} · Zombies · your best here: round ${Math.max(zhud.best(settings.map), z.round)}${net instanceof NetHost ? ` · online, code ${net.code}` : net ? ' · online' : ''}`
+    return
+  }
+  $('#sb-t').parentElement.hidden = false
   for (const t of ['CT', 'T']) {
     const table = $(`#sb-${t.toLowerCase()}`)
     const rows = game.actors.filter((a) => a.team === t).sort((a, b) => b.kills - a.kills)

@@ -241,10 +241,6 @@ export function createGame(levelId, opts = {}) {
     if (ce.base && !(ce.main && ce.main.def.ground)) return ce.base
     return null
   }
-  const anyPlant = (r, c) => {
-    const ce = cell(r, c)
-    return ce && (ce.shell || ce.main || ce.base || ce.coffee)
-  }
   const protectedByParasol = (r, c) => g.plants.some((p) => p.def.kind === 'umbrella' && !p.asleep && Math.abs(p.row - r) <= 1 && Math.abs(p.col - c) <= 1)
 
   // ================= Placing =================
@@ -914,7 +910,6 @@ export function createGame(levelId, opts = {}) {
     stepBelt(dt)
     if (W) stepWaves()
     stepBoss(dt)
-    stepSeeds()
     for (const p of [...g.plants]) if (!p.gone) stepPlant(p, dt)
     stepShots(dt)
     for (const z of [...g.zombies]) if (!z.gone) stepZombie(z, dt)
@@ -977,14 +972,7 @@ export function createGame(levelId, opts = {}) {
       b.timer = special === 'bowling' ? 3.2 : special === 'boss' ? 3 : level.beltEvery ?? 4.2
     }
   }
-  function stepSeeds() {
-    // (Recharge is measured against g.t: nothing to do but keep conveyor-free levels honest.)
-  }
-
   // ---------- Plants ----------
-  function zombiesInRow(r) {
-    return g.zombies.filter((z) => z.row === r && !gone(z))
-  }
   function firstAhead(r, x0, { maxDist = Infinity, flying = false, behind = false } = {}) {
     let best = null
     for (const z of g.zombies) {

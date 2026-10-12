@@ -8,6 +8,7 @@
 // WebRTC data channel, or through the hub when a direct connection can't be made.
 
 import { Brain } from './bots.js'
+import { SurvivorBrain } from './zombies.js'
 import { WEAPONS } from './weapons.js'
 import { agentById } from './skins.js'
 
@@ -39,9 +40,13 @@ class LocalRoom {
   tick() {
     this.post({ t: 'here', from: this.me, meta: this.meta })
     const now = Date.now()
+    // (if this tab was the one frozen for a while, the others haven't gone: hear from them first)
+    if (this.lastBeat && now - this.lastBeat > 3000) for (const p of this.peers.values()) p.seen = now
+    this.lastBeat = now
     let changed = false
+    // (generous: a tab loading a match can be busy for a few seconds)
     for (const [id, p] of this.peers)
-      if (now - p.seen > 6000) {
+      if (now - p.seen > 15000) {
         this.peers.delete(id)
         changed = true
       }
@@ -263,7 +268,9 @@ const OWN_SOUNDS = new Set(['silenced', 'click', 'reload', 'swish', 'land', ...n
 // Events a player's own browser already shows for them.
 const OWN_EVENTS = new Set(['tracer', 'impact', 'shot', 'knife', 'mode', 'switch', 'reload'])
 // Events everyone needs.
-const EVENTS = ['chat', 'radio', 'respawn', 'levelUp', 'kill', 'hit', 'roundStart', 'live', 'roundEnd', 'planted', 'defused', 'explode', 'bombDropped', 'bombPicked', 'halftime', 'drop', 'dropRemoved', 'detonate', 'tracer', 'impact', 'knife', 'throw', 'plantStart', 'mode', 'shot', 'decoyEnd']
+const EVENTS = ['chat', 'radio', 'respawn', 'levelUp', 'kill', 'hit', 'roundStart', 'live', 'roundEnd', 'planted', 'defused', 'explode', 'bombDropped', 'bombPicked', 'halftime', 'drop', 'dropRemoved', 'detonate', 'tracer', 'impact', 'knife', 'throw', 'plantStart', 'mode', 'shot', 'decoyEnd',
+  // Zombies
+  'zround', 'zpoints', 'zswing', 'zrise', 'zray', 'zdown', 'zrevive', 'zdead', 'zpowerup', 'zperk', 'zpower', 'zbear', 'zgun', 'zover']
 const ownerOf = (name, d) => d?.a ?? (name === 'tracer' || name === 'shot' ? d?.a : null) ?? d?.by ?? null
 
 // ================= The host =================
@@ -289,7 +296,7 @@ export class NetHost {
   }
   lobbyMeta() {
     const g = this.game
-    return { role: 'host', code: this.code, name: this.info.name, map: g.map.name, humans: 1 + this.peers.size, max: g.actors.length, round: g.round }
+    return { role: 'host', code: this.code, name: this.info.name, map: g.map.name, humans: 1 + this.peers.size, max: g.z ? g.z.survivors.length : g.actors.length, round: g.round }
   }
   /** Every event the game emits also goes to the players, packed. */
   wrapHooks() {
@@ -351,7 +358,8 @@ export class NetHost {
   /** Turns a bot on `want`'s team (or the other) into a remote player. */
   seat(want, name, skins) {
     const g = this.game
-    const pick = (t) => g.actors.find((a) => a.team === t && a.isBot)
+    // (in Zombies, only a bot survivor's place: never a zombie's)
+    const pick = (t) => g.actors.find((a) => a.team === t && a.isBot && !a.zombie && (!g.z || t === 'CT'))
     const actor = pick(want) ?? pick(want === 'T' ? 'CT' : 'T')
     if (!actor) return null
     actor.isBot = false
@@ -395,7 +403,7 @@ export class NetHost {
     return { me: me.id, map: this.info.mapId, mode: g.mode, rules: g.rules, roster: this.roster(), code: this.code, host: this.info.name }
   }
   roster() {
-    return this.game.actors.map((a) => ({ id: a.id, name: a.name, team: a.team, bot: a.isBot, human: !a.isBot, rank: a.rankTier ?? null, ag: a.agents ?? null }))
+    return this.game.actors.map((a) => ({ id: a.id, name: a.name, team: a.team, bot: a.isBot, human: !a.isBot, rank: a.rankTier ?? null, ag: a.agents ?? null, zb: a.zombie ? 1 : undefined }))
   }
   rosterChanged() {
     const r = this.roster()
@@ -438,7 +446,7 @@ export class NetHost {
     this.say(`${a.name} ${why === 'left' ? 'left' : 'disconnected'}: a bot takes over`)
     a.name = a.botName ?? a.name
     a.rankTier = a.botRank ?? null
-    a.brain = new Brain(this.game, a)
+    a.brain = this.game.z ? new SurvivorBrain(this.game, a) : new Brain(this.game, a)
     this.rosterChanged()
     this.info.onPeople?.(this.people())
   }
@@ -514,6 +522,7 @@ function snapshot(g, me) {
     sm: g.world.smokes.map((s) => [s.id, r2(s.x), r2(s.y), r2(s.z), r3(s.born), r3(s.until)]),
     f: g.world.fires.map((f) => [f.id, r2(f.x), r2(f.y), r2(f.z), f.max, r3(f.born), r3(f.until), f.owner?.id ?? -1]),
     dc: g.decoys.map((d) => [d.id, r2(d.pos.x), r2(d.pos.y), r2(d.pos.z)]),
+    z: g.z ? g.z.snapshot() : undefined,
   }
 }
 const a2inv = (inv) => ({ primary: inv.primary, pistol: inv.pistol, knife: inv.knife, zeus: inv.zeus ?? null, grenades: inv.grenades, bomb: inv.bomb })
@@ -631,7 +640,11 @@ export class NetClient {
       if (this.link.mode === 'relay' && batch.length > 3) batch = squash(batch)
       this.link.send({ k: 'c', c: batch })
     }
-    if (this.game && Date.now() - this.lastHeard > 10000) this.end('Lost the connection to the host.')
+    // (if it's us that stopped for a while, loading or in the background, that's not the host's fault)
+    const now = Date.now()
+    if (!this.lastTick || now - this.lastTick > 3000) this.lastHeard = now
+    this.lastTick = now
+    if (this.game && now - this.lastHeard > 10000) this.end('Lost the connection to the host.')
   }
   get mode() {
     return this.link?.mode ?? 'connecting'
@@ -767,6 +780,7 @@ export function applySnapshot(g, s) {
   g.world.smokes = syncList(g.world.smokes, s.sm, (r) => ({ id: r[0], x: r[1], y: r[2], z: r[3], born: r[4], until: r[5], r: 0 }))
   g.world.fires = syncList(g.world.fires, s.f, (r) => ({ id: r[0], x: r[1], y: r[2], z: r[3], max: r[4], born: r[5], until: r[6], r: 0, owner: g.actors[r[7]] ?? { team: '' } }))
   g.decoys = syncList(g.decoys, s.dc, (r) => ({ id: r[0], pos: { x: r[1], y: r[2], z: r[3] } }))
+  if (s.z && g.z) g.z.applySnapshot(s.z)
 }
 function syncList(old, rows, make, update) {
   const byId = new Map(old.map((o) => [o.id, o]))

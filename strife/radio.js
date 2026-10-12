@@ -165,7 +165,6 @@ export class Chatter {
   }
   /** A player's chat line: maybe a bot answers, and "rush B" is an order. */
   heard(from, text, teamOnly) {
-    const g = this.g
     const rush = text.match(/\b(?:rush|go|push|hit)\s+([ab])\b/i)
     if (rush && from.team === 'T') {
       const site = rush[1].toUpperCase()

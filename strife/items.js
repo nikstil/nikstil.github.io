@@ -2,11 +2,10 @@
 // stickers, music kits), its rarity, its short name, and its value in credits. Shared by the
 // inventory screen and SKINSINK.GG (the skins casino at /casino/).
 
-import { WEAPONS } from './weapons.js'
 import { gunIcon, drawnGunIcon, agentIcon } from './icons.js'
 import {
   RARITY, CASES, STICKER_GRADE, skinById, caseById, stickerById, musicById, kindOf, wearOf, skinMaterial, stickerMaterial, stickerUrl, itemKey,
-  agentById, AGENT_GRADE, patternOf,
+  agentById, AGENT_GRADE, patternOf, modelOf, weaponName,
 } from './skins.js'
 
 // ---------------- Pictures of things
@@ -45,14 +44,14 @@ export function iconFor(it, w = 150, h = 60) {
   if (kind === 'sticker') return stickerUrl(it.sticker)
   if (kind === 'music') return musicIcon(it.music)
   const s = skinById[it.skin]
-  return gunIcon(s.weapon, w, h, { skin: skinMaterial(it), key: itemKey(it), stickers: (it.stickers ?? []).map(stickerMaterial) })
+  return gunIcon(modelOf(s.id), w, h, { skin: skinMaterial(it), key: itemKey(it), stickers: (it.stickers ?? []).map(stickerMaterial) })
 }
 /** The same picture, but only if it's ready (drawing a skin the first time takes a moment): or null. */
 export function drawnIcon(it, w = 150, h = 60) {
   const kind = kindOf(it)
   if (kind === 'agent') return null // (drawn later, like a gun)
   if (kind !== 'skin') return iconFor(it, w, h)
-  return drawnGunIcon(skinById[it.skin].weapon, w, h, { key: itemKey(it) }) ?? null
+  return drawnGunIcon(modelOf(it.skin), w, h, { key: itemKey(it) }) ?? null
 }
 /** Its rarity: { name, color }. */
 export function rarityOf(it) {
@@ -73,7 +72,7 @@ export function shortName(it) {
   if (kind === 'agent') return `${agentById[it.agent]?.name ?? '?'} | ${agentById[it.agent]?.title ?? ''}`
   const s = skinById[it.skin]
   const p = patternOf(it)
-  return `${WEAPONS[s.weapon].name} | ${s.name}${p?.gem ? ` (${p.note.split(' · ')[0]})` : ''}`
+  return `${weaponName(s)} | ${s.name}${p?.gem ? ` (${p.note.split(' · ')[0]})` : ''}`
 }
 
 // ---------------- What things are worth (in credits)

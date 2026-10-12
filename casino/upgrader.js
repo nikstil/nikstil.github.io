@@ -4,9 +4,8 @@
 import { bet, items, takeItems, giveItems, r2, balance } from './wallet.js'
 import { $, $$, esc, coins, toast, feed, itemCard } from './ui.js'
 import { anyone } from './bots.js'
-import { SKINS, skinById, makeItem, kindOf } from '../strife/skins.js'
+import { SKINS, skinById, makeItem, kindOf, weaponName } from '../strife/skins.js'
 import { itemValue, skinValue } from '../strife/items.js'
-import { WEAPONS } from '../strife/weapons.js'
 import { winSound, loseSound, tick, click } from './sound.js'
 
 const EDGE = 0.92 // your chance is 92% of the fair one
@@ -97,7 +96,7 @@ export function mount(el) {
     const len = 2 * Math.PI * 84
     arc.style.strokeDasharray = `${len * ch} ${len}`
     $('[data-spin]', el).disabled = spinning || !ch || !target
-    $('[data-spin]', el).innerHTML = target && ch ? `Upgrade to ${skinById[target].weapon === 'knife' ? '★ Knife' : esc(WEAPONS[skinById[target].weapon]?.name)} | ${esc(skinById[target].name)} (${coins(skinValue(target))})` : 'Pick something to aim for'
+    $('[data-spin]', el).innerHTML = target && ch ? `Upgrade to ${skinById[target].weapon === 'knife' ? '★ ' : ''}${esc(weaponName(skinById[target]))} | ${esc(skinById[target].name)} (${coins(skinValue(target))})` : 'Pick something to aim for'
   }
   async function spin() {
     if (spinning || !target) return

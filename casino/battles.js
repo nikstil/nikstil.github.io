@@ -8,7 +8,7 @@
 import { bet, giveItems, fmt, r2 } from './wallet.js'
 import { h, $, $$, esc, coins, toast, feed } from './ui.js'
 import { someoneElse } from './bots.js'
-import { RARITY, SKINS, CASES, rollCase, makeItem, skinById, caseById } from '../strife/skins.js'
+import { RARITY, SKINS, CASES, rollCase, makeItem, skinById, caseById, anyKnife } from '../strife/skins.js'
 import { iconFor, rarityOf, itemValue, caseValue, skinValue, SKIN_CASES } from '../strife/items.js'
 import { tick, winSound, loseSound, click } from './sound.js'
 import { nudge, TICKER_OF } from '../stonks/market.js'
@@ -39,7 +39,7 @@ function roll(caseId) {
     }
   }
   const of = c.skins.filter((id) => skinById[id].rarity === grade)
-  return makeItem(of[Math.floor(Math.random() * of.length)])
+  return makeItem(anyKnife(of[Math.floor(Math.random() * of.length)]))
 }
 /** What opening one is worth on average. */
 function worth(caseId) {

@@ -17,8 +17,6 @@ let me = null
 let room = null
 let enabled = true
 const ghosts = new Map() // id -> { el, name, x, y, tx, ty, seen }
-let raf = 0
-let os = null
 let lastSent = 0
 let pending = null
 
@@ -83,7 +81,7 @@ function ghostEl(id, name) {
   return g
 }
 function animate() {
-  raf = requestAnimationFrame(animate)
+  requestAnimationFrame(animate)
   for (const g of ghosts.values()) {
     g.x += (g.tx - g.x) * 0.2
     g.y += (g.ty - g.y) * 0.2
@@ -158,9 +156,8 @@ function fly(p, mine) {
   }
 }
 
-/** Starts the ghosts (if the site is online, or ?ghosts=local). os: { showMenu, desktop } */
-export async function initGhosts(api) {
-  os = api
+/** Starts the ghosts (if the site is online, or ?ghosts=local). */
+export async function initGhosts() {
   me = { id: Math.random().toString(36).slice(2, 10), name: `${pick(ADJ)} ${pick(ANIMAL)}` }
   try {
     enabled = localStorage.getItem(KEY) !== 'off'
@@ -224,7 +221,7 @@ export async function initGhosts(api) {
   paintTray()
   addEventListener('pointermove', onMove, { passive: true })
   setInterval(flush, 400)
-  raf = requestAnimationFrame(animate)
+  requestAnimationFrame(animate)
   return { me }
 }
 /** Your ghost name, and whether there's anyone to throw at. */

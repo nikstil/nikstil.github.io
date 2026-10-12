@@ -191,6 +191,97 @@ function bake() {
   buffers.win = chord([[523, 0], [659, 0.12], [784, 0.24], [1046, 0.36]], 1.8)
   buffers.lose = chord([[392, 0], [311, 0.15], [262, 0.3]], 1.6)
   buffers.planted = chord([[880, 0], [880, 0.25], [660, 0.5]], 1.2, (x) => Math.sin(x) * 0.5 + Math.sin(3 * x) * 0.06)
+  bakeZombies(chord)
+}
+
+// ================= Zombies =================
+function bakeZombies(chord) {
+  const sin = (f, t) => Math.sin(2 * Math.PI * f * t)
+  // a bell: a few inharmonic partials, a long ring
+  const bell = (hz, t, len = 3) => (sin(hz, t) + sin(hz * 2.76, t) * 0.4 + sin(hz * 5.4, t) * 0.18) * Math.exp(-t * (3 / len))
+  // a new round: two low bells and a swell under them
+  buffers.zroundStart = buffer(4, (t, st) => {
+    st.lp += (noise() - st.lp) * 0.02
+    const swell = Math.sin(Math.PI * Math.min(1, t / 3.5)) * (sin(55, t) * 0.5 + sin(82.4, t) * 0.3 + st.lp * 2)
+    return (bell(110, t, 3.5) * 0.35 + (t > 0.7 ? bell(103.8, t - 0.7, 3) * 0.3 : 0) + swell * 0.25) * 0.8
+  })
+  // the round's over: a falling, out-of-tune chime
+  buffers.zroundEnd = buffer(3.2, (t) => [[659, 0], [622, 0.35], [523, 0.7], [494, 1.05]].reduce((a, [hz, at]) => a + (t > at ? bell(hz, t - at, 2) * 0.12 : 0), 0))
+  // a zombie: a throaty growl (noise through a wobbling resonance) with a low voice under it
+  const groan = (len, hz, rough, rise) =>
+    buffer(len, (t, st) => {
+      const env = Math.sin(Math.PI * Math.min(1, t / len)) ** 0.7
+      const f = hz * (1 + rise * t / len) * (1 + 0.06 * Math.sin(2 * Math.PI * 5.5 * t))
+      const ph = (st.ph = (st.ph ?? 0) + f * (t - (st.t ?? 0)))
+      st.t = t
+      const voice = Math.sign(Math.sin(2 * Math.PI * ph)) * 0.25 + Math.sin(2 * Math.PI * ph * 2) * 0.3
+      st.lp += (noise() * rough + voice - st.lp) * 0.12
+      st.lp2 += (st.lp - st.lp2) * 0.3
+      return Math.tanh(st.lp2 * 2.2) * env * 0.45
+    })
+  buffers.zgroan = groan(1.1, 95, 0.8, -0.25)
+  buffers.zscream = groan(0.7, 240, 1.2, 0.4)
+  buffers.zswing = buffer(0.3, (t, st) => {
+    const n = noise()
+    st.lp += (n - st.lp) * 0.08
+    return st.lp * 1.4 * Math.sin(Math.PI * Math.min(1, t / 0.3))
+  })
+  buffers.zhit = buffer(0.3, (t, st) => {
+    st.lp += (noise() - st.lp) * 0.15
+    return Math.tanh(st.lp * 3 * Math.exp(-t * 18) + sin(70, t) * Math.exp(-t * 14)) * 0.6
+  })
+  buffers.zdie = groan(0.8, 70, 1.4, -0.5)
+  buffers.zrise = buffer(0.9, (t, st) => {
+    st.lp += (noise() - st.lp) * 0.05
+    return st.lp * 2.2 * Math.sin(Math.PI * Math.min(1, t / 0.9)) * (0.6 + 0.4 * Math.sin(2 * Math.PI * 9 * t))
+  })
+  // the shop and the machines
+  buffers.zcash = buffer(0.5, (t) => (t < 0.06 ? noise() * 0.3 * Math.exp(-t * 60) : 0) + (sin(2093, t) * 0.25 + sin(2637, t) * 0.15) * Math.exp(-t * 9) + (t > 0.09 ? sin(3136, t - 0.09) * 0.2 * Math.exp(-(t - 0.09) * 9) : 0))
+  buffers.zperk = chord([[392, 0], [494, 0.12], [587, 0.24], [784, 0.36], [740, 0.6], [784, 0.75]], 1.6, (x) => Math.sin(x) * 0.6 + Math.sin(2 * x) * 0.2)
+  buffers.zpower = buffer(3, (t, st) => {
+    st.lp += (noise() - st.lp) * 0.1
+    const clunk = t < 0.25 ? st.lp * 3 * Math.exp(-t * 20) + sin(60, t) * Math.exp(-t * 15) : 0
+    const hum = (sin(60 + t * 20, t) * 0.4 + sin(120 + t * 40, t) * 0.2) * Math.min(1, t * 1.5) * Math.exp(-Math.max(0, t - 2) * 3)
+    return Math.tanh(clunk + hum) * 0.6
+  })
+  buffers.zpap = buffer(3.2, (t, st) => {
+    st.lp += (noise() - st.lp) * 0.2
+    const whirr = (st.lp * 0.6 + sin(180 + 60 * Math.sin(t * 9), t) * 0.4) * (t < 2.8 ? 1 : Math.exp(-(t - 2.8) * 10))
+    const ding = t > 2.9 ? (sin(1318, t - 2.9) + sin(1976, t - 2.9) * 0.5) * Math.exp(-(t - 2.9) * 8) : 0
+    return whirr * 0.35 + ding * 0.25
+  })
+  // the Mystery Box's music-box tune
+  const tune = [659, 784, 880, 784, 659, 587, 523, 587, 659, 784, 659, 523, 494, 523, 587, 659]
+  buffers.zbox = buffer(4.2, (t) => {
+    let v = 0
+    tune.forEach((hz, k) => {
+      const at = k * 0.24
+      if (t > at) v += (sin(hz * 2, t - at) + sin(hz * 4.1, t - at) * 0.25) * Math.exp(-(t - at) * 5)
+    })
+    return v * 0.1
+  })
+  // the teddy bear: a mocking laugh, low and slowed down
+  buffers.zbear = buffer(2, (t, st) => {
+    const k = Math.floor(t / 0.28)
+    const u = t - k * 0.28
+    if (k > 5 || u > 0.2) return 0
+    const hz = 160 - k * 12
+    st.lp += (Math.sign(sin(hz, t)) * 0.6 + noise() * 0.3 - st.lp) * 0.2
+    return st.lp * Math.sin(Math.PI * u / 0.2) * 0.5
+  })
+  buffers.zdrop = buffer(1.2, (t) => (sin(523 * (1 + t * 0.5), t) * 0.2 + sin(784 * (1 + t * 0.5), t) * 0.12) * Math.min(1, t * 20) * Math.exp(-t * 2.5))
+  buffers.zpowerup = chord([[784, 0], [988, 0.08], [1175, 0.16], [1568, 0.24]], 1.4)
+  buffers.zdown = buffer(2.5, (t, st) => {
+    const beat = (at) => (t > at && t < at + 0.15 ? sin(55, t - at) * Math.exp(-(t - at) * 25) : 0)
+    st.lp += (noise() - st.lp) * 0.01
+    return (beat(0) + beat(0.28) + beat(1.1) + beat(1.38)) * 0.7 + st.lp * 0.6 * Math.exp(-t * 0.8)
+  })
+  buffers.zrevive = chord([[523, 0], [659, 0.1], [784, 0.2]], 1.0)
+  // the Ray Gun
+  buffers.ray = buffer(0.45, (t, st) => {
+    st.lp += (noise() - st.lp) * 0.3
+    return (Math.sin(2 * Math.PI * (1400 - t * 2600) * t) * 0.4 + st.lp * 0.4 * Math.exp(-t * 30)) * Math.exp(-t * 7) * 0.7
+  })
 }
 
 const listener = { x: 0, y: 0, z: 0, fx: 0, fz: -1 }
@@ -226,7 +317,7 @@ export function setListener(x, y, z, yaw) {
 // How loud each kind of sound sits in the mix (1 = as made). Your own gun is in your head, so it's
 // turned down on top of this.
 const GUNS = new Set(['ak', 'm4', 'smg', 'pistol', 'deagle', 'awp', 'shotgun', 'mg', 'scout', 'auto'])
-const TRIM = { boom: 0.7, he: 0.75, flash: 0.7, molotov: 0.8, zeus: 0.8, click: 0.7, reload: 0.8, land: 0.75, hit: 0.8, stab: 0.8, swish: 0.8, radio: 0.8, bounce: 0.75 }
+const TRIM = { zroundStart: 0.9, zgroan: 0.75, zscream: 0.7, zbox: 0.8, ray: 0.8, boom: 0.7, he: 0.75, flash: 0.7, molotov: 0.8, zeus: 0.8, click: 0.7, reload: 0.8, land: 0.75, hit: 0.8, stab: 0.8, swish: 0.8, radio: 0.8, bounce: 0.75 }
 export function play(name, { at = null, gain = 1, rate = 1, range = 40 } = {}) {
   if (!ctx || !buffers[name]) return
   gain *= (TRIM[name] ?? 1) * (GUNS.has(name) && !at ? 0.8 : 1)

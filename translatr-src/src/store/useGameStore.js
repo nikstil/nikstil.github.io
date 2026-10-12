@@ -11,7 +11,6 @@ import {
   skillPointsForPrestige,
   skillPointsFromPrestiges,
   TRANSLATOR_SKINS,
-  BOT_PRICE,
   BOT_PATIENCE,
   BOT_GREED,
   BOT_NAMES,
@@ -25,7 +24,6 @@ import {
   TOS,
   FOMO,
   ADS,
-  COMPANY_PRICE,
   LEADERBOARD,
   makeFomo,
   rollLoot,
@@ -51,7 +49,6 @@ import { rankFor } from '../lib/leaderboard'
 import { SAVE_VERSION, decodeSave, encodeSave, migrateSave } from '../lib/save'
 import { DEFAULT_SETTINGS } from '../lib/settings'
 import {
-  catIsAngry,
   eventMods,
   activeMods,
   getAdInterval,

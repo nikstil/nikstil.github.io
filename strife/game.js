@@ -5,6 +5,7 @@ import { World, GRAVITY } from './world.js'
 import { WEAPONS, GEAR, ECONOMY, MAX_GRENADES, applyDamage, adsOf } from './weapons.js'
 import { Brain, planRound } from './bots.js'
 import { Chatter, RADIO } from './radio.js'
+import { Zombies, ZombieBrain, SurvivorBrain, ZOMBIE_SLOTS } from './zombies.js'
 
 export const STAND_H = 1.83
 export const CROUCH_H = 1.37
@@ -25,6 +26,7 @@ export const MODES = {
   retakes: { name: 'Retakes', blurb: 'The bomb is down: Ts hold the site, CTs take it back', bomb: true, retakes: true, rules: { freeze: 3, roundTime: 60, postRound: 4 } },
   deathmatch: { name: 'Deathmatch', blurb: 'Respawns, free guns, first team to 60 kills', respawn: true, rules: { freeze: 3, matchTime: 480, killsToWin: 60 } },
   armsrace: { name: 'Arms Race', blurb: 'Each kill gives you the next gun; win with the golden knife', respawn: true, armsrace: true, rules: { freeze: 3, matchTime: 900 } },
+  zombies: { name: 'Zombies', blurb: 'Endless rounds of the undead: buy guns, perks and the box with points (like Black Ops 2)', zombies: true },
 }
 export const MODE_LIST = Object.keys(MODES)
 /** Arms Race: every kill moves you one gun down the list; a knife kill with the last one wins. */
@@ -130,8 +132,9 @@ export class Game {
     this.netRole = opts.netRole ?? null
     this.client = this.netRole === 'client'
     this.difficulty = opts.difficulty ?? 1
+    const zombies = !!this.modeDef.zombies
     // the bots' radio and chat (the host's, on a client)
-    this.chatter = this.client ? null : new Chatter(this)
+    this.chatter = this.client || zombies ? null : new Chatter(this)
     this.time = 0
     this.round = 0
     this.score = { T: 0, CT: 0 }
@@ -149,8 +152,8 @@ export class Game {
     this.winner = null
     this.halftimeDone = false
     this.plan = null
-    this.practice = !!opts.practice
-    const size = this.practice ? (opts.team ? 1 : 0) : this.modeDef.size ?? opts.size ?? 5
+    this.practice = !!opts.practice && !zombies
+    const size = this.practice ? (opts.team ? 1 : 0) : zombies ? Math.max(1, Math.min(4, opts.size ?? 1)) : this.modeDef.size ?? opts.size ?? 5
     let id = 0
     const names = { T: [...T_NAMES].sort(() => Math.random() - 0.5), CT: [...CT_NAMES].sort(() => Math.random() - 0.5) }
     if (opts.roster) {
@@ -160,14 +163,29 @@ export class Game {
         a.isPlayer = !r.bot
         a.rankTier = r.rank ?? null
         a.agents = r.ag ?? null
+        a.zombie = !!r.zb
         this.actors.push(a)
       }
       this.player = this.actors.find((a) => a.id === opts.myId) ?? null
     } else if (opts.team) {
-      this.player = makeActor(id++, opts.playerName ?? 'You', opts.team, false)
+      this.player = makeActor(id++, opts.playerName ?? 'You', zombies ? 'CT' : opts.team, false)
       this.actors.push(this.player)
     }
-    for (const team of opts.roster ? [] : ['T', 'CT']) {
+    // Zombies: the survivors (you, and bots to make up the numbers) and the undead (a pool of them)
+    if (zombies && !opts.roster) {
+      for (let k = this.actors.length; k < size; k++) {
+        const a = makeActor(id++, names.CT[k % names.CT.length], 'CT', true)
+        a.brain = new SurvivorBrain(this, a)
+        this.actors.push(a)
+      }
+      for (let k = 0; k < ZOMBIE_SLOTS; k++) {
+        const a = makeActor(id++, 'Zombie', 'T', true)
+        a.zombie = true
+        a.brain = new ZombieBrain(this, a)
+        this.actors.push(a)
+      }
+    }
+    for (const team of opts.roster || zombies ? [] : ['T', 'CT']) {
       const count = this.practice ? 0 : size - (opts.team === team ? 1 : 0)
       for (let k = 0; k < count; k++) {
         const a = makeActor(id++, names[team][k % names[team].length], team, true)
@@ -179,7 +197,11 @@ export class Game {
       a.inv = { primary: null, pistol: defaultPistol(a.team), knife: { id: 'knife' }, grenades: [], bomb: false }
       this.applySkins(a)
     }
-    this.startRound()
+    if (zombies) {
+      this.bomb = { state: 'none', carrier: null, pos: null, site: null, explodeAt: 0, nextBeep: 0, defuser: null }
+      this.z = new Zombies(this)
+      this.z.start()
+    } else this.startRound()
     // an online client waits for the host to say where everyone is
     if (this.client) for (const a of this.actors) a.spawnSeq = -1
   }
@@ -485,7 +507,7 @@ export class Game {
   // ================= Buying =================
   /** Can `a` buy right now (in spawn, early in the round)? */
   canBuy(a) {
-    if (!a.alive) return false
+    if (!a.alive || this.z) return false
     if (this.practice) return true
     if (this.mode === 'deathmatch') return true // free guns, any time, anywhere
     if (this.modeDef.armsrace || this.modeDef.retakes) return false
@@ -572,8 +594,8 @@ export class Game {
     const s = a.inv[a.active]
     if (!s || !WEAPONS[s.id].mag || this.time < a.reloadEnd) return
     const w = WEAPONS[s.id]
-    if (s.clip >= w.mag || s.reserve <= 0) return
-    a.reloadEnd = this.time + w.reload
+    if (s.clip >= (s.mag ?? w.mag) || s.reserve <= 0) return
+    a.reloadEnd = this.time + w.reload * (a.reloadMul ?? 1)
     a.scope = 0
     this.sound('reload', eyeOf(a), { who: a, range: 12 })
     this.emit('reload', { a })
@@ -582,7 +604,7 @@ export class Game {
     const s = a.inv[a.active]
     if (!s) return
     const w = WEAPONS[s.id]
-    const need = w.mag - s.clip
+    const need = (s.mag ?? w.mag) - s.clip
     const take = Math.min(need, s.reserve)
     s.clip += take
     s.reserve -= take
@@ -621,7 +643,7 @@ export class Game {
     if (!w || !a.alive || this.phase === 'freeze') return
     if (now < a.switchEnd) return
     if (w.kind === 'knife') {
-      if (now >= a.nextFire) this.knife(a, false)
+      if (now >= a.nextFire && !a.down) this.knife(a, false)
       return
     }
     if (w.kind === 'grenade') {
@@ -639,7 +661,7 @@ export class Game {
       if (s.reserve > 0) this.reload(a)
       return
     }
-    a.nextFire = now + 1 / w.rate
+    a.nextFire = now + 1 / (w.rate * (a.rateMul ?? 1))
     if (s.burst) {
       // three rounds, quickly, then a pause
       const gap = w.kind === 'pistol' ? 0.05 : 0.075
@@ -719,6 +741,7 @@ export class Game {
     }
     const end = { x: eye.x + dir.x * tMax, y: eye.y + dir.y * tMax, z: eye.z + dir.z * tMax }
     if (!quiet || Math.random() < 0.35) this.emit('tracer', { a, from: eye, to: end, w })
+    if (w.splash) this.splash(a, end, w, victim)
     if (victim) {
       const dist = tMax
       const raw = w.dmg * Math.pow(w.range, dist / 12.7)
@@ -729,6 +752,17 @@ export class Game {
     }
     // Bullets whizzing past are heard.
     if (!quiet) for (const b of this.actors) if (b !== victim && b.team !== a.team && b.alive) this.passBy(b, eye, dir, tMax)
+  }
+  /** A Ray Gun bolt bursts where it lands: everyone near it (you too, if you're close) gets some. */
+  splash(a, at, w, victim) {
+    this.emit('zray', { at, a })
+    for (const b of this.actors) {
+      if (!b.alive || b === victim || (b.team === a.team && b !== a)) continue
+      const c = chestOf(b)
+      const d = Math.hypot(c.x - at.x, c.y - at.y, c.z - at.z)
+      if (d > w.splash.r) continue
+      this.damage(b, a, w.splash.dmg * (b === a ? 0.15 : 1) * (1 - (d / w.splash.r) * 0.6), 1, 'chest', w.id, c, null)
+    }
   }
   passBy(b, eye, dir, t) {
     const c = chestOf(b)
@@ -783,6 +817,7 @@ export class Game {
   }
   damage(victim, attacker, raw, pen, part, weaponId, at, dir) {
     if (this.client) return
+    if (this.z) return this.z.damage(victim, attacker, raw, pen, part, weaponId, at, dir)
     if (victim.protectUntil > this.time && attacker) return
     if (!victim.alive || (this.phase === 'over' && weaponId !== 'bomb')) return
     const { dmg, armorLoss } = applyDamage(victim, raw, pen, part)
@@ -1089,6 +1124,7 @@ export class Game {
   }
   /** Hold to plant (Ts with the bomb, on a site) or to defuse (CTs at the bomb). */
   use(a, held, dt) {
+    if (this.z) return this.phase === 'over' || this.z.use(a, held, dt)
     if (!a.alive || this.phase !== 'live') return
     const b = this.bomb
     if (a.team === 'T' && a.inv.bomb && b.state === 'carried') {
@@ -1198,6 +1234,7 @@ export class Game {
    */
   moveActor(a, cmd, dt) {
     const w = this.world
+    if (a.down) cmd = { ...cmd, crouch: true, jump: false } // (crawling)
     const frozen = this.phase === 'freeze' || a.plant > 0 || (a.defuse > 0 && this.bomb.defuser === a)
     // Crouching (you can't stand up under something low)
     const wantCrouch = !!cmd.crouch
@@ -1220,10 +1257,12 @@ export class Game {
     a.crouch += ((a.crouching ? 1 : 0) - a.crouch) * Math.min(1, dt * (a.onGround ? 12 : 30))
     a.h = STAND_H + (CROUCH_H - STAND_H) * (a.crouching ? 1 : 0)
     const wpn = weaponOf(a)
-    let max = wpn?.speed ?? 6.1
+    let max = a.zombie ? a.zSpeed ?? 1.5 : wpn?.speed ?? 6.1
     if (wpn?.zoom && a.scope) max = wpn.scopedSpeed
+    max *= a.speedMul ?? 1
     if (a.ads) max *= 1 - 0.3 * a.ads
-    if (a.crouching && a.onGround) max *= 0.34
+    if (a.down) max = 0.8
+    else if (a.crouching && a.onGround) max *= 0.34
     else if (cmd.walk) max *= 0.52
     if (this.time < a.slowUntil) max *= 0.55
     if (frozen) max = 0
@@ -1309,6 +1348,7 @@ export class Game {
     }
     const before = a.onGround
     const landed = w.move(a, dt)
+    this.z?.collide(a)
     // off the edge of a skyscraper
     if (this.map.killY != null && a.pos.y < this.map.killY) {
       if (a.alive && !this.client) this.damage(a, null, 999, 1, 'chest', 'fall', null, null)
@@ -1344,8 +1384,9 @@ export class Game {
     this.time += dt
     const now = this.time
     this.chatter?.update()
-    // Phases
-    if (this.phase === 'freeze' && now >= this.phaseEnd) {
+    // Phases (Zombies runs its own rounds)
+    if (this.z) this.z.update(dt)
+    else if (this.phase === 'freeze' && now >= this.phaseEnd) {
       this.phase = 'live'
       this.phaseEnd = this.practice ? Infinity : now + (this.respawns ? this.rules.matchTime : this.rules.roundTime)
       this.emit('live', {})
@@ -1431,18 +1472,19 @@ export class Game {
   act(a, cmd, dt) {
     if (cmd.yaw !== undefined) a.yaw = cmd.yaw
     if (cmd.pitch !== undefined) a.pitch = Math.max(-1.5, Math.min(1.5, cmd.pitch))
-    if (cmd.slot) {
+    if (cmd.slot && !a.down) {
       if (cmd.slot === 'grenade') this.cycleGrenade(a)
       else if (cmd.slot === 'last') this.switchTo(a, a.lastActive)
       else if (cmd.slot === 'knife' && a.active === 'knife' && a.inv.zeus) this.switchTo(a, 'zeus')
       else if (cmd.slot === 'knife' && a.active === 'zeus') this.switchTo(a, 'knife')
       else this.switchTo(a, cmd.slot)
     }
-    if (cmd.reload) this.reload(a)
+    // (a reload that's done finishes first: asking again on that tick mustn't start it over)
     if (a.reloadEnd && this.time >= a.reloadEnd) {
       this.finishReload(a)
       a.reloadEnd = 0
     }
+    if (cmd.reload) this.reload(a)
     if (a.autoReload && this.time >= a.autoReload) {
       a.autoReload = 0
       this.reload(a)
@@ -1472,7 +1514,7 @@ export class Game {
       return
     }
     this.use(a, !!cmd.use || (!!cmd.fire && a.active === 'bomb'), dt)
-    if (cmd.drop) {
+    if (cmd.drop && !this.z) {
       if (a.active === 'bomb' && a.inv.bomb && this.phase !== 'freeze') {
         a.inv.bomb = false
         const d = dirOf(a.yaw, 0)
