@@ -1,0 +1,81 @@
+/* Colours as hex codes (week 3): change them to make the page yours */
+:root {
+  --background: #000000;
+  --text: #cccccc;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  padding: 2rem;
+  box-sizing: border-box;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--background);
+}
+
+.logo {
+  width: 3rem;
+  filter: invert(80%); /* the logo is black: this makes it the same grey as the text */
+}
+
+main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4rem;
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+/* The photo in the shape of the Devine D: square on the left, round on the right */
+.photo {
+  width: 60vh;
+  height: 40vh;
+  object-fit: cover;
+  border-radius: 0 20vh 20vh 0;
+  filter: grayscale(1);
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: min(6rem, 12vh);
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.like {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+#like {
+  border-bottom: 0.2em solid var(--text);
+}
+
+footer {
+  font-size: 0.875rem;
+}
+
+/* Small screens: photo above the text, scrolling is fine here */
+@media (max-width: 50rem) {
+  main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2rem;
+    margin: 2rem 0;
+  }
+
+  .photo {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    border-radius: 0 50vw 50vw 0;
+  }
+
+  h1 {
+    font-size: min(3.5rem, 12vw); /* long names still fit on narrow phones */
+  }
+}
