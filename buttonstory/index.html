@@ -217,7 +217,7 @@
   }
   #brass-btn.down { transform: translateY(3px); box-shadow: inset 0 0 0 2px rgba(255, 235, 170, 0.3), inset 0 -2px 6px rgba(60, 35, 0, 0.6), 0 1px 0 #3a2508, 0 3px 6px rgba(0,0,0,0.75); }
   #brass-btn:focus-visible { box-shadow: inset 0 0 0 2px rgba(255, 235, 170, 0.35), 0 4px 0 #3a2508, 0 0 0 4px rgba(102, 255, 160, 0.45); }
-  #brass-btn:disabled { cursor: default; transform: translateY(7px) scale(0.93); filter: brightness(0.32) saturate(0.5); box-shadow: inset 0 4px 10px rgba(0,0,0,0.9), 0 0 0 #000; }
+  #brass-btn.recessed { cursor: default; transform: translateY(7px) scale(0.93); filter: brightness(0.32) saturate(0.5); box-shadow: inset 0 4px 10px rgba(0,0,0,0.9), 0 0 0 #000; }
 
   /* the veteran's tunnel vision */
   #tunnel {
@@ -228,6 +228,17 @@
   }
   #tunnel.on { opacity: 1; }
 
+  /* narrow phones: the crew lamps carry profession names, so the top row tightens up */
+  @media (max-width: 520px) {
+    .top { gap: 6px; padding: 0 2px 8px; }
+    .nixie small { font-size: 7px; letter-spacing: 0.08em; }
+    .lamps { gap: 5px; }
+    .lamp span { font-size: 6.5px; letter-spacing: 0.02em; }
+    .bulbs { gap: 6px; }
+  }
+  @media (max-width: 360px) {
+    .nixie small { display: none; }
+  }
   @media (max-height: 560px) {
     .glass { min-height: 0; }
     .top { padding-bottom: 4px; }
@@ -245,10 +256,10 @@
       </div>
       <div class="crew">
         <div class="lamps" id="lamps">
-          <div class="lamp"><i></i><span>ILSE</span></div>
-          <div class="lamp"><i></i><span>TOMAS</span></div>
-          <div class="lamp"><i></i><span>MAGS</span></div>
-          <div class="lamp"><i></i><span>KOFI</span></div>
+          <div class="lamp"><i></i><span>—</span></div>
+          <div class="lamp"><i></i><span>—</span></div>
+          <div class="lamp"><i></i><span>—</span></div>
+          <div class="lamp"><i></i><span>—</span></div>
         </div>
         <small>CREW RESPONDING</small>
       </div>
@@ -316,18 +327,18 @@
       fx: 'start',
       text: 'The bottom station is gone. White Ash boils up the gorge behind you, and the winch is straining under five people and everything they grabbed. The cabin crawls.',
       opts: [
-        { t: 'Throw the luggage out through the floor hatch.', d: [6, -6, 0, -4], care: 0, out: 'Bags tumble into the white. The cabin lifts. Tomas watches his pack go and says nothing for a long time.' },
+        { t: 'Throw the luggage out through the floor hatch.', d: [6, -6, 0, -4], care: 0, out: 'Bags tumble into the white. The cabin lifts. {Hoarder} watches their pack go and says nothing for a long time.' },
         { t: 'Push the winch past its rated torque.', d: [8, 0, -12, 0], care: 0, out: 'The motor screams and the cabin surges. Something inside the housing starts to smell of hot copper.' },
         { t: 'Hold speed. Everything stays aboard.', d: [3, 0, 0, 4], care: 1, out: 'Slow and steady. Nobody loses anything yet. Below you, the Ash gains a little.' },
       ],
     },
     {
       zone: 'THE LOWER GORGE',
-      text: 'The cabin heater shares a circuit with the winch. Frost is feathering the lower glass. Ilse, the attendant, is grey in the face: her leg broke when the cabin lurched out of the station.',
+      text: 'The cabin heater shares a circuit with the winch. Frost is feathering the lower glass. {Injured} is grey in the face: their leg broke when the cabin lurched out of the station.',
       opts: [
-        { t: 'Kill the heater. Every amp goes to the winch.', d: [7, -14, -4, -6], care: -1, out: 'The heater ticks as it cools and the cabin climbs. Ilse shivers hard enough to hear. Kofi gives her his coat.' },
+        { t: 'Kill the heater. Every amp goes to the winch.', d: [7, -14, -4, -6], care: -1, out: 'The heater ticks as it cools and the cabin climbs. {Injured} shivers hard enough to hear. {Helper} hands over a coat.' },
         { t: 'Split the circuit down the middle.', d: [4, -5, -6, 0], care: 0, out: 'Half heat, half speed. Nobody is comfortable, and nobody is in danger. Yet.' },
-        { t: "Run the heater full and splint Ilse's leg.", d: [2, 6, -6, 8], care: 1, out: 'Kofi splints her leg with a seat strut while warm air fills the cabin. Ilse squeezes your hand. The climb is painfully slow.' },
+        { t: "Run the heater full and splint {injured}'s leg.", d: [2, 6, -6, 8], care: 1, out: '{Helper} splints the leg with a seat strut while warm air fills the cabin. {Injured} squeezes your hand. The climb is painfully slow.' },
       ],
     },
     {
@@ -336,14 +347,14 @@
       fx: 'gust',
       text: 'A gust slams the cabin sideways. Ash is pouring in through the roof vents.',
       opts: [
-        { t: 'Slam the vents shut. The air will go stale.', d: [3, 2, 0, -4], care: 0, out: "The hiss stops. The air thickens. Mags starts to cough and doesn't stop." },
-        { t: 'Leave them open and climb hard.', d: [7, -12, -4, -8], care: -1, out: "Ash sifts in and freezes everything it lands on, including Tomas's bare hands. He screams once." },
+        { t: 'Slam the vents shut. The air will go stale.', d: [3, 2, 0, -4], care: 0, out: "The hiss stops. The air thickens. {Frail} starts to cough and doesn't stop." },
+        { t: 'Leave them open and climb hard.', d: [7, -12, -4, -8], care: -1, out: "Ash sifts in and freezes everything it lands on, including {hoarder}'s bare hands. One scream, then nothing." },
         { t: "Stuff the vents with everyone's scarves.", d: [2, -4, 0, 6], care: 1, out: 'Everyone gives something. Five scarves, one plan. It holds, mostly.' },
       ],
     },
     {
       zone: 'THE LOWER GORGE',
-      text: 'Kofi finds the auxiliary battery bank under the bench: four cells, fully charged. They can feed the winch, the heater, or sit in reserve for later.',
+      text: '{Helper} finds the auxiliary battery bank under the bench: four cells, fully charged. They can feed the winch, the heater, or sit in reserve for later.',
       opts: [
         { t: 'All four cells to the winch.', d: [8, -4, 4, 0], care: 0, out: 'The cabin leaps. The lights dim to brown, and the cold presses closer to the glass.' },
         { t: 'All four cells to the heater.', d: [2, 14, 4, 4], care: 1, out: 'Warm air floods the cabin. People take their gloves off. The climb slows to a crawl.' },
@@ -354,11 +365,11 @@
       zone: 'THE LOWER GORGE',
       urgent: true,
       fx: 'stall',
-      text: 'Ilse slips off the bench and her splint snaps. At the same moment the winch stalls on a frozen pulley.',
+      text: '{Injured} slips off the bench and the splint snaps. At the same moment the winch stalls on a frozen pulley.',
       opts: [
-        { t: 'Leave her. Everyone shoves the winch clutch.', d: [9, 0, -4, -12], care: -1, out: 'The clutch catches with four of you hanging on it. Ilse lies on the floor behind you, alone, gasping.' },
-        { t: 'Kofi helps Ilse. You free the pulley alone.', d: [4, 0, -6, 2], care: 1, out: 'It takes twice as long. The pulley comes free with a bang that numbs your whole arm.' },
-        { t: 'Everyone helps Ilse first.', d: [-2, 0, 0, 10], care: 1, out: 'You reset her leg together. Nobody watches the winch, and the cabin slides a few metres back down the cable.' },
+        { t: 'Leave {injured}. Everyone shoves the winch clutch.', d: [9, 0, -4, -12], care: -1, out: 'The clutch catches with four of you hanging on it. {Injured} lies on the floor behind you, alone, gasping.' },
+        { t: '{Helper} helps {injured}. You free the pulley alone.', d: [4, 0, -6, 2], care: 1, out: 'It takes twice as long. The pulley comes free with a bang that numbs your whole arm.' },
+        { t: 'Everyone helps {injured} first.', d: [-2, 0, 0, 10], care: 1, out: 'You reset the leg together. Nobody watches the winch, and the cabin slides a few metres back down the cable.' },
       ],
     },
     {
@@ -368,7 +379,7 @@
       opts: [
         { t: 'Bypass the thermal cutoff.', d: [9, 0, -16, 0], care: 0, out: 'The motor runs hot and never stops. The insulation starts to cook. You climb.' },
         { t: 'Let it cycle: run, stop, run.', d: [3, -6, 0, 0], care: 0, out: 'Run, stop, run. Every stop lets the cold in a little deeper.' },
-        { t: 'Send Kofi up through the roof hatch to chip the ice off.', d: [6, -8, 0, -6], care: -1, out: "Kofi climbs out into the wind. Twenty minutes later he's back, the cable clear and his fingertips white." },
+        { t: 'Send {helper} up through the roof hatch to chip the ice off.', d: [6, -8, 0, -6], care: -1, out: "{Helper} climbs out into the wind. Twenty minutes later they're back, the cable clear and their fingertips white." },
       ],
     },
     {
@@ -384,11 +395,11 @@
     },
     {
       zone: 'THE MID-SPAN ICE STORM',
-      text: "Tomas has stuffed the thermal blankets, the flare gun and most of the food into his pack. He's backed against the door, shaking, saying it's every man for himself now.",
+      text: "{Hoarder} has stuffed the thermal blankets, the flare gun and most of the food into one pack, and is backed against the door, shaking, saying it's every person for themselves now.",
       opts: [
-        { t: 'Talk him down, however long it takes.', d: [1, 4, 0, 10], care: 1, out: 'It takes a long time. He hands the blankets round one by one. Nobody says thank you, but everyone is warmer.' },
-        { t: 'Take the pack by force.', d: [1, 8, 0, -12], care: -1, out: "Kofi pins him to the wall. The blankets come out. So does a lot of blood from Tomas's nose." },
-        { t: 'Ignore him. Keep climbing.', d: [5, -6, 0, -6], care: 0, out: 'You climb. Tomas stays in his corner with everything, and the others start watching him instead of the window.' },
+        { t: 'Talk {hoarder} down, however long it takes.', d: [1, 4, 0, 10], care: 1, out: 'It takes a long time. {Hoarder} hands the blankets round one by one. Nobody says thank you, but everyone is warmer.' },
+        { t: 'Take the pack by force.', d: [1, 8, 0, -12], care: -1, out: "{Helper} pins {hoarder} to the wall. The blankets come out. So does a lot of blood from {hoarder}'s nose." },
+        { t: 'Ignore {hoarder}. Keep climbing.', d: [5, -6, 0, -6], care: 0, out: 'You climb. {Hoarder} stays in the corner with everything, and the others start watching that corner instead of the window.' },
       ],
     },
     {
@@ -398,7 +409,7 @@
       text: 'Transformer blowout. The roof housing is on fire and the cabin lights are out.',
       opts: [
         { t: "Cut the main breaker. Run on what's left.", d: [1, -6, 6, 0], care: 0, out: 'Darkness. The fire chokes and dies. So does the winch, for a while.' },
-        { t: 'Beat the fire out and keep the motor running.', d: [7, 0, -14, -6], care: -1, out: "Mags beats at the flames with her gloves while the cabin keeps climbing. Afterwards she won't look at her hands." },
+        { t: 'Beat the fire out and keep the motor running.', d: [7, 0, -14, -6], care: -1, out: "{Frail} beats at the flames with a pair of gloves while the cabin keeps climbing, and afterwards won't look at their hands." },
         { t: 'Jettison the burning transformer.', d: [5, -4, -10, 2], care: 0, fx: 'drop', out: "It falls away into the fog like a lantern. You're lighter, darker and colder." },
       ],
     },
@@ -408,7 +419,7 @@
       opts: [
         { t: 'Stop for a minute. Share the food.', d: [1, 6, 6, 10], care: 1, out: 'Five people round one tin of peaches. The motor cools. For a minute it feels like you might make it.' },
         { t: 'Push on at full speed while the air is clear.', d: [8, -4, -8, -4], care: 0, out: 'Nobody argues. Nobody talks, either.' },
-        { t: 'Strip the seat foam and burn it for heat.', d: [4, 8, 0, -4], care: 0, out: "Black, stinking smoke and real warmth. Everyone's eyes stream. Mags coughs until she's sick." },
+        { t: 'Strip the seat foam and burn it for heat.', d: [4, 8, 0, -4], care: 0, out: "Black, stinking smoke and real warmth. Everyone's eyes stream. {Frail} coughs until they're sick." },
       ],
     },
     {
@@ -427,7 +438,7 @@
       text: "The motor's control board is dead. Two spare fuses could bridge the gap, but the floor plates are wet, and they're live.",
       opts: [
         { t: 'Bridge the fuses yourself, barehanded.', d: [7, 0, 10, -6], care: -1, fx: 'arc', out: "Blue light. You wake up on the floor with one arm that won't answer. The winch is running." },
-        { t: 'Make Tomas hold the fuse while you work.', d: [8, 0, 10, -16], care: -1, fx: 'arc', out: "Tomas holds it. The arc throws him into the wall, and he lies there a long time. The winch runs. When he finally gets up, he won't look at you." },
+        { t: 'Make {hoarder} hold the fuse while you work.', d: [8, 0, 10, -16], care: -1, fx: 'arc', out: "{Hoarder} holds it. The arc throws them into the wall, and they lie there a long time. The winch runs. When they finally get up, they won't look at you." },
         { t: 'Insulate the floor with seat foam first.', d: [4, -6, 8, 2], care: 1, out: 'Slow, careful work while the frost creeps up the walls. When the fuse goes in, nobody gets hurt.' },
       ],
     },
@@ -447,8 +458,8 @@
       text: 'The lights of Aethelgard are visible above you now. The cold is unbearable. The last heater element is still sealed in its box, and the battery is nearly flat.',
       opts: [
         { t: 'Burn the last of the battery in one sprint.', d: [10, -6, -14, 0], care: 0, out: 'The motor roars and the bunker lights grow. The cabin goes dark and very cold.' },
-        { t: 'Fit the heater element and crawl the rest.', d: [3, 16, -6, 4], care: 1, out: 'Real heat. Mags laughs for the first time since the station. The lights above barely move.' },
-        { t: 'Everyone to the uphill end to tip the grip.', d: [6, 0, 0, -6], care: -1, out: "The grip bites harder with all your weight on it. Ilse can't move, and she slides the length of the floor." },
+        { t: 'Fit the heater element and crawl the rest.', d: [3, 16, -6, 4], care: 1, out: 'Real heat. {Frail} laughs for the first time since the station. The lights above barely move.' },
+        { t: 'Everyone to the uphill end to tip the grip.', d: [6, 0, 0, -6], care: -1, out: "The grip bites harder with all your weight on it. {Injured} can't move, and slides the length of the floor." },
       ],
     },
     {
@@ -459,7 +470,7 @@
       opts: [
         { t: 'Climb onto the roof and pull the external friction pin.', d: [12, 0, 0, 0], care: -1, aura: 1, pin: true, ghost: 'THE CABIN HOLDS / YOU STAY OUTSIDE', out: 'You climb out into the white. The pin is frozen solid. You pull until something in your shoulder gives, and the cabin stops dead.' },
         { t: 'Overload the magnetic lock from inside.', d: [10, 0, -24, 0], care: 0, out: 'Every light in the cabin flares and dies. The lock slams on. The whole cabin rings like a bell.' },
-        { t: 'Seal the blast bulkhead right now.', d: [8, 0, 0, -20], care: -1, out: "The bulkhead slams down across the middle of the cabin. Kofi drags Ilse through the gap with a second to spare. Everyone is in. Nobody will forget that you didn't wait." },
+        { t: 'Seal the blast bulkhead right now.', d: [8, 0, 0, -20], care: -1, out: "The bulkhead slams down across the middle of the cabin. {Helper} drags {injured} through the gap with a second to spare. Everyone is in. Nobody will forget that you didn't wait." },
       ],
     },
   ]
@@ -473,7 +484,9 @@
   }
 
   const START = { alt: 10, heat: 100, power: 100, coh: 100 }
-  const CREW = ['ILSE', 'TOMAS', 'MAGS', 'KOFI'] // the order they stop responding in
+  // The four others are the operators you didn't pick, each playing one of these parts in the
+  // story ({helper} in the text becomes "the Veteran", say). Listed in the order they stop responding.
+  const SLOTS = ['injured', 'hoarder', 'frail', 'helper']
   /** How many of the four others are still with you, by group cohesion. */
   const crewCount = (coh) => (coh >= 75 ? 4 : coh >= 64 ? 3 : coh >= 52 ? 2 : coh >= 41 ? 1 : 0)
   const clampStat = (v) => Math.max(0, Math.min(100, v))
@@ -493,27 +506,27 @@
   // ═══════════ Who sits at the console
   const ARCH = [
     {
-      id: 'geek', name: 'THE TECH GEEK', short: 'TECH GEEK',
+      id: 'geek', role: 'Tech Geek', lamp: 'GEEK', name: 'THE TECH GEEK', short: 'TECH GEEK',
       buff: 'SYSTEM HUD', buffText: 'Every option shows exactly what it does to lift, heat, power and crew.',
       debuff: 'DYSLEXIA SCRAMBLER', debuffText: 'The option text fuses, swaps its letters and flickers into dangerous lookalikes.',
     },
     {
-      id: 'vet', name: 'THE MILITARY VETERAN', short: 'VETERAN',
+      id: 'vet', role: 'Veteran', lamp: 'VETERAN', name: 'THE MILITARY VETERAN', short: 'VETERAN',
       buff: 'ADRENALINE SLOW-MO', buffText: 'Urgent relays give you 24 seconds instead of 12.',
       debuff: 'TINNITUS & TUNNEL VISION', debuffText: 'A piercing ring smothers the machinery, and the edges of the screen go black.',
     },
     {
-      id: 'surgeon', name: 'THE SURGEON', short: 'SURGEON',
+      id: 'surgeon', role: 'Surgeon', lamp: 'SURGEON', name: 'THE SURGEON', short: 'SURGEON',
       buff: 'VITAL SIGNS', buffText: 'Each option you highlight has a heartbeat: calm if it protects the group, racing if it hurts someone.',
       debuff: 'NERVE TREMOR', debuffText: 'Your hold slips backwards, and a tap sometimes twitches twice.',
     },
     {
-      id: 'scientist', name: 'THE SCIENTIST', short: 'SCIENTIST',
+      id: 'scientist', role: 'Scientist', lamp: 'SCIENTIST', name: 'THE SCIENTIST', short: 'SCIENTIST',
       buff: 'FORESIGHT ECHO', buffText: 'Charge an option to the marked 35–50% zone and let go: its consequence flashes on the glass.',
       debuff: 'INTRUSIVE OVERTHINKING', debuffText: 'Phantom calculations drift across the screen and whisper.',
     },
     {
-      id: 'artist', name: 'THE ARTIST', short: 'ARTIST',
+      id: 'artist', role: 'Artist', lamp: 'ARTIST', name: 'THE ARTIST', short: 'ARTIST',
       buff: 'SYNESTHESIA', buffText: 'The light and the music tell the truth: warm amber is humane, cold violet is cruel.',
       debuff: 'VERTIGO PANIC', debuffText: 'The console sways and blurs, and the button is hair-trigger: a slow tap starts locking in.',
     },
@@ -521,17 +534,17 @@
 
   // ═══════════ How it ends
   const list = (names) => (names.length <= 1 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1])
-  const cap = (s) => s.charAt(0) + s.slice(1).toLowerCase()
+  const capFirst = (s) => s.charAt(0).toUpperCase() + s.slice(1)
   const ENDINGS = {
     summit: {
       n: 1, title: 'THE SUMMIT INTACT',
-      text: () => "The bulkhead seals behind five pairs of boots. Amber light, warm air, the hum of the bunker's generators. Kofi carries Ilse in on his back. Tomas hands round the last of the blankets without being asked. Mags sits down on the concrete and laughs. Outside, the White Ash closes over the cable, and none of you are in it.",
+      text: () => "The bulkhead seals behind five pairs of boots. Amber light, warm air, the hum of the bunker's generators. {Helper} carries {injured} in on their back. {Hoarder} hands round the last of the blankets without being asked. {Frail} sits down on the concrete and laughs. Outside, the White Ash closes over the cable, and none of you are in it.",
     },
     cold: {
       n: 2, title: 'THE COLD ARITHMETIC',
       text: (names) => 'The gondola arrives. The arithmetic worked: lift, heat, power. The people were only ever numbers in it. ' +
         (names.length
-          ? `${list(names)} ${names.length === 1 ? 'follows' : 'follow'} you off the cabin, but nobody will stand near you. You open the bunker door alone, and you walk through it alone.`
+          ? `${capFirst(list(names))} ${names.length === 1 ? 'follows' : 'follow'} you off the cabin, but nobody will stand near you. You open the bunker door alone, and you walk through it alone.`
           : 'Nobody else is left to follow you. You open the bunker door alone, and the warm light is only for you.'),
     },
     tomb: {
@@ -540,12 +553,40 @@
     },
     catwalk: {
       n: 4, title: 'THE OUTER CATWALK',
-      text: (names) => `The pin holds and the cabin locks in place. ${list(names)} ${names.length === 1 ? 'runs' : 'run'} into the heated bay below you. You are still on the roof when the blast door starts to close. Through the narrowing gap you see amber light and ${names.length === 1 ? 'one face' : 'their faces'} turned up toward you. Then concrete. Then snow.`,
+      text: (names) => `The pin holds and the cabin locks in place. ${capFirst(list(names))} ${names.length === 1 ? 'runs' : 'run'} into the heated bay below you. You are still on the roof when the blast door starts to close. Through the narrowing gap you see amber light and ${names.length === 1 ? 'one face' : 'their faces'} turned up toward you. Then concrete. Then snow.`,
     },
     abyss: {
       n: 5, title: 'THE WHITE ABYSS',
       text: () => 'At the final tower the haul-rope shears. There is no sound, only the feeling of weight leaving. The cabin drops into the silent salt-glass cloud below, turning slowly, and the White Ash closes over it like water.',
     },
+  }
+
+  // ═══════════ The other four: whoever you don't pick, each in the part that suits them
+  const CASTING = {
+    helper: ['vet', 'surgeon', 'scientist', 'artist', 'geek'],
+    injured: ['artist', 'geek', 'scientist', 'surgeon', 'vet'],
+    hoarder: ['geek', 'scientist', 'artist', 'vet', 'surgeon'],
+    frail: ['scientist', 'surgeon', 'artist', 'geek', 'vet'],
+  }
+  function castFor(archId) {
+    const taken = new Set([archId]), cast = {}
+    for (const part of ['helper', 'injured', 'hoarder', 'frail']) {
+      const id = CASTING[part].find((x) => !taken.has(x))
+      taken.add(id)
+      cast[part] = ARCH.find((a) => a.id === id)
+    }
+    return cast
+  }
+  /** Story text with the parts filled in: {helper} → "the Veteran", {Helper} → "The Veteran", {crew} → all four. */
+  function fill(text, archId = S.arch && S.arch.id) {
+    if (!archId) return text
+    const cast = castFor(archId)
+    return text.replace(/\{(\w+)\}/g, (m, key) => {
+      if (key === 'crew') return list(SLOTS.map((part) => 'the ' + cast[part].role))
+      const a = cast[key.toLowerCase()]
+      if (!a) return m
+      return key[0] === key[0].toUpperCase() ? 'The ' + a.role : 'the ' + a.role
+    })
   }
 
   // ═══════════ Rules of the button
@@ -557,6 +598,8 @@
   const RATE_B = (1 - FLINCH) / 0.35 // 88% → 100% takes exactly the 0.35 s of dead silence
   const URGENT = 12
   const FROZE_ALT = 4 // the cabin slides back while you hesitate
+  const RESET_TAPS = 7 // at the end: this many presses in a row, each within RESET_GAP of the last, start over
+  const RESET_GAP = 0.45
   const VOLUME = 0.45 // master volume
 
   // ═══════════ Elements
@@ -591,6 +634,7 @@
       aura: [140, 170, 175], auraTarget: [140, 170, 175], auraOn: 0,
       beatAt: 0, tinUntil: 0, tinNext: 0, whisperAt: 0, blurNext: 0,
       mut: [], mutAt: 0,
+      resetTaps: 0, lastResetTap: -10,
     })
   }
   fresh()
@@ -601,7 +645,7 @@
 
   // ═══════════ The button
   function pressDown() {
-    if (S.press || btn.disabled) return
+    if (S.press) return
     audio.wake()
     const now = clock()
     S.press = { at: now, consumed: false }
@@ -625,9 +669,27 @@
       case 'relay':
         if (S.type && !S.type.done) { S.press.consumed = true; finishTyping() }
         return
+      case 'ending':
+      case 'log':
+        S.press.consumed = true
+        resetTap(now)
+        return
       default:
         S.press.consumed = true
     }
+  }
+  function setLocked(on) {
+    btn.classList.toggle('recessed', on)
+    btn.setAttribute('aria-disabled', on ? 'true' : 'false')
+  }
+  /** At the end the button is locked, but enough fast presses in a row start a fresh console. */
+  function resetTap(now) {
+    if (now - S.lastResetTap > RESET_GAP) S.resetTaps = 0
+    S.lastResetTap = now
+    S.resetTaps++
+    audio.dud()
+    if (S.resetTaps >= RESET_TAPS) return reset()
+    if (S.resetTaps >= 2) footEl.textContent = 'STARTING OVER ' + '●'.repeat(S.resetTaps) + '○'.repeat(RESET_TAPS - S.resetTaps)
   }
   function pressUp(cancelled) {
     const p = S.press
@@ -791,6 +853,7 @@
     S.optsOn = true
     footEl.textContent = 'TAP: NEXT OPERATOR · HOLD: TAKE THE SEAT'
     btn.setAttribute('aria-label', `Brass button. Highlighted: ${a.name}. Tap for the next operator, hold to take the seat.`)
+    setLampNames(a.id) // the other four, if you sit down
   }
 
   function lockSelect() {
@@ -805,7 +868,7 @@
     setType(
       `${a.name}\n+ ${a.buff}\n− ${a.debuff}\n\n` +
         'The White Ash came up the valley at 14:02, and everything it touched froze where it stood. Cabin 15 was the last one out of the bottom station. Fifteen relay towers stand between you and the bunker at Aethelgard.\n\n' +
-        'Four strangers watch you take the controls: Ilse, the attendant. Tomas, a courier. Mags, a retired linewoman. Kofi, a ski instructor.',
+        fill('Four strangers watch you take the controls: {crew}.'),
       95,
       () => {
         S.acceptAt = clock() + 0.4
@@ -840,7 +903,7 @@
     const amb = [z[1] && `${z[1]}% HEAT`, z[2] && `${z[2]}% POWER`].filter(Boolean)
     if (amb.length) noteEl.textContent = `[AMBIENT, EVERY RELAY: ${amb.join(' | ')}]`
     renderOptions()
-    setType(r.text, r.urgent ? 140 : 95, () => {
+    setType(fill(r.text), r.urgent ? 140 : 95, () => {
       optsEl.classList.remove('hidden')
       S.optsOn = true
       if (amb.length) noteEl.classList.add('show')
@@ -869,10 +932,10 @@
       li.className = 'opt'
       li.innerHTML = '<b></b><span class="t"></span><em class="hud"></em>'
       li.querySelector('b').textContent = 'ABC'[i]
-      li.querySelector('.t').textContent = o.t
+      li.querySelector('.t').textContent = fill(o.t)
       li.querySelector('.hud').textContent = hudTag(o)
       optsEl.appendChild(li)
-      S.mut.push({ text: o.t.toUpperCase(), until: 0 })
+      S.mut.push({ text: fill(o.t).toUpperCase(), until: 0 })
     })
     markOptions()
   }
@@ -881,7 +944,7 @@
     for (let i = 0; i < items.length; i++) items[i].classList.toggle('on', i === S.hl)
     if (S.mode === 'relay') {
       const o = opts()[S.hl]
-      btn.setAttribute('aria-label', `Brass button. Highlighted: option ${'ABC'[S.hl]}, ${o.t} Tap for the next option, hold to lock it in.`)
+      btn.setAttribute('aria-label', `Brass button. Highlighted: option ${'ABC'[S.hl]}, ${fill(o.t)} Tap for the next option, hold to lock it in.`)
       S.beatAt = Math.min(S.beatAt, clock() + 0.15)
     }
   }
@@ -905,10 +968,11 @@
     const letter = 'ABC'[S.hl]
     let text = ''
     if (froze) text += `YOU FROZE. THE CONSOLE LOCKED IN ${letter} ON ITS OWN, AND THE CABIN SLID BACK WHILE YOU HESITATED.\n\n`
-    text += o.out
+    text += fill(o.out)
     const lines = []
-    for (let k = 4 - before; k < 4 - S.crew; k++) lines.push(`· ${CREW[k]} HAS STOPPED RESPONDING.`)
-    for (let k = 4 - S.crew; k < 4 - before; k++) lines.push(`· ${CREW[k]} IS WITH YOU AGAIN.`)
+    const cast = castFor(S.arch.id), who = (k) => `THE ${cast[SLOTS[k]].role.toUpperCase()}`
+    for (let k = 4 - before; k < 4 - S.crew; k++) lines.push(`· ${who(k)} HAS STOPPED RESPONDING.`)
+    for (let k = 4 - S.crew; k < 4 - before; k++) lines.push(`· ${who(k)} IS WITH YOU AGAIN.`)
     if (lines.length) text += '\n\n' + lines.join('\n')
     S.mode = 'result'
     clearScreen()
@@ -921,13 +985,13 @@
     })
   }
 
-  function crewNames(n) { return CREW.slice(4 - n).map(cap) }
+  function crewNames(n, archId) { const cast = castFor(archId); return SLOTS.slice(4 - n).map((part) => 'the ' + cast[part].role) }
 
   /** After Relay 15: the engine dies, the button sinks, and the console writes its final log. */
   function finish(lastText) {
     S.mode = 'ending'
     S.ending = decideEnding(S)
-    btn.disabled = true
+    setLocked(true)
     btn.classList.remove('down')
     S.press = null
     audio.engineOff()
@@ -950,12 +1014,13 @@
     }))
   }
 
+  const LOCKED_NOTE = 'THE CONSOLE IS LOCKED · PRESS 7× FAST TO START OVER'
   function showLog(log, typed) {
     const e = ENDINGS[log.ending]
     const a = ARCH.find((x) => x.id === log.arch) || ARCH[0]
     clearScreen()
     header('FINAL LOG · CABIN 15', `ENDING ${e.n} OF 5`)
-    const text = `${e.title}\n\n${e.text(crewNames(log.crew))}`
+    const text = `${e.title}\n\n${fill(e.text(crewNames(log.crew, log.arch)), log.arch)}`
     const rows = [
       ['OPERATOR', a.name],
       ['ALTITUDE', String(log.alt)],
@@ -964,7 +1029,7 @@
       ['CREW', `${log.crew} OF 4 RESPONDING`],
       ['CHOICES', log.choices.replace(/(.{5})(?=.)/g, '$1 ')],
     ]
-    const fill = () => {
+    const fillStats = () => {
       statsEl.innerHTML = ''
       for (const [k, v] of rows) {
         const li = document.createElement('li')
@@ -972,11 +1037,11 @@
         statsEl.appendChild(li)
       }
       statsEl.classList.add('show')
-      footEl.textContent = 'THE CONSOLE IS LOCKED.'
+      footEl.textContent = LOCKED_NOTE
     }
-    if (typed) setType(text, 70, fill)
-    else { S.type = null; bodyEl.textContent = text; fill() }
-    btn.setAttribute('aria-label', `The brass button is locked. Final log: ending ${e.n} of 5, ${e.title}.`)
+    if (typed) setType(text, 70, fillStats)
+    else { S.type = null; bodyEl.textContent = text; fillStats() }
+    btn.setAttribute('aria-label', `The brass button is locked. Final log: ending ${e.n} of 5, ${e.title}. Press it seven times quickly to start over.`)
   }
 
   // ═══════════ Panel hardware
@@ -996,6 +1061,11 @@
     if (nx[1].textContent !== s[1]) nx[1].textContent = s[1]
   }
   function setCrew(n) { lamps.forEach((l, i) => l.classList.toggle('on', i >= 4 - n)) }
+  /** The lamps are labelled with whoever the other four are (unnamed until an operator is picked). */
+  function setLampNames(archId) {
+    const cast = archId ? castFor(archId) : null
+    lamps.forEach((l, i) => (l.querySelector('span').textContent = cast ? cast[SLOTS[i]].lamp : '—'))
+  }
   function flashGlass(sec) { glass.classList.add('flash'); S.flashUntil = clock() + sec }
 
   // ═══════════ The scientist: foresight and phantoms
@@ -1054,7 +1124,7 @@
     for (let i = 0; i < items.length && i < S.mut.length; i++) {
       const m = S.mut[i]
       if (now >= m.until) {
-        m.text = Math.random() < 0.7 ? scramble(list[i].t.toUpperCase()) : list[i].t.toUpperCase()
+        m.text = Math.random() < 0.7 ? scramble(fill(list[i].t).toUpperCase()) : fill(list[i].t).toUpperCase()
         m.until = now + rand(0.3, 0.9)
       }
       const t = items[i].querySelector('.t')
@@ -1103,7 +1173,7 @@
     tunnel.classList.remove('on')
     consoleEl.classList.remove('blurred')
     consoleEl.style.transform = ''
-    btn.disabled = false
+    setLocked(false)
     btn.classList.remove('down')
     btn.setAttribute('aria-label', 'Brass button. Press to power the console.')
     clearScreen()
@@ -1113,6 +1183,7 @@
     glass.classList.add('off')
     setNixie(15, true)
     setCrew(0)
+    setLampNames(null)
     bulbs.forEach((b) => b.classList.remove('on'))
     frostCov = -1
     view.alt = START.alt
@@ -1127,6 +1198,10 @@
       if (now >= t.at) { timers.splice(i, 1); t.fn() }
     }
     stepTyping(dt)
+    if (S.resetTaps && now - S.lastResetTap > RESET_GAP) {
+      S.resetTaps = 0
+      footEl.textContent = statsEl.classList.contains('show') ? LOCKED_NOTE : ''
+    }
     if (S.flashUntil && now > S.flashUntil) { glass.classList.remove('flash'); S.flashUntil = 0 }
 
     // holding: from a tap into a charge
@@ -1824,6 +1899,14 @@
       f.frequency.setValueAtTime(5200, t)
       f.frequency.exponentialRampToValueAtTime(1300, t + 0.6)
     },
+    dud() {
+      if (!this.ctx) return
+      const t = this.t
+      this.gate.gain.cancelScheduledValues(t)
+      this.gate.gain.setValueAtTime(1, t)
+      this._tone(t, 95, 55, 0.08, 0.4)
+      this._noise(t, 0.03, 'lowpass', 900, 0.7, 0.25, 0.01)
+    },
     slip() {
       if (!this.ctx) return
       const t = this.t
@@ -2072,9 +2155,10 @@
     S.arch = ARCH.find((a) => a.id === saved.arch) || null
     if (S.arch) document.body.dataset.arch = S.arch.id
     glass.classList.remove('off')
-    btn.disabled = true
+    setLocked(true)
     setNixie(0)
     setCrew(saved.crew)
+    setLampNames(saved.arch)
     showLog(saved, false)
   } else {
     setCrew(0)
