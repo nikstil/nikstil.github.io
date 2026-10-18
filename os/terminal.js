@@ -30,6 +30,7 @@ const APPS = [
   ['grass', 'LAWN OF THE DEAD', ['grass', 'lawn', 'lawn.exe', 'touchgrass']],
   ['phone', 'BRAINS FIRST', ['phone', 'brains', 'brains.exe', 'touchphone']],
   ['loggle', 'LOGGLE', ['loggle', 'loggle.exe']],
+  ['relay', 'RELAY 15', ['relay', 'relay15', 'relay15.exe', 'buttonstory']],
   ['browser', 'BobbyBrowser', ['browser', 'bobby', 'bobby.exe', 'bobbybrowser', 'iexplore', 'chrome']],
   ['mobile', 'LigmaPhone', ['mobile', 'ligmaphone', 'ligmaphone.exe']],
   ['achievements', 'Achievements', ['achievements', 'achievements.exe']],

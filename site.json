@@ -52,6 +52,11 @@
       "title": "LOGGLE",
       "hidden": false
     },
+    "relay": {
+      "label": "RELAY 15",
+      "title": "RELAY 15",
+      "hidden": false
+    },
     "strife": {
       "label": "COUNTER-STRIFE",
       "title": "COUNTER-STRIFE",
