@@ -499,7 +499,7 @@
     },
     {
       id: 'vet', name: 'THE MILITARY VETERAN', short: 'VETERAN',
-      buff: 'ADRENALINE SLOW-MO', buffText: 'Urgent relays give you 24 seconds instead of 12, and your hands stay steady.',
+      buff: 'ADRENALINE SLOW-MO', buffText: 'Urgent relays give you 24 seconds instead of 12.',
       debuff: 'TINNITUS & TUNNEL VISION', debuffText: 'A piercing ring smothers the machinery, and the edges of the screen go black.',
     },
     {
@@ -557,6 +557,7 @@
   const RATE_B = (1 - FLINCH) / 0.35 // 88% → 100% takes exactly the 0.35 s of dead silence
   const URGENT = 12
   const FROZE_ALT = 4 // the cabin slides back while you hesitate
+  const VOLUME = 0.45 // master volume
 
   // ═══════════ Elements
   const btn = $('brass-btn')
@@ -586,7 +587,7 @@
       timer: 0, timerMax: 0, timerOn: false, lastTick: 0,
       type: null, acceptAt: 0, optsOn: false,
       ending: null, endAt: 0, lockedAt: -10, pass: 0,
-      shake: 0, glitch: 0, flashUntil: 0,
+      glitch: 0, flashUntil: 0,
       aura: [140, 170, 175], auraTarget: [140, 170, 175], auraOn: 0,
       beatAt: 0, tinUntil: 0, tinNext: 0, whisperAt: 0, blurNext: 0,
       mut: [], mutAt: 0,
@@ -671,7 +672,6 @@
     S.hl = (S.hl + step) % n
     audio.click()
     if (step === 2) setTimeout(() => audio.click(0.8), 55)
-    S.shake = Math.max(S.shake, 0.8)
     if (S.mode === 'select') renderSelect()
     else markOptions()
   }
@@ -702,7 +702,6 @@
     if (S.press) S.press.consumed = true
     audio.hum(false)
     audio.clack()
-    S.shake = Math.max(S.shake, 7)
     S.glitch = 0.35
     flashGlass(0.12)
     S.lockedAt = clock()
@@ -1067,18 +1066,18 @@
   function fx(name) {
     switch (name) {
       case 'start': audio.motorStart(); break
-      case 'gust': S.shake = 12; S.windKick = 1; audio.gust(); break
-      case 'stall': S.shake = 6; audio.stall(); break
+      case 'gust': S.windKick = 1; audio.gust(); break
+      case 'stall': audio.stall(); break
       case 'storm': S.windKick = 1; audio.gust(); break
-      case 'jam': S.shake = 8; audio.grind(); break
-      case 'blowout': S.shake = 14; S.glitch = 0.8; S.blackout = 1.2; flashGlass(0.2); audio.blowout(); break
-      case 'sag': S.shake = 7; audio.groan(); break
-      case 'creak': S.shake = 4; audio.groan(); break
-      case 'brakes': S.shake = 10; audio.squeal(); break
-      case 'glass': S.shake = 14; S.glitch = 0.5; S.shatter = 1; audio.glass(); break
-      case 'drop': S.shake = 16; S.drop = 1; audio.drop(); break
-      case 'arc': S.shake = 8; S.glitch = 0.7; S.arc = 0.6; flashGlass(0.18); audio.arc(); break
-      case 'snap': S.shake = 26; S.glitch = 1.2; audio.snap(); break
+      case 'jam': audio.grind(); break
+      case 'blowout': S.glitch = 0.8; S.blackout = 1.2; flashGlass(0.2); audio.blowout(); break
+      case 'sag': audio.groan(); break
+      case 'creak': audio.groan(); break
+      case 'brakes': audio.squeal(); break
+      case 'glass': S.glitch = 0.5; S.shatter = 1; audio.glass(); break
+      case 'drop': audio.drop(); break
+      case 'arc': S.glitch = 0.7; S.arc = 0.6; flashGlass(0.18); audio.arc(); break
+      case 'snap': S.glitch = 1.2; audio.snap(); break
     }
   }
 
@@ -1139,7 +1138,6 @@
       if (S.mode === 'relay' && is('surgeon') && now >= S.nextSlip) {
         S.charge = Math.max(0, S.charge - rand(0.12, 0.18))
         S.nextSlip = now + rand(0.7, 1.5) // often enough to hurt, rarely enough that a steady hold gets there
-        S.shake = Math.max(S.shake, 3)
         audio.slip()
       }
       if (S.charge >= FLINCH && !S.silent) { S.silent = true; audio.flinch() }
@@ -1216,18 +1214,13 @@
     }
     for (let k = 0; k < 3; k++) S.aura[k] = lerp(S.aura[k], S.auraTarget[k], 1 - Math.exp(-dt * 4))
 
-    // the console: vibration while charging, sway for the artist
-    S.shake *= Math.exp(-dt * 4)
-    const steady = is('vet') ? 0.35 : 1
-    let tx = 0, ty = 0, rot = 0, sk = 0
-    if (S.charging && !S.silent) { const a = (0.6 + S.charge * 3.2) * steady; tx += rand(-a, a); ty += rand(-a, a) }
-    if (S.shake > 0.05) { const a = S.shake * 0.5 * steady; tx += rand(-a, a); ty += rand(-a, a) }
+    // the console stays still; only the artist's vertigo sways it
     if (is('artist') && S.mode !== 'ending' && S.mode !== 'log') {
-      rot = Math.sin(now * 0.55) * 1.5 + Math.sin(now * 1.31) * 0.4
-      sk = Math.sin(now * 0.41 + 1) * 2.2
-      ty += Math.sin(now * 0.8) * 4
-    }
-    consoleEl.style.transform = rot || sk || tx || ty ? `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg) skewX(${sk.toFixed(3)}deg)` : ''
+      const rot = Math.sin(now * 0.55) * 1.5 + Math.sin(now * 1.31) * 0.4
+      const sk = Math.sin(now * 0.41 + 1) * 2.2
+      const ty = Math.sin(now * 0.8) * 4
+      consoleEl.style.transform = `translateY(${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg) skewX(${sk.toFixed(3)}deg)`
+    } else if (consoleEl.style.transform) consoleEl.style.transform = ''
 
     // the panel
     cfill.style.transform = `scaleX(${clamp(S.shownCharge).toFixed(4)})`
@@ -1363,13 +1356,9 @@
     if (endLive && end === 'abyss') view.fall += dt * (S.mode === 'log' ? 0 : 60)
     view.alt += (targetAlt - view.alt) * (1 - Math.exp(-dt * 0.9))
     if (S.pass > 0) { view.pass = S.relay - 1 + (1 - S.pass); S.pass = Math.max(0, S.pass - dt / 2.2) } else view.pass = S.relay
-    if (S.drop > 0) S.drop = Math.max(0, S.drop - dt * 1.8)
     const camY = (view.alt - view.fall) / 100
 
-    const shake = S.shake * (is('vet') ? 0.35 : 1)
-    const sx = shake > 0.05 ? rand(-shake, shake) : 0, sy = shake > 0.05 ? rand(-shake, shake) : 0
     g.save()
-    g.translate(sx, sy + (S.drop || 0) * 26)
 
     // sky
     const storm = ZONE_SNOW[zoneNow()]
@@ -1655,7 +1644,7 @@
       const comp = c.createDynamicsCompressor()
       comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.25
       comp.connect(c.destination)
-      this.master = G(0.85); this.master.connect(comp)
+      this.master = G(VOLUME); this.master.connect(comp)
       this.gate = G(1); this.gate.connect(this.master) // the flinch: everything goes through here
       this.muff = F('lowpass', 18000, 0.7); this.muff.connect(this.gate) // the veteran's tinnitus closes this
       this.bus = G(1); this.bus.connect(this.muff)
@@ -1691,7 +1680,7 @@
         o.connect(gg); gg.connect(this.humG); o.start()
         this.shep.push({ o, g: gg, f: 40 * Math.pow(2, i) })
       }
-      const buzz = O('square', 100), bz = F('lowpass', 900, 1), bg = G(0.05)
+      const buzz = O('square', 100), bz = F('lowpass', 900, 1), bg = G(0.02)
       buzz.connect(bz); bz.connect(bg); bg.connect(this.humG); buzz.start()
       this.humming = false
 
@@ -1776,9 +1765,9 @@
           else s.o.frequency.setTargetAtTime(f, t, 0.012)
           s.f = f
           const w = Math.exp(-0.5 * Math.pow((pos - 3.5) / 1.25, 2))
-          s.g.gain.setTargetAtTime(w * 0.1, t, 0.015)
+          s.g.gain.setTargetAtTime(w * 0.045, t, 0.015)
         }
-        this.humG.gain.setTargetAtTime(0.35 + 0.9 * S.charge, t, 0.03)
+        this.humG.gain.setTargetAtTime(0.25 + 0.45 * S.charge, t, 0.03)
       }
     },
     hum(on) {
@@ -1822,10 +1811,10 @@
       const t = this.t
       this.gate.gain.cancelScheduledValues(t)
       this.gate.gain.setValueAtTime(1, t)
-      this._noise(t, 0.05, 'bandpass', 2200, 0.8, 1, 0.025)
-      this._ring(t, [380, 1010, 2050, 3220], 0.16, 0.28)
-      this._tone(t + 0.07, 140, 38, 0.32, 1)
-      this._noise(t + 0.07, 0.2, 'lowpass', 220, 0.7, 0.6, 0.08)
+      this._noise(t, 0.05, 'bandpass', 2200, 0.8, 0.6, 0.025)
+      this._ring(t, [380, 1010, 2050, 3220], 0.16, 0.18)
+      this._tone(t + 0.07, 140, 38, 0.32, 0.7)
+      this._noise(t + 0.07, 0.2, 'lowpass', 220, 0.7, 0.4, 0.08)
     },
     hiss(c) {
       if (!this.ctx) return
@@ -2061,7 +2050,7 @@
       const t = this.t
       for (const n of [this.motor, this.humG, this.padG, this.tin]) { n.gain.cancelScheduledValues(t); n.gain.setValueAtTime(0, t) }
       this.gate.gain.cancelScheduledValues(t); this.gate.gain.setValueAtTime(1, t)
-      this.master.gain.cancelScheduledValues(t); this.master.gain.setValueAtTime(0.85, t)
+      this.master.gain.cancelScheduledValues(t); this.master.gain.setValueAtTime(VOLUME, t)
       this.muff.frequency.cancelScheduledValues(t); this.muff.frequency.setValueAtTime(18000, t)
       this.motorOn = false
       this.humming = false
