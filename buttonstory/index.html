@@ -1,0 +1,2113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0c0e">
+<title>RELAY 15</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0c0e'/%3E%3Ccircle cx='16' cy='16' r='10' fill='%23c9a04a'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%23f2d47c' stroke-width='1.5'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --iron: #0b0c0e;
+    --phos: #66ffa0;
+    --phos-dim: rgba(102, 255, 160, 0.5);
+    --amber: #ffb238;
+    --hud: #b6ff3a;
+    --crt-size: clamp(12.5px, 0.9vw + 6.5px, 17px);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: #050607; color: #cfd3d8;
+    touch-action: none; overscroll-behavior: none;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* ── the console ─────────────────────────────────────────── */
+  #console {
+    position: fixed; left: 0; right: 0; margin: 0 auto;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: min(940px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+    will-change: transform;
+  }
+  .plate {
+    position: relative;
+    padding: clamp(8px, 1.4vmin, 14px) clamp(10px, 1.8vmin, 18px) clamp(8px, 1.2vmin, 12px);
+    border-radius: 22px;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, #15171a 0%, var(--iron) 28%, #08090a 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -2px 0 rgba(0,0,0,0.9),
+      0 0 0 1px #000, 0 24px 60px rgba(0,0,0,0.85);
+  }
+  .plate::before, .plate::after {
+    content: ''; position: absolute; top: 9px; width: 7px; height: 7px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #5b6068, #121316 70%);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .plate::before { left: 9px; }
+  .plate::after { right: 9px; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 6px 8px; }
+
+  /* Nixie tubes */
+  .nixie { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .tubes { display: flex; gap: 4px; }
+  .tube {
+    position: relative; display: grid; place-items: center; overflow: hidden;
+    width: clamp(28px, 4vmin, 40px); height: clamp(40px, 5.8vmin, 58px);
+    border-radius: 45% 45% 10% 10% / 24% 24% 6% 6%;
+    background: radial-gradient(ellipse at 50% 40%, rgba(255, 120, 40, 0.10), rgba(18, 8, 3, 0.95) 70%), #120a06;
+    box-shadow: inset 0 0 0 1px rgba(255, 200, 150, 0.14), inset 0 -8px 10px rgba(0,0,0,0.8), 0 0 0 2px #050505, 0 0 0 3px #1c1e21;
+  }
+  .tube::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(60deg, rgba(255, 150, 80, 0.07) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(-60deg, rgba(255, 150, 80, 0.07) 0 1px, transparent 1px 4px);
+  }
+  .tube::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(100deg, rgba(255,255,255,0.10), transparent 30%, transparent 75%, rgba(255,255,255,0.05));
+  }
+  .tube span {
+    position: relative; font: 300 clamp(26px, 4vmin, 40px)/1 "Helvetica Neue", Arial, sans-serif;
+    color: #ffb070; text-shadow: 0 0 3px #ff8a2a, 0 0 10px #ff6a00, 0 0 22px rgba(255, 90, 0, 0.65);
+    transition: opacity 0.2s;
+  }
+  .nixie.dim .tube span { opacity: 0.22; text-shadow: 0 0 4px rgba(255, 110, 30, 0.4); }
+  .nixie small, .crew small { font-size: 8.5px; letter-spacing: 0.18em; color: #5f646b; text-shadow: 0 1px 0 #000; white-space: nowrap; }
+
+  /* crew pilot lamps */
+  .crew { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .lamps { display: flex; gap: clamp(8px, 1.6vmin, 16px); }
+  .lamp { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .lamp i {
+    display: block; width: 9px; height: 9px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #3a3328, #120f0a 70%);
+    box-shadow: 0 0 0 2px #15171a, 0 0 0 3px #000;
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .lamp.on i {
+    background: radial-gradient(circle at 35% 30%, #fffaf0, #ffe0a8 50%, #c88a3a);
+    box-shadow: 0 0 6px #ffd89a, 0 0 14px rgba(255, 210, 140, 0.5), 0 0 0 2px #15171a, 0 0 0 3px #000;
+  }
+  .lamp span { font-size: 8px; letter-spacing: 0.12em; color: #6a6f76; }
+  .lamp.on span { color: #a8a294; }
+
+  /* amber indicator bulbs */
+  .bulbs { display: flex; gap: clamp(8px, 1.6vmin, 14px); }
+  .bulb { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bulb i {
+    display: block; width: clamp(15px, 2.3vmin, 22px); aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #5c4019, #241606 70%);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6), 0 0 0 3px #17191c, 0 0 0 4px #000;
+    transition: background 0.08s, box-shadow 0.08s;
+  }
+  .bulb.on i {
+    background: radial-gradient(circle at 35% 30%, #fff6d6, #ffb238 45%, #b35a00 100%);
+    box-shadow: 0 0 10px #ffb238, 0 0 28px rgba(255, 170, 40, 0.6), 0 0 0 3px #17191c, 0 0 0 4px #000;
+  }
+  .bulb span { font-size: 9px; letter-spacing: 0.2em; color: #6a6f76; }
+
+  /* the CRT */
+  .crt {
+    padding: clamp(6px, 1vmin, 10px); border-radius: 18px;
+    background: linear-gradient(180deg, #17191c, #0c0d0f);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.04), inset 0 -3px 8px rgba(0,0,0,0.85), 0 0 0 1px #000;
+  }
+  .glass {
+    position: relative; overflow: hidden; border-radius: 16px / 13px;
+    min-height: clamp(240px, 38vh, 390px);
+    padding: clamp(10px, 1.8vmin, 18px) clamp(12px, 2.2vmin, 24px) 30px;
+    background: radial-gradient(ellipse at 50% 42%, #0b2716 0%, #06150b 58%, #020704 100%);
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.9), inset 0 0 8px rgba(102, 255, 160, 0.22);
+    color: var(--phos); font-size: var(--crt-size); line-height: 1.38;
+    text-shadow: 0 0 6px rgba(102, 255, 160, 0.5), 0 0 1px rgba(102, 255, 160, 0.9);
+    transition: filter 0.15s;
+  }
+  .glass::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.26) 0 1px, transparent 1px 3px);
+  }
+  .glass::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 6;
+    background:
+      radial-gradient(ellipse at 28% 8%, rgba(255,255,255,0.07), transparent 42%),
+      radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(0,0,0,0.6) 100%);
+  }
+  .glass.off { background: radial-gradient(ellipse at 50% 45%, #06110a, #020503 70%); }
+  .glass.off #screen > :not(.foot) { visibility: hidden; }
+  .glass.off .foot { opacity: 0.45; animation: blink 1.6s steps(2, start) infinite; }
+  .glass.flash { filter: brightness(2.2) contrast(1.2) !important; }
+  @keyframes blink { 50% { opacity: 0.12; } }
+
+  #screen { position: relative; z-index: 2; transition: filter 0.5s; }
+  .blurred #screen { filter: blur(2.4px); }
+  .hdr { display: flex; justify-content: space-between; gap: 12px; font-size: 0.82em; letter-spacing: 0.12em; color: var(--phos-dim); border-bottom: 1px solid rgba(102, 255, 160, 0.22); padding-bottom: 5px; margin-bottom: 8px; }
+  .hdr span:first-child { color: var(--phos); }
+  .tbar { height: 5px; margin: -2px 0 8px; border: 1px solid rgba(102, 255, 160, 0.3); display: none; }
+  .tbar.show { display: block; }
+  .tbar i { display: block; height: 100%; width: 100%; background: var(--phos); box-shadow: 0 0 8px var(--phos); transform-origin: left; }
+  .tbar.low i { background: #ffd23a; box-shadow: 0 0 10px #ffb238; }
+  #tleft { font-variant-numeric: tabular-nums; }
+  .tlow #tleft { color: #ffd23a; text-shadow: 0 0 8px #ffb238; }
+  #body { margin: 0 0 10px; white-space: pre-line; min-height: 2.8em; }
+  #note { display: none; margin: -4px 0 10px; font-size: 0.78em; color: var(--hud); text-shadow: 0 0 6px rgba(182, 255, 58, 0.6); letter-spacing: 0.06em; }
+  #opts { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; transition: opacity 0.25s; }
+  #opts.hidden { opacity: 0; }
+  .opt { display: grid; grid-template-columns: 2.2em 1fr; padding: 3px 8px 4px 4px; border-radius: 3px; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.03em; }
+  .opt b { font-weight: 400; color: var(--phos-dim); }
+  .opt.on { opacity: 1; background: rgba(102, 255, 160, 0.13); box-shadow: inset 0 0 0 1px rgba(102, 255, 160, 0.45); }
+  .opt.on b { color: var(--phos); }
+  .opt.on b::before { content: '▶'; margin-right: 2px; }
+  .opt .hud { grid-column: 2; display: none; font-style: normal; font-size: 0.78em; color: var(--hud); text-shadow: 0 0 6px rgba(182, 255, 58, 0.6); letter-spacing: 0.04em; text-transform: none; }
+  body[data-arch="geek"] .opt .hud, body[data-arch="geek"] #note.show { display: block; }
+  #stats { display: none; margin: 0; padding: 0; list-style: none; font-size: 0.86em; color: var(--phos-dim); white-space: pre; }
+  #stats.show { display: block; }
+  .foot { margin-top: 10px; font-size: 0.74em; letter-spacing: 0.16em; color: var(--phos-dim); min-height: 1.2em; }
+  .foot.go { color: var(--phos); animation: blink 1.1s steps(2, start) infinite; }
+
+  /* charge bar */
+  .charge { position: absolute; z-index: 3; left: clamp(12px, 2.2vmin, 24px); right: clamp(12px, 2.2vmin, 24px); bottom: 10px; height: 8px; border: 1px solid rgba(102, 255, 160, 0.32); border-radius: 2px; }
+  .charge i { position: absolute; inset: 0; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #2cff7c, #b9ffd2); box-shadow: 0 0 10px #46ff8c, 0 0 22px rgba(70, 255, 140, 0.5); }
+  .charge .zone { position: absolute; top: -3px; bottom: -3px; left: 35%; width: 15%; display: none; border-left: 1px dashed rgba(170, 230, 255, 0.7); border-right: 1px dashed rgba(170, 230, 255, 0.7); background: rgba(150, 220, 255, 0.1); }
+  body[data-arch="scientist"] .charge .zone { display: block; }
+
+  /* the scientist's phantoms and ghosts */
+  #phantoms { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; transition: opacity 2.5s; }
+  #phantoms span { position: absolute; left: 0; top: 0; white-space: nowrap; color: #d6ffe6; text-shadow: 0 0 8px rgba(160, 255, 200, 0.8); will-change: transform; }
+  #ghost {
+    position: absolute; z-index: 7; left: 6%; right: 6%; top: 50%; transform: translateY(-50%);
+    text-align: center; font-size: 1.15em; letter-spacing: 0.08em; color: #e6f8ff; opacity: 0; pointer-events: none;
+    text-shadow: 0 0 10px #9ee6ff, 0 0 26px rgba(120, 210, 255, 0.8);
+  }
+  #ghost.on { animation: ghost 0.6s linear forwards; }
+  @keyframes ghost { 0% { opacity: 0; } 8% { opacity: 0.95; } 20% { opacity: 0.5; } 30% { opacity: 0.9; } 80% { opacity: 0.75; } 100% { opacity: 0; } }
+
+  .crack { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+
+  /* the deck and the brass button */
+  .deck { display: flex; align-items: center; justify-content: center; gap: clamp(14px, 4vmin, 44px); padding: clamp(8px, 1.4vmin, 14px) 0 2px; }
+  .etch { font-size: 9.5px; letter-spacing: 0.24em; color: #5d6168; text-shadow: 0 1px 0 rgba(255,255,255,0.05), 0 -1px 0 #000; white-space: nowrap; }
+  .well {
+    width: clamp(90px, 12.5vmin, 116px); aspect-ratio: 1; border-radius: 50%;
+    display: grid; place-items: center;
+    background: radial-gradient(circle, #040405 56%, #202327 59%, #0b0c0e 70%, #17191c 100%);
+    box-shadow: inset 0 3px 9px rgba(0,0,0,0.95), 0 1px 0 rgba(255,255,255,0.06);
+  }
+  #brass-btn {
+    position: relative; width: 76%; aspect-ratio: 1; border-radius: 50%; border: 0; padding: 0; margin: 0;
+    cursor: pointer; outline: none; touch-action: none; -webkit-appearance: none; appearance: none;
+    background:
+      radial-gradient(circle at 36% 30%, rgba(255, 250, 225, 0.6), transparent 30%),
+      conic-gradient(from 20deg, #b88a2e, #f2d47c, #9b6b1f, #e3be62, #7a5314, #d9b04f, #a87a28, #f5dc8c, #b88a2e);
+    box-shadow: inset 0 0 0 2px rgba(255, 235, 170, 0.35), inset 0 -5px 9px rgba(60, 35, 0, 0.65), 0 4px 0 #3a2508, 0 7px 12px rgba(0,0,0,0.75);
+    transition: transform 0.06s, box-shadow 0.06s, filter 0.4s;
+  }
+  #brass-btn::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.07) 0 1px, transparent 1px 3px);
+    mix-blend-mode: overlay;
+  }
+  #brass-btn.down { transform: translateY(3px); box-shadow: inset 0 0 0 2px rgba(255, 235, 170, 0.3), inset 0 -2px 6px rgba(60, 35, 0, 0.6), 0 1px 0 #3a2508, 0 3px 6px rgba(0,0,0,0.75); }
+  #brass-btn:focus-visible { box-shadow: inset 0 0 0 2px rgba(255, 235, 170, 0.35), 0 4px 0 #3a2508, 0 0 0 4px rgba(102, 255, 160, 0.45); }
+  #brass-btn:disabled { cursor: default; transform: translateY(7px) scale(0.93); filter: brightness(0.32) saturate(0.5); box-shadow: inset 0 4px 10px rgba(0,0,0,0.9), 0 0 0 #000; }
+
+  /* the veteran's tunnel vision */
+  #tunnel {
+    position: fixed; inset: 0; z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.6s;
+    background:
+      linear-gradient(90deg, #000 0%, #000 18%, rgba(0,0,0,0.88) 25%, rgba(0,0,0,0) 33%, rgba(0,0,0,0) 67%, rgba(0,0,0,0.88) 75%, #000 82%, #000 100%),
+      radial-gradient(ellipse 40% 70% at 50% 55%, transparent 55%, rgba(0,0,0,0.95) 100%);
+  }
+  #tunnel.on { opacity: 1; }
+
+  @media (max-height: 560px) {
+    .glass { min-height: 0; }
+    .top { padding-bottom: 4px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="scene" aria-hidden="true"></canvas>
+<div id="console">
+  <div class="plate">
+    <div class="top" aria-hidden="true">
+      <div class="nixie dim" id="nixie">
+        <div class="tubes"><div class="tube"><span id="nx0">1</span></div><div class="tube"><span id="nx1">5</span></div></div>
+        <small>RELAYS TO AETHELGARD</small>
+      </div>
+      <div class="crew">
+        <div class="lamps" id="lamps">
+          <div class="lamp"><i></i><span>ILSE</span></div>
+          <div class="lamp"><i></i><span>TOMAS</span></div>
+          <div class="lamp"><i></i><span>MAGS</span></div>
+          <div class="lamp"><i></i><span>KOFI</span></div>
+        </div>
+        <small>CREW RESPONDING</small>
+      </div>
+      <div class="bulbs" id="bulbs">
+        <div class="bulb"><i></i><span>A</span></div>
+        <div class="bulb"><i></i><span>B</span></div>
+        <div class="bulb"><i></i><span>C</span></div>
+      </div>
+    </div>
+    <div class="crt">
+      <div class="glass off" id="glass">
+        <div id="screen">
+          <div class="hdr"><span id="hTitle"></span><span id="hRight"></span></div>
+          <div class="tbar" id="tbar"><i id="tfill"></i></div>
+          <p id="body"></p>
+          <div id="note"></div>
+          <ol id="opts" class="hidden"></ol>
+          <ul id="stats"></ul>
+          <div class="foot" id="foot">PRESS THE BRASS BUTTON</div>
+        </div>
+        <div id="phantoms" aria-hidden="true"></div>
+        <div id="ghost" aria-hidden="true"></div>
+        <svg class="crack" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
+          <g fill="none" stroke="rgba(220,255,235,0.22)" stroke-width="0.18" vector-effect="non-scaling-stroke">
+            <path d="M100 7 L93 10 L88.5 9 L84 13.5 L79 14 L75.5 18.5" />
+            <path d="M88.5 9 L86 4.5 L82 3" />
+            <path d="M84 13.5 L85 19 L82.5 24" />
+            <path d="M79 14 L74 11.5 L70 12.5" />
+          </g>
+          <g fill="none" stroke="rgba(0,0,0,0.45)" stroke-width="0.5" vector-effect="non-scaling-stroke">
+            <path d="M100 7.3 L93 10.3 L88.5 9.3 L84 13.8 L79 14.3 L75.5 18.8" />
+          </g>
+        </svg>
+        <div class="charge" aria-hidden="true"><b class="zone"></b><i id="cfill"></i></div>
+      </div>
+    </div>
+    <div class="deck">
+      <span class="etch">TAP · NEXT</span>
+      <div class="well"><button id="brass-btn" type="button" aria-label="Brass button. Press to power the console."></button></div>
+      <span class="etch">HOLD · LOCK</span>
+    </div>
+  </div>
+</div>
+<div id="tunnel" aria-hidden="true"></div>
+<script>
+;(function () {
+  'use strict'
+
+  const $ = (id) => document.getElementById(id)
+  const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v)
+  const lerp = (a, b, t) => a + (b - a) * t
+  const rnd = (n) => Math.floor(Math.random() * n)
+  const rand = (a, b) => a + Math.random() * (b - a)
+  const clock = () => performance.now() / 1000
+  const pad2 = (n) => String(n).padStart(2, '0')
+  const TAU = Math.PI * 2
+
+  // <story>
+  // Each option: t (what the console offers), d [altitude, cabinHeat, hullPower, groupCohesion],
+  // care (+1 protects the group, 0 neutral, -1 injures or kills someone: the Surgeon's heartbeat),
+  // aura (Artist's light: +1 warm/humane, 0 neutral, -1 cold/cruel; defaults to care), out (what happens).
+  const RELAYS = [
+    {
+      zone: 'THE LOWER GORGE',
+      fx: 'start',
+      text: 'The bottom station is gone. White Ash boils up the gorge behind you, and the winch is straining under five people and everything they grabbed. The cabin crawls.',
+      opts: [
+        { t: 'Throw the luggage out through the floor hatch.', d: [6, -6, 0, -4], care: 0, out: 'Bags tumble into the white. The cabin lifts. Tomas watches his pack go and says nothing for a long time.' },
+        { t: 'Push the winch past its rated torque.', d: [8, 0, -12, 0], care: 0, out: 'The motor screams and the cabin surges. Something inside the housing starts to smell of hot copper.' },
+        { t: 'Hold speed. Everything stays aboard.', d: [3, 0, 0, 4], care: 1, out: 'Slow and steady. Nobody loses anything yet. Below you, the Ash gains a little.' },
+      ],
+    },
+    {
+      zone: 'THE LOWER GORGE',
+      text: 'The cabin heater shares a circuit with the winch. Frost is feathering the lower glass. Ilse, the attendant, is grey in the face: her leg broke when the cabin lurched out of the station.',
+      opts: [
+        { t: 'Kill the heater. Every amp goes to the winch.', d: [7, -14, -4, -6], care: -1, out: 'The heater ticks as it cools and the cabin climbs. Ilse shivers hard enough to hear. Kofi gives her his coat.' },
+        { t: 'Split the circuit down the middle.', d: [4, -5, -6, 0], care: 0, out: 'Half heat, half speed. Nobody is comfortable, and nobody is in danger. Yet.' },
+        { t: "Run the heater full and splint Ilse's leg.", d: [2, 6, -6, 8], care: 1, out: 'Kofi splints her leg with a seat strut while warm air fills the cabin. Ilse squeezes your hand. The climb is painfully slow.' },
+      ],
+    },
+    {
+      zone: 'THE LOWER GORGE',
+      urgent: true,
+      fx: 'gust',
+      text: 'A gust slams the cabin sideways. Ash is pouring in through the roof vents.',
+      opts: [
+        { t: 'Slam the vents shut. The air will go stale.', d: [3, 2, 0, -4], care: 0, out: "The hiss stops. The air thickens. Mags starts to cough and doesn't stop." },
+        { t: 'Leave them open and climb hard.', d: [7, -12, -4, -8], care: -1, out: "Ash sifts in and freezes everything it lands on, including Tomas's bare hands. He screams once." },
+        { t: "Stuff the vents with everyone's scarves.", d: [2, -4, 0, 6], care: 1, out: 'Everyone gives something. Five scarves, one plan. It holds, mostly.' },
+      ],
+    },
+    {
+      zone: 'THE LOWER GORGE',
+      text: 'Kofi finds the auxiliary battery bank under the bench: four cells, fully charged. They can feed the winch, the heater, or sit in reserve for later.',
+      opts: [
+        { t: 'All four cells to the winch.', d: [8, -4, 4, 0], care: 0, out: 'The cabin leaps. The lights dim to brown, and the cold presses closer to the glass.' },
+        { t: 'All four cells to the heater.', d: [2, 14, 4, 4], care: 1, out: 'Warm air floods the cabin. People take their gloves off. The climb slows to a crawl.' },
+        { t: 'Keep them in reserve.', d: [3, 0, 12, 0], care: 0, out: 'You keep them. Every system runs lean, but you have something left for later.' },
+      ],
+    },
+    {
+      zone: 'THE LOWER GORGE',
+      urgent: true,
+      fx: 'stall',
+      text: 'Ilse slips off the bench and her splint snaps. At the same moment the winch stalls on a frozen pulley.',
+      opts: [
+        { t: 'Leave her. Everyone shoves the winch clutch.', d: [9, 0, -4, -12], care: -1, out: 'The clutch catches with four of you hanging on it. Ilse lies on the floor behind you, alone, gasping.' },
+        { t: 'Kofi helps Ilse. You free the pulley alone.', d: [4, 0, -6, 2], care: 1, out: 'It takes twice as long. The pulley comes free with a bang that numbs your whole arm.' },
+        { t: 'Everyone helps Ilse first.', d: [-2, 0, 0, 10], care: 1, out: 'You reset her leg together. Nobody watches the winch, and the cabin slides a few metres back down the cable.' },
+      ],
+    },
+    {
+      zone: 'THE MID-SPAN ICE STORM',
+      fx: 'storm',
+      text: 'You climb into the storm. Ice is building on the haul-cable, and the thermal cutoff keeps shutting the motor down before it overheats.',
+      opts: [
+        { t: 'Bypass the thermal cutoff.', d: [9, 0, -16, 0], care: 0, out: 'The motor runs hot and never stops. The insulation starts to cook. You climb.' },
+        { t: 'Let it cycle: run, stop, run.', d: [3, -6, 0, 0], care: 0, out: 'Run, stop, run. Every stop lets the cold in a little deeper.' },
+        { t: 'Send Kofi up through the roof hatch to chip the ice off.', d: [6, -8, 0, -6], care: -1, out: "Kofi climbs out into the wind. Twenty minutes later he's back, the cable clear and his fingertips white." },
+      ],
+    },
+    {
+      zone: 'THE MID-SPAN ICE STORM',
+      urgent: true,
+      fx: 'jam',
+      text: 'The cable has jammed in the grip. The only way to reach it is through the front window, and the window is frosted solid.',
+      opts: [
+        { t: 'Smash the front window and clear the jam.', d: [8, -16, 0, 0], care: 0, fx: 'glass', out: 'The glass explodes outward. The jam clears. The wind comes in, and it never leaves.' },
+        { t: 'Reverse the winch to shake it loose.', d: [2, 0, -10, 0], care: 0, fx: 'drop', out: 'The cabin drops, jolts and catches. The jam shakes loose. The motor groans like an animal.' },
+        { t: 'Burn the grip clear with the battery leads.', d: [5, -2, -8, 0], care: 0, fx: 'arc', out: 'Blue sparks and the smell of scorched grease, then a click. The grip bites again.' },
+      ],
+    },
+    {
+      zone: 'THE MID-SPAN ICE STORM',
+      text: "Tomas has stuffed the thermal blankets, the flare gun and most of the food into his pack. He's backed against the door, shaking, saying it's every man for himself now.",
+      opts: [
+        { t: 'Talk him down, however long it takes.', d: [1, 4, 0, 10], care: 1, out: 'It takes a long time. He hands the blankets round one by one. Nobody says thank you, but everyone is warmer.' },
+        { t: 'Take the pack by force.', d: [1, 8, 0, -12], care: -1, out: "Kofi pins him to the wall. The blankets come out. So does a lot of blood from Tomas's nose." },
+        { t: 'Ignore him. Keep climbing.', d: [5, -6, 0, -6], care: 0, out: 'You climb. Tomas stays in his corner with everything, and the others start watching him instead of the window.' },
+      ],
+    },
+    {
+      zone: 'THE MID-SPAN ICE STORM',
+      urgent: true,
+      fx: 'blowout',
+      text: 'Transformer blowout. The roof housing is on fire and the cabin lights are out.',
+      opts: [
+        { t: "Cut the main breaker. Run on what's left.", d: [1, -6, 6, 0], care: 0, out: 'Darkness. The fire chokes and dies. So does the winch, for a while.' },
+        { t: 'Beat the fire out and keep the motor running.', d: [7, 0, -14, -6], care: -1, out: "Mags beats at the flames with her gloves while the cabin keeps climbing. Afterwards she won't look at her hands." },
+        { t: 'Jettison the burning transformer.', d: [5, -4, -10, 2], care: 0, fx: 'drop', out: "It falls away into the fog like a lantern. You're lighter, darker and colder." },
+      ],
+    },
+    {
+      zone: 'THE MID-SPAN ICE STORM',
+      text: 'Halfway. The storm thins for a moment and the cabin swings in the quiet. Everyone is exhausted. Somebody finds a tin of peaches.',
+      opts: [
+        { t: 'Stop for a minute. Share the food.', d: [1, 6, 6, 10], care: 1, out: 'Five people round one tin of peaches. The motor cools. For a minute it feels like you might make it.' },
+        { t: 'Push on at full speed while the air is clear.', d: [8, -4, -8, -4], care: 0, out: 'Nobody argues. Nobody talks, either.' },
+        { t: 'Strip the seat foam and burn it for heat.', d: [4, 8, 0, -4], care: 0, out: "Black, stinking smoke and real warmth. Everyone's eyes stream. Mags coughs until she's sick." },
+      ],
+    },
+    {
+      zone: 'THE ABYSSAL SAG',
+      urgent: true,
+      fx: 'sag',
+      text: 'The cable sags under its ice. The undercarriage touches the frost-line and starts freezing to it.',
+      opts: [
+        { t: 'Vent the reserve oxygen for pneumatic thrust.', d: [10, -8, 0, -8], care: -1, out: "The tanks scream and the cabin tears itself free. There's less air for later, and everyone knows it." },
+        { t: 'Everyone rocks the cabin to crack the ice.', d: [4, -4, -6, 0], care: 0, out: 'Five bodies throwing their weight from side to side. The ice cracks. So does a door hinge.' },
+        { t: 'Wait for a gust to lift you.', d: [1, -10, 0, 0], care: 0, out: "Minutes pass. The gust comes. By then the cold has crept into everyone's boots." },
+      ],
+    },
+    {
+      zone: 'THE ABYSSAL SAG',
+      text: "The motor's control board is dead. Two spare fuses could bridge the gap, but the floor plates are wet, and they're live.",
+      opts: [
+        { t: 'Bridge the fuses yourself, barehanded.', d: [7, 0, 10, -6], care: -1, fx: 'arc', out: "Blue light. You wake up on the floor with one arm that won't answer. The winch is running." },
+        { t: 'Make Tomas hold the fuse while you work.', d: [8, 0, 10, -16], care: -1, fx: 'arc', out: "Tomas holds it. The arc throws him into the wall, and he lies there a long time. The winch runs. When he finally gets up, he won't look at you." },
+        { t: 'Insulate the floor with seat foam first.', d: [4, -6, 8, 2], care: 1, out: 'Slow, careful work while the frost creeps up the walls. When the fuse goes in, nobody gets hurt.' },
+      ],
+    },
+    {
+      zone: 'THE ABYSSAL SAG',
+      urgent: true,
+      fx: 'creak',
+      text: 'The five-ton iron counterweight is dragging you down into the Ash. Its release bolt is under the floor.',
+      opts: [
+        { t: 'Drop the counterweight.', d: [12, 0, -10, 0], care: 0, fx: 'drop', out: 'The cabin leaps upward like a cork. The cable shrieks at the sudden change, and so does everyone inside.' },
+        { t: 'Keep it. It steadies the cabin in the wind.', d: [3, 0, 4, 4], care: 1, out: 'Heavy and slow, but steady. Nobody falls. The Ash licks at the floor.' },
+        { t: 'Lower it halfway on the emergency chain.', d: [6, 0, -4, -4], care: 0, out: 'The chain runs out with a terrible noise and catches. Half the weight, half the risk.' },
+      ],
+    },
+    {
+      zone: 'THE ABYSSAL SAG',
+      text: 'The lights of Aethelgard are visible above you now. The cold is unbearable. The last heater element is still sealed in its box, and the battery is nearly flat.',
+      opts: [
+        { t: 'Burn the last of the battery in one sprint.', d: [10, -6, -14, 0], care: 0, out: 'The motor roars and the bunker lights grow. The cabin goes dark and very cold.' },
+        { t: 'Fit the heater element and crawl the rest.', d: [3, 16, -6, 4], care: 1, out: 'Real heat. Mags laughs for the first time since the station. The lights above barely move.' },
+        { t: 'Everyone to the uphill end to tip the grip.', d: [6, 0, 0, -6], care: -1, out: "The grip bites harder with all your weight on it. Ilse can't move, and she slides the length of the floor." },
+      ],
+    },
+    {
+      zone: 'THE BUNKER THRESHOLD',
+      urgent: true,
+      fx: 'brakes',
+      text: 'The cabin hangs half inside the concrete lip of Aethelgard Station. The brakes are failing, and you are sliding back.',
+      opts: [
+        { t: 'Climb onto the roof and pull the external friction pin.', d: [12, 0, 0, 0], care: -1, aura: 1, pin: true, ghost: 'THE CABIN HOLDS / YOU STAY OUTSIDE', out: 'You climb out into the white. The pin is frozen solid. You pull until something in your shoulder gives, and the cabin stops dead.' },
+        { t: 'Overload the magnetic lock from inside.', d: [10, 0, -24, 0], care: 0, out: 'Every light in the cabin flares and dies. The lock slams on. The whole cabin rings like a bell.' },
+        { t: 'Seal the blast bulkhead right now.', d: [8, 0, 0, -20], care: -1, out: "The bulkhead slams down across the middle of the cabin. Kofi drags Ilse through the gap with a second to spare. Everyone is in. Nobody will forget that you didn't wait." },
+      ],
+    },
+  ]
+
+  /** What each stretch of the climb costs on its own, whatever you choose: [altitude, heat, power, cohesion]. */
+  const DRAIN = {
+    'THE LOWER GORGE': [0, -1, 0, 0],
+    'THE MID-SPAN ICE STORM': [0, -2, -2, 0],
+    'THE ABYSSAL SAG': [0, -3, -2, 0],
+    'THE BUNKER THRESHOLD': [0, -2, 0, 0],
+  }
+
+  const START = { alt: 10, heat: 100, power: 100, coh: 100 }
+  const CREW = ['ILSE', 'TOMAS', 'MAGS', 'KOFI'] // the order they stop responding in
+  /** How many of the four others are still with you, by group cohesion. */
+  const crewCount = (coh) => (coh >= 75 ? 4 : coh >= 64 ? 3 : coh >= 52 ? 2 : coh >= 41 ? 1 : 0)
+  const clampStat = (v) => Math.max(0, Math.min(100, v))
+
+  /** Which ending. The brief's own conditions first; the cases it doesn't cover go to whichever stat is weakest. */
+  function decideEnding(s) {
+    if (s.alt < 80 || s.power <= 10) return 'abyss'
+    if (!s.pin && s.alt >= 90 && s.heat >= 40 && s.coh >= 75) return 'summit'
+    if (s.heat <= 20) return 'tomb'
+    if (s.coh <= 40) return 'cold'
+    if (s.pin) return 'catwalk'
+    const m = { abyss: (s.alt - 80) / 10, tomb: (s.heat - 20) / 20, cold: (s.coh - 40) / 35 }
+    return Object.keys(m).reduce((a, b) => (m[b] < m[a] ? b : a))
+  }
+  // </story>
+
+  // ═══════════ Who sits at the console
+  const ARCH = [
+    {
+      id: 'geek', name: 'THE TECH GEEK', short: 'TECH GEEK',
+      buff: 'SYSTEM HUD', buffText: 'Every option shows exactly what it does to lift, heat, power and crew.',
+      debuff: 'DYSLEXIA SCRAMBLER', debuffText: 'The option text fuses, swaps its letters and flickers into dangerous lookalikes.',
+    },
+    {
+      id: 'vet', name: 'THE MILITARY VETERAN', short: 'VETERAN',
+      buff: 'ADRENALINE SLOW-MO', buffText: 'Urgent relays give you 24 seconds instead of 12, and your hands stay steady.',
+      debuff: 'TINNITUS & TUNNEL VISION', debuffText: 'A piercing ring smothers the machinery, and the edges of the screen go black.',
+    },
+    {
+      id: 'surgeon', name: 'THE SURGEON', short: 'SURGEON',
+      buff: 'VITAL SIGNS', buffText: 'Each option you highlight has a heartbeat: calm if it protects the group, racing if it hurts someone.',
+      debuff: 'NERVE TREMOR', debuffText: 'Your hold slips backwards, and a tap sometimes twitches twice.',
+    },
+    {
+      id: 'scientist', name: 'THE SCIENTIST', short: 'SCIENTIST',
+      buff: 'FORESIGHT ECHO', buffText: 'Charge an option to the marked 35–50% zone and let go: its consequence flashes on the glass.',
+      debuff: 'INTRUSIVE OVERTHINKING', debuffText: 'Phantom calculations drift across the screen and whisper.',
+    },
+    {
+      id: 'artist', name: 'THE ARTIST', short: 'ARTIST',
+      buff: 'SYNESTHESIA', buffText: 'The light and the music tell the truth: warm amber is humane, cold violet is cruel.',
+      debuff: 'VERTIGO PANIC', debuffText: 'The console sways and blurs, and the button is hair-trigger: a slow tap starts locking in.',
+    },
+  ]
+
+  // ═══════════ How it ends
+  const list = (names) => (names.length <= 1 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1])
+  const cap = (s) => s.charAt(0) + s.slice(1).toLowerCase()
+  const ENDINGS = {
+    summit: {
+      n: 1, title: 'THE SUMMIT INTACT',
+      text: () => "The bulkhead seals behind five pairs of boots. Amber light, warm air, the hum of the bunker's generators. Kofi carries Ilse in on his back. Tomas hands round the last of the blankets without being asked. Mags sits down on the concrete and laughs. Outside, the White Ash closes over the cable, and none of you are in it.",
+    },
+    cold: {
+      n: 2, title: 'THE COLD ARITHMETIC',
+      text: (names) => 'The gondola arrives. The arithmetic worked: lift, heat, power. The people were only ever numbers in it. ' +
+        (names.length
+          ? `${list(names)} ${names.length === 1 ? 'follows' : 'follow'} you off the cabin, but nobody will stand near you. You open the bunker door alone, and you walk through it alone.`
+          : 'Nobody else is left to follow you. You open the bunker door alone, and the warm light is only for you.'),
+    },
+    tomb: {
+      n: 3, title: 'THE PORCELAIN TOMB',
+      text: () => 'The gondola docks itself at the summit, exactly on schedule and perfectly intact. Inside, five people sit very still under a skin of frost as fine as porcelain. The console keeps recording. Decades from now, someone will open the door and read these logs.',
+    },
+    catwalk: {
+      n: 4, title: 'THE OUTER CATWALK',
+      text: (names) => `The pin holds and the cabin locks in place. ${list(names)} ${names.length === 1 ? 'runs' : 'run'} into the heated bay below you. You are still on the roof when the blast door starts to close. Through the narrowing gap you see amber light and ${names.length === 1 ? 'one face' : 'their faces'} turned up toward you. Then concrete. Then snow.`,
+    },
+    abyss: {
+      n: 5, title: 'THE WHITE ABYSS',
+      text: () => 'At the final tower the haul-rope shears. There is no sound, only the feeling of weight leaving. The cabin drops into the silent salt-glass cloud below, turning slowly, and the White Ash closes over it like water.',
+    },
+  }
+
+  // ═══════════ Rules of the button
+  const KEY = 'relay15_log'
+  const TAP = 0.25 // a press shorter than this is a tap
+  const TAP_ARTIST = 0.13 // vertigo: the hair trigger
+  const FLINCH = 0.88 // where the sound drops out
+  const RATE_A = FLINCH / 1.35 // 0 → 88% in 1.35 s of holding
+  const RATE_B = (1 - FLINCH) / 0.35 // 88% → 100% takes exactly the 0.35 s of dead silence
+  const URGENT = 12
+  const FROZE_ALT = 4 // the cabin slides back while you hesitate
+
+  // ═══════════ Elements
+  const btn = $('brass-btn')
+  const glass = $('glass')
+  const hTitle = $('hTitle'), hRight = $('hRight')
+  const tbar = $('tbar'), tfill = $('tfill')
+  const bodyEl = $('body'), noteEl = $('note'), optsEl = $('opts'), statsEl = $('stats'), footEl = $('foot')
+  const cfill = $('cfill')
+  const ghostEl = $('ghost'), phantomsEl = $('phantoms')
+  const consoleEl = $('console')
+  const tunnel = $('tunnel')
+  const nixie = $('nixie'), nx = [$('nx0'), $('nx1')]
+  const lamps = [...document.querySelectorAll('.lamp')]
+  const bulbs = [...document.querySelectorAll('.bulb')]
+
+  // ═══════════ State
+  const S = {}
+  let gen = 0 // bumps on reset, so anything scheduled before it is forgotten
+  const timers = []
+  const later = (sec, fn) => { const g = gen; timers.push({ at: clock() + sec, fn, g }) }
+
+  function fresh() {
+    Object.assign(S, {
+      mode: 'off', relay: 0, hl: 0, arch: null,
+      alt: START.alt, heat: START.heat, power: START.power, coh: START.coh, pin: false, choices: '',
+      crew: 4, press: null, charging: false, charge: 0, shownCharge: 0, silent: false, nextSlip: 0,
+      timer: 0, timerMax: 0, timerOn: false, lastTick: 0,
+      type: null, acceptAt: 0, optsOn: false,
+      ending: null, endAt: 0, lockedAt: -10, pass: 0,
+      shake: 0, glitch: 0, flashUntil: 0,
+      aura: [140, 170, 175], auraTarget: [140, 170, 175], auraOn: 0,
+      beatAt: 0, tinUntil: 0, tinNext: 0, whisperAt: 0, blurNext: 0,
+      mut: [], mutAt: 0,
+    })
+  }
+  fresh()
+
+  const opts = () => (S.mode === 'select' ? ARCH : RELAYS[S.relay - 1].opts)
+  const tapLimit = () => (S.arch && S.arch.id === 'artist' ? TAP_ARTIST : TAP)
+  const is = (id) => S.arch && S.arch.id === id
+
+  // ═══════════ The button
+  function pressDown() {
+    if (S.press || btn.disabled) return
+    audio.wake()
+    const now = clock()
+    S.press = { at: now, consumed: false }
+    btn.classList.add('down')
+    switch (S.mode) {
+      case 'off':
+        S.press.consumed = true
+        powerOn()
+        return
+      case 'boot':
+        S.press.consumed = true
+        showSelect()
+        return
+      case 'brief':
+      case 'result':
+        S.press.consumed = true
+        if (S.type && !S.type.done) return finishTyping()
+        if (now >= S.acceptAt) { audio.click(); advance() }
+        return
+      case 'select':
+      case 'relay':
+        if (S.type && !S.type.done) { S.press.consumed = true; finishTyping() }
+        return
+      default:
+        S.press.consumed = true
+    }
+  }
+  function pressUp(cancelled) {
+    const p = S.press
+    if (!p) return
+    S.press = null
+    btn.classList.remove('down')
+    if (p.consumed) return
+    if (S.charging) return dump()
+    if (cancelled) return
+    // a press longer than the tap limit is never a tap, even if no frame came in time to start the charge
+    if (clock() - p.at >= tapLimit() && (S.mode === 'select' || S.mode === 'relay')) return audio.hiss(0.05)
+    tap()
+  }
+  btn.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    e.preventDefault()
+    try { btn.setPointerCapture(e.pointerId) } catch (err) {}
+    btn.focus({ preventScroll: true })
+    pressDown()
+  })
+  btn.addEventListener('pointerup', () => pressUp(false))
+  btn.addEventListener('pointercancel', () => pressUp(true))
+  btn.addEventListener('lostpointercapture', () => { if (S.press) pressUp(false) })
+  btn.addEventListener('click', (e) => e.preventDefault())
+  window.addEventListener('blur', () => pressUp(true))
+  const isKey = (e) => e.key === ' ' || e.key === 'Enter'
+  window.addEventListener('keydown', (e) => {
+    if (!isKey(e)) return
+    e.preventDefault()
+    if (!e.repeat) pressDown()
+  })
+  window.addEventListener('keyup', (e) => { if (isKey(e)) { e.preventDefault(); pressUp(false) } })
+  for (const ev of ['contextmenu', 'selectstart', 'dragstart', 'gesturestart', 'dblclick']) document.addEventListener(ev, (e) => e.preventDefault())
+  document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false })
+
+  /** A short press: the relay steps to the next option. */
+  function tap() {
+    if (S.mode !== 'select' && S.mode !== 'relay') return
+    const n = opts().length
+    let step = 1
+    if (S.mode === 'relay' && is('surgeon') && Math.random() < 0.2) step = 2 // the tremor: a twitch fires twice
+    S.hl = (S.hl + step) % n
+    audio.click()
+    if (step === 2) setTimeout(() => audio.click(0.8), 55)
+    S.shake = Math.max(S.shake, 0.8)
+    if (S.mode === 'select') renderSelect()
+    else markOptions()
+  }
+
+  function startCharge() {
+    S.charging = true
+    S.charge = 0
+    S.silent = false
+    S.nextSlip = clock() + rand(0.5, 1.1)
+    audio.hum(true)
+  }
+
+  /** Let go before the lock: the charge dumps with a hiss. */
+  function dump() {
+    const c = S.charge
+    S.charging = false
+    if (S.silent) { S.silent = false; audio.unflinch() }
+    audio.hum(false)
+    audio.hiss(c)
+    // the scientist's foresight: let go inside the marked zone and see what this would do
+    if (S.mode === 'relay' && is('scientist') && c >= 0.35 && c <= 0.5) showGhost()
+  }
+
+  function lockIn() {
+    S.charging = false
+    S.charge = 1
+    S.silent = false
+    if (S.press) S.press.consumed = true
+    audio.hum(false)
+    audio.clack()
+    S.shake = Math.max(S.shake, 7)
+    S.glitch = 0.35
+    flashGlass(0.12)
+    S.lockedAt = clock()
+    if (S.mode === 'select') lockSelect()
+    else lockRelay(false)
+  }
+
+  // ═══════════ What the console shows
+  function setType(text, cps, onDone) {
+    S.type = { full: text, n: 0, cps, done: false, onDone, tick: 0 }
+    bodyEl.textContent = ''
+  }
+  function finishTyping() {
+    if (!S.type || S.type.done) return
+    S.type.n = S.type.full.length
+    stepTyping(0)
+  }
+  function stepTyping(dt) {
+    const T = S.type
+    if (!T || T.done) return
+    const before = Math.floor(T.n)
+    T.n = Math.min(T.full.length, T.n + T.cps * dt)
+    const k = Math.floor(T.n)
+    if (k !== before) {
+      bodyEl.textContent = T.full.slice(0, k)
+      T.tick += k - before
+      if (T.tick >= 4) { T.tick = 0; audio.tick() }
+    }
+    if (k >= T.full.length) {
+      bodyEl.textContent = T.full
+      T.done = true
+      if (T.onDone) T.onDone()
+    }
+  }
+
+  function header(left, right) {
+    hTitle.textContent = left
+    hRight.textContent = right || ''
+  }
+  function clearScreen() {
+    optsEl.innerHTML = ''
+    optsEl.classList.add('hidden')
+    statsEl.classList.remove('show')
+    statsEl.innerHTML = ''
+    noteEl.classList.remove('show')
+    noteEl.textContent = ''
+    tbar.classList.remove('show', 'low')
+    glass.classList.remove('tlow')
+    footEl.textContent = ''
+    footEl.classList.remove('go')
+    S.optsOn = false
+  }
+
+  function powerOn() {
+    S.mode = 'boot'
+    glass.classList.remove('off')
+    flashGlass(0.25)
+    audio.powerOn()
+    clearScreen()
+    header('AETHELGARD CABLEWAY · CABIN 15', 'EMERGENCY CONSOLE')
+    setNixie(15, true)
+    setCrew(4)
+    setType('WINCH .......... ONLINE\nCABIN HEATER ... ONLINE\nCABLE GRIP ..... ENGAGED\nCREW ........... 4 + OPERATOR\nWHITE ASH ...... RISING\n\nOPERATOR SEAT EMPTY.', 70, () => later(0.9, () => { if (S.mode === 'boot') showSelect() }))
+  }
+
+  function showSelect() {
+    S.mode = 'select'
+    S.type = null
+    S.hl = 0
+    clearScreen()
+    renderSelect()
+  }
+  function renderSelect() {
+    const a = ARCH[S.hl]
+    header('RELAY 00 · WHO SITS AT THE CONSOLE?', `${S.hl + 1} / ${ARCH.length}`)
+    bodyEl.textContent = `${a.name}\n+ ${a.buff}: ${a.buffText}\n− ${a.debuff}: ${a.debuffText}`
+    optsEl.innerHTML = ''
+    ARCH.forEach((x, i) => {
+      const li = document.createElement('li')
+      li.className = 'opt' + (i === S.hl ? ' on' : '')
+      li.innerHTML = '<b></b><span class="t"></span>'
+      li.querySelector('b').textContent = String(i + 1)
+      li.querySelector('.t').textContent = x.name
+      optsEl.appendChild(li)
+    })
+    optsEl.classList.remove('hidden')
+    S.optsOn = true
+    footEl.textContent = 'TAP: NEXT OPERATOR · HOLD: TAKE THE SEAT'
+    btn.setAttribute('aria-label', `Brass button. Highlighted: ${a.name}. Tap for the next operator, hold to take the seat.`)
+  }
+
+  function lockSelect() {
+    S.arch = ARCH[S.hl]
+    document.body.dataset.arch = S.arch.id
+    S.mode = 'brief'
+    clearScreen()
+    header('OPERATOR ASSIGNED', S.arch.name)
+    const a = S.arch
+    if (a.id === 'scientist') makePhantoms()
+    if (a.id === 'vet') S.tinNext = clock() + rand(9, 14)
+    setType(
+      `${a.name}\n+ ${a.buff}\n− ${a.debuff}\n\n` +
+        'The White Ash came up the valley at 14:02, and everything it touched froze where it stood. Cabin 15 was the last one out of the bottom station. Fifteen relay towers stand between you and the bunker at Aethelgard.\n\n' +
+        'Four strangers watch you take the controls: Ilse, the attendant. Tomas, a courier. Mags, a retired linewoman. Kofi, a ski instructor.',
+      95,
+      () => {
+        S.acceptAt = clock() + 0.4
+        footEl.textContent = 'PRESS TO BEGIN ▸'
+        footEl.classList.add('go')
+      },
+    )
+  }
+
+  function advance() {
+    if (S.mode === 'brief') return startRelay(1)
+    if (S.mode === 'result') {
+      if (S.relay < RELAYS.length) return startRelay(S.relay + 1)
+    }
+  }
+
+  function startRelay(i) {
+    S.mode = 'relay'
+    S.relay = i
+    S.hl = 0
+    S.charge = 0
+    S.timerOn = false
+    S.pass = 1 // the next tower slides past the window
+    clearScreen()
+    const r = RELAYS[i - 1]
+    header(`RELAY ${pad2(i)} · ${r.zone}`, `OP: ${S.arch.short}`)
+    setNixie(16 - i)
+    audio.zone(r.zone)
+    if (r.fx) fx(r.fx)
+    // the HUD sees the cold and strain that this stretch costs whatever you pick
+    const z = DRAIN[r.zone]
+    const amb = [z[1] && `${z[1]}% HEAT`, z[2] && `${z[2]}% POWER`].filter(Boolean)
+    if (amb.length) noteEl.textContent = `[AMBIENT, EVERY RELAY: ${amb.join(' | ')}]`
+    renderOptions()
+    setType(r.text, r.urgent ? 140 : 95, () => {
+      optsEl.classList.remove('hidden')
+      S.optsOn = true
+      if (amb.length) noteEl.classList.add('show')
+      footEl.textContent = 'TAP: NEXT OPTION · HOLD: LOCK IN'
+      S.beatAt = clock() + 0.3
+      if (r.urgent) {
+        S.timerMax = URGENT * (is('vet') ? 2 : 1)
+        S.timer = S.timerMax
+        S.timerOn = true
+        S.lastTick = Math.ceil(S.timer)
+        tbar.classList.add('show')
+      }
+    })
+  }
+
+  function hudTag(o) {
+    const names = ['LIFT', 'HEAT', 'POWER', 'CREW']
+    const parts = o.d.map((v, k) => (v ? `${v > 0 ? '+' : ''}${v}% ${names[k]}` : '')).filter(Boolean)
+    return '[' + (parts.length ? parts.join(' | ') : 'NO CHANGE') + ']'
+  }
+  function renderOptions() {
+    optsEl.innerHTML = ''
+    S.mut = []
+    opts().forEach((o, i) => {
+      const li = document.createElement('li')
+      li.className = 'opt'
+      li.innerHTML = '<b></b><span class="t"></span><em class="hud"></em>'
+      li.querySelector('b').textContent = 'ABC'[i]
+      li.querySelector('.t').textContent = o.t
+      li.querySelector('.hud').textContent = hudTag(o)
+      optsEl.appendChild(li)
+      S.mut.push({ text: o.t.toUpperCase(), until: 0 })
+    })
+    markOptions()
+  }
+  function markOptions() {
+    const items = optsEl.children
+    for (let i = 0; i < items.length; i++) items[i].classList.toggle('on', i === S.hl)
+    if (S.mode === 'relay') {
+      const o = opts()[S.hl]
+      btn.setAttribute('aria-label', `Brass button. Highlighted: option ${'ABC'[S.hl]}, ${o.t} Tap for the next option, hold to lock it in.`)
+      S.beatAt = Math.min(S.beatAt, clock() + 0.15)
+    }
+  }
+
+  function lockRelay(froze) {
+    const r = RELAYS[S.relay - 1]
+    const o = r.opts[S.hl]
+    const z = DRAIN[r.zone]
+    const before = S.crew
+    S.alt = clampStat(S.alt + o.d[0] + z[0] - (froze ? FROZE_ALT : 0))
+    S.heat = clampStat(S.heat + o.d[1] + z[1])
+    S.power = clampStat(S.power + o.d[2] + z[2])
+    S.coh = clampStat(S.coh + o.d[3] + z[3])
+    S.pin = !!o.pin
+    S.choices += 'ABC'[S.hl]
+    S.timerOn = false
+    S.crew = crewCount(S.coh)
+    setCrew(S.crew)
+    if (o.fx) later(0.15, () => fx(o.fx))
+    if (froze) { audio.clack(); flashGlass(0.12) }
+    const letter = 'ABC'[S.hl]
+    let text = ''
+    if (froze) text += `YOU FROZE. THE CONSOLE LOCKED IN ${letter} ON ITS OWN, AND THE CABIN SLID BACK WHILE YOU HESITATED.\n\n`
+    text += o.out
+    const lines = []
+    for (let k = 4 - before; k < 4 - S.crew; k++) lines.push(`· ${CREW[k]} HAS STOPPED RESPONDING.`)
+    for (let k = 4 - S.crew; k < 4 - before; k++) lines.push(`· ${CREW[k]} IS WITH YOU AGAIN.`)
+    if (lines.length) text += '\n\n' + lines.join('\n')
+    S.mode = 'result'
+    clearScreen()
+    header(`RELAY ${pad2(S.relay)} · LOCKED: ${letter}`, `OP: ${S.arch.short}`)
+    if (S.relay === RELAYS.length) return finish(text)
+    setType(text, 110, () => {
+      S.acceptAt = clock() + 0.35
+      footEl.textContent = 'PRESS TO CONTINUE ▸'
+      footEl.classList.add('go')
+    })
+  }
+
+  function crewNames(n) { return CREW.slice(4 - n).map(cap) }
+
+  /** After Relay 15: the engine dies, the button sinks, and the console writes its final log. */
+  function finish(lastText) {
+    S.mode = 'ending'
+    S.ending = decideEnding(S)
+    btn.disabled = true
+    btn.classList.remove('down')
+    S.press = null
+    audio.engineOff()
+    setNixie(0)
+    tunnel.classList.remove('on')
+    consoleEl.classList.remove('blurred')
+    phantomsEl.style.opacity = '0'
+    const log = {
+      v: 1, ending: S.ending, arch: S.arch.id,
+      alt: S.alt, heat: S.heat, power: S.power, coh: S.coh, crew: S.crew, pin: S.pin,
+      choices: S.choices, at: Date.now(),
+    }
+    try { localStorage.setItem(KEY, JSON.stringify(log)) } catch (e) {}
+    setType(lastText, 110, () => later(2.6, () => {
+      if (S.mode !== 'ending') return
+      S.endAt = clock()
+      audio.ending(S.ending)
+      fx(S.ending === 'abyss' ? 'snap' : 'none')
+      showLog(log, true)
+    }))
+  }
+
+  function showLog(log, typed) {
+    const e = ENDINGS[log.ending]
+    const a = ARCH.find((x) => x.id === log.arch) || ARCH[0]
+    clearScreen()
+    header('FINAL LOG · CABIN 15', `ENDING ${e.n} OF 5`)
+    const text = `${e.title}\n\n${e.text(crewNames(log.crew))}`
+    const rows = [
+      ['OPERATOR', a.name],
+      ['ALTITUDE', String(log.alt)],
+      ['CABIN HEAT', String(log.heat)],
+      ['HULL POWER', String(log.power)],
+      ['CREW', `${log.crew} OF 4 RESPONDING`],
+      ['CHOICES', log.choices.replace(/(.{5})(?=.)/g, '$1 ')],
+    ]
+    const fill = () => {
+      statsEl.innerHTML = ''
+      for (const [k, v] of rows) {
+        const li = document.createElement('li')
+        li.textContent = `${(k + ' ').padEnd(14, '.')} ${v}`
+        statsEl.appendChild(li)
+      }
+      statsEl.classList.add('show')
+      footEl.textContent = 'THE CONSOLE IS LOCKED.'
+    }
+    if (typed) setType(text, 70, fill)
+    else { S.type = null; bodyEl.textContent = text; fill() }
+    btn.setAttribute('aria-label', `The brass button is locked. Final log: ending ${e.n} of 5, ${e.title}.`)
+  }
+
+  // ═══════════ Panel hardware
+  let nixieFlicker = 0, nixieValue = 15
+  function setNixie(v, dim) {
+    nixieValue = v
+    nixieFlicker = 0.45
+    nixie.classList.toggle('dim', !!dim)
+  }
+  function drawNixie(dt) {
+    if (nixieFlicker > 0) {
+      nixieFlicker -= dt
+      if (nixieFlicker > 0) { nx[0].textContent = rnd(10); nx[1].textContent = rnd(10); return }
+    }
+    const s = pad2(nixieValue)
+    if (nx[0].textContent !== s[0]) nx[0].textContent = s[0]
+    if (nx[1].textContent !== s[1]) nx[1].textContent = s[1]
+  }
+  function setCrew(n) { lamps.forEach((l, i) => l.classList.toggle('on', i >= 4 - n)) }
+  function flashGlass(sec) { glass.classList.add('flash'); S.flashUntil = clock() + sec }
+
+  // ═══════════ The scientist: foresight and phantoms
+  function ghostText(o) {
+    if (o.ghost) return '[' + o.ghost + ']'
+    const [a, h, p, c] = o.d
+    const cand = [
+      [Math.abs(p) * 1.1, p <= -10 ? 'HULL INTEGRITY DROPS' : p < 0 ? 'POWER DRAINS' : p > 0 ? 'POWER RECOVERS' : ''],
+      [Math.abs(h), h <= -10 ? 'FROST FLOODS THE GLASS' : h < 0 ? 'THE CABIN COOLS' : h > 0 ? 'THE CABIN WARMS' : ''],
+      [Math.abs(a), a >= 8 ? 'THE CABIN SURGES UP' : a > 2 ? 'THE CABIN CLIMBS' : a > 0 ? 'THE CABIN CREEPS UP' : a === 0 ? 'THE CABIN STALLS' : 'THE CABIN SLIPS BACK'],
+    ].filter((x) => x[1]).sort((x, y) => y[0] - x[0])
+    const fate = o.care < 0 ? (c <= -12 ? 'SOMEONE MAY NOT RECOVER' : 'SOMEONE GETS HURT') : c >= 6 ? 'THE GROUP HOLDS TOGETHER' : c < 0 ? 'TRUST FRACTURES' : 'ALL SURVIVE'
+    return '[' + cand[0][1] + ' / ' + fate + ']'
+  }
+  function showGhost() {
+    ghostEl.textContent = ghostText(opts()[S.hl])
+    ghostEl.classList.remove('on')
+    void ghostEl.offsetWidth
+    ghostEl.classList.add('on')
+    audio.ghost()
+  }
+  const FORMULAS = ['Δh = v·t − ½gt²', 'P(snap) = 0.37?', 'T = −41 °C', '∫ Q dt < 0', 'k = 4.2 kN/m', 'σ ≥ σ yield?', 'm = 5 000 kg', 'η → 0', 'e^(−λt)', 'ΔT/Δt = −3.1', 'F = μN', '√(2gh)', 'Σ = ?', 'p(5/5) = ?', 'V = IR', '1/(1+e⁻ˣ)', 'dθ/dt', 'ln 0 = −∞', 't ≈ 11.4 s', 'λ = 0.06', 'O₂: 41 min?', 'ρ_ash = ?']
+  const phantoms = []
+  let glassW = 600, glassH = 300
+  function makePhantoms() {
+    phantomsEl.innerHTML = ''
+    phantoms.length = 0
+    for (let i = 0; i < 18; i++) {
+      const el = document.createElement('span')
+      el.textContent = FORMULAS[i % FORMULAS.length]
+      el.style.fontSize = (11 + Math.random() * 13).toFixed(0) + 'px'
+      el.style.opacity = (0.16 + Math.random() * 0.26).toFixed(2)
+      phantomsEl.appendChild(el)
+      phantoms.push({ el, x: Math.random() * glassW, y: Math.random() * glassH, vx: rand(-14, 14), vy: rand(-7, 7), w: 0 })
+    }
+  }
+  function measureGlass() { glassW = glass.clientWidth; glassH = glass.clientHeight }
+
+  // ═══════════ The tech geek: the scrambler
+  const LOOK = { VENT: 'VAST', VENTS: 'VASTS', BRAKE: 'BREAK', BRAKES: 'BREAKS', SAFE: 'FUSE', FUSE: 'SAFE', FUSES: 'SAFES', SEAL: 'STEAL', HOLD: 'FOLD', KEEP: 'KEPT', DROP: 'DRIP', PULL: 'PULP', LEAVE: 'LEARN', FIRE: 'FIRM', HEATER: 'HEADER', HEAT: 'HEAD', WINCH: 'WENCH', SPLIT: 'SPILT', BURN: 'BURY', STOP: 'SPOT', CUT: 'CAT', LIVE: 'LIFE', LOCK: 'LACK', OXYGEN: 'OXYEGN', FORCE: 'FARCE', SHUT: 'SHOT', OPEN: 'OVEN', WAIT: 'WAIL', FULL: 'FALL' }
+  function scramble(src) {
+    let w = src.split(' ')
+    for (let k = 0; k < 2; k++) {
+      const i = rnd(w.length), x = w[i]
+      if (x.length >= 4) { const j = 1 + rnd(x.length - 3); w[i] = x.slice(0, j) + x[j + 1] + x[j] + x.slice(j + 2) }
+    }
+    w = w.map((x) => { const core = x.replace(/[^A-Z]/g, ''); const alt = LOOK[core]; return alt && Math.random() < 0.65 ? x.replace(core, alt) : x })
+    if (w.length > 3 && Math.random() < 0.8) { const i = rnd(w.length - 2), span = 2 + rnd(2); w.splice(i, span, w.slice(i, i + span).join('')) }
+    return w.join(' ')
+  }
+  function runScrambler(now) {
+    if (now < S.mutAt) return
+    S.mutAt = now + 0.11
+    const items = optsEl.children
+    const list = opts()
+    for (let i = 0; i < items.length && i < S.mut.length; i++) {
+      const m = S.mut[i]
+      if (now >= m.until) {
+        m.text = Math.random() < 0.7 ? scramble(list[i].t.toUpperCase()) : list[i].t.toUpperCase()
+        m.until = now + rand(0.3, 0.9)
+      }
+      const t = items[i].querySelector('.t')
+      if (t.textContent !== m.text) t.textContent = m.text
+    }
+  }
+
+  // ═══════════ Effects
+  function fx(name) {
+    switch (name) {
+      case 'start': audio.motorStart(); break
+      case 'gust': S.shake = 12; S.windKick = 1; audio.gust(); break
+      case 'stall': S.shake = 6; audio.stall(); break
+      case 'storm': S.windKick = 1; audio.gust(); break
+      case 'jam': S.shake = 8; audio.grind(); break
+      case 'blowout': S.shake = 14; S.glitch = 0.8; S.blackout = 1.2; flashGlass(0.2); audio.blowout(); break
+      case 'sag': S.shake = 7; audio.groan(); break
+      case 'creak': S.shake = 4; audio.groan(); break
+      case 'brakes': S.shake = 10; audio.squeal(); break
+      case 'glass': S.shake = 14; S.glitch = 0.5; S.shatter = 1; audio.glass(); break
+      case 'drop': S.shake = 16; S.drop = 1; audio.drop(); break
+      case 'arc': S.shake = 8; S.glitch = 0.7; S.arc = 0.6; flashGlass(0.18); audio.arc(); break
+      case 'snap': S.shake = 26; S.glitch = 1.2; audio.snap(); break
+    }
+  }
+
+  // ═══════════ The hidden reset: Escape three times within a second and a half
+  const escapes = []
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.repeat) return
+    const now = clock()
+    escapes.push(now)
+    while (escapes.length && now - escapes[0] > 1.5) escapes.shift()
+    if (escapes.length >= 3) { escapes.length = 0; reset() }
+  })
+  function reset() {
+    try { localStorage.removeItem(KEY) } catch (err) {} // only this story's save: the rest of the site keeps its own
+    gen++
+    timers.length = 0
+    audio.reset()
+    fresh()
+    delete document.body.dataset.arch
+    phantomsEl.innerHTML = ''
+    phantomsEl.style.opacity = ''
+    phantoms.length = 0
+    tunnel.classList.remove('on')
+    consoleEl.classList.remove('blurred')
+    consoleEl.style.transform = ''
+    btn.disabled = false
+    btn.classList.remove('down')
+    btn.setAttribute('aria-label', 'Brass button. Press to power the console.')
+    clearScreen()
+    header('', '')
+    bodyEl.textContent = ''
+    footEl.textContent = 'PRESS THE BRASS BUTTON'
+    glass.classList.add('off')
+    setNixie(15, true)
+    setCrew(0)
+    bulbs.forEach((b) => b.classList.remove('on'))
+    frostCov = -1
+    view.alt = START.alt
+  }
+
+  // ═══════════ Every frame
+  function update(now, dt) {
+    // scheduled steps
+    for (let i = timers.length - 1; i >= 0; i--) {
+      const t = timers[i]
+      if (t.g !== gen) { timers.splice(i, 1); continue }
+      if (now >= t.at) { timers.splice(i, 1); t.fn() }
+    }
+    stepTyping(dt)
+    if (S.flashUntil && now > S.flashUntil) { glass.classList.remove('flash'); S.flashUntil = 0 }
+
+    // holding: from a tap into a charge
+    const choosing = (S.mode === 'select' || S.mode === 'relay') && S.optsOn
+    if (S.press && !S.press.consumed && choosing && !S.charging && now - S.press.at >= tapLimit()) startCharge()
+    if (S.charging) {
+      S.charge += (S.charge < FLINCH ? RATE_A : RATE_B) * dt
+      // the surgeon's tremor: the spring slips back
+      if (S.mode === 'relay' && is('surgeon') && now >= S.nextSlip) {
+        S.charge = Math.max(0, S.charge - rand(0.12, 0.18))
+        S.nextSlip = now + rand(0.7, 1.5) // often enough to hurt, rarely enough that a steady hold gets there
+        S.shake = Math.max(S.shake, 3)
+        audio.slip()
+      }
+      if (S.charge >= FLINCH && !S.silent) { S.silent = true; audio.flinch() }
+      else if (S.charge < FLINCH && S.silent) { S.silent = false; audio.unflinch() }
+      if (S.charge >= 1) lockIn()
+    }
+    S.shownCharge = S.charging ? S.charge : Math.max(0, S.shownCharge - dt * (S.mode === 'result' ? 1.2 : 2.6))
+    if (!S.charging && now - S.lockedAt < 0.5) S.shownCharge = 1
+
+    // the urgent-relay clock (it waits while you hold)
+    if (S.mode === 'relay' && S.timerOn) {
+      if (!S.charging) S.timer -= dt
+      const left = Math.max(0, S.timer)
+      tfill.style.transform = `scaleX(${(left / S.timerMax).toFixed(4)})`
+      const low = left < 4
+      tbar.classList.toggle('low', low)
+      glass.classList.toggle('tlow', low)
+      hRight.innerHTML = '<span id="tleft">⚠ ' + left.toFixed(1) + 's</span>'
+      if (Math.ceil(left) < S.lastTick) { S.lastTick = Math.ceil(left); if (left < 4.5) audio.tickTock() }
+      if (S.timer <= 0) {
+        S.timerOn = false
+        if (S.charging) { S.charging = false; audio.hum(false); if (S.silent) { S.silent = false; audio.unflinch() } }
+        if (S.press) S.press.consumed = true
+        lockRelay(true)
+      }
+    }
+
+    // archetype effects, once the operator is seated and a relay is on the glass
+    const live = S.mode === 'relay' && S.optsOn
+    if (S.arch) {
+      const id = S.arch.id
+      const seated = S.mode === 'brief' || S.mode === 'relay' || S.mode === 'result'
+      if (id === 'geek' && live) runScrambler(now)
+      if (id === 'surgeon' && live && now >= S.beatAt) {
+        const care = opts()[S.hl].care
+        const bpm = care > 0 ? 60 : care < 0 ? 165 : 84
+        let gap = 60 / bpm
+        if (care < 0) gap *= rand(0.6, 1.4) // arrhythmia
+        S.beatAt = now + gap
+        audio.heartbeat(care)
+      }
+      if (id === 'vet' && seated) {
+        if (now >= S.tinNext && now >= S.tinUntil) {
+          S.tinUntil = now + rand(5, 7)
+          S.tinNext = S.tinUntil + rand(9, 16)
+          audio.tinnitus(S.tinUntil - now)
+        }
+        tunnel.classList.toggle('on', now < S.tinUntil)
+      }
+      if (id === 'scientist') {
+        for (const p of phantoms) {
+          p.x += p.vx * dt; p.y += p.vy * dt
+          p.w = p.w || p.el.offsetWidth
+          if (p.x < -p.w) p.x = glassW
+          if (p.x > glassW) p.x = -p.w
+          if (p.y < -20) p.y = glassH
+          if (p.y > glassH) p.y = -20
+          p.el.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`
+        }
+        if ((S.mode === 'relay' || S.mode === 'result') && now >= S.whisperAt) { S.whisperAt = now + rand(0.6, 2.2); audio.whisper() }
+      }
+      if (id === 'artist') {
+        if (seated && now >= S.blurNext) {
+          S.blurNext = now + rand(5, 9)
+          consoleEl.classList.add('blurred')
+          later(rand(0.9, 1.6), () => consoleEl.classList.remove('blurred'))
+        }
+        const o = live ? opts()[S.hl] : null
+        const aura = o ? (o.aura != null ? o.aura : o.care) : null
+        S.auraTarget = aura == null ? [140, 170, 175] : aura > 0 ? [255, 168, 60] : aura < 0 ? [130, 70, 255] : [120, 175, 185]
+        S.auraOn = lerp(S.auraOn, live ? 1 : 0, 1 - Math.exp(-dt * 3))
+        audio.pad(live ? aura : null)
+      }
+    }
+    for (let k = 0; k < 3; k++) S.aura[k] = lerp(S.aura[k], S.auraTarget[k], 1 - Math.exp(-dt * 4))
+
+    // the console: vibration while charging, sway for the artist
+    S.shake *= Math.exp(-dt * 4)
+    const steady = is('vet') ? 0.35 : 1
+    let tx = 0, ty = 0, rot = 0, sk = 0
+    if (S.charging && !S.silent) { const a = (0.6 + S.charge * 3.2) * steady; tx += rand(-a, a); ty += rand(-a, a) }
+    if (S.shake > 0.05) { const a = S.shake * 0.5 * steady; tx += rand(-a, a); ty += rand(-a, a) }
+    if (is('artist') && S.mode !== 'ending' && S.mode !== 'log') {
+      rot = Math.sin(now * 0.55) * 1.5 + Math.sin(now * 1.31) * 0.4
+      sk = Math.sin(now * 0.41 + 1) * 2.2
+      ty += Math.sin(now * 0.8) * 4
+    }
+    consoleEl.style.transform = rot || sk || tx || ty ? `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg) skewX(${sk.toFixed(3)}deg)` : ''
+
+    // the panel
+    cfill.style.transform = `scaleX(${clamp(S.shownCharge).toFixed(4)})`
+    drawNixie(dt)
+    for (let k = 0; k < 3; k++) {
+      let on = false
+      if (S.mode === 'relay') on = S.optsOn && k === S.hl
+      else if (S.mode === 'result') on = k === 'ABC'.indexOf(S.choices.slice(-1)) && (now * 3) % 1 < 0.6
+      else if (S.mode === 'select' || S.mode === 'brief' || S.mode === 'boot') on = Math.floor(now * 2.5) % 3 === k
+      if (bulbs[k].classList.contains('on') !== on) bulbs[k].classList.toggle('on', on)
+    }
+    // the hull's power is the light: it dims and flickers as it drains
+    const light = S.mode === 'off' ? 1 : 0.42 + 0.58 * (S.power / 100)
+    let flick = 1
+    if (S.mode !== 'off' && S.power < 45 && Math.random() < 0.05 * (1 - S.power / 45) + 0.005) flick = rand(0.35, 0.8)
+    if (S.blackout > 0) { S.blackout -= dt; flick *= 0.3 }
+    S.light = light * flick
+    const b = (0.55 + 0.45 * S.light).toFixed(2)
+    if (b !== S.lastB && !S.flashUntil) { S.lastB = b; glass.style.filter = `brightness(${b})` }
+
+    audio.update(now, dt)
+  }
+
+  // ═══════════ The view out of the front window
+  const cv = $('scene')
+  const g = cv.getContext('2d')
+  let W = 0, H = 0, dpr = 1
+  const view = { alt: START.alt, pass: 0, fall: 0 }
+  let ridges = []
+  let frostTex = null, frostMask = null, frostCov = -1
+  const snow = []
+  const motes = []
+
+  function resize() {
+    W = window.innerWidth
+    H = window.innerHeight
+    dpr = Math.min(1.5, window.devicePixelRatio || 1)
+    cv.width = Math.round(W * dpr)
+    cv.height = Math.round(H * dpr)
+    makeRidges()
+    makeFrost()
+    frostCov = -1
+    snow.length = 0
+    for (let i = 0; i < 360; i++) snow.push({ x: Math.random() * W, y: Math.random() * H, z: Math.random() })
+    motes.length = 0
+    for (let i = 0; i < 46; i++) motes.push({ x: Math.random() * W, y: Math.random() * H, vx: rand(-4, 4), vy: rand(-3, 3), r: rand(0.6, 1.8), p: Math.random() * TAU })
+    measureGlass()
+  }
+
+  function makeRidges() {
+    ridges = [0, 1, 2].map((L) => {
+      const pts = []
+      const n = 48
+      const ph = Math.random() * 10
+      for (let i = 0; i <= n; i++) {
+        const x = i / n
+        const y = Math.sin(x * (3 + L * 2) + ph) * 0.5 + Math.sin(x * (7 + L * 3) + ph * 2) * 0.25 + Math.sin(x * 23 + ph * 3) * 0.08 + (Math.random() - 0.5) * 0.08
+        pts.push([x, y])
+      }
+      return pts
+    })
+  }
+
+  /** Frost crystals for the glass, grown once: branches creeping in from the edges. */
+  function makeFrost() {
+    const fw = Math.max(2, Math.ceil(W / 2)), fh = Math.max(2, Math.ceil(H / 2))
+    frostTex = document.createElement('canvas')
+    frostTex.width = fw; frostTex.height = fh
+    frostMask = document.createElement('canvas')
+    frostMask.width = fw; frostMask.height = fh
+    const f = frostTex.getContext('2d')
+    const haze = f.createRadialGradient(fw / 2, fh / 2, 0, fw / 2, fh / 2, Math.hypot(fw, fh) / 2)
+    haze.addColorStop(0, 'rgba(200, 222, 240, 0.30)')
+    haze.addColorStop(1, 'rgba(225, 238, 250, 0.62)')
+    f.fillStyle = haze
+    f.fillRect(0, 0, fw, fh)
+    for (let i = 0; i < (fw * fh) / 60; i++) {
+      f.fillStyle = `rgba(240, 248, 255, ${rand(0.08, 0.45).toFixed(2)})`
+      f.fillRect(Math.random() * fw, Math.random() * fh, 1, 1)
+    }
+    f.lineCap = 'round'
+    const branch = (x, y, a, len, depth) => {
+      if (depth <= 0 || len < 2) return
+      const x2 = x + Math.cos(a) * len, y2 = y + Math.sin(a) * len
+      f.strokeStyle = `rgba(240, 250, 255, ${(0.18 + depth * 0.07).toFixed(2)})`
+      f.lineWidth = Math.max(0.4, depth * 0.35)
+      f.beginPath(); f.moveTo(x, y); f.lineTo(x2, y2); f.stroke()
+      const steps = 3
+      for (let s = 1; s <= steps; s++) {
+        const px = x + (x2 - x) * (s / (steps + 1)), py = y + (y2 - y) * (s / (steps + 1))
+        branch(px, py, a + 1.05 + rand(-0.2, 0.2), len * 0.38, depth - 1)
+        branch(px, py, a - 1.05 + rand(-0.2, 0.2), len * 0.38, depth - 1)
+      }
+      branch(x2, y2, a + rand(-0.35, 0.35), len * 0.7, depth - 1)
+    }
+    const seeds = Math.round((fw + fh) / 9)
+    for (let i = 0; i < seeds; i++) {
+      const side = rnd(4)
+      const x = side === 0 ? 0 : side === 1 ? fw : Math.random() * fw
+      const y = side === 2 ? 0 : side === 3 ? fh : Math.random() * fh
+      const a = Math.atan2(fh / 2 - y, fw / 2 - x) + rand(-0.7, 0.7)
+      branch(x, y, a, rand(18, 46), 3)
+    }
+  }
+  function updateFrost(cov) {
+    const fw = frostMask.width, fh = frostMask.height
+    const m = frostMask.getContext('2d')
+    m.globalCompositeOperation = 'source-over'
+    m.clearRect(0, 0, fw, fh)
+    m.drawImage(frostTex, 0, 0)
+    m.globalCompositeOperation = 'destination-in'
+    const R = Math.hypot(fw, fh) / 2
+    const inner = Math.max(0, R * (1.08 - cov * 1.08))
+    const gr = m.createRadialGradient(fw / 2, fh * 0.42, inner, fw / 2, fh * 0.42, inner + R * 0.3)
+    gr.addColorStop(0, 'rgba(0,0,0,0)')
+    gr.addColorStop(1, 'rgba(0,0,0,1)')
+    m.fillStyle = gr
+    m.fillRect(0, 0, fw, fh)
+    frostCov = cov
+  }
+
+  const ZONE_SNOW = { 'THE LOWER GORGE': 0.35, 'THE MID-SPAN ICE STORM': 1, 'THE ABYSSAL SAG': 0.7, 'THE BUNKER THRESHOLD': 0.85 }
+  function zoneNow() { return S.relay ? RELAYS[S.relay - 1].zone : 'THE LOWER GORGE' }
+
+  function draw(now, dt) {
+    g.setTransform(dpr, 0, 0, dpr, 0, 0)
+    const k = S.mode === 'ending' || S.mode === 'log' ? clamp((now - S.endAt) / 6) : 0
+    const end = S.mode === 'ending' || S.mode === 'log' ? (S.ending || '') : ''
+    const endLive = end && S.endAt !== 0
+
+    // the camera follows the altitude; the cabin falls in the abyss
+    let targetAlt = S.alt
+    if (endLive && end === 'abyss') view.fall += dt * (S.mode === 'log' ? 0 : 60)
+    view.alt += (targetAlt - view.alt) * (1 - Math.exp(-dt * 0.9))
+    if (S.pass > 0) { view.pass = S.relay - 1 + (1 - S.pass); S.pass = Math.max(0, S.pass - dt / 2.2) } else view.pass = S.relay
+    if (S.drop > 0) S.drop = Math.max(0, S.drop - dt * 1.8)
+    const camY = (view.alt - view.fall) / 100
+
+    const shake = S.shake * (is('vet') ? 0.35 : 1)
+    const sx = shake > 0.05 ? rand(-shake, shake) : 0, sy = shake > 0.05 ? rand(-shake, shake) : 0
+    g.save()
+    g.translate(sx, sy + (S.drop || 0) * 26)
+
+    // sky
+    const storm = ZONE_SNOW[zoneNow()]
+    const sky = g.createLinearGradient(0, 0, 0, H)
+    sky.addColorStop(0, '#0b1018')
+    sky.addColorStop(0.45, storm > 0.8 ? '#3d4753' : '#26303c')
+    sky.addColorStop(1, '#556170')
+    g.fillStyle = sky
+    g.fillRect(-30, -30, W + 60, H + 60)
+
+    // mountains: the nearer the ridge, the faster it drops away as you climb
+    const horizon = H * 0.36
+    ridges.forEach((pts, L) => {
+      const drop = camY * H * [0.1, 0.32, 0.75][L]
+      const base = horizon + [0, 0.07, 0.17][L] * H + drop
+      const amp = [0.06, 0.09, 0.14][L] * H
+      g.fillStyle = ['#2f3946', '#202832', '#141a21'][L]
+      g.beginPath()
+      g.moveTo(-30, H + 30)
+      for (const [x, y] of pts) g.lineTo(x * (W + 60) - 30, base - y * amp)
+      g.lineTo(W + 30, H + 30)
+      g.closePath()
+      g.fill()
+      // snow on the crests
+      g.strokeStyle = ['rgba(200,214,228,0.18)', 'rgba(200,214,228,0.12)', 'rgba(200,214,228,0.08)'][L]
+      g.lineWidth = 1.2
+      g.beginPath()
+      pts.forEach(([x, y], i) => (i ? g.lineTo(x * (W + 60) - 30, base - y * amp) : g.moveTo(x * (W + 60) - 30, base - y * amp)))
+      g.stroke()
+    })
+
+    // the summit and the bunker, where the cable goes
+    const vx = W * 0.8, vy = H * (0.1 + 0.16 * clamp(camY))
+    const peakW = W * (0.18 + 0.2 * clamp(camY)), peakH = H * 0.5
+    g.fillStyle = '#1b222b'
+    g.beginPath()
+    g.moveTo(vx - peakW * 1.6, vy + peakH)
+    g.lineTo(vx - peakW * 0.18, vy + 6)
+    g.lineTo(vx + peakW * 0.12, vy + 2)
+    g.lineTo(vx + peakW * 1.4, vy + peakH)
+    g.closePath()
+    g.fill()
+    const bw = 18 + 60 * clamp(camY), bh = bw * 0.42
+    g.fillStyle = '#3a3f45'
+    g.fillRect(vx - bw / 2, vy - bh + 6, bw, bh)
+    const glow = 0.25 + 0.75 * clamp((view.alt - 30) / 60)
+    const amberSlit = end === 'catwalk' && endLive ? 1 - k : 1
+    g.fillStyle = `rgba(255, 176, 70, ${(glow * amberSlit).toFixed(3)})`
+    g.fillRect(vx - bw * 0.28 * amberSlit, vy - bh * 0.62 + 6, bw * 0.56 * amberSlit, bh * 0.5)
+    const halo = g.createRadialGradient(vx, vy - bh / 2, 0, vx, vy - bh / 2, bw * 2.2)
+    halo.addColorStop(0, `rgba(255, 170, 60, ${(0.35 * glow * amberSlit).toFixed(3)})`)
+    halo.addColorStop(1, 'rgba(255, 170, 60, 0)')
+    g.fillStyle = halo
+    g.fillRect(vx - bw * 2.2, vy - bh / 2 - bw * 2.2, bw * 4.4, bw * 4.4)
+
+    // the haul-cable, sagging more in the sag; and the relay towers coming down it
+    const nearX = -W * 0.06, nearY = H * 0.86
+    const sag = (zoneNow() === 'THE ABYSSAL SAG' ? 0.14 : 0.05) * H
+    const cx1 = (nearX + vx) / 2, cy1 = (nearY + vy) / 2 + sag
+    const P = (u) => [(1 - u) * (1 - u) * nearX + 2 * (1 - u) * u * cx1 + u * u * vx, (1 - u) * (1 - u) * nearY + 2 * (1 - u) * u * cy1 + u * u * vy]
+    g.strokeStyle = 'rgba(10, 12, 15, 0.95)'
+    g.lineWidth = 2.2
+    g.beginPath(); g.moveTo(nearX, nearY); g.quadraticCurveTo(cx1, cy1, vx, vy); g.stroke()
+    g.strokeStyle = 'rgba(160, 175, 190, 0.25)'
+    g.lineWidth = 0.8
+    g.beginPath(); g.moveTo(nearX, nearY - 1); g.quadraticCurveTo(cx1, cy1 - 1, vx, vy - 1); g.stroke()
+    const progress = view.pass
+    for (let t = Math.floor(progress) - 1; t <= 15; t++) {
+      const d = t - progress
+      if (d < -0.35 || d > 7) continue
+      const u = 1 - 1 / (1 + 0.5 * (d + 0.5))
+      const [px, py] = P(u)
+      const s = Math.pow(1 - u, 1.4)
+      const th = H * 0.95 * s, tw = 34 * s + 3
+      g.strokeStyle = `rgba(8, 10, 13, ${(0.5 + 0.5 * s).toFixed(2)})`
+      g.lineWidth = Math.max(1, 3 * s)
+      g.beginPath()
+      g.moveTo(px - tw * 0.4, py + 2); g.lineTo(px - tw, py + th)
+      g.moveTo(px + tw * 0.4, py + 2); g.lineTo(px + tw, py + th)
+      g.moveTo(px - tw * 0.9, py); g.lineTo(px + tw * 0.9, py)
+      for (let q = 1; q < 6; q++) {
+        const yy = py + th * (q / 6), ww = lerp(tw * 0.4, tw, q / 6)
+        const yy2 = py + th * ((q + 1) / 6), ww2 = lerp(tw * 0.4, tw, (q + 1) / 6)
+        g.moveTo(px - ww, yy); g.lineTo(px + ww2, yy2)
+        g.moveTo(px + ww, yy); g.lineTo(px - ww2, yy2)
+      }
+      g.stroke()
+    }
+
+    // the White Ash, rising from the valley: how close it is depends on how far you've climbed
+    const ashLevel = 6 + S.relay * 5.6
+    const danger = clamp((ashLevel - (view.alt - view.fall) + 30) / 55)
+    const ashTop = H * (0.98 - danger * 0.55) - (end === 'abyss' && endLive ? k * H : 0)
+    const ag = g.createLinearGradient(0, ashTop - 40, 0, ashTop + 120)
+    ag.addColorStop(0, 'rgba(225, 232, 238, 0)')
+    ag.addColorStop(0.35, 'rgba(228, 234, 240, 0.65)')
+    ag.addColorStop(1, 'rgba(236, 240, 244, 0.97)')
+    g.fillStyle = ag
+    g.beginPath()
+    g.moveTo(-30, H + 30)
+    for (let x = -30; x <= W + 30; x += 20) g.lineTo(x, ashTop + Math.sin(x * 0.011 + now * 0.5) * 9 + Math.sin(x * 0.027 - now * 0.9) * 5)
+    g.lineTo(W + 30, H + 30)
+    g.closePath()
+    g.fill()
+
+    // snow, blown sideways
+    const snowAmt = end ? (end === 'summit' ? 0.35 * (1 - k) : end === 'cold' ? 0.3 : end === 'catwalk' ? 1 : end === 'tomb' ? 0.2 : 0.6) : ZONE_SNOW[zoneNow()]
+    const wind = 160 + 520 * snowAmt + (S.windKick ? 600 * S.windKick : 0)
+    if (S.windKick) S.windKick = Math.max(0, S.windKick - dt * 0.7)
+    const count = Math.floor(snow.length * snowAmt)
+    g.strokeStyle = 'rgba(235, 242, 250, 0.55)'
+    g.fillStyle = 'rgba(235, 242, 250, 0.7)'
+    g.lineWidth = 1
+    g.beginPath()
+    for (let i = 0; i < count; i++) {
+      const p = snow[i]
+      const sp = 0.35 + p.z
+      p.x -= wind * sp * dt
+      p.y += (60 + 120 * p.z) * dt - (end === 'abyss' && endLive ? 900 * dt : 0)
+      if (p.x < -20) p.x = W + 20
+      if (p.y > H + 10) p.y = -10
+      if (p.y < -10) p.y = H + 10
+      const len = 2 + wind * sp * 0.012
+      g.moveTo(p.x, p.y); g.lineTo(p.x + len, p.y - len * 0.12)
+    }
+    g.stroke()
+    g.restore()
+
+    // frost on the glass, creeping in as the cabin cools
+    let cov = clamp(1 - S.heat / 100)
+    if (end === 'tomb') cov = endLive ? lerp(cov, 1, k) : 1
+    if (end === 'summit') cov = lerp(cov, 0, k)
+    if (S.mode === 'off') cov = 0.25
+    cov = Math.round(cov * 100) / 100
+    if (Math.abs(cov - frostCov) >= 0.01) updateFrost(cov)
+    if (cov > 0) g.drawImage(frostMask, 0, 0, W, H)
+
+    // shattered glass after the front window goes
+    if (S.choices.length >= 7 && S.choices[6] === 'A') {
+      g.strokeStyle = 'rgba(220, 235, 245, 0.18)'
+      g.lineWidth = 1
+      g.beginPath()
+      const ox = W * 0.62, oy = H * 0.12
+      for (let i = 0; i < 9; i++) { const a = i * 0.7 + 0.3; g.moveTo(ox, oy); g.lineTo(ox + Math.cos(a) * W * 0.25, oy + Math.sin(a) * H * 0.25) }
+      g.stroke()
+    }
+
+    // the cabin's frame
+    g.fillStyle = '#08090b'
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); g.lineTo(W, H * 0.045); g.lineTo(0, H * 0.06); g.closePath(); g.fill()
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(W * 0.055, 0); g.lineTo(W * 0.022, H); g.lineTo(0, H); g.closePath(); g.fill()
+    g.beginPath(); g.moveTo(W, 0); g.lineTo(W * 0.945, 0); g.lineTo(W * 0.978, H); g.lineTo(W, H); g.closePath(); g.fill()
+    g.fillRect(W * 0.497, 0, Math.max(3, W * 0.006), H)
+    g.strokeStyle = 'rgba(255,255,255,0.05)'
+    g.lineWidth = 1
+    g.beginPath(); g.moveTo(W * 0.055, 0); g.lineTo(W * 0.022, H); g.moveTo(W * 0.945, 0); g.lineTo(W * 0.978, H); g.stroke()
+
+    // dust motes in the cabin air
+    const frozen = end === 'tomb'
+    for (const m of motes) {
+      if (!frozen) { m.x += (m.vx + Math.sin(now * 0.3 + m.p) * 3) * dt; m.y += (m.vy + Math.cos(now * 0.23 + m.p) * 2) * dt }
+      if (m.x < 0) m.x = W; if (m.x > W) m.x = 0; if (m.y < 0) m.y = H; if (m.y > H) m.y = 0
+      g.fillStyle = `rgba(255, 236, 200, ${(0.12 + 0.18 * (0.5 + 0.5 * Math.sin(now + m.p))) * (S.light || 1)})`
+      g.fillRect(m.x, m.y, m.r, m.r)
+    }
+
+    // the cabin lamp and the power level
+    const lit = S.light == null ? 1 : S.light
+    const lamp = g.createRadialGradient(W / 2, -H * 0.05, 0, W / 2, -H * 0.05, H * 0.9)
+    lamp.addColorStop(0, `rgba(255, 214, 160, ${(0.12 * lit).toFixed(3)})`)
+    lamp.addColorStop(1, 'rgba(255, 214, 160, 0)')
+    g.fillStyle = lamp
+    g.fillRect(0, 0, W, H)
+    g.fillStyle = `rgba(0, 0, 0, ${((1 - lit) * 0.55).toFixed(3)})`
+    g.fillRect(0, 0, W, H)
+
+    // the artist's synesthesia: the cabin light takes the colour of the highlighted choice
+    if (S.auraOn > 0.01) {
+      g.save()
+      g.globalCompositeOperation = 'soft-light'
+      g.fillStyle = `rgba(${S.aura.map(Math.round).join(',')}, ${(0.55 * S.auraOn).toFixed(3)})`
+      g.fillRect(0, 0, W, H)
+      g.globalCompositeOperation = 'source-over'
+      const ar = g.createRadialGradient(W / 2, H * 0.3, 0, W / 2, H * 0.3, Math.max(W, H) * 0.7)
+      ar.addColorStop(0, `rgba(${S.aura.map(Math.round).join(',')}, ${(0.16 * S.auraOn).toFixed(3)})`)
+      ar.addColorStop(1, `rgba(${S.aura.map(Math.round).join(',')}, 0)`)
+      g.fillStyle = ar
+      g.fillRect(0, 0, W, H)
+      g.restore()
+    }
+
+    // electrical arcs: a blue flare
+    if (S.arc > 0) {
+      S.arc -= dt
+      g.fillStyle = `rgba(150, 200, 255, ${(Math.random() * 0.3 * clamp(S.arc * 2)).toFixed(3)})`
+      g.fillRect(0, 0, W, H)
+    }
+
+    // the endings
+    if (end) drawEnding(end, endLive ? k : 1, now)
+
+    // vignette
+    const vg = g.createRadialGradient(W / 2, H * 0.45, Math.min(W, H) * 0.3, W / 2, H * 0.45, Math.hypot(W, H) * 0.62)
+    vg.addColorStop(0, 'rgba(0,0,0,0)')
+    vg.addColorStop(1, 'rgba(0,0,0,0.72)')
+    g.fillStyle = vg
+    g.fillRect(0, 0, W, H)
+
+    // screen distortion: slices of the picture slip sideways
+    if (S.glitch > 0) {
+      S.glitch -= dt
+      const n = 2 + rnd(5)
+      for (let i = 0; i < n; i++) {
+        const y = Math.random() * H, h = rand(4, 30), off = rand(-30, 30) * clamp(S.glitch * 2)
+        g.drawImage(cv, 0, y * dpr, cv.width, h * dpr, off, y, W, h)
+      }
+    }
+  }
+
+  function drawEnding(end, k, now) {
+    if (end === 'summit') {
+      g.fillStyle = `rgba(255, 170, 70, ${(0.32 * k).toFixed(3)})`
+      g.fillRect(0, 0, W, H)
+      const r = g.createRadialGradient(W / 2, H * 0.35, 0, W / 2, H * 0.35, Math.hypot(W, H) * 0.6)
+      r.addColorStop(0, `rgba(255, 210, 140, ${(0.35 * k).toFixed(3)})`)
+      r.addColorStop(1, 'rgba(255, 210, 140, 0)')
+      g.fillStyle = r
+      g.fillRect(0, 0, W, H)
+    } else if (end === 'cold') {
+      g.fillStyle = `rgba(6, 10, 16, ${(0.55 * k).toFixed(3)})`
+      g.fillRect(0, 0, W, H)
+      const r = g.createRadialGradient(W * 0.8, H * 0.12, 0, W * 0.8, H * 0.12, H * 0.5)
+      r.addColorStop(0, `rgba(255, 190, 110, ${(0.22 * k).toFixed(3)})`)
+      r.addColorStop(1, 'rgba(255, 190, 110, 0)')
+      g.fillStyle = r
+      g.fillRect(0, 0, W, H)
+    } else if (end === 'tomb') {
+      g.fillStyle = `rgba(215, 232, 245, ${(0.3 * k).toFixed(3)})`
+      g.fillRect(0, 0, W, H)
+    } else if (end === 'catwalk') {
+      g.fillStyle = `rgba(8, 16, 30, ${(0.5 * k).toFixed(3)})`
+      g.fillRect(0, 0, W, H)
+      // the last of the amber, a closing door
+      const w = W * 0.16 * (1 - k)
+      if (w > 0.5) {
+        const r = g.createLinearGradient(W / 2 - w, 0, W / 2 + w, 0)
+        r.addColorStop(0, 'rgba(255, 170, 60, 0)')
+        r.addColorStop(0.5, 'rgba(255, 190, 90, 0.55)')
+        r.addColorStop(1, 'rgba(255, 170, 60, 0)')
+        g.fillStyle = r
+        g.fillRect(W / 2 - w, 0, w * 2, H)
+      }
+    } else if (end === 'abyss') {
+      g.fillStyle = `rgba(240, 244, 247, ${clamp(k * 1.15).toFixed(3)})`
+      g.fillRect(0, 0, W, H)
+    }
+  }
+
+  // ═══════════ Sound: all synthesised in the browser as it happens
+  const audio = {
+    ctx: null,
+    wake() {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext
+        if (!AC) return
+        try { this.ctx = new AC({ latencyHint: 'interactive' }) } catch (e) { this.ctx = new AC() }
+        this.build()
+      }
+      if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {})
+    },
+    build() {
+      const c = this.ctx
+      const G = (v) => { const n = c.createGain(); n.gain.value = v; return n }
+      const F = (type, f, q) => { const n = c.createBiquadFilter(); n.type = type; n.frequency.value = f; if (q != null) n.Q.value = q; return n }
+      const O = (type, f) => { const n = c.createOscillator(); n.type = type; n.frequency.value = f; return n }
+      this.G = G; this.F = F; this.O = O
+      const nb = c.createBuffer(1, c.sampleRate * 2, c.sampleRate)
+      const d = nb.getChannelData(0)
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+      this.noiseBuf = nb
+      const noise = () => { const s = c.createBufferSource(); s.buffer = nb; s.loop = true; s.start(0, Math.random() * 2); return s }
+
+      const comp = c.createDynamicsCompressor()
+      comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.25
+      comp.connect(c.destination)
+      this.master = G(0.85); this.master.connect(comp)
+      this.gate = G(1); this.gate.connect(this.master) // the flinch: everything goes through here
+      this.muff = F('lowpass', 18000, 0.7); this.muff.connect(this.gate) // the veteran's tinnitus closes this
+      this.bus = G(1); this.bus.connect(this.muff)
+
+      // wind
+      this.wind = G(0)
+      const w1 = noise(), wf = F('bandpass', 700, 0.5)
+      w1.connect(wf); wf.connect(this.wind)
+      const w2 = noise(), wl = F('lowpass', 160, 0.7), wg = G(0.9)
+      w2.connect(wl); wl.connect(wg); wg.connect(this.wind)
+      this.windF = wf
+      this.wind.connect(this.bus)
+      this.windLevel = 0.12
+      this.wander = 0 // where the wind's gusting has wandered to
+
+      // the winch motor
+      this.motor = G(0)
+      const mlp = F('lowpass', 260, 0.9)
+      this.m1 = O('sawtooth', 46); this.m2 = O('sawtooth', 92.4); this.m3 = O('square', 23)
+      const mg3 = G(0.4)
+      this.m1.connect(mlp); this.m2.connect(mlp); this.m3.connect(mg3); mg3.connect(mlp)
+      mlp.connect(this.motor); this.motor.connect(this.bus)
+      this.m1.start(); this.m2.start(); this.m3.start()
+      this.motorOn = false
+
+      // the Shepard-tone capacitor hum: seven octaves gliding upward forever
+      this.humG = G(0)
+      const hlp = F('lowpass', 4200, 0.7)
+      this.humG.connect(hlp); hlp.connect(this.bus)
+      this.shep = []
+      for (let i = 0; i < 7; i++) {
+        const o = O('sine', 40 * Math.pow(2, i)), gg = G(0)
+        o.connect(gg); gg.connect(this.humG); o.start()
+        this.shep.push({ o, g: gg, f: 40 * Math.pow(2, i) })
+      }
+      const buzz = O('square', 100), bz = F('lowpass', 900, 1), bg = G(0.05)
+      buzz.connect(bz); bz.connect(bg); bg.connect(this.humG); buzz.start()
+      this.humming = false
+
+      // the artist's chord
+      this.padG = G(0)
+      const plp = F('lowpass', 1700, 0.6)
+      this.padG.connect(plp); plp.connect(this.bus)
+      this.padO = [0, 1, 2, 3].map(() => { const o = O('triangle', 220), gg = G(0.22); o.connect(gg); gg.connect(this.padG); o.start(); return o })
+      this.padAura = undefined
+
+      // tinnitus: straight past the muffler
+      this.tin = G(0)
+      const to = O('sine', 3800)
+      to.connect(this.tin); this.tin.connect(this.gate); to.start()
+    },
+    _env(at, peak, decay, node) {
+      const g2 = this.G(0)
+      g2.gain.setValueAtTime(0, at)
+      g2.gain.linearRampToValueAtTime(peak, at + 0.003)
+      g2.gain.setTargetAtTime(0, at + 0.004, decay)
+      if (node) node.connect(g2)
+      return g2
+    },
+    _noise(at, dur, type, f, q, peak, decay, dest) {
+      const c = this.ctx, s = c.createBufferSource(), fl = this.F(type, f, q)
+      s.buffer = this.noiseBuf
+      const e = this._env(at, peak, decay)
+      s.connect(fl); fl.connect(e); e.connect(dest || this.bus)
+      s.start(at, Math.random() * 1.5); s.stop(at + dur)
+      return fl
+    },
+    _tone(at, f0, f1, dur, peak, type, dest) {
+      const o = this.O(type || 'sine', f0)
+      o.frequency.setValueAtTime(f0, at)
+      if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), at + dur)
+      const e = this._env(at, peak, dur / 3, o)
+      e.connect(dest || this.bus)
+      o.start(at); o.stop(at + dur * 2.5 + 0.1)
+      return o
+    },
+    _ring(at, modes, decay, peak, dest) {
+      const c = this.ctx, s = c.createBufferSource(), e = this.G(0)
+      s.buffer = this.noiseBuf
+      e.gain.setValueAtTime(1, at); e.gain.setTargetAtTime(0, at, 0.003)
+      s.connect(e)
+      for (const f of modes) {
+        const b = this.F('bandpass', f, 45), g2 = this.G(0)
+        g2.gain.setValueAtTime(peak, at); g2.gain.setTargetAtTime(0, at, decay)
+        e.connect(b); b.connect(g2); g2.connect(dest || this.bus)
+      }
+      s.start(at, Math.random()); s.stop(at + 0.05)
+    },
+    get t() { return this.ctx.currentTime },
+
+    update(now, dt) {
+      if (!this.ctx) return
+      const t = this.t
+      // wind gusts wander
+      this.wander += (Math.random() - 0.5) * dt * 3
+      this.wander = clamp(this.wander, -0.6, 0.8)
+      const kick = S.windKick || 0
+      const wl = (this.windLevel * (1 + 0.6 * this.wander) + 0.25 * kick) * (S.mode === 'off' ? 0.5 : 1)
+      this.wind.gain.setTargetAtTime(wl, t, 0.25)
+      this.windF.frequency.setTargetAtTime(500 + 500 * (this.wander + 0.6) + 600 * kick, t, 0.3)
+      // the motor sags with the hull's power
+      if (this.motorOn) {
+        const p = S.power / 100
+        const f = 34 + 16 * p + (S.light < 0.6 ? rand(-3, 0) : 0)
+        this.m1.frequency.setTargetAtTime(f, t, 0.2)
+        this.m2.frequency.setTargetAtTime(f * 2.01, t, 0.2)
+        this.m3.frequency.setTargetAtTime(f / 2, t, 0.2)
+        this.motor.gain.setTargetAtTime(0.1 + 0.06 * p, t, 0.3)
+      }
+      // the Shepard hum climbs with the charge
+      if (this.humming) {
+        const ph = S.charge * 2.6
+        for (let i = 0; i < this.shep.length; i++) {
+          const s = this.shep[i]
+          const pos = (i + ph) % 7
+          const f = 40 * Math.pow(2, pos)
+          if (f < s.f * 0.75) s.o.frequency.setValueAtTime(f, t)
+          else s.o.frequency.setTargetAtTime(f, t, 0.012)
+          s.f = f
+          const w = Math.exp(-0.5 * Math.pow((pos - 3.5) / 1.25, 2))
+          s.g.gain.setTargetAtTime(w * 0.1, t, 0.015)
+        }
+        this.humG.gain.setTargetAtTime(0.35 + 0.9 * S.charge, t, 0.03)
+      }
+    },
+    hum(on) {
+      if (!this.ctx) return
+      this.humming = on
+      if (!on) this.humG.gain.setTargetAtTime(0, this.t, 0.02)
+    },
+    flinch() {
+      if (!this.ctx) return
+      const t = this.t
+      this.gate.gain.cancelScheduledValues(t)
+      this.gate.gain.setValueAtTime(this.gate.gain.value, t)
+      this.gate.gain.linearRampToValueAtTime(0, t + 0.012)
+    },
+    unflinch() {
+      if (!this.ctx) return
+      const t = this.t
+      this.gate.gain.cancelScheduledValues(t)
+      this.gate.gain.setValueAtTime(this.gate.gain.value, t)
+      this.gate.gain.linearRampToValueAtTime(1, t + 0.01)
+    },
+    click(v = 1) {
+      if (!this.ctx) return
+      const t = this.t
+      this._noise(t, 0.02, 'highpass', 3200, 0.7, 0.55 * v, 0.003)
+      this._tone(t, 2600, 1900, 0.02, 0.12 * v)
+      this._noise(t + 0.032, 0.02, 'highpass', 2400, 0.7, 0.3 * v, 0.003)
+      this._tone(t + 0.032, 1500, 1200, 0.02, 0.06 * v)
+    },
+    tick() {
+      if (!this.ctx) return
+      this._noise(this.t, 0.01, 'highpass', 5000, 0.7, 0.05, 0.002)
+    },
+    tickTock() {
+      if (!this.ctx) return
+      const t = this.t
+      this._tone(t, 1400, 1400, 0.04, 0.12, 'square')
+    },
+    clack() {
+      if (!this.ctx) return
+      const t = this.t
+      this.gate.gain.cancelScheduledValues(t)
+      this.gate.gain.setValueAtTime(1, t)
+      this._noise(t, 0.05, 'bandpass', 2200, 0.8, 1, 0.025)
+      this._ring(t, [380, 1010, 2050, 3220], 0.16, 0.28)
+      this._tone(t + 0.07, 140, 38, 0.32, 1)
+      this._noise(t + 0.07, 0.2, 'lowpass', 220, 0.7, 0.6, 0.08)
+    },
+    hiss(c) {
+      if (!this.ctx) return
+      const t = this.t
+      this._noise(t, 0.03, 'bandpass', 900, 2, 0.35, 0.01)
+      const f = this._noise(t + 0.01, 0.9, 'bandpass', 5200, 0.9, 0.12 + 0.4 * c, 0.18 + 0.2 * c)
+      f.frequency.setValueAtTime(5200, t)
+      f.frequency.exponentialRampToValueAtTime(1300, t + 0.6)
+    },
+    slip() {
+      if (!this.ctx) return
+      const t = this.t
+      this._ring(t, [740, 1670], 0.05, 0.2)
+      this._tone(t, 300, 180, 0.08, 0.15, 'triangle')
+    },
+    heartbeat(care) {
+      if (!this.ctx) return
+      const t = this.t, v = care < 0 ? 0.9 : 0.7
+      this._tone(t, 64, 44, 0.12, v)
+      this._tone(t + (care < 0 ? 0.12 : 0.17), 72, 50, 0.1, v * 0.7)
+    },
+    pad(aura) {
+      if (!this.ctx) return
+      const t = this.t
+      if (aura === this.padAura) return
+      this.padAura = aura
+      if (aura == null) { this.padG.gain.setTargetAtTime(0, t, 0.4); return }
+      const chords = { 1: [220, 277.18, 329.63, 415.3], 0: [196, 293.66, 392, 587.33], '-1': [185, 261.63, 277.18, 369.99] }
+      const ch = chords[aura > 0 ? 1 : aura < 0 ? '-1' : 0]
+      this.padO.forEach((o, i) => o.frequency.setTargetAtTime(ch[i], t, 0.12))
+      this.padG.gain.setTargetAtTime(aura < 0 ? 0.09 : 0.075, t, 0.3)
+    },
+    tinnitus(sec) {
+      if (!this.ctx) return
+      const t = this.t
+      this.tin.gain.cancelScheduledValues(t)
+      this.tin.gain.setValueAtTime(0, t)
+      this.tin.gain.linearRampToValueAtTime(0.04, t + 0.35)
+      this.tin.gain.setValueAtTime(0.04, t + sec - 0.8)
+      this.tin.gain.linearRampToValueAtTime(0, t + sec)
+      this.muff.frequency.cancelScheduledValues(t)
+      this.muff.frequency.setValueAtTime(this.muff.frequency.value, t)
+      this.muff.frequency.exponentialRampToValueAtTime(420, t + 0.4)
+      this.muff.frequency.setValueAtTime(420, t + sec - 0.8)
+      this.muff.frequency.exponentialRampToValueAtTime(18000, t + sec)
+    },
+    whisper() {
+      if (!this.ctx) return
+      const c = this.ctx, t = this.t, dur = rand(0.4, 1.2)
+      const s = c.createBufferSource()
+      s.buffer = this.noiseBuf
+      const f1 = this.F('bandpass', rand(700, 1300), 7), f2 = this.F('bandpass', rand(1800, 3000), 9)
+      const env = this.G(0)
+      const syl = rand(5, 9)
+      for (let x = 0; x < dur; x += 1 / syl) {
+        env.gain.setValueAtTime(0, t + x)
+        env.gain.linearRampToValueAtTime(rand(0.25, 0.6), t + x + 0.03)
+        env.gain.linearRampToValueAtTime(0, t + x + 1 / syl)
+      }
+      const out = this.G(0.5)
+      s.connect(f1); s.connect(f2); f1.connect(env); f2.connect(env); env.connect(out)
+      if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = rand(-0.9, 0.9); out.connect(p); p.connect(this.bus) } else out.connect(this.bus)
+      s.start(t, Math.random()); s.stop(t + dur + 0.1)
+    },
+    ghost() {
+      if (!this.ctx) return
+      const t = this.t
+      for (const f of [1318.5, 1975.5, 2637]) this._tone(t, f, f, 0.5, 0.05, 'sine')
+    },
+    powerOn() {
+      if (!this.ctx) return
+      const t = this.t
+      this._tone(t, 60, 120, 0.4, 0.4, 'sawtooth')
+      this._noise(t, 0.3, 'bandpass', 3000, 2, 0.15, 0.08)
+      this._tone(t + 0.1, 15600, 15600, 0.6, 0.02)
+      this.windLevel = 0.1
+    },
+    motorStart() {
+      if (!this.ctx) return
+      const t = this.t
+      this.motorOn = true
+      this.motor.gain.cancelScheduledValues(t)
+      this.motor.gain.setValueAtTime(0, t)
+      this.motor.gain.linearRampToValueAtTime(0.16, t + 1.2)
+      this._ring(t, [180, 410], 0.3, 0.3)
+    },
+    zone(z) {
+      if (!this.ctx) return
+      this.windLevel = { 'THE LOWER GORGE': 0.1, 'THE MID-SPAN ICE STORM': 0.2, 'THE ABYSSAL SAG': 0.15, 'THE BUNKER THRESHOLD': 0.17 }[z] || 0.1
+      if (!this.motorOn) this.motorStart()
+    },
+    gust() {
+      if (!this.ctx) return
+      const t = this.t
+      this._noise(t, 1.8, 'lowpass', 900, 0.7, 0.5, 0.5)
+      this._tone(t, 70, 40, 0.4, 0.5)
+    },
+    stall() {
+      if (!this.ctx) return
+      const t = this.t
+      this.m1.frequency.setTargetAtTime(14, t, 0.15)
+      this.motor.gain.setTargetAtTime(0.05, t, 0.2)
+      this._ring(t, [160, 330, 610], 0.4, 0.4)
+    },
+    grind() {
+      if (!this.ctx) return
+      const t = this.t
+      const o = this.O('sawtooth', 90), lfo = this.O('square', 17), ld = this.G(40), g2 = this.G(0), bp = this.F('bandpass', 700, 3)
+      lfo.connect(ld); ld.connect(o.frequency)
+      g2.gain.setValueAtTime(0, t); g2.gain.linearRampToValueAtTime(0.35, t + 0.05); g2.gain.setTargetAtTime(0, t + 0.8, 0.15)
+      o.connect(bp); bp.connect(g2); g2.connect(this.bus)
+      o.start(t); lfo.start(t); o.stop(t + 1.6); lfo.stop(t + 1.6)
+    },
+    blowout() {
+      if (!this.ctx) return
+      const t = this.t
+      this._noise(t, 0.6, 'lowpass', 3000, 0.7, 1, 0.15)
+      this._tone(t, 90, 30, 0.6, 1)
+      for (let i = 0; i < 26; i++) this._noise(t + 0.1 + Math.random() * 1.6, 0.02, 'highpass', 2000 + Math.random() * 4000, 0.7, 0.4 * Math.random(), 0.004)
+      this.motor.gain.setTargetAtTime(0.03, t, 0.05)
+      this.motor.gain.setTargetAtTime(0.14, t + 1.4, 0.4)
+    },
+    groan() {
+      if (!this.ctx) return
+      const t = this.t
+      const f = this._noise(t, 2.2, 'bandpass', 220, 18, 0.9, 0.6)
+      f.frequency.setValueAtTime(260, t)
+      f.frequency.exponentialRampToValueAtTime(130, t + 1.8)
+      this._tone(t, 55, 38, 1.2, 0.35)
+    },
+    squeal() {
+      if (!this.ctx) return
+      const t = this.t
+      const o = this.O('sawtooth', 900), vib = this.O('sine', 11), vd = this.G(40), bp = this.F('bandpass', 1800, 4), g2 = this.G(0)
+      vib.connect(vd); vd.connect(o.frequency)
+      o.frequency.setValueAtTime(950, t); o.frequency.linearRampToValueAtTime(700, t + 1.6)
+      g2.gain.setValueAtTime(0, t); g2.gain.linearRampToValueAtTime(0.12, t + 0.1); g2.gain.setTargetAtTime(0, t + 1.5, 0.2)
+      o.connect(bp); bp.connect(g2); g2.connect(this.bus)
+      o.start(t); vib.start(t); o.stop(t + 2.4); vib.stop(t + 2.4)
+    },
+    glass() {
+      if (!this.ctx) return
+      const t = this.t
+      this._noise(t, 0.2, 'highpass', 2000, 0.7, 0.9, 0.05)
+      for (let i = 0; i < 30; i++) this._ring(t + Math.random() * 0.5, [2500 + Math.random() * 5000], 0.04, 0.15 * Math.random())
+      this._tone(t, 120, 50, 0.25, 0.6)
+      this.windLevel += 0.06
+    },
+    drop() {
+      if (!this.ctx) return
+      const t = this.t
+      this._ring(t, [210, 560, 1180], 0.25, 0.5)
+      const f = this._noise(t, 1, 'bandpass', 600, 1, 0.5, 0.3)
+      f.frequency.exponentialRampToValueAtTime(200, t + 0.8)
+      this._tone(t + 0.25, 80, 30, 0.5, 0.9)
+    },
+    arc() {
+      if (!this.ctx) return
+      const t = this.t
+      const o = this.O('square', 60), ws = this.ctx.createWaveShaper(), curve = new Float32Array(256)
+      for (let i = 0; i < 256; i++) { const x = (i / 255) * 2 - 1; curve[i] = Math.tanh(6 * x) }
+      ws.curve = curve
+      const bp = this.F('bandpass', 2400, 0.8), g2 = this.G(0)
+      g2.gain.setValueAtTime(0, t)
+      for (let x = 0; x < 0.6; x += 0.04) g2.gain.setValueAtTime(Math.random() * 0.3, t + x)
+      g2.gain.setValueAtTime(0, t + 0.62)
+      o.connect(ws); ws.connect(bp); bp.connect(g2); g2.connect(this.bus)
+      o.start(t); o.stop(t + 0.7)
+      this._noise(t, 0.05, 'highpass', 1500, 0.7, 0.8, 0.01)
+    },
+    snap() {
+      if (!this.ctx) return
+      const t = this.t
+      this._noise(t, 0.08, 'highpass', 1200, 0.7, 1, 0.012)
+      this._ring(t, [880, 1960, 3310], 0.6, 0.35)
+      const f = this._noise(t + 0.1, 4, 'lowpass', 3000, 0.7, 0.6, 1.4)
+      f.frequency.exponentialRampToValueAtTime(120, t + 3.5)
+    },
+    engineOff() {
+      if (!this.ctx) return
+      const t = this.t
+      this.motorOn = false
+      this.motor.gain.cancelScheduledValues(t)
+      this.motor.gain.setTargetAtTime(0, t, 0.35)
+      this.m1.frequency.setTargetAtTime(12, t, 0.6)
+      this.humG.gain.setTargetAtTime(0, t, 0.05)
+      this.padG.gain.setTargetAtTime(0, t, 0.5)
+      this.tin.gain.setTargetAtTime(0, t, 0.2)
+      this.muff.frequency.setTargetAtTime(18000, t, 0.2)
+      this.humming = false
+    },
+    ending(kind) {
+      if (!this.ctx) return
+      const t = this.t
+      if (kind === 'summit') {
+        this._tone(t, 60, 30, 1.2, 1)
+        this._noise(t, 1.5, 'bandpass', 3000, 0.8, 0.25, 0.4)
+        this.windLevel = 0.02
+        this._chord(t + 0.8, [220, 277.18, 329.63, 415.3, 493.88], 0.05, 12)
+      } else if (kind === 'cold') {
+        this._ring(t, [196, 392.5, 587, 811, 1043], 2.5, 0.35)
+        this.windLevel = 0.05
+      } else if (kind === 'tomb') {
+        for (let i = 0; i < 9; i++) this._tone(t + i * 0.45, 2000 + Math.random() * 2500, 2000 + Math.random() * 2500, 1.4, 0.03)
+        this.windLevel = 0.04
+        this.master.gain.setTargetAtTime(0, t + 6, 1.5)
+      } else if (kind === 'catwalk') {
+        this._tone(t + 1.5, 70, 40, 1, 0.4)
+        this._noise(t + 1.5, 1, 'lowpass', 400, 0.7, 0.3, 0.3)
+        this.windLevel = 0.32
+      } else if (kind === 'abyss') {
+        this.windLevel = 0.18
+        this.master.gain.setTargetAtTime(0, t + 3.5, 0.8)
+      }
+      const g0 = gen
+      setTimeout(() => { if (gen === g0 && this.ctx) this.ctx.suspend().catch(() => {}) }, 26000)
+    },
+    _chord(at, freqs, v, dur) {
+      for (const f of freqs) {
+        for (const [type, det] of [['triangle', -4], ['sine', 4]]) {
+          const o = this.O(type, f), g2 = this.G(0), lp = this.F('lowpass', 1500, 0.7)
+          o.detune.value = det
+          g2.gain.setValueAtTime(0, at)
+          g2.gain.linearRampToValueAtTime(v, at + 2.5)
+          g2.gain.setTargetAtTime(0, at + dur * 0.5, dur / 5)
+          o.connect(lp); lp.connect(g2); g2.connect(this.bus)
+          o.start(at); o.stop(at + dur * 1.4)
+        }
+      }
+    },
+    reset() {
+      if (!this.ctx) return
+      const t = this.t
+      for (const n of [this.motor, this.humG, this.padG, this.tin]) { n.gain.cancelScheduledValues(t); n.gain.setValueAtTime(0, t) }
+      this.gate.gain.cancelScheduledValues(t); this.gate.gain.setValueAtTime(1, t)
+      this.master.gain.cancelScheduledValues(t); this.master.gain.setValueAtTime(0.85, t)
+      this.muff.frequency.cancelScheduledValues(t); this.muff.frequency.setValueAtTime(18000, t)
+      this.motorOn = false
+      this.humming = false
+      this.padAura = undefined
+      this.windLevel = 0.1
+    },
+  }
+
+  // ═══════════ Start: a fresh console, or the final log of the last run
+  let saved = null
+  try { saved = JSON.parse(localStorage.getItem(KEY) || 'null') } catch (e) {}
+  if (saved && ENDINGS[saved.ending]) {
+    S.mode = 'log'
+    S.ending = saved.ending
+    S.endAt = 0
+    Object.assign(S, { alt: saved.alt, heat: saved.heat, power: saved.power, coh: saved.coh, crew: saved.crew, relay: 15, choices: saved.choices || '' })
+    view.alt = saved.alt
+    if (saved.ending === 'abyss') view.fall = 60
+    S.arch = ARCH.find((a) => a.id === saved.arch) || null
+    if (S.arch) document.body.dataset.arch = S.arch.id
+    glass.classList.remove('off')
+    btn.disabled = true
+    setNixie(0)
+    setCrew(saved.crew)
+    showLog(saved, false)
+  } else {
+    setCrew(0)
+  }
+
+  let last = clock()
+  function frame() {
+    const now = clock()
+    const dt = Math.min(0.05, Math.max(0, now - last))
+    last = now
+    update(now, dt)
+    draw(now, dt)
+    requestAnimationFrame(frame)
+  }
+  resize()
+  window.addEventListener('resize', resize)
+  if (window.ResizeObserver) new ResizeObserver(measureGlass).observe(glass)
+  requestAnimationFrame(frame)
+
+  // (for testing from the console: read-only)
+  window.relay15 = { get state() { return { mode: S.mode, relay: S.relay, hl: S.hl, arch: S.arch && S.arch.id, alt: S.alt, heat: S.heat, power: S.power, coh: S.coh, crew: S.crew, charge: S.charge, charging: S.charging, silent: S.silent, timer: S.timer, timerMax: S.timerMax, ending: S.ending, choices: S.choices, gate: audio.ctx ? audio.gate.gain.value : null } } }
+})()
+</script>
+</body>
+</html>
