@@ -27,19 +27,19 @@
   // Every theme has its own icons (like the game re-skins its emoji). Keys match APPS, plus the
   // Start menu's user picture.
   const ICONS = {
-    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚡' },
-    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨', achievements: '🏅', files: '🗂️', terminal: '📟', casino: '🎲', taskmgr: '📟', printer: '📠', kevin: '🕴️', stonks: '💹', relay: '🚠' },
-    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '🗄️', terminal: '⌨️', casino: '🎰', taskmgr: '🧮', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚡' },
-    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷', achievements: '✪', files: '▤', terminal: '>_', casino: '◈', taskmgr: '≡', printer: '⎙', kevin: '☺', stonks: '↗', relay: '◉' },
-    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯', achievements: '🏆', files: '📂', terminal: '🖥️', casino: '🎰', taskmgr: '📋', printer: '🖨️', kevin: '🧑‍💼', stonks: '📈', relay: '🚡' },
-    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚠' },
-    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🏅', files: '🗂️', terminal: '⌨️', casino: '🎲', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚡' },
-    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📉', relay: '🚡' },
-    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚠' },
-    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨', achievements: '💿', files: '📼', terminal: '💾', casino: '💸', taskmgr: '📼', printer: '📠', kevin: '🕴️', stonks: '💸', relay: '🚠' },
+    aero: { pc: '💻', translatr: '🌐', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👹', grass: '🌱', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚡', dcam: '🥷' },
+    y2k: { pc: '💾', translatr: '🕸️', gif: '📀', themes: '🔮', bin: '⚰️', avatar: '💀', leaderboard: '🏁', messenger: '📟', account: '🕶️', doom: '💀', grass: '🌵', phone: '🧟', loggle: '🔠', browser: '📡', mobile: '📲', strife: '🧨', achievements: '🏅', files: '🗂️', terminal: '📟', casino: '🎲', taskmgr: '📟', printer: '📠', kevin: '🕴️', stonks: '💹', relay: '🚠', dcam: '🕶️' },
+    skeuo: { pc: '🖥️', translatr: '📖', gif: '📽️', themes: '🧵', bin: '🪣', avatar: '😊', leaderboard: '🏅', messenger: '✉️', account: '🪪', doom: '🪓', grass: '🪴', phone: '🧠', loggle: '🧩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '🗄️', terminal: '⌨️', casino: '🎰', taskmgr: '🧮', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚡', dcam: '📷' },
+    minimal: { pc: '⎕', translatr: '◍', gif: '▷', themes: '◧', bin: '⌫', avatar: '☺', leaderboard: '№', messenger: '✉︎', account: '◯', doom: '✜', grass: '❦', phone: '◉', loggle: '▦', browser: '⌕', mobile: '▯', strife: '✷', achievements: '✪', files: '▤', terminal: '>_', casino: '◈', taskmgr: '≡', printer: '⎙', kevin: '☺', stonks: '↗', relay: '◉', dcam: '▬' },
+    retro: { pc: '📺', translatr: '🗺️', gif: '📼', themes: '🖼️', bin: '🚮', avatar: '👾', leaderboard: '🕹️', messenger: '📠', account: '👤', doom: '💥', grass: '🌿', phone: '🧟', loggle: '🔤', browser: '🌐', mobile: '☎️', strife: '🎯', achievements: '🏆', files: '📂', terminal: '🖥️', casino: '🎰', taskmgr: '📋', printer: '🖨️', kevin: '🧑‍💼', stonks: '📈', relay: '🚡', dcam: '📸' },
+    luna: { pc: '🖥️', translatr: '🌍', gif: '🖼️', themes: '🖌️', bin: '♻️', avatar: '🦋', leaderboard: '🥇', messenger: '🗨️', account: '🙋', doom: '👿', grass: '🌻', phone: '🧠', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚠', dcam: '🥷' },
+    aqua: { pc: '💽', translatr: '🧭', gif: '🎬', themes: '🖍️', bin: '🧺', avatar: '🌸', leaderboard: '🏅', messenger: '💭', account: '🧑', doom: '🎯', grass: '🌷', phone: '🧠', loggle: '🟢', browser: '🌐', mobile: '📱', strife: '💣', achievements: '🏅', files: '🗂️', terminal: '⌨️', casino: '🎲', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚡', dcam: '📷' },
+    metro: { pc: '🖥️', translatr: '🔤', gif: '🎞️', themes: '🎨', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '🎮', grass: '🌱', phone: '🧟', loggle: '🟩', browser: '🌐', mobile: '📱', strife: '🎯', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📉', relay: '🚡', dcam: '🕶️' },
+    glass: { pc: '💻', translatr: '🫧', gif: '🌈', themes: '🪩', bin: '🗑️', avatar: '🙂', leaderboard: '🏆', messenger: '💬', account: '👤', doom: '👾', grass: '🍀', phone: '🧠', loggle: '🟩', browser: '🧭', mobile: '📱', strife: '💣', achievements: '🎖️', files: '📁', terminal: '⌨️', casino: '🎰', taskmgr: '📊', printer: '🖨️', kevin: '👔', stonks: '📈', relay: '🚠', dcam: '🥷' },
+    vapor: { pc: '🗿', translatr: '🐬', gif: '📺', themes: '🌴', bin: '🥤', avatar: '😎', leaderboard: '💎', messenger: '📞', account: '🪩', doom: '🔥', grass: '🌴', phone: '🧟', loggle: '🅻', browser: '🌐', mobile: '📲', strife: '🧨', achievements: '💿', files: '📼', terminal: '💾', casino: '💸', taskmgr: '📼', printer: '📠', kevin: '🕴️', stonks: '💸', relay: '🚠', dcam: '🕶️' },
   }
   ICONS.terminal = { ...ICONS.minimal }
-  ICONS.haunted = { pc: '🕯️', translatr: '📜', gif: '🎞️', themes: '🔮', bin: '⚰️', avatar: '👻', leaderboard: '🪦', messenger: '🦇', account: '👤', doom: '💀', grass: '🥀', phone: '🧟', loggle: '🔮', browser: '🕸️', mobile: '📿', strife: '🗡️', achievements: '🏺', files: '🗝️', terminal: '🕯️', casino: '🎲', taskmgr: '👁️', printer: '📜', kevin: '🧛', stonks: '🦴', relay: '🚠' }
+  ICONS.haunted = { pc: '🕯️', translatr: '📜', gif: '🎞️', themes: '🔮', bin: '⚰️', avatar: '👻', leaderboard: '🪦', messenger: '🦇', account: '👤', doom: '💀', grass: '🥀', phone: '🧟', loggle: '🔮', browser: '🕸️', mobile: '📿', strife: '🗡️', achievements: '🏺', files: '🗝️', terminal: '🕯️', casino: '🎲', taskmgr: '👁️', printer: '📜', kevin: '🧛', stonks: '🦴', relay: '🚠', dcam: '👁️' }
   const iconFor = (key) => ICONS[document.documentElement.dataset.theme]?.[key] ?? ICONS.aero[key] ?? key
   const THEME_KEY = 'nikstilos-theme'
   // ================= Rewards (claimed with achievement points on the hub) =================
@@ -81,6 +81,7 @@
     phone: { title: 'BRAINS FIRST', icon: 'phone', width: 760, init: initPhone },
     loggle: { title: 'LOGGLE', icon: 'loggle', width: 480, init: initLoggle },
     relay: { title: 'RELAY 15', icon: 'relay', width: 880, init: (el) => ($('.relay-frame', el).src = '/buttonstory/') },
+    dcam: { title: 'D', icon: 'dcam', width: 760, init: (el) => ($('.dcam-frame', el).src = '/D/') },
     browser: { title: 'BobbyBrowser', icon: 'browser', width: 900, init: initBrowser },
     mobile: { title: 'LigmaPhone', icon: 'mobile', width: 400, init: initMobile },
     strife: { title: 'COUNTER-STRIFE', icon: 'strife', width: 900, init: initStrife },
@@ -708,7 +709,7 @@
   /** Opens an app by any name it might be typed as ("taskmgr.exe", "printer", "kevin"). */
   function openByName(name) {
     const n = String(name).toLowerCase().replace(/\.exe$/, '').trim()
-    const alias = { cmd: 'terminal', notepad: 'files', explorer: 'files', iexplore: 'browser', calc: 'pc', taskmgr: 'taskmgr', printer: 'printer', print: 'printer', kevin: 'kevin', stonks: 'stonks', nasdank: 'stonks', casino: 'casino', skinsink: 'casino', relay15: 'relay', buttonstory: 'relay' }
+    const alias = { cmd: 'terminal', notepad: 'files', explorer: 'files', iexplore: 'browser', calc: 'pc', taskmgr: 'taskmgr', printer: 'printer', print: 'printer', kevin: 'kevin', stonks: 'stonks', nasdank: 'stonks', casino: 'casino', skinsink: 'casino', relay15: 'relay', buttonstory: 'relay', d: 'dcam', 'd.exe': 'dcam', camera: 'dcam', filter: 'dcam' }
     const id = alias[n] ?? (APPS[n] ? n : Object.keys(APPS).find((k) => APPS[k].title.toLowerCase() === n))
     if (!id || !APPS[id]) return false
     openApp(id)
@@ -822,6 +823,7 @@
     { id: 'phone', label: 'BRAINS FIRST', aspect: 960 / 672 },
     { id: 'loggle', label: 'LOGGLE' },
     { id: 'relay', label: 'RELAY 15' },
+    { id: 'dcam', label: 'D' },
     { id: 'strife', label: 'COUNTER-STRIFE', aspect: 16 / 9 },
     { id: 'casino', label: 'SKINSINK.GG' },
     { id: 'kevin', label: 'KEVIN-GOTCHI™' },
@@ -998,6 +1000,7 @@
     { icon: '🧠', name: 'BRAINS FIRST', url: '/touchphone/' },
     { icon: '🟩', name: 'LOGGLE', url: '/loggle/' },
     { icon: '🚡', name: 'RELAY 15', url: '/buttonstory/' },
+    { icon: '🥷', name: 'D', url: '/D/' },
     { icon: '💣', name: 'COUNTER-STRIFE', url: '/strife/' },
     { icon: '🎰', name: 'SKINSINK.GG', url: '/casino/' },
     { icon: '👔', name: 'KEVIN-GOTCHI™', url: '/kevin/' },

@@ -57,6 +57,11 @@
       "title": "RELAY 15",
       "hidden": false
     },
+    "dcam": {
+      "label": "D",
+      "title": "D",
+      "hidden": false
+    },
     "strife": {
       "label": "COUNTER-STRIFE",
       "title": "COUNTER-STRIFE",

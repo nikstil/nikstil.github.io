@@ -66,6 +66,7 @@ const APP_FILES = [
   ['phone', 'BRAINS FIRST', 'brains.exe'],
   ['loggle', 'LOGGLE', 'loggle.exe'],
   ['relay', 'RELAY 15', 'relay15.exe'],
+  ['dcam', 'D', 'd.exe'],
   ['browser', 'BobbyBrowser', 'bobby.exe'],
   ['mobile', 'LigmaPhone', 'ligmaphone.exe'],
   ['achievements', 'Achievements', 'achievements.exe'],
