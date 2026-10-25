@@ -50,6 +50,8 @@
   .fine { margin: 0; font-size: 13px; line-height: 1.5; color: var(--dim); }
   .err { margin: 0; padding: 12px 14px; border-radius: 12px; background: #2a0d10; color: #ffd9db; font-size: 14px; line-height: 1.45; }
   .err:empty { display: none; }
+  .own { font-size: 14px; color: var(--paper); text-underline-offset: 3px; }
+  .own[hidden] { display: none; }
 
   /* while the camera runs */
   #ui { position: fixed; inset: 0; pointer-events: none; }
@@ -102,6 +104,7 @@
     <p class="lede">A camera filter. A black bar falls over your eyes and never quite holds its shape. Drawn eyes sit on top, and they look where you look.</p>
     <button class="go" id="start" type="button">Turn on camera</button>
     <p class="err" id="err" role="alert"></p>
+    <a class="own" id="own" href="/D/" target="_blank" rel="noopener" hidden>Camera not starting here? Open D in its own tab ↗</a>
     <p class="fine">Everything runs on your device. Nothing is uploaded, and nothing is saved unless you take a photo. The face tracker is about 15&nbsp;MB, loaded once.</p>
   </div>
 </section>
@@ -123,6 +126,6 @@
   </div>
 </div>
 
-<script type="module" src="d.js"></script>
+<script type="module" src="d.js?v=2"></script>
 </body>
 </html>
