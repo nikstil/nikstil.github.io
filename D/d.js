@@ -17,8 +17,8 @@ const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 })
 
 // ═══════════ Landmarks (MediaPipe face mesh indices)
 const EYES = [
-  { outer: 33, inner: 133, up: 159, lo: 145 }, // the person's right eye
-  { outer: 263, inner: 362, up: 386, lo: 374 }, // and their left
+  { outer: 33, inner: 133, lids: [[160, 144], [159, 145], [158, 153]], blink: 'eyeBlinkRight' }, // the person's right eye
+  { outer: 263, inner: 362, lids: [[387, 373], [386, 374], [385, 380]], blink: 'eyeBlinkLeft' }, // and their left
 ]
 const IRIS = [468, 473] // the two iris centres
 const CHEEKS = [234, 454] // the sides of the face, for its width
@@ -28,12 +28,17 @@ const COLS = 32
 const ROWS = 24
 const EYE_ROW = 9 // the line through the eyes; the rows above it reach the forehead
 const CX = COLS / 2
-const CELLS_PER_FACE = 22 // a face, cheek to cheek, is this many blocks wide (the bar is wider still)
+const CELLS_PER_FACE = 17 // a face, cheek to cheek, is this many blocks wide (the bar is wider still)
 
 // ═══════════ The drawn eyes
 const EYE_SCALE = 1.75 // drawn much bigger than the real eye, like the reference stills
 const GAZE = 1.3 // the irises move a little further than the real ones, so you can see it
 const GAZE_SETTLE = 5 // seconds: how slowly your resting look becomes the new centre
+// How shut each eye is: 0 is as open as it usually is. The lid gap and the tracker's blink score both count.
+const BLINK_WEIGHT = 0.8 // how much the blink score adds to what the lid gap says
+const WINK = 0.6 // when you wink, the tracker half-shuts the open eye too, so the difference between them gets this much extra
+const SHUT_FROM = 0.12 // the drawn eye starts to close here
+const SHUT_AT = 0.4 // and is shut here
 const PAPER = '#f2f1ee'
 const INK = '#060607'
 
@@ -190,13 +195,17 @@ let detections = 0
 let emptyDetections = 0 // frames the tracker found no face in (for testing)
 let seed = (Math.random() * 1e9) | 0
 
-/** Pixel positions of what we need from one face's 478 landmarks. */
-function measure(lm, w, h) {
+/** Pixel positions of what we need from one face's 478 landmarks, and how shut its eyes look. */
+function measure(lm, w, h, shapes) {
   const P = (i) => ({ x: lm[i].x * w, y: lm[i].y * h })
+  // the lid gap is measured in 3D, so turning or tipping your head doesn't squash an eye shut
+  const D3 = (a, b) => Math.hypot((lm[a].x - lm[b].x) * w, (lm[a].y - lm[b].y) * h, ((lm[a].z || 0) - (lm[b].z || 0)) * w)
+  const score = (name) => shapes?.categories?.find((c) => c.categoryName === name)?.score ?? 0
   const eyes = EYES.map((e) => {
-    const outer = P(e.outer), inner = P(e.inner), up = P(e.up), lo = P(e.lo)
+    const outer = P(e.outer), inner = P(e.inner)
     const width = Math.max(1, dist(outer, inner))
-    return { outer, inner, c: mid(outer, inner), width, ratio: dist(up, lo) / width }
+    const gap = e.lids.reduce((sum, [u, l]) => sum + D3(u, l), 0) / e.lids.length
+    return { outer, inner, c: mid(outer, inner), width, ratio: gap / Math.max(1e-6, D3(e.outer, e.inner)), blink: score(e.blink) }
   })
   if (lm.length > IRIS[1]) {
     const a = P(IRIS[0]), b = P(IRIS[1])
@@ -215,7 +224,7 @@ function newSlot(d, now) {
     m: { ...d.m }, ang: d.ang, faceW: d.faceW,
     eyes: d.eyes.map((e) => ({
       c: { ...e.c }, ax: Math.atan2(e.outer.y - e.inner.y, e.outer.x - e.inner.x), width: e.width,
-      open: 1, rmax: Math.max(0.2, e.ratio),
+      open: 1, base: Math.max(0.2, e.ratio), bbase: Math.min(0.35, e.blink), // its usual lid gap and blink score
     })),
     gaze: null, // where both eyes look, and their resting centre: { x, y, bx, by }
   }
@@ -253,6 +262,7 @@ function step(now, dt) {
   const kPos = 1 - Math.exp(-dt / 0.05)
   const kEye = 1 - Math.exp(-dt / 0.035)
   const kOpen = 1 - Math.exp(-dt / 0.03)
+  const kUp = 1 - Math.exp(-dt / 0.3), kDown = 1 - Math.exp(-dt / 3)
   for (let i = slots.length - 1; i >= 0; i--) {
     const s = slots[i], d = s.target
     // a few missed frames don't make it blink, however slowly the device tracks
@@ -264,21 +274,36 @@ function step(now, dt) {
     s.ang = easeAng(s.ang, d.ang, kPos)
     s.faceW = ease(s.faceW, d.faceW, kPos)
     const ux = Math.cos(d.ang), uy = Math.sin(d.ang), vx = -uy, vy = ux
-    let gx = 0, gy = 0
-    d.eyes.forEach((e, j) => {
+    const shut = d.eyes.map((e, j) => {
       const se = s.eyes[j]
       se.c.x = ease(se.c.x, e.c.x, kEye)
       se.c.y = ease(se.c.y, e.c.y, kEye)
       se.ax = easeAng(se.ax, Math.atan2(e.outer.y - e.inner.y, e.outer.x - e.inner.x), kEye)
       se.width = ease(se.width, e.width, kEye)
-      // how open: the lid gap against the widest this eye has been lately (so any eye shape works)
-      se.rmax = Math.max(e.ratio, se.rmax - dt * 0.02, 0.17)
-      se.open = ease(se.open, clamp((e.ratio - 0.075) / (se.rmax * 0.9 - 0.075)), kOpen)
-      // where it looks: the iris against the middle of the eye, along and across the face, in eye-widths
-      const dx = e.iris.x - e.c.x, dy = e.iris.y - e.c.y
-      gx += (dx * ux + dy * uy) / e.width / 2
-      gy += (dx * vx + dy * vy) / e.width / 2
+      // this eye's usual lid gap: quick to rise, slow to sink, and blinks and winks don't drag it down
+      if (e.ratio > se.base) se.base = ease(se.base, e.ratio, kUp)
+      else if (e.ratio > se.base * 0.75) se.base = ease(se.base, e.ratio, kDown)
+      // and its usual blink score, the other way up
+      if (e.blink < se.bbase) se.bbase = ease(se.bbase, e.blink, kUp)
+      else if (e.blink < se.bbase + 0.1) se.bbase = ease(se.bbase, e.blink, kDown)
+      return Math.max(0, 1 - e.ratio / se.base) + BLINK_WEIGHT * Math.max(0, e.blink - se.bbase)
     })
+    // One eye shutting more than the other is a wink: it shuts further, and the other opens back up.
+    s.eyes.forEach((se, j) => {
+      const sh = shut[j] + WINK * (shut[j] - shut[1 - j])
+      se.open = ease(se.open, clamp(1 - (sh - SHUT_FROM) / (SHUT_AT - SHUT_FROM)), kOpen)
+    })
+    // where they look: each iris against the middle of its eye, along and across the face, in eye-widths,
+    // counted by how open the eye is (a shut eye's iris is only a guess)
+    let gx = 0, gy = 0, gw = 0
+    d.eyes.forEach((e, j) => {
+      const dx = e.iris.x - e.c.x, dy = e.iris.y - e.c.y, wt = 0.05 + s.eyes[j].open
+      gx += ((dx * ux + dy * uy) / e.width) * wt
+      gy += ((dx * vx + dy * vy) / e.width) * wt
+      gw += wt
+    })
+    gx /= gw
+    gy /= gw
     // Both drawn eyes share one gaze, the average of the two. Real eyes turn inwards to look at a
     // screen near the camera; copied eye by eye (and exaggerated) that reads as cross-eyed. The
     // centre is wherever you've been looking lately, so only real glances move the irises.
@@ -384,6 +409,7 @@ function loadTracker() {
     baseOptions: { modelAssetPath: VENDOR + 'face_landmarker.task', delegate },
     runningMode: 'VIDEO',
     numFaces: 3,
+    outputFaceBlendshapes: true, // its eyeBlink scores help tell a wink
     minFaceDetectionConfidence: 0.5,
     minFacePresenceConfidence: 0.5,
     minTrackingConfidence: 0.5,
@@ -448,7 +474,7 @@ function frame(now) {
       const faces = res.faceLandmarks || []
       if (faces.length) lastFaceAt = now
       else emptyDetections++
-      track(faces.map((lm) => measure(lm, w, h)), now)
+      track(faces.map((lm, i) => measure(lm, w, h, res.faceBlendshapes?.[i])), now)
     } catch (e) {
       console.warn('D: tracking failed on a frame', e)
     }
