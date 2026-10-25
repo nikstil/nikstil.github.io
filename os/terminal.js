@@ -31,6 +31,7 @@ const APPS = [
   ['phone', 'BRAINS FIRST', ['phone', 'brains', 'brains.exe', 'touchphone']],
   ['loggle', 'LOGGLE', ['loggle', 'loggle.exe']],
   ['relay', 'RELAY 15', ['relay', 'relay15', 'relay15.exe', 'buttonstory']],
+  ['dcam', 'D', ['d', 'd.exe', 'dcam', 'camera', 'filter']],
   ['browser', 'BobbyBrowser', ['browser', 'bobby', 'bobby.exe', 'bobbybrowser', 'iexplore', 'chrome']],
   ['mobile', 'LigmaPhone', ['mobile', 'ligmaphone', 'ligmaphone.exe']],
   ['achievements', 'Achievements', ['achievements', 'achievements.exe']],
