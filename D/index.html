@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#060607">
+<title>D</title>
+<meta name="description" content="D: a camera filter. A blocky black bar over your eyes that keeps changing shape, with drawn eyes on top that follow yours. Runs on your device.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Cpath fill='%23060607' d='M3 9h24v2h2v9h-3v4h-9v-3H3z'/%3E%3Cpath fill='%23f2f1ee' d='M7 15l3-2h3l2 2-2 2h-3zM18 15l2-2h3l3 2-3 2h-3z'/%3E%3Cpath fill='%23c8262e' d='M10 14h2v2h-2zM21 14h2v2h-2z'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --ink: #060607;
+    --paper: #f2f1ee;
+    --dim: #9a9aa2;
+    --red: #d42f37;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: var(--ink); color: var(--paper);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent; overscroll-behavior: none;
+  }
+  button { font: inherit; color: inherit; }
+
+  /* the picture */
+  #cam { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; background: var(--ink); }
+  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  #flash.on { animation: flash 0.45s ease-out; }
+  @keyframes flash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+
+  /* the front door */
+  #intro {
+    position: fixed; inset: 0; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(ellipse at 50% 38%, #18181c 0%, var(--ink) 70%);
+  }
+  #intro[hidden] { display: none; }
+  .card { width: min(440px, 100%); display: grid; gap: 18px; justify-items: start; }
+  .mark { width: min(260px, 70vw); height: auto; image-rendering: pixelated; }
+  h1 { margin: 0; font-size: clamp(56px, 16vw, 88px); line-height: 0.9; letter-spacing: -0.04em; font-weight: 800; }
+  .lede { margin: 0; font-size: 17px; line-height: 1.45; color: #d6d5d2; }
+  .go {
+    display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border: 0; border-radius: 999px;
+    background: var(--paper); color: var(--ink); font-weight: 700; font-size: 16px; cursor: pointer;
+  }
+  .go:hover { background: #fff; }
+  .go:focus-visible, .ctl:focus-visible, .pill:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+  .go[disabled] { opacity: 0.6; cursor: progress; }
+  .fine { margin: 0; font-size: 13px; line-height: 1.5; color: var(--dim); }
+  .err { margin: 0; padding: 12px 14px; border-radius: 12px; background: #2a0d10; color: #ffd9db; font-size: 14px; line-height: 1.45; }
+  .err:empty { display: none; }
+
+  /* while the camera runs */
+  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #ui[hidden] { display: none; }
+  .bar {
+    position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; gap: 28px;
+    padding: 18px 16px calc(22px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0));
+  }
+  .ctl {
+    pointer-events: auto; width: 52px; height: 52px; border-radius: 50%; border: 0; cursor: pointer;
+    display: grid; place-items: center; background: rgba(20,20,24,0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .ctl svg { width: 24px; height: 24px; }
+  .ctl[hidden] { visibility: hidden; display: grid; }
+  .shutter { width: 74px; height: 74px; background: transparent; border: 4px solid var(--paper); padding: 5px; }
+  .shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--paper); transition: transform 0.08s; }
+  .shutter:active span { transform: scale(0.88); }
+  .top {
+    position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+  }
+  .logo { font-weight: 800; font-size: 22px; letter-spacing: -0.03em; text-shadow: 0 1px 6px rgba(0,0,0,0.6); }
+  .pill {
+    pointer-events: auto; border: 0; cursor: pointer; padding: 8px 13px; border-radius: 999px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em;
+    background: rgba(20,20,24,0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .pill[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+  #hint {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 10px 16px; border-radius: 999px;
+    background: rgba(10,10,12,0.7); font-size: 14px; color: #e8e7e4; white-space: nowrap; transition: opacity 0.3s;
+  }
+  #hint.off { opacity: 0; }
+</style>
+</head>
+<body>
+<video id="cam" playsinline muted autoplay></video>
+<canvas id="view" role="img" aria-label="Your camera, with a blocky black bar over your eyes and drawn eyes on top"></canvas>
+<div id="flash"></div>
+
+<section id="intro">
+  <div class="card">
+    <svg class="mark" viewBox="0 0 64 26" shape-rendering="crispEdges" aria-hidden="true">
+      <path fill="#060607" stroke="#2a2a30" stroke-width="0.25" d="M6 3h44v2h6v3h3v9h-5v4h-9v3h-6v-3H9v-4H4V8h2z" />
+      <path fill="#f2f1ee" d="M13 12l5-3h6l4 3-4 3h-6zM36 12l4-3h6l5 3-5 3h-6z" />
+      <circle cx="21" cy="12" r="2.6" fill="#c8262e" /><circle cx="21" cy="12" r="1.1" fill="#260507" />
+      <circle cx="43" cy="12" r="2.6" fill="#c8262e" /><circle cx="43" cy="12" r="1.1" fill="#260507" />
+    </svg>
+    <h1>D</h1>
+    <p class="lede">A camera filter. A black bar falls over your eyes and never quite holds its shape. Drawn eyes sit on top, and they look where you look.</p>
+    <button class="go" id="start" type="button">Turn on camera</button>
+    <p class="err" id="err" role="alert"></p>
+    <p class="fine">Everything runs on your device. Nothing is uploaded, and nothing is saved unless you take a photo. The face tracker is about 15&nbsp;MB, loaded once.</p>
+  </div>
+</section>
+
+<div id="ui" hidden>
+  <div class="top">
+    <span class="logo">D</span>
+    <button class="pill" id="morph" type="button" aria-pressed="true" title="Let the bar keep changing shape">MORPH ON</button>
+  </div>
+  <div id="hint">Loading the face tracker…</div>
+  <div class="bar">
+    <button class="ctl" id="flip" type="button" aria-label="Switch camera" title="Switch camera" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3l2-3h8l2 3h3v12H3z"/><path d="M9 13a3 3 0 0 1 5.2-2"/><path d="M15 13a3 3 0 0 1-5.2 2"/><path d="M14.5 9.5v1.6h-1.6M9.5 16.5v-1.6h1.6"/></svg>
+    </button>
+    <button class="ctl shutter" id="snap" type="button" aria-label="Take a photo" title="Take a photo"><span></span></button>
+    <button class="ctl" id="shuffle" type="button" aria-label="New bar shape" title="New bar shape">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h7v3H3zM12 6h9v3h-9zM3 11h5v3H3zM10 11h11v3H10zM5 16h6v3H5zM14 16h5v3h-5z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script type="module" src="d.js"></script>
+</body>
+</html>
