@@ -39,9 +39,10 @@
         : fetch('/site.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null }).catch(function () { return null })
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="/os/os.css">
-  <link rel="stylesheet" href="/os/extras.css">
-  <link rel="stylesheet" href="/os/cursors.css">
+  <!-- ?v= on the desktop's own files: bump it with each change to them, so a fresh page never runs a stale cached copy -->
+  <link rel="stylesheet" href="/os/os.css?v=20261025">
+  <link rel="stylesheet" href="/os/extras.css?v=20261025">
+  <link rel="stylesheet" href="/os/cursors.css?v=20261025">
   <!-- Filled in by scripts/build-site.mjs from the game's own data. -->
   <script type="application/json" id="game-facts">{"endings":9,"items":27,"achievements":107,"themes":10}</script>
 </head>
@@ -527,9 +528,9 @@
     </div>
   </template>
 
-  <script src="/online/online.js" defer></script>
-  <script src="/online/avatar.js" defer></script>
-  <script src="/os/online-apps.js" defer></script>
-  <script src="/os/os.js" defer></script>
+  <script src="/online/online.js?v=20261025" defer></script>
+  <script src="/online/avatar.js?v=20261025" defer></script>
+  <script src="/os/online-apps.js?v=20261025" defer></script>
+  <script src="/os/os.js?v=20261025" defer></script>
 </body>
 </html>

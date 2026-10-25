@@ -28,11 +28,12 @@ const COLS = 32
 const ROWS = 24
 const EYE_ROW = 9 // the line through the eyes; the rows above it reach the forehead
 const CX = COLS / 2
-const CELLS_PER_FACE = 26 // a face, cheek to cheek, is this many blocks wide
+const CELLS_PER_FACE = 22 // a face, cheek to cheek, is this many blocks wide (the bar is wider still)
 
 // ═══════════ The drawn eyes
-const EYE_SCALE = 1.35 // drawn a good deal bigger than the real eye, like the reference stills
-const GAZE = 1.9 // the iris moves this much further than the real one, so you can see it
+const EYE_SCALE = 1.75 // drawn much bigger than the real eye, like the reference stills
+const GAZE = 1.3 // the irises move a little further than the real ones, so you can see it
+const GAZE_SETTLE = 5 // seconds: how slowly your resting look becomes the new centre
 const PAPER = '#f2f1ee'
 const INK = '#060607'
 
@@ -214,8 +215,9 @@ function newSlot(d, now) {
     m: { ...d.m }, ang: d.ang, faceW: d.faceW,
     eyes: d.eyes.map((e) => ({
       c: { ...e.c }, ax: Math.atan2(e.outer.y - e.inner.y, e.outer.x - e.inner.x), width: e.width,
-      open: 1, gx: 0, gy: 0, rmax: Math.max(0.2, e.ratio),
+      open: 1, rmax: Math.max(0.2, e.ratio),
     })),
+    gaze: null, // where both eyes look, and their resting centre: { x, y, bx, by }
   }
 }
 
@@ -262,6 +264,7 @@ function step(now, dt) {
     s.ang = easeAng(s.ang, d.ang, kPos)
     s.faceW = ease(s.faceW, d.faceW, kPos)
     const ux = Math.cos(d.ang), uy = Math.sin(d.ang), vx = -uy, vy = ux
+    let gx = 0, gy = 0
     d.eyes.forEach((e, j) => {
       const se = s.eyes[j]
       se.c.x = ease(se.c.x, e.c.x, kEye)
@@ -273,9 +276,18 @@ function step(now, dt) {
       se.open = ease(se.open, clamp((e.ratio - 0.075) / (se.rmax * 0.9 - 0.075)), kOpen)
       // where it looks: the iris against the middle of the eye, along and across the face, in eye-widths
       const dx = e.iris.x - e.c.x, dy = e.iris.y - e.c.y
-      se.gx = ease(se.gx, (dx * ux + dy * uy) / e.width, kEye)
-      se.gy = ease(se.gy, (dx * vx + dy * vy) / e.width, kEye)
+      gx += (dx * ux + dy * uy) / e.width / 2
+      gy += (dx * vx + dy * vy) / e.width / 2
     })
+    // Both drawn eyes share one gaze, the average of the two. Real eyes turn inwards to look at a
+    // screen near the camera; copied eye by eye (and exaggerated) that reads as cross-eyed. The
+    // centre is wherever you've been looking lately, so only real glances move the irises.
+    if (!s.gaze) s.gaze = { x: gx, y: gy, bx: gx, by: gy }
+    const gz = s.gaze, kBase = 1 - Math.exp(-dt / GAZE_SETTLE)
+    gz.x = ease(gz.x, gx, kEye)
+    gz.y = ease(gz.y, gy, kEye)
+    gz.bx = ease(gz.bx, gx, kBase)
+    gz.by = ease(gz.by, gy, kBase)
     s.bar.tick(now, morph)
   }
 }
@@ -294,11 +306,12 @@ function drawFace(s) {
   g.restore()
   g.save()
   g.globalAlpha = s.alpha
-  for (const e of s.eyes) drawEye(e, s.ang)
+  const look = s.gaze ? { x: s.gaze.x - s.gaze.bx, y: s.gaze.y - s.gaze.by } : { x: 0, y: 0 }
+  for (const e of s.eyes) drawEye(e, s.ang, look)
   g.restore()
 }
 
-function drawEye(e, faceAng) {
+function drawEye(e, faceAng, look) {
   const w = e.width * EYE_SCALE
   const ax = Math.cos(e.ax), ay = Math.sin(e.ax) // inner corner → outer corner
   const ux = Math.cos(faceAng), uy = Math.sin(faceAng), vx = -uy, vy = ux // across the face, and down it
@@ -329,7 +342,7 @@ function drawEye(e, faceAng) {
   g.save()
   g.clip(eye)
   const r = w * 0.17
-  const ox = clamp(e.gx * w * GAZE, -w * 0.3, w * 0.3), oy = clamp(e.gy * w * GAZE, -w * 0.12, w * 0.12)
+  const ox = clamp(look.x * w * GAZE, -w * 0.28, w * 0.28), oy = clamp(look.y * w * GAZE, -w * 0.1, w * 0.1)
   const ix = e.c.x + ux * ox + vx * oy, iy = e.c.y + uy * ox + vy * oy
   g.beginPath()
   g.arc(ix, iy, r, 0, Math.PI * 2)
@@ -455,6 +468,12 @@ requestAnimationFrame(frame)
 // ═══════════ Controls
 const startBtn = $('start')
 const errBox = $('err')
+const ownTab = $('own')
+let framed = true
+try { framed = window.self !== window.top } catch (e) {}
+// Some browsers won't give a camera to a page inside a window like the nikstil.com desktop's.
+// There, a way out to D's own tab is always on offer.
+if (framed && ownTab) ownTab.hidden = false
 let trackerLoading = null
 
 startBtn.addEventListener('click', async () => {
@@ -475,7 +494,7 @@ startBtn.addEventListener('click', async () => {
     await startCamera(facing)
   } catch (e) {
     stopCamera()
-    errBox.textContent = cameraError(e)
+    errBox.textContent = cameraError(e) + (framed ? ' If it still won’t start here, open D in its own tab.' : '')
     startBtn.disabled = false
     startBtn.textContent = 'Turn on camera'
     return
@@ -543,7 +562,8 @@ window.D = {
       faces: slots.map((s) => ({
         alpha: s.alpha, m: { ...s.m }, ang: s.ang, faceW: s.faceW,
         shape: Array.from(s.bar.cells).join(''),
-        eyes: s.eyes.map((e) => ({ c: { ...e.c }, width: e.width, open: e.open, gx: e.gx, gy: e.gy })),
+        look: s.gaze ? { x: s.gaze.x - s.gaze.bx, y: s.gaze.y - s.gaze.by } : null,
+        eyes: s.eyes.map((e) => ({ c: { ...e.c }, width: e.width, open: e.open })),
       })),
     }
   },

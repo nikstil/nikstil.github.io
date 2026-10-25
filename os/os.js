@@ -1000,7 +1000,6 @@
     { icon: '🧠', name: 'BRAINS FIRST', url: '/touchphone/' },
     { icon: '🟩', name: 'LOGGLE', url: '/loggle/' },
     { icon: '🚡', name: 'RELAY 15', url: '/buttonstory/' },
-    { icon: '🥷', name: 'D', url: '/D/' },
     { icon: '💣', name: 'COUNTER-STRIFE', url: '/strife/' },
     { icon: '🎰', name: 'SKINSINK.GG', url: '/casino/' },
     { icon: '👔', name: 'KEVIN-GOTCHI™', url: '/kevin/' },
