@@ -406,17 +406,3 @@ export function createRenderer(cfg) {
     },
   }
 }
-
-/** Where a point of a face's own space lands in the video, worked out exactly as the shaders do. */
-export function screenPoint(cfg, s, local, w, h) {
-  const F = s.F
-  const P = [0, 1, 2].map((i) => [s.O.x, s.O.y, s.O.z][i] + (s.ax[i] * local[0] + s.ay[i] * local[1] + s.az[i] * local[2]) * F)
-  const k = (cfg.focal * Math.max(w, h) + P[2] - s.O.z) / (cfg.focal * Math.max(w, h))
-  return { x: w / 2 + (P[0] - w / 2) / k, y: h / 2 + (P[1] - h / 2) / k }
-}
-
-/** A point on the visor (along it and down it in face widths, at radius r), in the face's own space. */
-export function visorPoint(cfg, along, down, r) {
-  const th = along / cfg.radius
-  return [r * Math.sin(th), down, cfg.axisZ - r * Math.cos(th)]
-}
