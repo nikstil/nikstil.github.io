@@ -3,7 +3,8 @@
 // (./gl.js), turning with your head; or, in the MOSAIC style, a glitching pixel censor.
 // Face tracking is MediaPipe's Face Landmarker, served from ./vendor and run entirely in the browser.
 import { FaceLandmarker } from './vendor/vision_bundle.mjs'
-import { createRenderer, screenPoint, visorPoint } from './gl.js?v=1'
+import { createRenderer } from './gl.js?v=2'
+import { EyeState, OneEuro } from './eyes.js?v=1'
 
 const VENDOR = new URL('./vendor/', import.meta.url).href
 const $ = (id) => document.getElementById(id)
@@ -56,11 +57,6 @@ const GL = { cols: COLS, rows: ROWS, cx: CX, eyeRow: EYE_ROW, cell: CELL, radius
 const EYE_SCALE = 1.75 // drawn much bigger than the real eye, like the reference stills
 const GAZE = 1.3 // the irises move a little further than the real ones, so you can see it
 const GAZE_SETTLE = 5 // seconds: how slowly your resting look becomes the new centre
-// How shut each eye is: 0 is as open as it usually is. The lid gap and the tracker's blink score both count.
-const BLINK_WEIGHT = 0.8 // how much the blink score adds to what the lid gap says
-const WINK = 0.6 // when you wink, the tracker half-shuts the open eye too, so the difference between them gets this much extra
-const SHUT_FROM = 0.12 // the drawn eye starts to close here
-const SHUT_AT = 0.4 // and is shut here
 const PAPER = '#f2f1ee'
 const INK = '#060607'
 
@@ -235,17 +231,27 @@ let detections = 0
 let emptyDetections = 0 // frames the tracker found no face in (for testing)
 let seed = (Math.random() * 1e9) | 0
 
-/** Pixel positions of what we need from one face's 478 landmarks, and how shut its eyes look. */
+/** Pixel positions of what we need from one face's 478 landmarks, its 3D pose, and how its eyes look. */
 function measure(lm, w, h, shapes) {
   const P = (i) => ({ x: lm[i].x * w, y: lm[i].y * h })
-  // the lid gap is measured in 3D, so turning or tipping your head doesn't squash an eye shut
-  const D3 = (a, b) => Math.hypot((lm[a].x - lm[b].x) * w, (lm[a].y - lm[b].y) * h, ((lm[a].z || 0) - (lm[b].z || 0)) * w)
   const score = (name) => shapes?.categories?.find((c) => c.categoryName === name)?.score ?? 0
+  // in 3D: the face's own axes (across it towards its left, down it) and size, from many landmarks at once
+  const Q = (i) => [lm[i].x * w, lm[i].y * h, (lm[i].z || 0) * w]
+  const avg = (ids) => ids.map(Q).reduce((sum, q) => [sum[0] + q[0] / ids.length, sum[1] + q[1] / ids.length, sum[2] + q[2] / ids.length], [0, 0, 0])
+  const ax = vnorm(ACROSS.reduce((sum, [a, b]) => { const d = vsub(Q(b), Q(a)); return [sum[0] + d[0], sum[1] + d[1], sum[2] + d[2]] }, [0, 0, 0]))
+  const down = vsub(avg(BOTTOM), avg(TOP))
+  const ay = vnorm(vsub(down, ax.map((v) => v * vdot(down, ax))))
+  const F = Math.max(10, Math.hypot(...vsub(Q(CHEEKS[1]), Q(CHEEKS[0]))))
+  // how much turning and tipping the head shrinks widths and heights in the picture, undone below
+  // (so neither reads as an eye closing, or as a glance)
+  const turned = Math.sqrt(Math.max(0.15, 1 - ax[2] * ax[2])), tipped = Math.sqrt(Math.max(0.15, 1 - ay[2] * ay[2]))
   const eyes = EYES.map((e) => {
     const outer = P(e.outer), inner = P(e.inner)
     const width = Math.max(1, dist(outer, inner))
-    const gap = e.lids.reduce((sum, [u, l]) => sum + D3(u, l), 0) / e.lids.length
-    return { outer, inner, c: mid(outer, inner), width, ratio: gap / Math.max(1e-6, D3(e.outer, e.inner)), blink: score(e.blink) }
+    const ux = (outer.x - inner.x) / width, uy = (outer.y - inner.y) / width
+    // the gap between the lids in three places, square to the eye's own line
+    const gap = e.lids.reduce((sum, [u, l]) => { const a = P(u), b = P(l); return sum + Math.abs((b.y - a.y) * ux - (b.x - a.x) * uy) }, 0) / e.lids.length
+    return { outer, inner, c: mid(outer, inner), width, ratio: (gap / tipped) / (width / turned), blink: score(e.blink) }
   })
   if (lm.length > IRIS[1]) {
     const a = P(IRIS[0]), b = P(IRIS[1])
@@ -254,13 +260,13 @@ function measure(lm, w, h, shapes) {
     eyes[1].iris = aFirst ? b : a
   } else for (const e of eyes) e.iris = e.c
   const ang = Math.atan2(eyes[1].c.y - eyes[0].c.y, eyes[1].c.x - eyes[0].c.x) // across the face
-  // in 3D: the face's own axes (across it towards its left, down it) and size, and where its eyes sit in them
-  const Q = (i) => [lm[i].x * w, lm[i].y * h, (lm[i].z || 0) * w]
-  const avg = (ids) => ids.map(Q).reduce((sum, q) => [sum[0] + q[0] / ids.length, sum[1] + q[1] / ids.length, sum[2] + q[2] / ids.length], [0, 0, 0])
-  const ax = vnorm(ACROSS.reduce((sum, [a, b]) => { const d = vsub(Q(b), Q(a)); return [sum[0] + d[0], sum[1] + d[1], sum[2] + d[2]] }, [0, 0, 0]))
-  const down = vsub(avg(BOTTOM), avg(TOP))
-  const ay = vnorm(vsub(down, ax.map((v) => v * vdot(down, ax))))
-  const F = Math.max(10, Math.hypot(...vsub(Q(CHEEKS[1]), Q(CHEEKS[0]))))
+  // where each iris sits: from the middle of its eye, along the face and down it, in eye widths
+  const ux = Math.cos(ang), uy = Math.sin(ang)
+  for (const e of eyes) {
+    const dx = e.iris.x - e.c.x, dy = e.iris.y - e.c.y
+    e.gx = (dx * ux + dy * uy) / e.width
+    e.gy = ((dy * ux - dx * uy) / tipped) / (e.width / turned)
+  }
   const c3 = EYES.map((e) => avg([e.outer, e.inner]))
   const O = [0, 1, 2].map((i) => (c3[0][i] + c3[1][i]) / 2)
   eyes.forEach((e, j) => {
@@ -280,9 +286,13 @@ function newSlot(d, now) {
     O: { x: d.pose.O[0], y: d.pose.O[1], z: d.pose.O[2] }, ax: [...d.pose.ax], ay: [...d.pose.ay], az: vcross(d.pose.ax, d.pose.ay), F: d.pose.F,
     eyes: d.eyes.map((e) => ({
       c: { ...e.c }, ax: Math.atan2(e.outer.y - e.inner.y, e.outer.x - e.inner.x), width: e.width, lx: e.lx, ly: e.ly, lw: e.lw,
-      open: 1, base: Math.max(0.2, e.ratio), bbase: Math.min(0.35, e.blink), // its usual lid gap and blink score
+      open: 1,
     })),
+    est: new EyeState(), // how open its eyes are, judged against what's usual for this face
+    openT: [1, 1],
     gaze: null, // where both eyes look, and their resting centre: { x, y, bx, by }
+    gazeX: new OneEuro(1.5, 8), // steady when the eyes are still, quick when they move
+    gazeY: new OneEuro(1.5, 8),
   }
 }
 
@@ -297,15 +307,17 @@ function track(dets, now) {
       const dd = dist(s.m, d.m)
       if (dd < bd) { bd = dd; best = s }
     }
+    let s = best
     if (best && bd < d.faceW * 0.9) {
-      used.add(best)
       best.target = d
       best.seen = now
     } else {
-      const s = newSlot(d, now)
+      s = newSlot(d, now)
       slots.push(s)
-      used.add(s)
     }
+    used.add(s)
+    // once per tracked frame: how open the eyes are
+    s.openT = s.est.update(now, d.eyes.map((e) => ({ r: e.ratio, b: e.blink })), d.pose.ax[2])
   }
   for (const s of slots) {
     if (used.has(s)) { s.lostAt = 0; s.misses = 0 }
@@ -318,7 +330,6 @@ function step(now, dt) {
   const kPos = 1 - Math.exp(-dt / 0.05)
   const kEye = 1 - Math.exp(-dt / 0.035)
   const kOpen = 1 - Math.exp(-dt / 0.03)
-  const kUp = 1 - Math.exp(-dt / 0.3), kDown = 1 - Math.exp(-dt / 3)
   for (let i = slots.length - 1; i >= 0; i--) {
     const s = slots[i], d = s.target
     // a few missed frames don't make it blink, however slowly the device tracks
@@ -342,8 +353,7 @@ function step(now, dt) {
     s.ay = vnorm(vsub(s.ay, s.ax.map((v) => v * vdot(s.ay, s.ax))))
     s.az = vcross(s.ax, s.ay)
     s.F = ease(s.F, p.F, kPos)
-    const ux = Math.cos(d.ang), uy = Math.sin(d.ang), vx = -uy, vy = ux
-    const shut = d.eyes.map((e, j) => {
+    d.eyes.forEach((e, j) => {
       const se = s.eyes[j]
       se.c.x = ease(se.c.x, e.c.x, kEye)
       se.c.y = ease(se.c.y, e.c.y, kEye)
@@ -352,37 +362,25 @@ function step(now, dt) {
       se.lx = ease(se.lx, e.lx, kEye)
       se.ly = ease(se.ly, e.ly, kEye)
       se.lw = ease(se.lw, e.lw, kEye)
-      // this eye's usual lid gap: quick to rise, slow to sink, and blinks and winks don't drag it down
-      if (e.ratio > se.base) se.base = ease(se.base, e.ratio, kUp)
-      else if (e.ratio > se.base * 0.75) se.base = ease(se.base, e.ratio, kDown)
-      // and its usual blink score, the other way up
-      if (e.blink < se.bbase) se.bbase = ease(se.bbase, e.blink, kUp)
-      else if (e.blink < se.bbase + 0.1) se.bbase = ease(se.bbase, e.blink, kDown)
-      return Math.max(0, 1 - e.ratio / se.base) + BLINK_WEIGHT * Math.max(0, e.blink - se.bbase)
+      se.open = ease(se.open, s.openT[j], kOpen)
     })
-    // One eye shutting more than the other is a wink: it shuts further, and the other opens back up.
-    s.eyes.forEach((se, j) => {
-      const sh = shut[j] + WINK * (shut[j] - shut[1 - j])
-      se.open = ease(se.open, clamp(1 - (sh - SHUT_FROM) / (SHUT_AT - SHUT_FROM)), kOpen)
-    })
-    // where they look: each iris against the middle of its eye, along and across the face, in eye-widths,
-    // counted by how open the eye is (a shut eye's iris is only a guess)
+    // where they look, counted by how open each eye is (a shut eye's iris is only a guess)
     let gx = 0, gy = 0, gw = 0
     d.eyes.forEach((e, j) => {
-      const dx = e.iris.x - e.c.x, dy = e.iris.y - e.c.y, wt = 0.05 + s.eyes[j].open
-      gx += ((dx * ux + dy * uy) / e.width) * wt
-      gy += ((dx * vx + dy * vy) / e.width) * wt
+      const wt = 0.05 + s.eyes[j].open
+      gx += e.gx * wt
+      gy += e.gy * wt
       gw += wt
     })
-    gx /= gw
-    gy /= gw
+    gx = s.gazeX.filter(gx / gw, dt)
+    gy = s.gazeY.filter(gy / gw, dt)
     // Both drawn eyes share one gaze, the average of the two. Real eyes turn inwards to look at a
     // screen near the camera; copied eye by eye (and exaggerated) that reads as cross-eyed. The
     // centre is wherever you've been looking lately, so only real glances move the irises.
     if (!s.gaze) s.gaze = { x: gx, y: gy, bx: gx, by: gy }
     const gz = s.gaze, kBase = 1 - Math.exp(-dt / GAZE_SETTLE)
-    gz.x = ease(gz.x, gx, kEye)
-    gz.y = ease(gz.y, gy, kEye)
+    gz.x = gx
+    gz.y = gy
     gz.bx = ease(gz.bx, gx, kBase)
     gz.by = ease(gz.by, gy, kBase)
     s.bar.tick(now, morph)
@@ -479,7 +477,7 @@ function drawEyeStrip(ctx, W, H, s) {
   }
 }
 
-// ═══════════ MOSAIC: its glitches come in bursts every second or two, and it wears a tag
+// ═══════════ MOSAIC: its glitches come in bursts every second or two
 let glitchEnd = 0, glitchNext = 0, glitchPower = 0
 function glitchAt(now) {
   if (now >= glitchNext) {
@@ -488,35 +486,6 @@ function glitchAt(now) {
     glitchNext = now + 500 + Math.random() * 2200
   }
   return now < glitchEnd ? glitchPower : 0
-}
-
-/** The tag, pinned above the visor's top corner (whichever is on the left as you see it). */
-function drawTag(s, w, h, glitch, tick) {
-  if (glitch > 0.8 && tick % 2) return // it drops out in the worst of a glitch
-  const p = [-1, 1]
-    .map((side) => screenPoint(GL, s, visorPoint(GL, side * 11 * CELL, -7.5 * CELL, VISOR_R + CELL), w, h))
-    .map((q) => ({ x: mirror ? w - q.x : q.x, y: q.y }))
-    .sort((a, b) => a.x - b.x)[0]
-  const size = clamp(CELL * s.F * 0.8, 10, 26), pad = size * 0.35, text = 'CENSORED'
-  g.save()
-  g.globalAlpha = s.alpha
-  g.font = `700 ${size}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`
-  g.textBaseline = 'alphabetic'
-  const tw = g.measureText(text).width
-  const x = p.x + (glitch ? (Math.random() - 0.5) * size * glitch : 0), top = p.y - size - pad * 2
-  g.fillStyle = 'rgba(6, 6, 8, 0.85)'
-  g.fillRect(x, top, tw + pad * 2 + size * 0.45, size + pad * 2)
-  g.fillStyle = '#ff1f4b'
-  g.fillRect(x, top, size * 0.22, size + pad * 2)
-  // printed three times a little out of register: red, cyan, then white
-  const tx = x + size * 0.45 + pad, ty = p.y - pad - size * 0.12, off = 1 + glitch * 4
-  g.fillStyle = 'rgba(255, 31, 75, 0.9)'
-  g.fillText(text, tx - off, ty)
-  g.fillStyle = 'rgba(0, 240, 255, 0.9)'
-  g.fillText(text, tx + off, ty)
-  g.fillStyle = '#eafcff'
-  g.fillText(text, tx, ty)
-  g.restore()
 }
 
 // ═══════════ Camera and tracker
@@ -615,7 +584,6 @@ function frame(now) {
     g.drawImage(renderer.canvas, 0, 0)
   } else for (const s of slots) if (s.alpha > 0.01) drawFace(s) // no WebGL2: the flat bar
   g.setTransform(1, 0, 0, 1, 0, 0)
-  if (in3D && style === 'mosaic') for (const s of slots) if (s.alpha > 0.01) drawTag(s, w, h, glitch, tick)
 
   const msg = trackerFailed ? 'The face tracker didn’t load. Check your connection and reload.' : !tracker ? 'Loading the face tracker…' : now - lastFaceAt > 900 ? 'Looking for a face…' : ''
   if (msg) hint.textContent = msg
@@ -737,6 +705,7 @@ window.D = {
         shape: Array.from(s.bar.cells).join(''),
         look: s.gaze ? { x: s.gaze.x - s.gaze.bx, y: s.gaze.y - s.gaze.by } : null,
         eyes: s.eyes.map((e) => ({ c: { ...e.c }, width: e.width, open: e.open })),
+        eyeState: s.est.debug,
       })),
     }
   },
