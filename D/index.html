@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#060607">
 <title>D</title>
-<meta name="description" content="D: a camera filter. A blocky black bar over your eyes that keeps changing shape, with drawn eyes on top that follow yours. Runs on your device.">
+<meta name="description" content="D: a camera filter. A blocky black 3D visor over your eyes that keeps changing shape, with drawn eyes on it that follow yours. Or a glitching pixel mosaic. Runs on your device.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Cpath fill='%23060607' d='M3 9h24v2h2v9h-3v4h-9v-3H3z'/%3E%3Cpath fill='%23f2f1ee' d='M7 15l3-2h3l2 2-2 2h-3zM18 15l2-2h3l3 2-3 2h-3z'/%3E%3Cpath fill='%23c8262e' d='M10 14h2v2h-2zM21 14h2v2h-2z'/%3E%3C/svg%3E">
 <style>
   :root {
@@ -80,6 +80,13 @@
     background: rgba(20,20,24,0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   }
   .pill[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+  .seg {
+    pointer-events: auto; display: flex; padding: 3px; border-radius: 999px;
+    background: rgba(20,20,24,0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .seg[hidden] { display: none; }
+  .seg .pill { padding: 5px 11px; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .seg .pill[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
   #hint {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 10px 16px; border-radius: 999px;
     background: rgba(10,10,12,0.7); font-size: 14px; color: #e8e7e4; white-space: nowrap; transition: opacity 0.3s;
@@ -101,7 +108,7 @@
       <circle cx="43" cy="12" r="2.6" fill="#c8262e" /><circle cx="43" cy="12" r="1.1" fill="#260507" />
     </svg>
     <h1>D</h1>
-    <p class="lede">A camera filter. A black bar falls over your eyes and never quite holds its shape. Drawn eyes sit on top, and they look where you look.</p>
+    <p class="lede">A camera filter. A blocky black visor wraps round your eyes and never quite holds its shape. Drawn eyes sit on it, and they look where you look. Or switch to MOSAIC: a pixel censor that glitches.</p>
     <button class="go" id="start" type="button">Turn on camera</button>
     <p class="err" id="err" role="alert"></p>
     <a class="own" id="own" href="/D/" target="_blank" rel="noopener" hidden>Camera not starting here? Open D in its own tab ↗</a>
@@ -112,6 +119,10 @@
 <div id="ui" hidden>
   <div class="top">
     <span class="logo">D</span>
+    <div class="seg" id="style" role="group" aria-label="Style">
+      <button class="pill" id="styleBar" type="button" aria-pressed="true" title="A black visor with drawn eyes">BAR</button>
+      <button class="pill" id="styleMosaic" type="button" aria-pressed="false" title="A glitching pixel censor">MOSAIC</button>
+    </div>
     <button class="pill" id="morph" type="button" aria-pressed="true" title="Let the bar keep changing shape">MORPH ON</button>
   </div>
   <div id="hint">Loading the face tracker…</div>
@@ -126,6 +137,6 @@
   </div>
 </div>
 
-<script type="module" src="d.js?v=3"></script>
+<script type="module" src="d.js?v=4"></script>
 </body>
 </html>

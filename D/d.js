@@ -1,7 +1,9 @@
-// D: a camera filter. A blocky black bar over your eyes that keeps changing shape, and drawn eyes
-// on top that follow your real ones: where they are, how open they are, and where they look.
+// D: a camera filter. A blocky black visor over your eyes that keeps changing shape, and drawn eyes
+// on it that follow your real ones: where they are, how open they are, and where they look. It's 3D
+// (./gl.js), turning with your head; or, in the MOSAIC style, a glitching pixel censor.
 // Face tracking is MediaPipe's Face Landmarker, served from ./vendor and run entirely in the browser.
 import { FaceLandmarker } from './vendor/vision_bundle.mjs'
+import { createRenderer, screenPoint, visorPoint } from './gl.js?v=1'
 
 const VENDOR = new URL('./vendor/', import.meta.url).href
 const $ = (id) => document.getElementById(id)
@@ -14,6 +16,10 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a))
 const easeAng = (a, b, k) => a + wrap(b - a) * k
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
 const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 })
+const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+const vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+const vnorm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l] }
+const vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
 
 // ═══════════ Landmarks (MediaPipe face mesh indices)
 const EYES = [
@@ -22,6 +28,9 @@ const EYES = [
 ]
 const IRIS = [468, 473] // the two iris centres
 const CHEEKS = [234, 454] // the sides of the face, for its width
+const ACROSS = [[33, 263], [133, 362], [234, 454], [61, 291], [70, 300]] // pairs across the face (its right, its left), for its 3D axes
+const TOP = [10, 109, 338] // the forehead
+const BOTTOM = [152, 148, 377] // and the chin
 
 // ═══════════ The bar: a grid of blocks laid across the face
 const COLS = 32
@@ -29,6 +38,19 @@ const ROWS = 24
 const EYE_ROW = 9 // the line through the eyes; the rows above it reach the forehead
 const CX = COLS / 2
 const CELLS_PER_FACE = 17 // a face, cheek to cheek, is this many blocks wide (the bar is wider still)
+
+// ═══════════ The bar in 3D: a visor of blocks round the head. Sizes in face widths (cheek to cheek is 1).
+const CELL = 1 / CELLS_PER_FACE
+const VISOR_R = 1 // the visor's radius
+const VISOR_AXIS = 0.82 // its axis runs this far behind the eyes, so its front is a little in front of them
+const BACK = 0.4 // blocks reach this far (in blocks) back behind the visor's surface
+const BASE_H = 0.5 // how far (in blocks) most blocks stand out of it
+const PLATEAU = 0.8 // and the ones round the eyes, level, so the drawn eyes sit flat on them
+const LEVELS = [0.15, 0.35, 0.9, 1.3, 1.8] // what patches of it push out or sink back to
+const HEAD = { c: [0, -0.05, 0.65], r: [0.5, 0.8, 0.7] } // the head, roughly: what the visor's far end hides behind
+const STRIP = { w: 0.52, h: 0.22, radius: VISOR_R + (PLATEAU + 0.1) * CELL, px: [640, 272] } // where the drawn eyes go
+const FOCAL = 1 // the camera's focal length, in multiples of the video's longer side
+const GL = { cols: COLS, rows: ROWS, cx: CX, eyeRow: EYE_ROW, cell: CELL, radius: VISOR_R, axisZ: VISOR_AXIS, back: BACK, head: HEAD, strip: STRIP, focal: FOCAL }
 
 // ═══════════ The drawn eyes
 const EYE_SCALE = 1.75 // drawn much bigger than the real eye, like the reference stills
@@ -62,6 +84,8 @@ class Bar {
     this.canvas.height = ROWS
     this.cx = this.canvas.getContext('2d')
     this.img = this.cx.createImageData(COLS, ROWS)
+    this.hT = new Float32Array(COLS * ROWS) // in 3D, how far each block stands out of the visor (in blocks)
+    this.h = new Float32Array(COLS * ROWS) // and how far it's got: blocks slide out and back rather than jump
     this.nextSmall = 0
     this.nextBig = 0
     this.regen()
@@ -69,10 +93,14 @@ class Bar {
   ri(a, b) { return a + Math.floor(this.rng() * (b - a + 1)) }
   chance(p) { return this.rng() < p }
   get(x, y) { return x >= 0 && y >= 0 && x < COLS && y < ROWS ? this.cells[y * COLS + x] : 0 }
-  rect(x0, y0, x1, y1, v = 1) {
+  rect(x0, y0, x1, y1, v = 1, into = this.cells) {
     const xa = Math.max(0, Math.min(x0, x1)), xb = Math.min(COLS - 1, Math.max(x0, x1))
     const ya = Math.max(0, Math.min(y0, y1)), yb = Math.min(ROWS - 1, Math.max(y0, y1))
-    for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) this.cells[y * COLS + x] = v
+    for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) into[y * COLS + x] = v
+  }
+  /** In 3D, a patch of blocks pushes out or sinks back. */
+  push(x0, y0, w, h) {
+    this.rect(x0, y0, x0 + w - 1, y0 + h - 1, LEVELS[this.ri(0, LEVELS.length - 1)], this.hT)
   }
   shiftRows(y0, y1, dx) {
     for (let y = Math.max(0, y0); y <= Math.min(ROWS - 1, y1); y++) {
@@ -81,12 +109,17 @@ class Bar {
     }
   }
   /** Whatever happens to the shape, the eyes and brows stay covered. */
-  coverEyes() { this.rect(CX - 10, EYE_ROW - 4, CX + 9, EYE_ROW + 2) }
+  coverEyes() {
+    this.rect(CX - 10, EYE_ROW - 4, CX + 9, EYE_ROW + 2)
+    this.rect(CX - 10, EYE_ROW - 4, CX + 9, EYE_ROW + 2, PLATEAU, this.hT)
+  }
 
   /** A whole new shape: a slab over the eyes with ragged edges, maybe a block standing up on a corner,
    *  a chunk hanging down one side, bites out of the bottom, bits breaking off, a slice slid sideways. */
   regen() {
     this.cells.fill(0)
+    this.hT.fill(BASE_H)
+    for (let n = this.ri(4, 8); n > 0; n--) this.push(this.ri(0, COLS - 3), this.ri(0, ROWS - 2), this.ri(2, 7), this.ri(1, 4))
     const half = this.ri(12, 14)
     const left = CX - half, right = CX + half - 1
     const top = EYE_ROW - 6 + this.ri(-1, 1), bottom = EYE_ROW + 4 + this.ri(0, 2)
@@ -157,6 +190,7 @@ class Bar {
       const y0 = this.ri(EYE_ROW - 5, EYE_ROW + 4)
       this.shiftRows(y0, y0, this.chance(0.5) ? 1 : -1)
     }
+    if (this.chance(0.35)) this.push(this.ri(0, COLS - 2), this.ri(0, ROWS - 1), this.ri(1, 4), this.ri(1, 3))
     this.coverEyes()
     this.dirty = true
   }
@@ -172,6 +206,12 @@ class Bar {
       this.mutate()
       this.nextSmall = now + 110 + this.rng() * 480
     }
+  }
+
+  /** Blocks slide towards their heights; one that's gone comes back from flat. */
+  ease(dt) {
+    const k = 1 - Math.exp(-dt / 0.07)
+    for (let i = 0; i < this.h.length; i++) this.h[i] = this.cells[i] ? this.h[i] + (this.hT[i] - this.h[i]) * k : 0
   }
 
   paint() {
@@ -214,7 +254,22 @@ function measure(lm, w, h, shapes) {
     eyes[1].iris = aFirst ? b : a
   } else for (const e of eyes) e.iris = e.c
   const ang = Math.atan2(eyes[1].c.y - eyes[0].c.y, eyes[1].c.x - eyes[0].c.x) // across the face
-  return { m: mid(eyes[0].c, eyes[1].c), ang, faceW: Math.max(10, dist(P(CHEEKS[0]), P(CHEEKS[1]))), eyes }
+  // in 3D: the face's own axes (across it towards its left, down it) and size, and where its eyes sit in them
+  const Q = (i) => [lm[i].x * w, lm[i].y * h, (lm[i].z || 0) * w]
+  const avg = (ids) => ids.map(Q).reduce((sum, q) => [sum[0] + q[0] / ids.length, sum[1] + q[1] / ids.length, sum[2] + q[2] / ids.length], [0, 0, 0])
+  const ax = vnorm(ACROSS.reduce((sum, [a, b]) => { const d = vsub(Q(b), Q(a)); return [sum[0] + d[0], sum[1] + d[1], sum[2] + d[2]] }, [0, 0, 0]))
+  const down = vsub(avg(BOTTOM), avg(TOP))
+  const ay = vnorm(vsub(down, ax.map((v) => v * vdot(down, ax))))
+  const F = Math.max(10, Math.hypot(...vsub(Q(CHEEKS[1]), Q(CHEEKS[0]))))
+  const c3 = EYES.map((e) => avg([e.outer, e.inner]))
+  const O = [0, 1, 2].map((i) => (c3[0][i] + c3[1][i]) / 2)
+  eyes.forEach((e, j) => {
+    const rel = vsub(c3[j], O)
+    e.lx = vdot(rel, ax) / F
+    e.ly = vdot(rel, ay) / F
+    e.lw = Math.hypot(...vsub(Q(EYES[j].outer), Q(EYES[j].inner))) / F
+  })
+  return { m: mid(eyes[0].c, eyes[1].c), ang, faceW: Math.max(10, dist(P(CHEEKS[0]), P(CHEEKS[1]))), eyes, pose: { O, ax, ay, F } }
 }
 
 function newSlot(d, now) {
@@ -222,8 +277,9 @@ function newSlot(d, now) {
     bar: new Bar(seed++),
     target: d, seen: now, lostAt: 0, alpha: 0,
     m: { ...d.m }, ang: d.ang, faceW: d.faceW,
+    O: { x: d.pose.O[0], y: d.pose.O[1], z: d.pose.O[2] }, ax: [...d.pose.ax], ay: [...d.pose.ay], az: vcross(d.pose.ax, d.pose.ay), F: d.pose.F,
     eyes: d.eyes.map((e) => ({
-      c: { ...e.c }, ax: Math.atan2(e.outer.y - e.inner.y, e.outer.x - e.inner.x), width: e.width,
+      c: { ...e.c }, ax: Math.atan2(e.outer.y - e.inner.y, e.outer.x - e.inner.x), width: e.width, lx: e.lx, ly: e.ly, lw: e.lw,
       open: 1, base: Math.max(0.2, e.ratio), bbase: Math.min(0.35, e.blink), // its usual lid gap and blink score
     })),
     gaze: null, // where both eyes look, and their resting centre: { x, y, bx, by }
@@ -273,6 +329,19 @@ function step(now, dt) {
     s.m.y = ease(s.m.y, d.m.y, kPos)
     s.ang = easeAng(s.ang, d.ang, kPos)
     s.faceW = ease(s.faceW, d.faceW, kPos)
+    // the 3D pose, eased like the rest, then squared up again
+    const p = d.pose
+    s.O.x = ease(s.O.x, p.O[0], kPos)
+    s.O.y = ease(s.O.y, p.O[1], kPos)
+    s.O.z = ease(s.O.z, p.O[2], kPos)
+    for (let k = 0; k < 3; k++) {
+      s.ax[k] = ease(s.ax[k], p.ax[k], kPos)
+      s.ay[k] = ease(s.ay[k], p.ay[k], kPos)
+    }
+    s.ax = vnorm(s.ax)
+    s.ay = vnorm(vsub(s.ay, s.ax.map((v) => v * vdot(s.ay, s.ax))))
+    s.az = vcross(s.ax, s.ay)
+    s.F = ease(s.F, p.F, kPos)
     const ux = Math.cos(d.ang), uy = Math.sin(d.ang), vx = -uy, vy = ux
     const shut = d.eyes.map((e, j) => {
       const se = s.eyes[j]
@@ -280,6 +349,9 @@ function step(now, dt) {
       se.c.y = ease(se.c.y, e.c.y, kEye)
       se.ax = easeAng(se.ax, Math.atan2(e.outer.y - e.inner.y, e.outer.x - e.inner.x), kEye)
       se.width = ease(se.width, e.width, kEye)
+      se.lx = ease(se.lx, e.lx, kEye)
+      se.ly = ease(se.ly, e.ly, kEye)
+      se.lw = ease(se.lw, e.lw, kEye)
       // this eye's usual lid gap: quick to rise, slow to sink, and blinks and winks don't drag it down
       if (e.ratio > se.base) se.base = ease(se.base, e.ratio, kUp)
       else if (e.ratio > se.base * 0.75) se.base = ease(se.base, e.ratio, kDown)
@@ -314,6 +386,7 @@ function step(now, dt) {
     gz.bx = ease(gz.bx, gx, kBase)
     gz.by = ease(gz.by, gy, kBase)
     s.bar.tick(now, morph)
+    s.bar.ease(dt)
   }
 }
 
@@ -332,11 +405,11 @@ function drawFace(s) {
   g.save()
   g.globalAlpha = s.alpha
   const look = s.gaze ? { x: s.gaze.x - s.gaze.bx, y: s.gaze.y - s.gaze.by } : { x: 0, y: 0 }
-  for (const e of s.eyes) drawEye(e, s.ang, look)
+  for (const e of s.eyes) drawEye(g, e, s.ang, look)
   g.restore()
 }
 
-function drawEye(e, faceAng, look) {
+function drawEye(ctx, e, faceAng, look) {
   const w = e.width * EYE_SCALE
   const ax = Math.cos(e.ax), ay = Math.sin(e.ax) // inner corner → outer corner
   const ux = Math.cos(faceAng), uy = Math.sin(faceAng), vx = -uy, vy = ux // across the face, and down it
@@ -344,13 +417,13 @@ function drawEye(e, faceAng, look) {
   const B = { x: e.c.x + (ax * w) / 2, y: e.c.y + (ay * w) / 2 }
   if (e.open < 0.16) {
     // shut: a thin curved line
-    g.beginPath()
-    g.moveTo(A.x, A.y)
-    g.quadraticCurveTo(e.c.x + vx * w * 0.07, e.c.y + vy * w * 0.07, B.x, B.y)
-    g.strokeStyle = PAPER
-    g.lineWidth = Math.max(1.5, w * 0.045)
-    g.lineCap = 'round'
-    g.stroke()
+    ctx.beginPath()
+    ctx.moveTo(A.x, A.y)
+    ctx.quadraticCurveTo(e.c.x + vx * w * 0.07, e.c.y + vy * w * 0.07, B.x, B.y)
+    ctx.strokeStyle = PAPER
+    ctx.lineWidth = Math.max(1.5, w * 0.045)
+    ctx.lineCap = 'round'
+    ctx.stroke()
     return
   }
   const up = w * 0.42 * e.open, lo = w * 0.28 * e.open
@@ -361,38 +434,89 @@ function drawEye(e, faceAng, look) {
   eye.quadraticCurveTo(upC.x, upC.y, B.x, B.y)
   eye.quadraticCurveTo(loC.x, loC.y, A.x, A.y)
   eye.closePath()
-  g.fillStyle = PAPER
-  g.fill(eye)
+  ctx.fillStyle = PAPER
+  ctx.fill(eye)
   // the iris goes where they're looking, and the lids cut it off
-  g.save()
-  g.clip(eye)
+  ctx.save()
+  ctx.clip(eye)
   const r = w * 0.17
   const ox = clamp(look.x * w * GAZE, -w * 0.28, w * 0.28), oy = clamp(look.y * w * GAZE, -w * 0.1, w * 0.1)
   const ix = e.c.x + ux * ox + vx * oy, iy = e.c.y + uy * ox + vy * oy
-  g.beginPath()
-  g.arc(ix, iy, r, 0, Math.PI * 2)
-  g.fillStyle = '#b81f28'
-  g.fill()
-  g.lineWidth = r * 0.3
-  g.strokeStyle = '#5e0a0f'
-  g.stroke()
-  g.beginPath()
-  g.arc(ix, iy, r * 0.46, 0, Math.PI * 2)
-  g.fillStyle = '#220405'
-  g.fill()
-  g.beginPath()
-  g.arc(ix - r * 0.3, iy - r * 0.34, r * 0.15, 0, Math.PI * 2)
-  g.fillStyle = 'rgba(255, 255, 255, 0.85)'
-  g.fill()
-  g.restore()
+  ctx.beginPath()
+  ctx.arc(ix, iy, r, 0, Math.PI * 2)
+  ctx.fillStyle = '#b81f28'
+  ctx.fill()
+  ctx.lineWidth = r * 0.3
+  ctx.strokeStyle = '#5e0a0f'
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(ix, iy, r * 0.46, 0, Math.PI * 2)
+  ctx.fillStyle = '#220405'
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(ix - r * 0.3, iy - r * 0.34, r * 0.15, 0, Math.PI * 2)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
+  ctx.fill()
+  ctx.restore()
   // the line of the upper lid
-  g.beginPath()
-  g.moveTo(A.x, A.y)
-  g.quadraticCurveTo(upC.x, upC.y, B.x, B.y)
-  g.strokeStyle = INK
-  g.lineWidth = Math.max(1.5, w * 0.05)
-  g.lineCap = 'round'
-  g.stroke()
+  ctx.beginPath()
+  ctx.moveTo(A.x, A.y)
+  ctx.quadraticCurveTo(upC.x, upC.y, B.x, B.y)
+  ctx.strokeStyle = INK
+  ctx.lineWidth = Math.max(1.5, w * 0.05)
+  ctx.lineCap = 'round'
+  ctx.stroke()
+}
+
+/** The drawn eyes for the 3D visor, flat in the picture that goes on it (x along the visor, y down). */
+function drawEyeStrip(ctx, W, H, s) {
+  ctx.clearRect(0, 0, W, H)
+  const look = s.gaze ? { x: s.gaze.x - s.gaze.bx, y: s.gaze.y - s.gaze.by } : { x: 0, y: 0 }
+  const kx = W / (2 * STRIP.w), ky = H / (2 * STRIP.h)
+  for (const e of s.eyes) {
+    const along = VISOR_R * Math.asin(clamp(e.lx / VISOR_R, -0.9, 0.9)) // where the eye looks out through the visor
+    drawEye(ctx, { c: { x: W / 2 + along * kx, y: H / 2 + e.ly * ky }, ax: e.lx < 0 ? Math.PI : 0, width: e.lw * kx, open: e.open }, 0, look)
+  }
+}
+
+// ═══════════ MOSAIC: its glitches come in bursts every second or two, and it wears a tag
+let glitchEnd = 0, glitchNext = 0, glitchPower = 0
+function glitchAt(now) {
+  if (now >= glitchNext) {
+    glitchEnd = now + 80 + Math.random() * 220
+    glitchPower = 0.45 + Math.random() * 0.55
+    glitchNext = now + 500 + Math.random() * 2200
+  }
+  return now < glitchEnd ? glitchPower : 0
+}
+
+/** The tag, pinned above the visor's top corner (whichever is on the left as you see it). */
+function drawTag(s, w, h, glitch, tick) {
+  if (glitch > 0.8 && tick % 2) return // it drops out in the worst of a glitch
+  const p = [-1, 1]
+    .map((side) => screenPoint(GL, s, visorPoint(GL, side * 11 * CELL, -7.5 * CELL, VISOR_R + CELL), w, h))
+    .map((q) => ({ x: mirror ? w - q.x : q.x, y: q.y }))
+    .sort((a, b) => a.x - b.x)[0]
+  const size = clamp(CELL * s.F * 0.8, 10, 26), pad = size * 0.35, text = 'CENSORED'
+  g.save()
+  g.globalAlpha = s.alpha
+  g.font = `700 ${size}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`
+  g.textBaseline = 'alphabetic'
+  const tw = g.measureText(text).width
+  const x = p.x + (glitch ? (Math.random() - 0.5) * size * glitch : 0), top = p.y - size - pad * 2
+  g.fillStyle = 'rgba(6, 6, 8, 0.85)'
+  g.fillRect(x, top, tw + pad * 2 + size * 0.45, size + pad * 2)
+  g.fillStyle = '#ff1f4b'
+  g.fillRect(x, top, size * 0.22, size + pad * 2)
+  // printed three times a little out of register: red, cyan, then white
+  const tx = x + size * 0.45 + pad, ty = p.y - pad - size * 0.12, off = 1 + glitch * 4
+  g.fillStyle = 'rgba(255, 31, 75, 0.9)'
+  g.fillText(text, tx - off, ty)
+  g.fillStyle = 'rgba(0, 240, 255, 0.9)'
+  g.fillText(text, tx + off, ty)
+  g.fillStyle = '#eafcff'
+  g.fillText(text, tx, ty)
+  g.restore()
 }
 
 // ═══════════ Camera and tracker
@@ -402,6 +526,8 @@ let facing = 'user'
 let mirror = true
 let running = false
 let morph = true
+const renderer = createRenderer(GL) // null without WebGL2
+let style = 'bar' // or 'mosaic'
 
 function loadTracker() {
   const fileset = { wasmLoaderPath: VENDOR + 'vision_wasm_internal.js', wasmBinaryPath: VENDOR + 'vision_wasm_internal.wasm' }
@@ -482,8 +608,14 @@ function frame(now) {
   step(now, dt)
   g.setTransform(mirror ? -1 : 1, 0, 0, 1, mirror ? w : 0, 0)
   g.drawImage(video, 0, 0, w, h)
-  for (const s of slots) if (s.alpha > 0.01) drawFace(s)
+  const in3D = renderer && renderer.ok
+  const glitch = glitchAt(now), tick = Math.floor(now / 70)
+  if (in3D) {
+    renderer.render(slots, w, h, { mode: style, video, tick, glitch, drawEyes: drawEyeStrip })
+    g.drawImage(renderer.canvas, 0, 0)
+  } else for (const s of slots) if (s.alpha > 0.01) drawFace(s) // no WebGL2: the flat bar
   g.setTransform(1, 0, 0, 1, 0, 0)
+  if (in3D && style === 'mosaic') for (const s of slots) if (s.alpha > 0.01) drawTag(s, w, h, glitch, tick)
 
   const msg = trackerFailed ? 'The face tracker didn’t load. Check your connection and reload.' : !tracker ? 'Loading the face tracker…' : now - lastFaceAt > 900 ? 'Looking for a face…' : ''
   if (msg) hint.textContent = msg
@@ -571,6 +703,19 @@ $('shuffle').addEventListener('click', () => {
   }
 })
 
+// the style: the black bar with drawn eyes, or the glitching mosaic (which needs the 3D renderer)
+function setStyle(next) {
+  style = next
+  $('styleBar').setAttribute('aria-pressed', String(style === 'bar'))
+  $('styleMosaic').setAttribute('aria-pressed', String(style === 'mosaic'))
+  try { localStorage.setItem('D-style', style) } catch (e) {}
+}
+if (renderer) {
+  try { if (localStorage.getItem('D-style') === 'mosaic') setStyle('mosaic') } catch (e) {}
+} else $('style').hidden = true
+$('styleBar').addEventListener('click', () => setStyle('bar'))
+$('styleMosaic').addEventListener('click', () => setStyle('mosaic'))
+
 $('morph').addEventListener('click', (e) => {
   morph = !morph
   e.currentTarget.setAttribute('aria-pressed', String(morph))
@@ -584,9 +729,11 @@ window.addEventListener('pagehide', stopCamera)
 window.D = {
   get state() {
     return {
-      running, tracker: !!tracker, trackerFailed, mirror, morph, width: view.width, height: view.height, detections, emptyDetections,
+      running, tracker: !!tracker, trackerFailed, mirror, morph, style, gl: !!(renderer && renderer.ok),
+      width: view.width, height: view.height, detections, emptyDetections,
       faces: slots.map((s) => ({
         alpha: s.alpha, m: { ...s.m }, ang: s.ang, faceW: s.faceW,
+        pose: { O: { ...s.O }, ax: [...s.ax], ay: [...s.ay], az: [...s.az], F: s.F },
         shape: Array.from(s.bar.cells).join(''),
         look: s.gaze ? { x: s.gaze.x - s.gaze.bx, y: s.gaze.y - s.gaze.by } : null,
         eyes: s.eyes.map((e) => ({ c: { ...e.c }, width: e.width, open: e.open })),
